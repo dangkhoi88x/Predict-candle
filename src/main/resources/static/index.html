@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>Candle Guess</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap"/>
+    <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+<nav class="top-nav">
+    <div class="top-nav-inner">
+        <span class="brand">🕯️ Candle Guess</span>
+        <div class="nav-tabs" role="tablist">
+            <button class="nav-tab active" role="tab" aria-selected="true" data-view="game">Đoán Nến</button>
+            <button class="nav-tab" role="tab" aria-selected="false" data-view="heatmap">Market Heatmap</button>
+            <button class="nav-tab" role="tab" aria-selected="false" data-view="patterns">Mẫu Nến</button>
+            <button class="nav-tab" role="tab" aria-selected="false" data-view="technical">Mẫu Hình Kỹ Thuật</button>
+        </div>
+    </div>
+</nav>
+
+<main id="view-game" class="view app">
+    <div class="game-toolbar">
+        <div class="asset-picker">
+            <button class="asset-btn active" data-asset="BTCUSDT">BTC/USDT</button>
+            <button class="asset-btn" data-asset="ETHUSDT">ETH/USDT</button>
+            <button class="asset-btn" data-asset="BNBUSDT">BNB/USDT</button>
+            <button class="asset-btn" data-asset="SOLUSDT">SOL/USDT</button>
+        </div>
+        <button id="sound-toggle" class="ghost-btn sound-toggle" type="button" aria-label="Bật/tắt âm thanh và rung">🔊</button>
+    </div>
+
+    <div class="scoreboard">
+        <div class="stat">
+            <span class="stat-label">Điểm</span>
+            <span class="stat-value" id="score">0</span>
+        </div>
+        <div class="stat">
+            <span class="stat-label">Streak</span>
+            <span class="stat-value" id="streak">0</span>
+        </div>
+        <div class="stat">
+            <span class="stat-label">Best streak</span>
+            <span class="stat-value" id="best-streak">0</span>
+        </div>
+        <div class="stat">
+            <span class="stat-label">Tỉ lệ đúng</span>
+            <span class="stat-value" id="accuracy">–</span>
+        </div>
+    </div>
+
+    <div id="result-banner" class="result-banner hidden"></div>
+
+    <div class="market-card">
+        <div class="market-head">
+            <div class="market-quote">
+                <div class="market-symbol-row">
+                    <span class="market-symbol" id="market-symbol">BTC</span>
+                    <span class="market-name" id="market-name">Bitcoin</span>
+                </div>
+                <div class="market-price-row">
+                    <span class="market-price" id="market-price" aria-live="polite"></span>
+                    <span class="market-delta" id="market-delta"></span>
+                </div>
+                <div class="market-ohlc" id="market-ohlc" aria-hidden="true"></div>
+            </div>
+        </div>
+
+        <div class="chart" id="chart"></div>
+    </div>
+
+    <div id="guess-progress" class="guess-progress hidden"></div>
+
+    <div class="controls">
+        <button id="guess-long" class="guess-btn long" disabled>▲ LONG</button>
+        <button id="guess-short" class="guess-btn short" disabled>▼ SHORT</button>
+    </div>
+
+    <button id="next-chart" class="next-btn hidden">🔄 Biểu đồ mới</button>
+
+    <p id="status" class="status"></p>
+</main>
+
+<main id="view-heatmap" class="view app hidden">
+    <div class="heatmap-toolbar">
+        <h2>Market Heatmap</h2>
+        <div class="heatmap-meta">
+            <span id="heatmap-updated"></span>
+            <button id="heatmap-refresh" class="ghost-btn" type="button">🔄 Làm mới</button>
+        </div>
+    </div>
+
+    <div class="asset-picker">
+        <button class="heatmap-subtab active" data-source="crypto">Crypto</button>
+        <button class="heatmap-subtab" data-source="sp500">S&amp;P 500</button>
+    </div>
+
+    <p id="heatmap-status" class="status"></p>
+    <div id="heatmap-grid-crypto" class="heatmap-grid" role="img" aria-label="Bản đồ nhiệt vốn hóa thị trường tiền mã hóa"></div>
+
+    <div id="sp500-drilldown-bar" class="sp500-drilldown-bar hidden">
+        <button id="sp500-back" class="ghost-btn hidden" type="button">← Quay lại ngành</button>
+        <span id="sp500-breadcrumb" class="sp500-breadcrumb"></span>
+    </div>
+    <div id="heatmap-grid-sp500" class="heatmap-grid hidden" role="img" aria-label="Bản đồ nhiệt cổ phiếu S&amp;P 500"></div>
+    <p id="heatmap-caption" class="heatmap-caption"></p>
+
+    <div id="heatmap-detail" class="heatmap-detail hidden">
+        <button id="heatmap-detail-close" class="heatmap-detail-close" type="button" aria-label="Đóng">✕</button>
+        <div class="heatmap-detail-head">
+            <span id="heatmap-detail-name" class="heatmap-detail-name"></span>
+            <div class="heatmap-detail-stats">
+                <span id="heatmap-detail-price" class="heatmap-detail-price"></span>
+                <span id="heatmap-detail-delta" class="heatmap-detail-delta"></span>
+            </div>
+        </div>
+        <div id="heatmap-detail-chart" class="heatmap-detail-chart"></div>
+        <p id="heatmap-detail-caption" class="heatmap-caption"></p>
+    </div>
+</main>
+
+<main id="view-patterns" class="view app hidden">
+    <div class="heatmap-toolbar">
+        <h2>Mẫu Nến</h2>
+    </div>
+
+    <div class="pattern-filters" id="pattern-filters">
+        <button class="pattern-filter active" data-filter="all">Tất cả</button>
+        <button class="pattern-filter" data-filter="bullish">Tăng</button>
+        <button class="pattern-filter" data-filter="bearish">Giảm</button>
+        <button class="pattern-filter" data-filter="reversal">Đảo chiều</button>
+        <button class="pattern-filter" data-filter="continuation">Tiếp diễn</button>
+    </div>
+
+    <div class="pattern-asset-toggle" id="pattern-asset-toggle">
+        <span class="pattern-asset-label">Tìm ví dụ thật trên:</span>
+        <button class="pattern-filter active" data-asset="BTCUSDT">BTC/USDT</button>
+        <button class="pattern-filter" data-asset="ETHUSDT">ETH/USDT</button>
+        <button class="pattern-filter" data-asset="BNBUSDT">BNB/USDT</button>
+        <button class="pattern-filter" data-asset="SOLUSDT">SOL/USDT</button>
+    </div>
+
+    <div id="pattern-grid" class="pattern-grid"></div>
+    <p class="heatmap-caption">Dữ liệu minh họa mang tính mô phỏng để thể hiện rõ hình dạng mẫu nến, không phải giá thị trường thật.</p>
+</main>
+
+<main id="view-technical" class="view app hidden">
+    <div class="heatmap-toolbar">
+        <h2>Mẫu Hình Kỹ Thuật</h2>
+    </div>
+
+    <div class="pattern-filters" id="technical-filters">
+        <button class="pattern-filter active" data-filter="all">Tất cả</button>
+        <button class="pattern-filter" data-filter="bullish">Tăng</button>
+        <button class="pattern-filter" data-filter="bearish">Giảm</button>
+        <button class="pattern-filter" data-filter="reversal">Đảo chiều</button>
+        <button class="pattern-filter" data-filter="continuation">Tiếp diễn</button>
+    </div>
+
+    <div class="pattern-asset-toggle" id="technical-asset-toggle">
+        <span class="pattern-asset-label">Tìm ví dụ thật trên:</span>
+        <button class="pattern-filter active" data-asset="BTCUSDT">BTC/USDT</button>
+        <button class="pattern-filter" data-asset="ETHUSDT">ETH/USDT</button>
+        <button class="pattern-filter" data-asset="BNBUSDT">BNB/USDT</button>
+        <button class="pattern-filter" data-asset="SOLUSDT">SOL/USDT</button>
+    </div>
+
+    <div id="technical-grid" class="pattern-grid technical-grid"></div>
+    <p class="heatmap-caption">Dữ liệu minh họa mang tính mô phỏng để thể hiện rõ hình dạng mẫu hình biểu đồ, không phải giá thị trường thật.</p>
+</main>
+
+<script src="nav.js"></script>
+<script src="app.js"></script>
+<script src="treemap.js"></script>
+<script src="heatmap.js"></script>
+<script src="heatmap-sp500.js"></script>
+<script src="heatmap-view.js"></script>
+<script src="patterns.js"></script>
+<script src="technical-patterns.js"></script>
+</body>
+</html>

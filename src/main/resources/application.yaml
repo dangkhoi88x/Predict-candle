@@ -1,0 +1,45 @@
+spring:
+  application:
+    name: Candles
+  web:
+    resources:
+      cache:
+        cachecontrol:
+          no-store: true
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5544/candles}
+    username: ${DB_USERNAME:candles}
+    password: ${DB_PASSWORD:candles}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+
+candles:
+  timeframe: 1h
+  binance:
+    base-url: https://api.binance.com
+  backfill:
+    start: 2022-01-01T00:00:00Z
+  assets:
+    - symbol: BTCUSDT
+      name: Bitcoin
+    - symbol: ETHUSDT
+      name: Ethereum
+    - symbol: BNBUSDT
+      name: BNB
+    - symbol: SOLUSDT
+      name: Solana
+  round:
+    min-range-pct: 0.15
+    max-attempts: 20
+    repeat-cache-ttl: PT5M
+    visible-candles: 20
+    guesses-per-chart: 5
+    reveal-candles-after-complete: 5
+  jwt:
+    secret: ${ROUND_TOKEN_SECRET:dev-only-secret-change-me-0123456789abcdef}
+    ttl: PT10M

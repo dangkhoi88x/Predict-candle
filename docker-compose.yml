@@ -1,0 +1,14 @@
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: candles
+      POSTGRES_USER: candles
+      POSTGRES_PASSWORD: candles
+    ports:
+      - "5544:5432"
+    volumes:
+      - candles-db:/var/lib/postgresql/data
+
+volumes:
+  candles-db:
