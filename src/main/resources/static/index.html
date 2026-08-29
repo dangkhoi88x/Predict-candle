@@ -28,13 +28,13 @@
 <nav class="top-nav">
     <div class="top-nav-inner">
         <span class="brand">🕯️ Candle Guess</span>
-        <div class="nav-tabs" role="tablist">
-            <button class="nav-tab active" role="tab" aria-selected="true" data-view="game">Đoán Nến</button>
-            <button class="nav-tab" role="tab" aria-selected="false" data-view="heatmap">Market Heatmap</button>
-            <button class="nav-tab" role="tab" aria-selected="false" data-view="patterns">Mẫu Nến</button>
-            <button class="nav-tab" role="tab" aria-selected="false" data-view="technical">Mẫu Hình Kỹ Thuật</button>
-            <button class="nav-tab" role="tab" aria-selected="false" data-view="psychology">Tâm Lý Giao Dịch</button>
-            <button class="nav-tab" role="tab" aria-selected="false" data-view="blog">Blog / Kiến Thức</button>
+        <div class="nav-tabs" role="tablist" aria-label="Khu vực của ứng dụng">
+            <button class="nav-tab active" role="tab" id="tab-game" aria-controls="view-game" aria-selected="true" data-view="game">Đoán Nến</button>
+            <button class="nav-tab" role="tab" id="tab-heatmap" aria-controls="view-heatmap" aria-selected="false" data-view="heatmap">Market Heatmap</button>
+            <button class="nav-tab" role="tab" id="tab-patterns" aria-controls="view-patterns" aria-selected="false" data-view="patterns">Mẫu Nến</button>
+            <button class="nav-tab" role="tab" id="tab-technical" aria-controls="view-technical" aria-selected="false" data-view="technical">Mẫu Hình Kỹ Thuật</button>
+            <button class="nav-tab" role="tab" id="tab-psychology" aria-controls="view-psychology" aria-selected="false" data-view="psychology">Tâm Lý Giao Dịch</button>
+            <button class="nav-tab" role="tab" id="tab-blog" aria-controls="view-blog" aria-selected="false" data-view="blog">Blog / Kiến Thức</button>
         </div>
         <div class="auth-area" id="auth-area">
             <span id="auth-error-msg" class="auth-error-msg hidden"></span>
@@ -50,7 +50,7 @@
     </div>
 </nav>
 
-<main id="view-game" class="view app">
+<main id="view-game" class="view app" role="tabpanel" aria-labelledby="tab-game">
     <div class="game-toolbar">
         <div class="pill" id="asset-pill">
             <button class="pill-option active" data-asset="BTCUSDT">BTC/USDT</button>
@@ -140,7 +140,7 @@
     <p id="status" class="status"></p>
 </main>
 
-<main id="view-heatmap" class="view app hidden">
+<main id="view-heatmap" class="view app hidden" role="tabpanel" aria-labelledby="tab-heatmap">
     <div class="heatmap-toolbar">
         <h2>Market Heatmap</h2>
         <div class="heatmap-meta">
@@ -178,7 +178,7 @@
     </div>
 </main>
 
-<main id="view-patterns" class="view app hidden">
+<main id="view-patterns" class="view app hidden" role="tabpanel" aria-labelledby="tab-patterns">
     <div class="heatmap-toolbar">
         <h2>Mẫu Nến</h2>
     </div>
@@ -205,7 +205,7 @@
     <p class="heatmap-caption">Dữ liệu minh họa mang tính mô phỏng để thể hiện rõ hình dạng mẫu nến, không phải giá thị trường thật.</p>
 </main>
 
-<main id="view-technical" class="view app hidden">
+<main id="view-technical" class="view app hidden" role="tabpanel" aria-labelledby="tab-technical">
     <div class="heatmap-toolbar">
         <h2>Mẫu Hình Kỹ Thuật</h2>
     </div>
@@ -232,7 +232,7 @@
     <p class="heatmap-caption">Dữ liệu minh họa mang tính mô phỏng để thể hiện rõ hình dạng mẫu hình biểu đồ, không phải giá thị trường thật.</p>
 </main>
 
-<main id="view-psychology" class="view app hidden">
+<main id="view-psychology" class="view app hidden" role="tabpanel" aria-labelledby="tab-psychology">
     <div class="heatmap-toolbar">
         <h2>Tâm Lý Giao Dịch</h2>
     </div>
@@ -241,7 +241,7 @@
     <p class="heatmap-caption">Nội dung tổng hợp từ chia sẻ của trader Mizer (<a href="https://x.com/MizerXBT" target="_blank" rel="noopener">@MizerXBT</a>) về tâm lý giao dịch — không phải lời khuyên đầu tư.</p>
 </main>
 
-<main id="view-blog" class="view app hidden">
+<main id="view-blog" class="view app hidden" role="tabpanel" aria-labelledby="tab-blog">
     <div class="heatmap-toolbar">
         <h2>Blog / Kiến Thức</h2>
     </div>

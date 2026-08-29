@@ -380,6 +380,25 @@
         updateQuote();
     }
 
+    /**
+     * The chart is role="img" and focusable, so it needs a name — without one a screen
+     * reader lands on it and says only "graphic". Deliberately built from the last candle
+     * rather than the hovered one: updateQuote also runs on pointer move, and a name that
+     * rewrote itself under the cursor would chatter without telling the user anything they
+     * could act on. The per-candle detail is already in the OHLC line.
+     */
+    function describeChart(meta, candles) {
+        if (!chart.svg) return;
+        var first = candles[0], last = candles[candles.length - 1];
+        // Both halves come from the series, not from updateQuote's hover-aware `shown` —
+        // passing that delta in would have let the name drift under the cursor after all.
+        var delta = first.close ? ((last.close - first.close) / first.close) * 100 : 0;
+        chart.svg.setAttribute("aria-label",
+            "Biểu đồ nến " + meta.name + " (" + meta.symbol + "), " + candles.length
+            + " nến gần nhất. Giá cuối " + formatMoney(last.close, meta.compact)
+            + ", " + formatSignedPct(delta) + " so với nến đầu tiên.");
+    }
+
     function updateQuote() {
         var candles = chart.candles;
         if (!candles.length) return;
@@ -392,6 +411,7 @@
 
         window.CandleRolling.update(el.marketPrice, formatMoney(shown.close, meta.compact));
         window.CandleRolling.update(el.marketDelta, formatSignedPct(delta));
+        describeChart(meta, candles);
         el.marketDelta.style.color = color;
         el.marketDelta.style.background = "color-mix(in srgb, " + color + " 14%, transparent)";
 
@@ -417,6 +437,7 @@
 
     function resetChart(asset) {
         el.marketCard.classList.add("is-loading");
+        if (chart.svg) chart.svg.setAttribute("aria-label", "Đang tải biểu đồ nến.");
         chart.asset = asset;
         chart.candles = [];
         chart.hoverIndex = null;
