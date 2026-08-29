@@ -1,0 +1,280 @@
+/**
+ * "Blog / Kiến Thức" tab — long-form trading-concept write-ups that don't reduce cleanly to a
+ * detectable chart pattern (unlike BOS/SFP in technical-patterns.js, which came from the same
+ * kind of source material but had a clean, mechanical definition worth turning into a real
+ * pattern matcher). This tab is the lower-effort home for everything else: narrative reading
+ * of market structure, order-flow reasoning, etc. Each entry is a from-scratch Vietnamese
+ * summary (not a translation) of a public X post, with a link back to the original.
+ *
+ * Cards show only a cover illustration + title; clicking expands tags/body/source in place.
+ * Covers are either a small hand-drawn SVG (self-made, themed to the post's concept) or an
+ * author-provided image — the latter only for posts where the author gave explicit permission
+ * to reuse their diagrams (see each post's `imageCredit`); those images were downloaded once
+ * rather than hotlinked from the author, and each is individually credited.
+ *
+ * Those files now live in this project's own Cloudinary account under candles/blog/<author>/,
+ * served through an f_auto,q_auto transform so each viewer gets WebP or AVIF at a width that
+ * matches the slot rather than the 1536px original — around a third of the bytes.
+ *
+ * Cloudinary stores each upload unmodified and derives the transformed versions on request,
+ * so the URLs below with the transform segment removed still return the byte-for-byte
+ * originals. That is the only copy now: the local static/img/blog/ files were deleted once
+ * that was verified for all 23.
+ */
+(function () {
+    "use strict";
+
+    var COVER_BOTTOM_FORMING =
+        '<svg viewBox="0 0 400 150" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">' +
+        '<rect x="0" y="0" width="400" height="150" fill="var(--panel-2)"/>' +
+        '<line x1="20" y1="70" x2="380" y2="70" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="5 4" opacity="0.6"/>' +
+        '<text x="26" y="62" font-family="var(--mono)" font-size="10" font-weight="700" fill="var(--accent)">RECLAIM</text>' +
+        '<path d="M30,40 L90,95 L140,118 L190,124 L230,110 L260,90 L300,72 L340,66 L370,60" ' +
+        'fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.55"/>' +
+        '<rect x="85" y="90" width="7" height="20" rx="1.5" fill="var(--down)"/>' +
+        '<rect x="135" y="112" width="7" height="16" rx="1.5" fill="var(--down)"/>' +
+        '<rect x="185" y="116" width="7" height="16" rx="1.5" fill="var(--up)"/>' +
+        '<rect x="225" y="100" width="7" height="18" rx="1.5" fill="var(--down)"/>' +
+        '<rect x="255" y="80" width="7" height="18" rx="1.5" fill="var(--up)"/>' +
+        '<rect x="295" y="64" width="7" height="16" rx="1.5" fill="var(--up)"/>' +
+        '<rect x="335" y="56" width="7" height="16" rx="1.5" fill="var(--up)"/>' +
+        "</svg>";
+
+    var COVER_LIQUIDITY_TRAP =
+        '<svg viewBox="0 0 400 150" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">' +
+        '<rect x="0" y="0" width="400" height="150" fill="var(--panel-2)"/>' +
+        '<line x1="20" y1="55" x2="380" y2="55" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="5 4" opacity="0.6"/>' +
+        '<text x="26" y="47" font-family="var(--mono)" font-size="10" font-weight="700" fill="var(--accent)">RESISTANCE</text>' +
+        '<path d="M30,95 L90,88 L140,92 L185,85" fill="none" stroke="var(--muted)" stroke-width="2" ' +
+        'stroke-linecap="round" stroke-linejoin="round" opacity="0.55"/>' +
+        '<line x1="205" y1="30" x2="205" y2="98" stroke="var(--up)" stroke-width="2"/>' +
+        '<rect x="200" y="40" width="10" height="30" rx="1.5" fill="var(--up)"/>' +
+        '<path d="M215,60 L260,70 L300,95 L340,112 L370,120" fill="none" stroke="var(--down)" stroke-width="2.5" ' +
+        'stroke-linecap="round" stroke-linejoin="round"/>' +
+        '<rect x="255" y="66" width="7" height="16" rx="1.5" fill="var(--down)"/>' +
+        '<rect x="295" y="90" width="7" height="16" rx="1.5" fill="var(--down)"/>' +
+        '<rect x="335" y="106" width="7" height="16" rx="1.5" fill="var(--down)"/>' +
+        '<text x="205" y="22" text-anchor="middle" font-family="var(--mono)" font-size="10" font-weight="700" fill="var(--down)">SWEPT</text>' +
+        "</svg>";
+
+    var COVER_MARKET_STRUCTURE =
+        '<svg viewBox="0 0 400 150" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">' +
+        '<rect x="0" y="0" width="400" height="150" fill="var(--panel-2)"/>' +
+        '<line x1="20" y1="95" x2="380" y2="95" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="5 4" opacity="0.6"/>' +
+        '<text x="26" y="87" font-family="var(--mono)" font-size="10" font-weight="700" fill="var(--accent)">HL</text>' +
+        '<path d="M20,130 L60,90 L100,110 L140,70 L180,95 L220,80 L260,115 L300,100 L340,130 L380,140" ' +
+        'fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.55"/>' +
+        '<rect x="56" y="84" width="8" height="18" rx="1.5" fill="var(--up)"/>' +
+        '<rect x="96" y="104" width="8" height="16" rx="1.5" fill="var(--down)"/>' +
+        '<rect x="136" y="64" width="8" height="18" rx="1.5" fill="var(--up)"/>' +
+        '<rect x="176" y="89" width="8" height="16" rx="1.5" fill="var(--down)"/>' +
+        '<rect x="216" y="74" width="8" height="18" rx="1.5" fill="var(--up)"/>' +
+        '<rect x="256" y="109" width="8" height="18" rx="1.5" fill="var(--down)"/>' +
+        '<text x="140" y="55" text-anchor="middle" font-family="var(--mono)" font-size="10" font-weight="700" fill="var(--up)">HH</text>' +
+        '<text x="220" y="70" text-anchor="middle" font-family="var(--mono)" font-size="10" font-weight="700" fill="var(--down)">LH</text>' +
+        '<text x="264" y="132" text-anchor="middle" font-family="var(--mono)" font-size="10" font-weight="700" fill="var(--down)">BOS</text>' +
+        "</svg>";
+
+    var POSTS = [
+        {
+            title: "Cách một đáy thị trường thực sự hình thành",
+            cover: COVER_BOTTOM_FORMING,
+            tags: ["Market Structure", "Đáy thị trường"],
+            source: "Mr. Anderson (@Truecrypto) trên X",
+            sourceUrl: "https://x.com/Truecrypto/status/2029707200289976705",
+            content: [
+                { type: "text", text: "Một đáy thị trường không phải là một cây nến — nó là một cấu trúc hình thành dần qua thời gian. Chừng nào giá còn loanh quanh trong vùng dao động của cây nến giảm mạnh gần nhất, mọi biến động bên trong chỉ là nhiễu, kể cả khi đáy thấp nhất đã thực sự đi qua." },
+                { type: "text", text: "Chìa khóa để đọc được quá trình này là theo dõi phản ứng của giá tại các vùng ngang quan trọng: giá có 'reclaim' (chiếm lại) và trụ vững trên một mức cũ hay không, hay chỉ 'wick' xuyên qua rồi bị từ chối? Phá vỡ mà không trụ được ở mức mới không phải là breakout — đó là một cái bẫy." },
+                { type: "image", src: "https://res.cloudinary.com/dtnigztyn/image/upload/f_auto,q_auto,w_1120/candles/blog/truecrypto/chart-1-btc-daily-range", w: 1835, h: 959, alt: "BTC/USD daily: giá đang bị nhốt trong vùng dao động của cây nến giảm mạnh gần nhất (khung đỏ ~63.000–72.000), mọi biến động bên trong vùng này chỉ là nhiễu" },
+                { type: "text", text: "Có 2 kiểu đáy phổ biến. Kiểu 'range' — giá test và hấp thụ nguồn cung từng mức một, chậm nhưng chắc; nếu một lần reclaim thất bại, thường sẽ xuất hiện một Swing Failure Pattern (SFP) đẩy giá xuống thấp hơn." },
+                { type: "image", src: "https://res.cloudinary.com/dtnigztyn/image/upload/f_auto,q_auto,w_1120/candles/blog/truecrypto/chart-2-typical-bottom", w: 1835, h: 959, alt: "BTC/USD daily 2022–2023: đáy kiểu 'range' điển hình — giá dò đáy qua nhiều vùng dao động nối tiếp nhau (các khung đỏ), từng bước hấp thụ nguồn cung trước khi đảo chiều" },
+                { type: "text", text: "Kiểu 'V' hiếm hơn — sau cú giảm mạnh, giá phòng thủ ngay vùng đáy và bật lên với 'stepping' sạch qua từng vùng kháng cự; cái quan trọng ở đây không phải lực bật ban đầu mạnh hay yếu, mà là sự vững vàng duy trì sau đó." },
+                { type: "image", src: "https://res.cloudinary.com/dtnigztyn/image/upload/f_auto,q_auto,w_1120/candles/blog/truecrypto/chart-3-v-bottom", w: 1835, h: 959, alt: "BTC/USD daily quanh đáy Covid tháng 3/2020: đáy kiểu 'V' — giá phòng thủ ngay vùng đáy rồi bật lên dứt khoát, giữ vững trên từng mức kháng cự đã phá thay vì quay đầu wick lại" },
+                { type: "text", text: "Bài học chính: đừng đi tìm một 'cây nến thần kỳ' báo hiệu đáy. Hãy theo dõi việc giá có được chấp nhận (acceptance) tại từng vùng then chốt hay không — đó là cách đọc đáy trước khi đám đông nhận ra." },
+            ],
+            imageCredit: "Hình chart trong bài do Mr. Anderson (@Truecrypto) thực hiện, dùng lại với sự cho phép của tác giả.",
+        },
+        {
+            title: "Biết kẻ địch của bạn — dùng order flow để tìm lợi thế",
+            coverImg: "https://res.cloudinary.com/dtnigztyn/image/upload/f_auto,q_auto,w_720/candles/blog/koroush/cover-know-thy-enemy",
+            tags: ["Order Flow", "Tâm lý đám đông", "Liên quan: Liquidity Sweep / SFP"],
+            source: "Koroush AK (@KoroushAK) trên X",
+            sourceUrl: "https://x.com/KoroushAK/status/2087596663976444068",
+            content: [
+                { type: "text", text: "Mọi biến động giá đều là kết quả của một giao dịch: người mua và người bán đồng ý một mức giá. Có 2 cách vào lệnh — lệnh giới hạn (limit, 'thụ động', nằm chờ giá tới) và lệnh thị trường (market, 'chủ động', khớp ngay bằng mọi giá hiện có). Một lệnh market đủ lớn sẽ ăn hết các lệnh limit theo từng nấc giá, đẩy giá nhảy vọt — đó là lý do những cú spike đột ngột xuất hiện trên chart." },
+                { type: "image", src: "https://res.cloudinary.com/dtnigztyn/image/upload/f_auto,q_auto,w_1120/candles/blog/koroush/price-ladder", w: 680, h: 383, alt: "Ví dụ order book dạng bậc thang giá: 1 lệnh market mua 6 coin ăn hết thanh khoản ở $10.01, đẩy giá lên $10.02" },
+                { type: "text", text: "Mỗi trade thực chất là một trong hai kiểu cược đối lập trên cùng một chart: cược 'momentum' (giá sẽ phá vỡ một mức) hoặc cược 'mean-reversion' (giá sẽ bật lại từ mức đó). Một bên đúng, bên còn lại sai." },
+                { type: "image", src: "https://res.cloudinary.com/dtnigztyn/image/upload/f_auto,q_auto,w_1120/candles/blog/koroush/breakouts-vs-reversals", w: 1071, h: 604, alt: "Sơ đồ Breakouts vs Reversals: cùng một mức kháng cự, một bên cược phá vỡ, một bên cược đảo chiều" },
+                { type: "text", text: "Bên đặt cược sai bị 'mắc kẹt' trong một vị thế lỗ mà họ buộc phải thoát ra, thường là trong hoảng loạn — tác giả gọi hình tượng đó là 'Reckless Rick'." },
+                { type: "image", src: "https://res.cloudinary.com/dtnigztyn/image/upload/f_auto,q_auto,w_1120/candles/blog/koroush/reckless-rick-panic", w: 1200, h: 675, alt: "Minh hoạ Reckless Rick hoảng loạn khi nhìn giá đi ngược vị thế của mình" },
+                { type: "text", text: "Từ đó tác giả xây một bộ lọc để tìm đúng những trader mắc kẹt, không phải dân chuyên. Đầu tiên: giá phải spike nhanh, dốc đứng, đúng vào một vùng kháng cự đã xác định trước." },
+                { type: "image", src: "https://res.cloudinary.com/dtnigztyn/image/upload/f_auto,q_auto,w_1120/candles/blog/koroush/fast-spike-slope-size", w: 1200, h: 675, alt: "Fast Spike: độ dốc đứng và kích thước nến spike so với các nến trước đó" },
+                { type: "text", text: "Kế đến là khối lượng: cần một cú tăng đột biến rồi hạ nhanh trở lại trong khoảng 5 nến (không có 'đám đông' đứng sau lực đẩy đó) — khác với khối lượng duy trì bền vững, vốn là dấu hiệu của một lực mua/bán thật sự." },
+                { type: "image", src: "https://res.cloudinary.com/dtnigztyn/image/upload/f_auto,q_auto,w_1120/candles/blog/koroush/good-volume", w: 1200, h: 675, alt: "Good Volume: khối lượng tăng đột biến rồi hạ nhanh, không có follow-through" },
+                { type: "image", src: "https://res.cloudinary.com/dtnigztyn/image/upload/f_auto,q_auto,w_1120/candles/blog/koroush/bad-volume", w: 1200, h: 675, alt: "Bad Volume: khối lượng duy trì bền vững sau spike, có follow-through — dấu hiệu dân chuyên đang tham gia" },
+                { type: "text", text: "Cuối cùng, giá phải bị từ chối khỏi mức đó và đóng cửa lùi trở lại — đây là bước xác nhận 'break of structure' hoàn tất bộ lọc, biến giả thuyết thành một setup mean-reversion có thể giao dịch." },
+                { type: "image", src: "https://res.cloudinary.com/dtnigztyn/image/upload/f_auto,q_auto,w_1120/candles/blog/koroush/break-of-structure-entry", w: 1200, h: 675, alt: "Break of Structure: giá bị từ chối tại mức kháng cự, đóng cửa dưới support mới hình thành, xác nhận setup mean-reversion" },
+                { type: "text", text: "Ví dụ thực tế tác giả đưa ra: một cú spike nhanh kèm khối lượng đột biến, sau đó bị từ chối và xác nhận đảo chiều — đúng như bộ lọc mô tả." },
+                { type: "image", src: "https://res.cloudinary.com/dtnigztyn/image/upload/f_auto,q_auto,w_1120/candles/blog/koroush/live-trade-example", w: 1200, h: 552, alt: "Ví dụ giao dịch thực tế trên TradingView: fast spike in price, outlier in volume, rồi rejection/confirmation" },
+                { type: "text", text: "Đây chính là cơ chế đứng sau pattern Liquidity Sweep / Swing Failure Pattern (SFP) đã có trong tab Mẫu Hình Kỹ Thuật — bài viết này giải thích phần 'tại sao' nó hoạt động: một cú quét thanh khoản không phải phép màu, mà là hệ quả tất yếu của việc một nhóm trader bị đẩy vào thế buộc phải đóng lệnh." },
+            ],
+            imageCredit: "Hình minh hoạ trong bài do Koroush AK (@KoroushAK) thực hiện, dùng lại với sự cho phép của tác giả.",
+        },
+        {
+            title: "Market structure: biết mình đang chơi trò gì trước khi vào lệnh",
+            coverImg: "https://res.cloudinary.com/dtnigztyn/image/upload/f_auto,q_auto,w_720/candles/blog/elgodric/cover",
+            tags: ["Market Structure", "Break of Structure", "Đa khung thời gian"],
+            source: "Godric (@elGodric) trên X",
+            sourceUrl: "https://x.com/elGodric/status/2002748998663246039",
+            content: [
+                { type: "text", text: "Một pattern đẹp không cứu được bạn nếu bạn chơi sai bối cảnh. Tình huống rất quen thuộc: thấy một lá cờ tăng (bull flag) đẹp trên khung 15 phút, volume ổn, mọi tiêu chí đều đạt — long với đầy tự tin. Rồi bị quét sạch. Không phải vì pattern sai hay vào lệnh ẩu, mà vì đó là lệnh long ngay vào vùng kháng cự của khung ngày, giữa lúc khung ngày đang downtrend rõ ràng. Pattern đúng, thực thi cũng ổn — nhưng chơi sai trò chơi. Đa số trader nhảy thẳng vào indicator và pattern mà bỏ qua câu hỏi nền tảng: thị trường đang thực sự làm gì. Market structure chính là lớp bối cảnh đó — thứ quyết định một pattern có đáng tin hay không." },
+                { type: "text", text: "Market structure, nói đơn giản, là dấu vết các đỉnh và đáy mà giá để lại trên đường đi — nó cho biết ai đang kiểm soát cuộc chơi (bên mua hay bên bán), động lượng đang mạnh lên hay yếu đi, và bạn nên tìm long, tìm short, hay đứng ngoài. Giá không đi ngẫu nhiên, nó đi theo từng đợt sóng, và mỗi đợt sóng để lại một trong ba dạng cấu trúc: uptrend (đỉnh sau cao hơn đỉnh trước — Higher High/HH, đáy sau cao hơn đáy trước — Higher Low/HL), downtrend (đỉnh sau thấp hơn — Lower High/LH, đáy sau thấp hơn — Lower Low/LL), và range (giá bật qua bật lại giữa một trần và một sàn, không phá dứt khoát bên nào). Trước khi quan tâm tới bất kỳ indicator, pattern hay mức Fibonacci nào, việc đầu tiên luôn là xác định mình đang đứng trong dạng cấu trúc nào — vì cùng một setup có thể kiếm tiền trong uptrend nhưng phá tài khoản trong downtrend, và cùng một vùng kháng cự có thể giữ vững trong range nhưng bị xuyên thủng ngay trong thị trường đang trend mạnh." },
+                { type: "image", src: "https://res.cloudinary.com/dtnigztyn/image/upload/f_auto,q_auto,w_1120/candles/blog/elgodric/what-is-market-structure", w: 1200, h: 800, alt: "Ba dạng cấu trúc thị trường: Uptrend (chuỗi HH/HL đi lên), Downtrend (chuỗi LH/LL đi xuống), và Range/Chop (giá dao động ngang giữa 2 biên không có xu hướng rõ ràng)" },
+                { type: "text", text: "Thử hình dung bằng số cho dễ nhớ: BTC đang ở 60.000, tạo đáy tại 58.000 (HL), bật lên 63.000 (HH), rồi lùi về 59.500 trước khi tiếp tục tăng. Vì 59.500 vẫn cao hơn đáy 58.000 trước đó, cấu trúc HH+HL còn nguyên — đây vẫn là uptrend, và 59.500 là vùng để tìm long chứ không phải để hoảng sợ short. Ngược lại, nếu nhịp lùi đó xuyên thủng xuống dưới 58.000, cấu trúc uptrend đã bị vi phạm — dù giá vẫn đang ở vùng cao hơn nhiều so với vài tuần trước, cái đáy 58.000 bị phá mới là thứ quyết định bạn có nên tiếp tục thiên về long hay không, không phải cảm giác 'giá vẫn đang cao'. Đây chính là lý do market structure hữu ích hơn nhìn giá một cách cảm tính: nó cho một mức cụ thể để đối chiếu, thay vì đoán theo cảm giác 'thấy tăng thì chắc còn tăng'." },
+                { type: "text", text: "Không phải cứ thấy một chỗ lồi lõm nhỏ trên chart là gọi được đó là swing high hay swing low. Một swing point hợp lệ phải là một điểm đảo chiều rõ ràng — giá chạm cực trị rồi bị từ chối và quay đầu — và cần ít nhất 1–2 nến xác nhận sự từ chối đó ở mỗi bên. Nếu bạn đánh dấu mọi cây nến ngoằn ngoèo là đỉnh/đáy, cấu trúc bạn vẽ ra sẽ vô nghĩa và mọi quyết định dựa trên nó chẳng khác gì tung đồng xu. Khung thời gian cũng quyết định trọng lượng của swing: một đỉnh trên khung 5 phút gần như chắc chắn chỉ là nhiễu; cùng một đỉnh đó trên khung 4 giờ đã là một vùng có thanh khoản thật sự; còn trên khung ngày thì đó là một mức cấu trúc mà cả thị trường đang theo dõi. Vì vậy nên luôn bắt đầu đọc cấu trúc từ khung lớn (daily, 4H) — nơi cấu trúc thật sự nằm — rồi mới soi xuống khung nhỏ, và đừng cố nặn ra một xu hướng ở nơi không có: nếu giá đang đi ngang chật hẹp không có đỉnh/đáy rõ ràng, tốt nhất là chờ, vì cố áp cấu trúc lên một vùng range chỉ khiến bạn thua từ từ và đau đớn." },
+                { type: "image", src: "https://res.cloudinary.com/dtnigztyn/image/upload/f_auto,q_auto,w_1120/candles/blog/elgodric/swing-points-noise-vs-real", w: 1200, h: 800, alt: "So sánh: trên khung 5 phút, hàng loạt đỉnh/đáy nhỏ bị đánh dấu chỉ là nhiễu ngẫu nhiên (X đỏ); trên khung 4H/Daily, các đỉnh/đáy HH/HL là swing point thật với pivot rõ ràng, đáng để dùng làm cấu trúc giao dịch" },
+                { type: "text", text: "Trong uptrend (HH + HL), phe mua đang kiểm soát và mỗi nhịp giảm chỉ là cơ hội mua thêm — nên chờ giá lùi về HL rồi tìm long tiếp diễn, không nên short ngược xu hướng hay bán khống vào sức mạnh. Tâm thế đúng ở đây là: 'coin này đang uptrend sạch, tôi không hứng thú short — tôi chờ nó lùi về vùng hỗ trợ hoặc một mức Fib quan trọng rồi tìm xác nhận để long'. Xu hướng này bị đe doạ khi xuất hiện một LL (đáy thấp hơn đáy gần nhất) — chưa chắc là đảo chiều, nhưng là tín hiệu phải đánh giá lại." },
+                { type: "image", src: "https://res.cloudinary.com/dtnigztyn/image/upload/f_auto,q_auto,w_1120/candles/blog/elgodric/uptrend-example", w: 1536, h: 1024, alt: "Ví dụ uptrend thực tế: chuỗi HH/HL liên tiếp, vùng logical long entry nằm ngay tại một HL vừa hình thành; nếu giá phá xuống dưới đường đứt nét đỏ, cấu trúc uptrend sẽ bị vô hiệu hoá" },
+                { type: "text", text: "Trong downtrend (LH + LL) thì ngược lại: mỗi nhịp hồi chỉ là cơ hội thoát hàng hoặc short, không phải để bắt đáy hay long vì thấy 'quá bán'; tâm thế đúng là chờ giá hồi lên một LH rồi tìm short, tuyệt đối không đi bắt dao rơi. Xu hướng downtrend bị đe doạ khi xuất hiện một HH." },
+                { type: "image", src: "https://res.cloudinary.com/dtnigztyn/image/upload/f_auto,q_auto,w_1120/candles/blog/elgodric/downtrend-example", w: 1536, h: 1024, alt: "Ví dụ downtrend thực tế: chuỗi LH/LL liên tiếp, vùng logical short entry nằm ngay tại một LH vừa hình thành; nếu giá phá lên trên đường đứt nét đỏ, cấu trúc downtrend sẽ bị vô hiệu hoá" },
+                { type: "text", text: "Còn trong range, giá dao động giữa một biên trên và biên dưới xác định, không có breakout, không có sustained move — hoặc giao dịch tại biên (long ở đáy, short ở đỉnh) với stop chặt, hoặc đứng ngoài hoàn toàn; range chính là nơi phần lớn trader bị 'nghiền' vì liên tục dính stop dù phán đoán hướng đúng, đơn giản vì họ giao dịch như đang có trend trong khi thực chất chẳng có trend nào cả. Insight quan trọng nhất bài viết muốn nhấn: đa số lệnh thua không đến từ việc thiếu kiến thức, mà từ việc ép setup vào sai môi trường — long breakout ở đỉnh range, short một nhịp pullback trong uptrend sạch, hay cố bắt đảo chiều giữa một downtrend còn rất mạnh. Một khi đã xác định đúng mình đang ở môi trường nào, phần lớn quyết định ngớ ngẩn tự động biến mất — bạn ngừng chống lại thị trường và bắt đầu chờ những setup thật sự thuận theo bức tranh lớn." },
+                { type: "image", src: "https://res.cloudinary.com/dtnigztyn/image/upload/f_auto,q_auto,w_1120/candles/blog/elgodric/range-example", w: 1536, h: 1024, alt: "Ví dụ range thực tế: giá bật qua bật lại nhiều lần giữa biên trên và biên dưới (các đáy LL đều giữ vững biên dưới), cho tới khi breakout thật sự xảy ra kèm volume spike đột biến — xác nhận range đã kết thúc" },
+                { type: "text", text: "Break of Structure (BOS) là khoảnh khắc giá phá vỡ chính mức đỉnh/đáy đang giữ xu hướng hiện tại — trong uptrend là khi giá đóng cửa dưới HL gần nhất, trong downtrend là khi giá đóng cửa trên LH gần nhất. Đây là tín hiệu quyền kiểm soát có thể đang đổi chủ — nhưng chỉ là một lời cảnh báo, không phải lệnh xác nhận đảo chiều. Sau một BOS, điều cần làm là quan sát tiếp ba khả năng: giá có quay lại retest đúng mức vừa phá và bị từ chối rõ ràng không (xác nhận cấu trúc đã đổi); giá có tiếp tục đi theo hướng mới với động lượng thật sự (follow-through) không; hay giá lại nhanh chóng chiếm lại mức đó và tiếp tục đi theo xu hướng cũ (fakeout, xu hướng cũ vẫn còn nguyên)? Ví dụ kinh điển: một memecoin đang uptrend sạch nhiều ngày, liên tục in HH/HL, bỗng phá xuống dưới HL gần nhất — đó là BOS. Nếu sau đó giá hồi lên đúng vùng hỗ trợ cũ (giờ đã lật thành kháng cự) và bị từ chối tại đó, cấu trúc đã đảo thật, xu hướng tăng có thể đã kết thúc. Nhưng nếu giá lập tức lấy lại vùng đó và tiếp tục đẩy lên cao hơn, đó chỉ là báo động giả, uptrend vẫn còn nguyên vẹn. Vào lệnh ngay khi vừa thấy BOS đầu tiên, coi nó như chân lý mà không chờ retest hay xác nhận follow-through, là cách phổ biến nhất khiến trader bị 'chặt' bởi các cú đảo giá giả — kiên nhẫn chờ xác nhận ở bước này chính là thứ cứu tài khoản khỏi những cú fakeout đó. Đây cũng chính là cơ chế nền của pattern Swing Failure Pattern (SFP) đã có trong tab Mẫu Hình Kỹ Thuật của app này: một cú quét thanh khoản qua khỏi swing rồi đảo chiều ngay, về bản chất chính là một BOS giả bị từ chối tức thì." },
+                { type: "image", src: "https://res.cloudinary.com/dtnigztyn/image/upload/f_auto,q_auto,w_1120/candles/blog/elgodric/bos-downtrend-to-uptrend", w: 1536, h: 1024, alt: "BOS trong downtrend: chuỗi LH/LL liên tiếp bị phá khi giá vượt lên trên vùng kháng cự cũ (đường đứt nét đỏ) — cấu trúc bị phá tại đó, cần chờ retest xác nhận trước khi kết luận downtrend đã kết thúc và chuyển sang uptrend mới" },
+                { type: "image", src: "https://res.cloudinary.com/dtnigztyn/image/upload/f_auto,q_auto,w_1120/candles/blog/elgodric/bos-uptrend-break", w: 1536, h: 1024, alt: "BOS trong uptrend: chuỗi HH liên tiếp bị phá khi giá rơi xuống dưới vùng hỗ trợ cũ (đường đứt nét đỏ) — cấu trúc bị phá tại đó, cần chờ retest xác nhận trước khi kết luận uptrend đã kết thúc" },
+                { type: "image", src: "https://res.cloudinary.com/dtnigztyn/image/upload/f_auto,q_auto,w_1120/candles/blog/elgodric/timeframe-hierarchy", w: 1536, h: 1024, alt: "Phân cấp khung thời gian: khung Daily đang downtrend rõ với chuỗi LH/LL, khung 4H vừa hình thành một Lower High đồng thuận với daily, trong khi khung 15M lại đang tăng — cảnh báo không nên long theo khung 15M khi daily vẫn bearish" },
+                { type: "text", text: "Không phải cấu trúc trên mọi khung đều có giá trị ngang nhau. Khung Daily và 4H là 'câu chuyện chính' — nơi dòng tiền lớn thật sự đang định vị, quyết định bạn nên thiên về bullish, bearish hay trung lập. Khung 1H hữu ích để tinh chỉnh điểm vào và đọc động lượng ngắn hạn, nhưng luôn phải phục tùng khung lớn. Khung 15 phút hay 5 phút gần như chỉ là nhiễu, trừ khi nó đồng thuận với cấu trúc khung lớn — dùng nó một mình để ra quyết định hướng đi là cách chắc chắn để bị 'băm nát' bởi các cú nhiễu ngắn hạn. Quy trình thực tế nên đi theo thứ tự: kiểm tra Daily xem đang uptrend, downtrend hay range; kiểm tra 4H để xác định các đỉnh/đáy quan trọng gần nhất; kiểm tra 1H xem có setup nào đang hình thành và có khớp với bức tranh lớn không; và chỉ dùng khung nhỏ hơn để canh điểm vào chính xác, không bao giờ dùng nó làm căn cứ cho thiên hướng giao dịch. Lỗi kinh điển: thấy một đáy cao (HL) rất đẹp trên khung 15 phút và long với đầy tự tin, trong khi hoàn toàn phớt lờ việc khung 4 giờ đang in một chuỗi đỉnh thấp dần (LH) rõ ràng — đó không phải trading, đó là đánh bạc. Luôn luôn, luôn luôn kiểm tra khung lớn trước. Nếu khung ngày đang bearish, một đáy cao đẹp trên khung 15 phút không có ý nghĩa gì — bạn đang giao dịch ngược lại bức tranh lớn, và bức tranh lớn thường thắng." },
+                { type: "image", src: "https://res.cloudinary.com/dtnigztyn/image/upload/f_auto,q_auto,w_1120/candles/blog/elgodric/structure-confluence", w: 1536, h: 1024, alt: "Ví dụ confluence kiểu 'NYAN': một Lower High trùng với mức Fib thoái lui 0.618 và trùng với vùng hỗ trợ cũ vừa bị phá (giờ đóng vai trò kháng cự) — 3 yếu tố hội tụ tại cùng một vùng giá tạo thành vùng xác suất cao" },
+                { type: "text", text: "Market structure một mình đã hữu ích, nhưng nó phát huy sức mạnh thật sự khi hội tụ (confluence) với các yếu tố khác tại cùng một vùng giá. Bốn lớp hay được xếp chồng lên cấu trúc: mức Fibonacci thoái lui — một swing point trùng khít với 0.618 không phải ngẫu nhiên, đó là confluence; vùng hỗ trợ/kháng cự cũ — khi cấu trúc trùng với một mức đã được test nhiều lần trong quá khứ, phản ứng tại đó thường mạnh hơn hẳn so với một mức 'trơn'; vùng thanh khoản (liquidity pool) — nơi có nhiều stop loss đang chờ sẵn ngay trên swing high hoặc dưới swing low, và khi cấu trúc chỉ về đúng vùng đó, khả năng cao đó chính là nơi cú quét giá thật sự xảy ra; và volume node — vùng có khối lượng giao dịch bất thường (dày đặc hoặc mỏng bất thường) cho cấu trúc thêm trọng lượng. Ảnh minh hoạ ở trên là một ví dụ 'hội tụ hoàn hảo' theo kiểu setup NYAN: một memecoin đang downtrend, giá hồi lên in một Lower High, và cái LH đó lại rơi đúng vào ba thứ cùng lúc — vùng hỗ trợ cũ vừa bị phá (nay lật thành kháng cự), mức Fib thoái lui 0.618, và một vùng có khối lượng bán tập trung từ trước. Ba xác nhận cùng chỉ về một điểm không còn là 'chắc thử xem' nữa — đó là một short có độ tin cậy cao. Càng nhiều yếu tố cùng chỉ về một vùng giá, độ tin cậy của vùng đó càng cao — đây là cách chuyển từ 'đoán mò' sang giao dịch có lý lẽ thật sự đứng sau, thay vì chỉ dựa vào một tín hiệu đơn lẻ." },
+                { type: "image", src: "https://res.cloudinary.com/dtnigztyn/image/upload/f_auto,q_auto,w_1120/candles/blog/elgodric/common-mistakes", w: 1536, h: 1024, alt: "Các lỗi thường gặp khi đọc cấu trúc: gán nhãn HH/HL/LH/LL sai cho những dao động nhỏ không phải swing point thật, và cố tìm trend trong một chart 15M thực chất đang là range (cần chờ breakout thay vì ép hướng)" },
+                { type: "text", text: "Năm lỗi hay gặp nhất khi đọc cấu trúc, và vì sao chúng nguy hiểm: (1) Cố nặn ra một xu hướng trên chart đang đi ngang lộn xộn — như ảnh trên cho thấy, hàng loạt nhãn HH/HL/LH/LL bị gán sai cho những dao động chỉ là nhiễu bên trong một range, trong khi hành động đúng đơn giản chỉ là chờ breakout thay vì ép hướng; đôi khi lệnh tốt nhất là không vào lệnh nào cả. (2) Bỏ qua khung lớn — một uptrend đẹp trên khung nhỏ chẳng có ý nghĩa gì nếu khung ngày đang hét lên downtrend; khung lớn luôn là 'sếp', không có ngoại lệ. (3) Coi BOS đầu tiên là đảo chiều chắc chắn — cần xác nhận, cần retest, cần follow-through, đừng vội vàng. (4) Làm phức tạp hoá vấn đề bằng mười chỉ báo để 'xác nhận' cấu trúc trong khi câu hỏi cốt lõi chỉ đơn giản là 'giá đang tạo đỉnh/đáy cao dần hay thấp dần' — nếu không trả lời rõ ràng được câu đó, tốt nhất đứng ngoài. (5) Trộn lẫn thiên hướng giữa các khung thời gian — long một setup 5 phút trong khi khung 4H đang bearish, hay short một LH trên khung 1H trong khi khung ngày đang bullish; giữ thiên hướng đồng nhất xuyên suốt các khung, nếu không sẽ bị 'nghiền' giữa hai làn sóng ngược chiều." },
+                { type: "text", text: "Trước mỗi lệnh, có thể tự hỏi 4 câu: Cấu trúc khung lớn (Daily/4H) hiện đang là gì — trend hay range, bullish hay bearish? Swing high/low gần nhất nằm ở đâu — đó là điểm neo tham chiếu. Cấu trúc đã bị phá hay vẫn còn nguyên — nếu vừa phá thì chờ xác nhận, nếu còn nguyên thì tìm setup thuận xu hướng. Và nếu vào lệnh ở đây, mức nào sẽ phủ nhận ý tưởng giao dịch — đó chính là điểm đặt stop loss, không có chuyện 'hy vọng giá quay lại'. Nếu không trả lời rõ ràng và nhanh được cả 4 câu này, tốt nhất là không vào lệnh. Market structure không dự đoán tương lai, nhưng nó cho biết bạn đang chơi trò gì trước khi bạn đặt cược một đồng nào — và đó là bộ lọc loại bỏ phần lớn các lệnh tệ trước khi chúng kịp gây thiệt hại." },
+            ],
+            imageCredit: "Hình minh hoạ trong bài do Godric (@elGodric) thực hiện, dùng lại với sự cho phép của tác giả.",
+        },
+    ];
+
+    function buildPost(post) {
+        var article = document.createElement("div");
+        article.className = "blog-post";
+
+        var cover = document.createElement("div");
+        cover.className = "blog-post-cover";
+        if (post.coverImg) {
+            var coverImg = document.createElement("img");
+            coverImg.src = post.coverImg;
+            coverImg.alt = post.title;
+            coverImg.loading = "lazy";
+            cover.appendChild(coverImg);
+        } else {
+            cover.innerHTML = post.cover;
+        }
+
+        var summary = document.createElement("button");
+        summary.className = "blog-post-summary";
+        summary.type = "button";
+
+        var title = document.createElement("h3");
+        title.className = "blog-post-title";
+        title.textContent = post.title;
+
+        var hint = document.createElement("span");
+        hint.className = "blog-post-hint";
+        hint.textContent = "Bấm để xem chi tiết ▾";
+
+        summary.appendChild(title);
+        summary.appendChild(hint);
+
+        var detail = document.createElement("div");
+        detail.className = "blog-post-detail hidden";
+
+        var tagsRow = document.createElement("div");
+        tagsRow.className = "blog-post-tags";
+        post.tags.forEach(function (tag) {
+            var pill = document.createElement("span");
+            pill.className = "blog-tag";
+            pill.textContent = tag;
+            tagsRow.appendChild(pill);
+        });
+
+        var body = document.createElement("div");
+        body.className = "blog-post-body";
+        if (post.content) {
+            post.content.forEach(function (block) {
+                if (block.type === "image") {
+                    var figure = document.createElement("figure");
+                    figure.className = "blog-post-figure";
+                    var img = document.createElement("img");
+                    img.src = block.src;
+                    img.alt = block.alt || "";
+                    img.loading = "lazy";
+                    // Intrinsic size, so the figure's box is reserved before the file lands.
+                    // These vary per image (3:2, 16:9, 1.91:1), so one CSS aspect-ratio for
+                    // the lot would reserve the wrong height for most of them.
+                    if (block.w && block.h) {
+                        img.width = block.w;
+                        img.height = block.h;
+                    }
+                    figure.appendChild(img);
+                    body.appendChild(figure);
+                } else {
+                    var p = document.createElement("p");
+                    p.textContent = block.text;
+                    body.appendChild(p);
+                }
+            });
+        } else {
+            post.paragraphs.forEach(function (text) {
+                var p = document.createElement("p");
+                p.textContent = text;
+                body.appendChild(p);
+            });
+        }
+
+        var source = document.createElement("a");
+        source.className = "blog-post-source";
+        source.href = post.sourceUrl;
+        source.target = "_blank";
+        source.rel = "noopener";
+        source.textContent = "Đọc bài gốc: " + post.source + " ↗";
+
+        detail.appendChild(tagsRow);
+        detail.appendChild(body);
+        if (post.imageCredit) {
+            var credit = document.createElement("p");
+            credit.className = "blog-post-credit";
+            credit.textContent = post.imageCredit;
+            detail.appendChild(credit);
+        }
+        detail.appendChild(source);
+
+        summary.addEventListener("click", function () {
+            var expanded = !detail.classList.contains("hidden");
+            detail.classList.toggle("hidden", expanded);
+            hint.textContent = expanded ? "Bấm để xem chi tiết ▾" : "Ẩn bớt ▴";
+            article.classList.toggle("expanded", !expanded);
+        });
+
+        article.appendChild(cover);
+        article.appendChild(summary);
+        article.appendChild(detail);
+        return article;
+    }
+
+    /* Deferred until the tab is first shown. loading="lazy" does not help here: it defers
+       based on where an image sits relative to the viewport, and an image inside a
+       display:none view has no box to position, so the browser fetches it immediately —
+       2.1 MB of screenshots on first paint for a tab most visitors never open. */
+    var built = false;
+
+    function init() {
+        if (built) return;
+        built = true;
+        var list = document.getElementById("blog-list");
+        POSTS.forEach(function (post) {
+            list.appendChild(buildPost(post));
+        });
+    }
+
+    window.__initBlogView = init;
+})();

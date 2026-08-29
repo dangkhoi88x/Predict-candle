@@ -24,6 +24,10 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/wallet/nonce", "/api/auth/wallet/verify",
                                 "/api/auth/refresh", "/api/auth/logout").permitAll()
                         .requestMatchers("/api/auth/me").authenticated()
+                        // Writes to the shared Cloudinary account. Authentication is the
+                        // outer gate; MediaController additionally checks the caller's
+                        // wallet against candles.media.admin-wallets.
+                        .requestMatchers("/api/media/**").authenticated()
                         .anyRequest().permitAll())
                 .addFilterBefore(new JwtAuthenticationFilter(jwtService), UsernamePasswordAuthenticationFilter.class)
                 .build();

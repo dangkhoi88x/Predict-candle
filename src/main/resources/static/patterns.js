@@ -1,12 +1,12 @@
 (function () {
     "use strict";
 
-    var UP = "#34d399";
-    var DOWN = "#fb7185";
-    var ACCENT = "#4f8cff";
-    var GRID = "#7d7d82";
-    var HOVER_BADGE_BG = "#f2f2f2";
-    var HOVER_BADGE_TEXT = "#141414";
+    var UP = "var(--up)";
+    var DOWN = "var(--down)";
+    var ACCENT = "var(--accent)";
+    var GRID = "var(--muted)";
+    var HOVER_BADGE_BG = "var(--text)";
+    var HOVER_BADGE_TEXT = "var(--panel)";
     var SVG_NS = "http://www.w3.org/2000/svg";
 
     var selectedAsset = "BTCUSDT";
@@ -480,7 +480,8 @@
 
     function init() {
         var grid = document.getElementById("pattern-grid");
-        var filters = Array.prototype.slice.call(document.querySelectorAll("#pattern-filters .pattern-filter"));
+        var filters = Array.prototype.slice.call(document.querySelectorAll("#pattern-filters .pill-option"));
+        window.CandlePill.attach(document.getElementById("pattern-filters"), ".pill-option");
         var cards = PATTERNS.map(function (p) {
             var card = buildCard(p);
             grid.appendChild(card);
@@ -498,7 +499,8 @@
             });
         });
 
-        var assetButtons = Array.prototype.slice.call(document.querySelectorAll("#pattern-asset-toggle .pattern-filter"));
+        var assetButtons = Array.prototype.slice.call(document.querySelectorAll("#pattern-asset-pill .pill-option"));
+        window.CandlePill.attach(document.getElementById("pattern-asset-pill"), ".pill-option");
         assetButtons.forEach(function (btn) {
             btn.addEventListener("click", function () {
                 if (btn.classList.contains("active")) return;

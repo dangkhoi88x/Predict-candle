@@ -6,13 +6,13 @@
     var CANDLE_STEP_SECONDS = 3600;
     var SVG_NS = "http://www.w3.org/2000/svg";
 
-    var UP = "#34d399";
-    var DOWN = "#fb7185";
-    var GRID = "#7d7d82";
-    var SURFACE = "#141414";
-    var ACCENT = "#4f8cff";
-    var HOVER_BADGE_BG = "#f2f2f2";
-    var HOVER_BADGE_TEXT = "#141414";
+    var UP = "var(--up)";
+    var DOWN = "var(--down)";
+    var GRID = "var(--muted)";
+    var SURFACE = "var(--panel)";
+    var ACCENT = "var(--accent)";
+    var HOVER_BADGE_BG = "var(--text)";
+    var HOVER_BADGE_TEXT = "var(--panel)";
 
     var W = 1000, H = 300;
     var PAD = { top: 12, right: 54, bottom: 22, left: 6 };
@@ -36,12 +36,13 @@
         streak: document.getElementById("streak"),
         bestStreak: document.getElementById("best-streak"),
         accuracy: document.getElementById("accuracy"),
-        assetButtons: Array.prototype.slice.call(document.querySelectorAll(".asset-btn")),
+        assetButtons: Array.prototype.slice.call(document.querySelectorAll("#asset-pill .pill-option")),
         marketSymbol: document.getElementById("market-symbol"),
         marketName: document.getElementById("market-name"),
         marketPrice: document.getElementById("market-price"),
         marketDelta: document.getElementById("market-delta"),
         marketOhlc: document.getElementById("market-ohlc"),
+        marketCard: document.querySelector(".market-card"),
         soundToggle: document.getElementById("sound-toggle"),
     };
 
@@ -136,58 +137,6 @@
         var out = [];
         for (var v = first; v <= hi + step * 0.001; v += step) out.push(Math.round(v / step) * step);
         return out;
-    }
-
-    // ---------- odometer-style rolling number (vanilla port of RollingNumber) ----------
-
-    function shapeOf(text) {
-        var out = "";
-        for (var i = 0; i < text.length; i++) {
-            var c = text[i];
-            out += (c >= "0" && c <= "9") ? "D" : c;
-        }
-        return out;
-    }
-
-    function updateRollingText(container, text) {
-        var shape = shapeOf(text);
-        if (container.dataset.shape !== shape) {
-            container.innerHTML = "";
-            for (var i = 0; i < text.length; i++) {
-                var ch = text[i];
-                if (ch >= "0" && ch <= "9") {
-                    var digit = document.createElement("span");
-                    digit.className = "digit";
-                    var strip = document.createElement("span");
-                    strip.className = "digit-strip";
-                    for (var d = 0; d <= 9; d++) {
-                        var s = document.createElement("span");
-                        s.textContent = String(d);
-                        strip.appendChild(s);
-                    }
-                    digit.appendChild(strip);
-                    container.appendChild(digit);
-                } else {
-                    var lit = document.createElement("span");
-                    lit.className = "lit";
-                    lit.textContent = ch;
-                    container.appendChild(lit);
-                }
-            }
-            container.dataset.shape = shape;
-        }
-        var children = container.children;
-        for (var j = 0; j < text.length; j++) {
-            var c = text[j];
-            var node = children[j];
-            if (!node) continue;
-            if (c >= "0" && c <= "9") {
-                var stripEl = node.querySelector(".digit-strip");
-                stripEl.style.transform = "translateY(-" + c + "em)";
-            } else if (node.textContent !== c) {
-                node.textContent = c;
-            }
-        }
     }
 
     // ---------- chart ----------
@@ -318,11 +267,11 @@
 
             var group = svgEl("g", {});
             group.style.opacity = dim ? "0.35" : "1";
-            group.style.transition = "opacity 150ms ease-out";
+            group.style.transition = "opacity var(--duration-fast) var(--ease-out)";
             if (i >= newFrom) {
                 group.style.transformBox = "fill-box";
                 group.style.transformOrigin = "bottom center";
-                group.style.animation = "candle-rise 380ms cubic-bezier(0.22, 1, 0.36, 1) both";
+                group.style.animation = "candle-rise var(--duration-enter) var(--ease-out) both";
             }
 
             group.appendChild(svgEl("line", {
@@ -441,8 +390,8 @@
         var up = delta >= 0;
         var color = up ? UP : DOWN;
 
-        updateRollingText(el.marketPrice, formatMoney(shown.close, meta.compact));
-        el.marketDelta.textContent = formatSignedPct(delta);
+        window.CandleRolling.update(el.marketPrice, formatMoney(shown.close, meta.compact));
+        window.CandleRolling.update(el.marketDelta, formatSignedPct(delta));
         el.marketDelta.style.color = color;
         el.marketDelta.style.background = "color-mix(in srgb, " + color + " 14%, transparent)";
 
@@ -467,6 +416,7 @@
     }
 
     function resetChart(asset) {
+        el.marketCard.classList.add("is-loading");
         chart.asset = asset;
         chart.candles = [];
         chart.hoverIndex = null;
@@ -526,10 +476,10 @@
 
     function renderStats() {
         var s = state.stats;
-        el.score.textContent = s.score;
-        el.streak.textContent = s.streak;
-        el.bestStreak.textContent = s.bestStreak;
-        el.accuracy.textContent = s.total === 0 ? "–" : Math.round((s.correct / s.total) * 100) + "%";
+        window.CandleRolling.update(el.score, s.score);
+        window.CandleRolling.update(el.streak, s.streak);
+        window.CandleRolling.update(el.bestStreak, s.bestStreak);
+        window.CandleRolling.update(el.accuracy, s.total === 0 ? "–" : Math.round((s.correct / s.total) * 100) + "%");
     }
 
     function setStatus(text) {
@@ -562,6 +512,7 @@
             state.visibleCandles = data.candles;
             state.totalGuesses = data.totalGuesses;
             chart.baseTime = Math.floor(Date.now() / 1000) - data.candles.length * CANDLE_STEP_SECONDS;
+            el.marketCard.classList.remove("is-loading");
             setChartData(data.candles.slice());
 
             el.guessLong.disabled = false;
@@ -573,6 +524,7 @@
             state.awaitingGuess = true;
             setStatus("Nến tiếp theo sẽ là Long hay Short?");
         } catch (err) {
+            el.marketCard.classList.remove("is-loading");
             setStatus("Lỗi: " + err.message);
         }
     }
@@ -740,6 +692,8 @@
             loadRound();
         });
     });
+
+    window.CandlePill.attach(document.getElementById("asset-pill"), ".pill-option");
 
     initChart();
     renderStats();

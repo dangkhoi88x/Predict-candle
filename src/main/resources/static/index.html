@@ -4,12 +4,27 @@
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1"/>
     <title>Candle Guess</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com"/>
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap"/>
     <link rel="stylesheet" href="style.css"/>
+    <script>
+        // Runs before the first paint on purpose: applying the theme from JS after the body
+        // renders would flash the wrong palette on every page load.
+        (function () {
+            var theme = "dark";
+            try {
+                theme = localStorage.getItem("candles-theme")
+                    || (window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+            } catch (e) {
+                // Storage blocked (private mode / disabled cookies) — fall back to dark.
+            }
+            document.documentElement.setAttribute("data-theme", theme);
+        })();
+    </script>
 </head>
 <body>
+<div class="ticker hidden" id="ticker" aria-label="Giá các đồng coin vốn hóa lớn">
+    <div class="ticker-track" id="ticker-track"></div>
+</div>
+
 <nav class="top-nav">
     <div class="top-nav-inner">
         <span class="brand">🕯️ Candle Guess</span>
@@ -23,9 +38,12 @@
         </div>
         <div class="auth-area" id="auth-area">
             <span id="auth-error-msg" class="auth-error-msg hidden"></span>
+            <button id="theme-toggle" class="theme-toggle" type="button"
+                    aria-label="Chuyển giao diện sáng/tối" title="Chuyển giao diện sáng/tối"></button>
             <button id="auth-login-btn" class="ghost-btn" type="button">Kết nối ví</button>
             <div id="auth-user" class="auth-user hidden">
-                <span id="auth-display-name" class="auth-display-name"></span>
+                <button id="auth-display-name" class="auth-display-name" type="button"
+                        title="Xem chi tiết ví"></button>
                 <button id="auth-logout-btn" class="ghost-btn" type="button">Ngắt kết nối</button>
             </div>
         </div>
@@ -34,11 +52,11 @@
 
 <main id="view-game" class="view app">
     <div class="game-toolbar">
-        <div class="asset-picker">
-            <button class="asset-btn active" data-asset="BTCUSDT">BTC/USDT</button>
-            <button class="asset-btn" data-asset="ETHUSDT">ETH/USDT</button>
-            <button class="asset-btn" data-asset="BNBUSDT">BNB/USDT</button>
-            <button class="asset-btn" data-asset="SOLUSDT">SOL/USDT</button>
+        <div class="pill" id="asset-pill">
+            <button class="pill-option active" data-asset="BTCUSDT">BTC/USDT</button>
+            <button class="pill-option" data-asset="ETHUSDT">ETH/USDT</button>
+            <button class="pill-option" data-asset="BNBUSDT">BNB/USDT</button>
+            <button class="pill-option" data-asset="SOLUSDT">SOL/USDT</button>
         </div>
         <button id="sound-toggle" class="ghost-btn sound-toggle" type="button" aria-label="Bật/tắt âm thanh và rung">🔊</button>
     </div>
@@ -46,19 +64,19 @@
     <div class="scoreboard">
         <div class="stat">
             <span class="stat-label">Điểm</span>
-            <span class="stat-value" id="score">0</span>
+            <span class="stat-value rolling" id="score">0</span>
         </div>
         <div class="stat">
             <span class="stat-label">Streak</span>
-            <span class="stat-value" id="streak">0</span>
+            <span class="stat-value rolling" id="streak">0</span>
         </div>
         <div class="stat">
             <span class="stat-label">Best streak</span>
-            <span class="stat-value" id="best-streak">0</span>
+            <span class="stat-value rolling" id="best-streak">0</span>
         </div>
         <div class="stat">
             <span class="stat-label">Tỉ lệ đúng</span>
-            <span class="stat-value" id="accuracy">–</span>
+            <span class="stat-value rolling" id="accuracy">–</span>
         </div>
     </div>
 
@@ -72,14 +90,42 @@
                     <span class="market-name" id="market-name">Bitcoin</span>
                 </div>
                 <div class="market-price-row">
-                    <span class="market-price" id="market-price" aria-live="polite"></span>
-                    <span class="market-delta" id="market-delta"></span>
+                    <span class="market-price rolling" id="market-price" aria-live="polite"></span>
+                    <span class="market-delta rolling" id="market-delta"></span>
+                    <span class="skeleton market-price-skeleton" aria-hidden="true"></span>
+                    <span class="skeleton market-delta-skeleton" aria-hidden="true"></span>
                 </div>
                 <div class="market-ohlc" id="market-ohlc" aria-hidden="true"></div>
             </div>
         </div>
 
         <div class="chart" id="chart"></div>
+        <div class="chart-skeleton" aria-hidden="true">
+            <span class="skeleton"></span>
+            <span class="skeleton"></span>
+            <span class="skeleton"></span>
+            <span class="skeleton"></span>
+            <span class="skeleton"></span>
+            <span class="skeleton"></span>
+            <span class="skeleton"></span>
+            <span class="skeleton"></span>
+            <span class="skeleton"></span>
+            <span class="skeleton"></span>
+            <span class="skeleton"></span>
+            <span class="skeleton"></span>
+            <span class="skeleton"></span>
+            <span class="skeleton"></span>
+            <span class="skeleton"></span>
+            <span class="skeleton"></span>
+            <span class="skeleton"></span>
+            <span class="skeleton"></span>
+            <span class="skeleton"></span>
+            <span class="skeleton"></span>
+            <span class="skeleton"></span>
+            <span class="skeleton"></span>
+            <span class="skeleton"></span>
+            <span class="skeleton"></span>
+        </div>
     </div>
 
     <div id="guess-progress" class="guess-progress hidden"></div>
@@ -103,9 +149,9 @@
         </div>
     </div>
 
-    <div class="asset-picker">
-        <button class="heatmap-subtab active" data-source="crypto">Crypto</button>
-        <button class="heatmap-subtab" data-source="sp500">S&amp;P 500</button>
+    <div class="pill" id="heatmap-source-pill">
+        <button class="pill-option active" data-source="crypto">Crypto</button>
+        <button class="pill-option" data-source="sp500">S&amp;P 500</button>
     </div>
 
     <p id="heatmap-status" class="status"></p>
@@ -123,8 +169,8 @@
         <div class="heatmap-detail-head">
             <span id="heatmap-detail-name" class="heatmap-detail-name"></span>
             <div class="heatmap-detail-stats">
-                <span id="heatmap-detail-price" class="heatmap-detail-price"></span>
-                <span id="heatmap-detail-delta" class="heatmap-detail-delta"></span>
+                <span id="heatmap-detail-price" class="heatmap-detail-price rolling"></span>
+                <span id="heatmap-detail-delta" class="heatmap-detail-delta rolling"></span>
             </div>
         </div>
         <div id="heatmap-detail-chart" class="heatmap-detail-chart"></div>
@@ -137,20 +183,22 @@
         <h2>Mẫu Nến</h2>
     </div>
 
-    <div class="pattern-filters" id="pattern-filters">
-        <button class="pattern-filter active" data-filter="all">Tất cả</button>
-        <button class="pattern-filter" data-filter="bullish">Tăng</button>
-        <button class="pattern-filter" data-filter="bearish">Giảm</button>
-        <button class="pattern-filter" data-filter="reversal">Đảo chiều</button>
-        <button class="pattern-filter" data-filter="continuation">Tiếp diễn</button>
+    <div class="pill pattern-filters" id="pattern-filters">
+        <button class="pill-option active" data-filter="all">Tất cả</button>
+        <button class="pill-option" data-filter="bullish">Tăng</button>
+        <button class="pill-option" data-filter="bearish">Giảm</button>
+        <button class="pill-option" data-filter="reversal">Đảo chiều</button>
+        <button class="pill-option" data-filter="continuation">Tiếp diễn</button>
     </div>
 
     <div class="pattern-asset-toggle" id="pattern-asset-toggle">
         <span class="pattern-asset-label">Tìm ví dụ thật trên:</span>
-        <button class="pattern-filter active" data-asset="BTCUSDT">BTC/USDT</button>
-        <button class="pattern-filter" data-asset="ETHUSDT">ETH/USDT</button>
-        <button class="pattern-filter" data-asset="BNBUSDT">BNB/USDT</button>
-        <button class="pattern-filter" data-asset="SOLUSDT">SOL/USDT</button>
+        <div class="pill" id="pattern-asset-pill">
+            <button class="pill-option active" data-asset="BTCUSDT">BTC/USDT</button>
+            <button class="pill-option" data-asset="ETHUSDT">ETH/USDT</button>
+            <button class="pill-option" data-asset="BNBUSDT">BNB/USDT</button>
+            <button class="pill-option" data-asset="SOLUSDT">SOL/USDT</button>
+        </div>
     </div>
 
     <div id="pattern-grid" class="pattern-grid"></div>
@@ -162,20 +210,22 @@
         <h2>Mẫu Hình Kỹ Thuật</h2>
     </div>
 
-    <div class="pattern-filters" id="technical-filters">
-        <button class="pattern-filter active" data-filter="all">Tất cả</button>
-        <button class="pattern-filter" data-filter="bullish">Tăng</button>
-        <button class="pattern-filter" data-filter="bearish">Giảm</button>
-        <button class="pattern-filter" data-filter="reversal">Đảo chiều</button>
-        <button class="pattern-filter" data-filter="continuation">Tiếp diễn</button>
+    <div class="pill pattern-filters" id="technical-filters">
+        <button class="pill-option active" data-filter="all">Tất cả</button>
+        <button class="pill-option" data-filter="bullish">Tăng</button>
+        <button class="pill-option" data-filter="bearish">Giảm</button>
+        <button class="pill-option" data-filter="reversal">Đảo chiều</button>
+        <button class="pill-option" data-filter="continuation">Tiếp diễn</button>
     </div>
 
     <div class="pattern-asset-toggle" id="technical-asset-toggle">
         <span class="pattern-asset-label">Tìm ví dụ thật trên:</span>
-        <button class="pattern-filter active" data-asset="BTCUSDT">BTC/USDT</button>
-        <button class="pattern-filter" data-asset="ETHUSDT">ETH/USDT</button>
-        <button class="pattern-filter" data-asset="BNBUSDT">BNB/USDT</button>
-        <button class="pattern-filter" data-asset="SOLUSDT">SOL/USDT</button>
+        <div class="pill" id="technical-asset-pill">
+            <button class="pill-option active" data-asset="BTCUSDT">BTC/USDT</button>
+            <button class="pill-option" data-asset="ETHUSDT">ETH/USDT</button>
+            <button class="pill-option" data-asset="BNBUSDT">BNB/USDT</button>
+            <button class="pill-option" data-asset="SOLUSDT">SOL/USDT</button>
+        </div>
     </div>
 
     <div id="technical-grid" class="pattern-grid technical-grid"></div>
@@ -200,8 +250,11 @@
     <p class="heatmap-caption">Tóm tắt bằng lời riêng từ các bài chia sẻ đáng đọc trên X — không phải lời khuyên đầu tư, xem nguồn gốc ở mỗi bài.</p>
 </main>
 
-<script src="wallet-auth.js"></script>
+<script src="theme.js"></script>
+<script src="pill.js"></script>
+<script src="rolling.js"></script>
 <script src="auth.js"></script>
+<script src="ticker.js"></script>
 <script src="nav.js"></script>
 <script src="app.js"></script>
 <script src="treemap.js"></script>

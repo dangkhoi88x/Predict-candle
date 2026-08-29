@@ -5,11 +5,11 @@
 (function () {
     "use strict";
 
-    var UP = "#34d399";
-    var DOWN = "#fb7185";
-    var GRID = "#7d7d82";
-    var HOVER_BADGE_BG = "#f2f2f2";
-    var HOVER_BADGE_TEXT = "#141414";
+    var UP = "var(--up)";
+    var DOWN = "var(--down)";
+    var GRID = "var(--muted)";
+    var HOVER_BADGE_BG = "var(--text)";
+    var HOVER_BADGE_TEXT = "var(--panel)";
     var FLAT = [42, 43, 47];
     var VW = 1000, VH = 600;
     var SVG_NS = "http://www.w3.org/2000/svg";
@@ -190,7 +190,7 @@
         var formatPrice = opts.formatPrice || function (v) { return "$" + v.toFixed(2); };
         var vLine = svgEl("line", { y1: pad, y2: H - pad, stroke: GRID, "stroke-opacity": "0.55", "stroke-dasharray": "3 3" });
         var hLine = svgEl("line", { x1: pad, x2: W - pad, stroke: GRID, "stroke-opacity": "0.55", "stroke-dasharray": "3 3" });
-        var dot = svgEl("circle", { r: 4, fill: "#141414", stroke: color, "stroke-width": "2" });
+        var dot = svgEl("circle", { r: 4, fill: "var(--panel)", stroke: color, "stroke-width": "2" });
         var badgeRect = svgEl("rect", { rx: 4, fill: HOVER_BADGE_BG });
         var badgeText = svgEl("text", {
             "text-anchor": "middle", "dominant-baseline": "middle", "font-size": "10.5",

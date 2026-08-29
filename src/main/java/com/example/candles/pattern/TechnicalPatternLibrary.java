@@ -33,6 +33,9 @@ final class TechnicalPatternLibrary {
     private static final double CUP_MIN_DEPTH = 0.08;
     private static final double CUP_RIM_TOL = 0.05;
     private static final int CUP_MIN_WIDTH_CANDLES = 15;
+    private static final double BOS_TREND_MIN = 0.01;
+    private static final double SFP_MIN_SWEEP = 0.001;
+    private static final double SFP_MAX_SWEEP = 0.05;
     private static final double HANDLE_MAX_DEPTH_RATIO = 0.5;
     private static final int BREAKOUT_LOOKAHEAD = 80;
 
@@ -152,6 +155,40 @@ final class TechnicalPatternLibrary {
             double handleDepth = (rim2.price() - handleLow.price()) / rim2.price();
             if (handleDepth <= 0 || handleDepth > cupDepth * HANDLE_MAX_DEPTH_RATIO) return Optional.empty();
             return breakoutAbove(candles, handleLow.index(), Math.max(rim1.price(), rim2.price()), rim1.index());
+        }));
+
+        DEFINITIONS.put("bos-bearish", new TechnicalPatternDefinition((candles, pivots, i) -> {
+            if (!has(pivots, i, 5) || !seq(pivots, i, false, true, false, true, false)) return Optional.empty();
+            SwingPoint low0 = pivots.get(i), high1 = pivots.get(i + 1), low1 = pivots.get(i + 2),
+                    high2 = pivots.get(i + 3), higherLow = pivots.get(i + 4);
+            if (high2.price() <= high1.price() * (1 + BOS_TREND_MIN)) return Optional.empty();
+            if (higherLow.price() <= low1.price() * (1 + BOS_TREND_MIN)) return Optional.empty();
+            return breakoutBelow(candles, higherLow.index(), higherLow.price(), low0.index());
+        }));
+
+        DEFINITIONS.put("bos-bullish", new TechnicalPatternDefinition((candles, pivots, i) -> {
+            if (!has(pivots, i, 5) || !seq(pivots, i, true, false, true, false, true)) return Optional.empty();
+            SwingPoint high0 = pivots.get(i), low1 = pivots.get(i + 1), high1 = pivots.get(i + 2),
+                    low2 = pivots.get(i + 3), lowerHigh = pivots.get(i + 4);
+            if (low2.price() >= low1.price() * (1 - BOS_TREND_MIN)) return Optional.empty();
+            if (lowerHigh.price() >= high1.price() * (1 - BOS_TREND_MIN)) return Optional.empty();
+            return breakoutAbove(candles, lowerHigh.index(), lowerHigh.price(), high0.index());
+        }));
+
+        DEFINITIONS.put("sfp-bullish", new TechnicalPatternDefinition((candles, pivots, i) -> {
+            if (!has(pivots, i, 3) || !seq(pivots, i, false, true, false)) return Optional.empty();
+            SwingPoint low1 = pivots.get(i), high1 = pivots.get(i + 1), low2 = pivots.get(i + 2);
+            double undercut = (low1.price() - low2.price()) / low1.price();
+            if (undercut <= SFP_MIN_SWEEP || undercut > SFP_MAX_SWEEP) return Optional.empty();
+            return breakoutAbove(candles, low2.index(), low1.price(), low1.index());
+        }));
+
+        DEFINITIONS.put("sfp-bearish", new TechnicalPatternDefinition((candles, pivots, i) -> {
+            if (!has(pivots, i, 3) || !seq(pivots, i, true, false, true)) return Optional.empty();
+            SwingPoint high1 = pivots.get(i), low1 = pivots.get(i + 1), high2 = pivots.get(i + 2);
+            double overshoot = (high2.price() - high1.price()) / high1.price();
+            if (overshoot <= SFP_MIN_SWEEP || overshoot > SFP_MAX_SWEEP) return Optional.empty();
+            return breakoutBelow(candles, high2.index(), high1.price(), high1.index());
         }));
     }
 

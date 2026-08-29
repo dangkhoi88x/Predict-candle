@@ -7,9 +7,12 @@
         heatmap: document.getElementById("view-heatmap"),
         patterns: document.getElementById("view-patterns"),
         technical: document.getElementById("view-technical"),
+        psychology: document.getElementById("view-psychology"),
+        blog: document.getElementById("view-blog"),
     };
     var onFirstShow = {
         heatmap: function () { window.__initHeatmapView && window.__initHeatmapView(); },
+        blog: function () { window.__initBlogView && window.__initBlogView(); },
     };
 
     tabs.forEach(function (tab) {
@@ -29,4 +32,6 @@
             if (onFirstShow[target]) onFirstShow[target]();
         });
     });
+
+    window.CandlePill.attach(document.querySelector(".nav-tabs"), ".nav-tab");
 })();

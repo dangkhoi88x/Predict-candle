@@ -1,3 +1,10 @@
+server:
+  compression:
+    enabled: true
+    # woff2 and the jpegs are already compressed; re-compressing them only burns CPU.
+    mime-types: text/html,text/css,text/javascript,application/javascript,application/json,image/svg+xml
+    min-response-size: 1024
+
 spring:
   application:
     name: Candles
@@ -9,7 +16,12 @@ spring:
     resources:
       cache:
         cachecontrol:
-          no-store: true
+          # no-cache, not no-store. "no-store" forbids keeping a copy at all, so every visit
+          # re-downloaded the whole front end — 4.4 MB, most of it the wallet bundle.
+          # "no-cache" still guarantees freshness: the browser keeps its copy but must
+          # revalidate before using it, so an edited file arrives immediately and an
+          # unchanged one costs a 304 with an empty body instead of the file.
+          no-cache: true
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5544/candles}
     username: ${DB_USERNAME:candles}
@@ -32,6 +44,10 @@ candles:
       secure: ${AUTH_COOKIE_SECURE:false}
   media:
     max-image-size-bytes: ${MEDIA_MAX_IMAGE_SIZE_BYTES:10485760}
+    # Wallet addresses allowed to upload/delete media, comma-separated. Empty by default:
+    # these endpoints write to the shared Cloudinary account, so an unconfigured allowlist
+    # closes them rather than leaving them open to anyone who connected a wallet.
+    admin-wallets: ${MEDIA_ADMIN_WALLETS:}
     cloudinary:
       cloud-name: ${CLOUDINARY_CLOUD_NAME:}
       api-key: ${CLOUDINARY_API_KEY:}

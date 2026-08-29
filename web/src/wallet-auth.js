@@ -59,6 +59,12 @@ appKit.subscribeState((state) => {
 
 let eip155Provider = null;
 let signedInAddress = null; // address we've already completed the sign-in flow for
+// AppKit emits account updates repeatedly while it fills in the connector id, balance,
+// profile name, etc. Without this guard each emission started its own sign-in: every run
+// requested a fresh nonce, which overwrote the previous one server-side, so the signature
+// from run N was checked against run N+1's nonce and always failed with "signature does not
+// recover" / "no pending nonce" — and the wallet showed a sign prompt per run.
+let signInInFlight = false;
 
 appKit.subscribeProviders((state) => {
     eip155Provider = state["eip155"];
@@ -72,10 +78,12 @@ appKit.subscribeAccount((state) => {
     clearConnectWatchdog();
     var address = state.address.toLowerCase();
     if (address === signedInAddress) return; // already signed in for this address
+    if (signInInFlight) return; // a sign-in is already running for this connection
     signInWithWallet(address);
 });
 
 async function signInWithWallet(address) {
+    signInInFlight = true;
     try {
         var nonceRes = await fetch(API_BASE + "/wallet/nonce?address=" + address);
         if (!nonceRes.ok) throw new Error("Không lấy được nonce từ máy chủ.");
@@ -88,7 +96,10 @@ async function signInWithWallet(address) {
                 params: [hexlify(toUtf8Bytes(nonceBody.message)), address],
             });
         } catch (signError) {
-            throw new Error("Bạn đã từ chối yêu cầu ký, hoặc ví báo lỗi khi ký.");
+            console.error("[CandleWallet] personal_sign failed:", signError);
+            var detail = signError && (signError.message || (signError.error && signError.error.message));
+            var code = signError && (signError.code || (signError.error && signError.error.code));
+            throw new Error("Ký thất bại" + (detail ? ": " + detail : "") + (code !== undefined ? " (mã " + code + ")" : "") + ".");
         }
 
         var verifyRes = await fetch(API_BASE + "/wallet/verify", {
@@ -113,6 +124,12 @@ async function signInWithWallet(address) {
         if (window.CandleAuth) {
             window.CandleAuth.showError((e && e.message) || "Đăng nhập bằng ví thất bại. Vui lòng thử lại.");
         }
+    } finally {
+        signInInFlight = false;
+        // Close the modal ourselves rather than trusting AppKit to do it. While it is open
+        // it covers the whole viewport with pointer-events:auto, so a modal left behind by
+        // the signing step silently swallows every click on the game below it.
+        appKit.close();
     }
 }
 
@@ -125,5 +142,23 @@ window.CandleWallet = {
         clearConnectWatchdog();
         signedInAddress = null;
         appKit.disconnect();
+    },
+    /**
+     * Opens AppKit's own account screen (balance, network, copy address, disconnect).
+     * Our backend session outlives the wallet connection — the refresh cookie can restore a
+     * session on page load before/without AppKit reconnecting — so check AppKit's state
+     * first, otherwise open() would drop the user on the "Connect" screen with no
+     * explanation of why their wallet details aren't showing.
+     */
+    openAccount: function () {
+        if (!appKit.getIsConnectedState()) {
+            if (window.CandleAuth) {
+                window.CandleAuth.showError("Ví chưa được kết nối lại trong phiên này. Hãy kết nối ví để xem chi tiết.");
+            }
+            armConnectWatchdog();
+            appKit.open();
+            return;
+        }
+        appKit.open({ view: "Account" });
     },
 };

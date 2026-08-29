@@ -11,12 +11,12 @@
 (function () {
     "use strict";
 
-    var UP = "#34d399";
-    var DOWN = "#fb7185";
-    var ACCENT = "#4f8cff";
-    var GRID = "#7d7d82";
-    var HOVER_BADGE_BG = "#f2f2f2";
-    var HOVER_BADGE_TEXT = "#141414";
+    var UP = "var(--up)";
+    var DOWN = "var(--down)";
+    var ACCENT = "var(--accent)";
+    var GRID = "var(--muted)";
+    var HOVER_BADGE_BG = "var(--text)";
+    var HOVER_BADGE_TEXT = "var(--panel)";
     var SVG_NS = "http://www.w3.org/2000/svg";
 
     var selectedAsset = "BTCUSDT";
@@ -204,6 +204,58 @@
                 "Mẫu hình tiếp diễn tăng — xác nhận khi giá phá vỡ lên trên đỉnh của cốc",
             ],
             points: [110, 100, 92, 86, 84, 86, 92, 100, 108, 104, 106, 114],
+        },
+        {
+            id: "bos-bearish",
+            name: "Break of Structure - Giảm (Bearish BOS)",
+            tags: ["bearish", "reversal"],
+            summary: "Giá phá vỡ xuống dưới đáy cao gần nhất (Higher Low) giữa xu hướng tăng — cảnh báo phe mua có thể đang mất quyền kiểm soát.",
+            howTo: [
+                "Xuất hiện trong xu hướng tăng đã hình thành ít nhất 2 đỉnh cao dần (Higher High) và đáy cao dần (Higher Low)",
+                "BOS được xác nhận khi giá đóng cửa phá xuống dưới đáy cao (Higher Low) gần nhất",
+                "Đây là cảnh báo cấu trúc, không phải tín hiệu vào lệnh ngay — nên chờ giá hồi lại vùng vừa phá vỡ và bị từ chối để tăng độ tin cậy",
+                "Nếu sau đó giá tạo thêm một đỉnh thấp hơn (Lower High), cấu trúc chính thức chuyển sang xu hướng giảm",
+            ],
+            points: [90, 106, 98, 116, 104, 124, 92],
+        },
+        {
+            id: "bos-bullish",
+            name: "Break of Structure - Tăng (Bullish BOS)",
+            tags: ["bullish", "reversal"],
+            summary: "Giá phá vỡ lên trên đỉnh thấp gần nhất (Lower High) giữa xu hướng giảm — cảnh báo phe bán có thể đang mất quyền kiểm soát.",
+            howTo: [
+                "Xuất hiện trong xu hướng giảm đã hình thành ít nhất 2 đáy thấp dần (Lower Low) và đỉnh thấp dần (Lower High)",
+                "BOS được xác nhận khi giá đóng cửa phá lên trên đỉnh thấp (Lower High) gần nhất",
+                "Đây là cảnh báo cấu trúc, không phải tín hiệu vào lệnh ngay — nên chờ giá hồi lại vùng vừa phá vỡ và được giữ vững để tăng độ tin cậy",
+                "Nếu sau đó giá tạo thêm một đáy cao hơn (Higher Low), cấu trúc chính thức chuyển sang xu hướng tăng",
+            ],
+            points: [110, 94, 102, 84, 96, 76, 104],
+        },
+        {
+            id: "sfp-bullish",
+            name: "Liquidity Sweep - Đáy Giả (Bullish SFP)",
+            tags: ["bullish", "reversal"],
+            summary: "Giá xuyên nhẹ qua đáy cũ để quét thanh khoản (dừng lỗ của phe bán khống), rồi đảo chiều tăng mạnh trở lại trên đáy đó — bẫy phe bán.",
+            howTo: [
+                "Xuất hiện tại một đáy (swing low) đã hình thành trước đó",
+                "Giá phá xuống dưới đáy cũ một chút (thường chỉ vài %) — đây là hành động 'quét thanh khoản', không phải phá vỡ thật",
+                "Ngay sau đó giá đảo chiều nhanh, đóng cửa trở lại phía trên đáy cũ trong vài nến — xác nhận đây là cái bẫy (trap), không phải breakdown",
+                "Trader mắc bẫy (short tại đáy giả) buộc phải đóng lệnh, tạo thêm lực mua cho đà tăng tiếp theo",
+            ],
+            points: [112, 90, 98, 85, 106],
+        },
+        {
+            id: "sfp-bearish",
+            name: "Liquidity Sweep - Đỉnh Giả (Bearish SFP)",
+            tags: ["bearish", "reversal"],
+            summary: "Giá xuyên nhẹ qua đỉnh cũ để quét thanh khoản (dừng lỗ của phe mua), rồi đảo chiều giảm mạnh trở lại dưới đỉnh đó — bẫy phe mua.",
+            howTo: [
+                "Xuất hiện tại một đỉnh (swing high) đã hình thành trước đó",
+                "Giá phá lên trên đỉnh cũ một chút — hành động 'quét thanh khoản', không phải breakout thật",
+                "Ngay sau đó giá đảo chiều nhanh, đóng cửa trở lại phía dưới đỉnh cũ trong vài nến — xác nhận đây là cái bẫy (trap), không phải breakout",
+                "Trader mắc bẫy (long tại đỉnh giả) buộc phải đóng lệnh, tạo thêm lực bán cho đà giảm tiếp theo",
+            ],
+            points: [88, 110, 100, 118, 94],
         },
     ];
 
@@ -447,7 +499,8 @@
 
     function init() {
         var grid = document.getElementById("technical-grid");
-        var filters = Array.prototype.slice.call(document.querySelectorAll("#technical-filters .pattern-filter"));
+        var filters = Array.prototype.slice.call(document.querySelectorAll("#technical-filters .pill-option"));
+        window.CandlePill.attach(document.getElementById("technical-filters"), ".pill-option");
         var cards = TECHNICAL_PATTERNS.map(function (p) {
             var card = buildCard(p);
             grid.appendChild(card);
@@ -465,7 +518,8 @@
             });
         });
 
-        var assetButtons = Array.prototype.slice.call(document.querySelectorAll("#technical-asset-toggle .pattern-filter"));
+        var assetButtons = Array.prototype.slice.call(document.querySelectorAll("#technical-asset-pill .pill-option"));
+        window.CandlePill.attach(document.getElementById("technical-asset-pill"), ".pill-option");
         assetButtons.forEach(function (btn) {
             btn.addEventListener("click", function () {
                 if (btn.classList.contains("active")) return;

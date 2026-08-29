@@ -3,6 +3,11 @@
  * wallet-auth.js (built from web/ via Vite, since the Reown AppKit SDK needs a bundler) — that
  * script calls window.CandleAuth.applySession(...) once the backend verifies the signature.
  *
+ * That bundle is 4 MB (1.1 MB over the wire) and initialises Reown AppKit the moment it runs,
+ * which also fires off requests to three of their hosts. Loading it up front made every
+ * visitor pay for it, including the ones who never touch a wallet — so it is fetched on the
+ * first gesture that actually needs it, and window.CandleWallet does not exist before then.
+ *
  * The access token lives only in memory (never localStorage — smaller XSS blast radius). The
  * refresh token is an HttpOnly cookie the browser sends automatically, so on page load we
  * silently POST /api/auth/refresh to recover a session without asking the user to reconnect.
@@ -23,6 +28,47 @@
     var displayNameEl = document.getElementById("auth-display-name");
     var errorEl = document.getElementById("auth-error-msg");
     var errorHideTimer = null;
+
+    /* Injecting a script tag rather than import()ing: the bundle is built as an IIFE that
+       assigns window.CandleWallet, so there is no module to import. The promise is cached so
+       repeated clicks share one download, and cleared on failure so a retry can succeed. */
+    var walletLoader = null;
+
+    function loadWallet() {
+        if (window.CandleWallet) return Promise.resolve(window.CandleWallet);
+        if (walletLoader) return walletLoader;
+
+        walletLoader = new Promise(function (resolve, reject) {
+            var script = document.createElement("script");
+            script.src = "wallet-auth.js";
+            script.onload = function () {
+                if (window.CandleWallet) resolve(window.CandleWallet);
+                else reject(new Error("Thư viện ví tải xong nhưng không khởi tạo được."));
+            };
+            script.onerror = function () {
+                walletLoader = null;
+                reject(new Error("Không tải được thư viện ví. Kiểm tra kết nối mạng rồi thử lại."));
+            };
+            document.head.appendChild(script);
+        });
+        return walletLoader;
+    }
+
+    /* The download is around 1.1 MB, so on a phone the gap between the click and the modal is
+       long enough that an unchanged button reads as broken. */
+    async function withWallet(button, run) {
+        var label = button.textContent;
+        button.disabled = true;
+        if (button === loginBtn) button.textContent = "Đang tải…";
+        try {
+            run(await loadWallet());
+        } catch (e) {
+            showError(e.message);
+        } finally {
+            button.disabled = false;
+            button.textContent = label;
+        }
+    }
 
     function showError(message) {
         errorEl.textContent = message;
@@ -76,7 +122,10 @@
     }
 
     loginBtn.addEventListener("click", function () {
-        if (window.CandleWallet) window.CandleWallet.connect();
+        withWallet(loginBtn, function (wallet) { wallet.connect(); });
+    });
+    displayNameEl.addEventListener("click", function () {
+        withWallet(displayNameEl, function (wallet) { wallet.openAccount(); });
     });
     logoutBtn.addEventListener("click", logout);
 
