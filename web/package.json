@@ -1,0 +1,17 @@
+{
+  "name": "candles-wallet-auth",
+  "private": true,
+  "version": "0.0.1",
+  "description": "Bundles the Reown AppKit wallet-login widget into a plain <script> file for the static Candles frontend.",
+  "scripts": {
+    "build": "vite build"
+  },
+  "dependencies": {
+    "@reown/appkit": "^1.8.21",
+    "@reown/appkit-adapter-ethers": "^1.8.21",
+    "ethers": "^6.13.2"
+  },
+  "devDependencies": {
+    "vite": "^7.2.7"
+  }
+}

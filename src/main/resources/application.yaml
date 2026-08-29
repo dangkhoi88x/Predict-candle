@@ -23,6 +23,13 @@ spring:
         format_sql: true
 
 candles:
+  auth:
+    jwt:
+      secret: ${AUTH_JWT_SECRET:dev-only-secret-change-me-0123456789abcdef0123456789abcdef}
+      access-token-ttl: PT15M
+      refresh-token-ttl: P30D
+    cookie:
+      secure: ${AUTH_COOKIE_SECURE:false}
   media:
     max-image-size-bytes: ${MEDIA_MAX_IMAGE_SIZE_BYTES:10485760}
     cloudinary:
