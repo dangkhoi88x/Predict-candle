@@ -9,6 +9,7 @@ import com.example.candles.round.RoundSelection;
 import com.example.candles.round.RoundSelectionService;
 import com.example.candles.round.RoundToken;
 import com.example.candles.round.RoundTokenService;
+import com.example.candles.stats.GuessResultService;
 import jakarta.validation.Valid;
 import java.util.Collections;
 import java.util.List;
@@ -27,15 +28,18 @@ public class PracticeController {
     private final RoundTokenService roundTokenService;
     private final AssetRepository assetRepository;
     private final CandlesProperties properties;
+    private final GuessResultService guessResultService;
 
     public PracticeController(RoundSelectionService roundSelectionService,
                                RoundTokenService roundTokenService,
                                AssetRepository assetRepository,
-                               CandlesProperties properties) {
+                               CandlesProperties properties,
+                               GuessResultService guessResultService) {
         this.roundSelectionService = roundSelectionService;
         this.roundTokenService = roundTokenService;
         this.assetRepository = assetRepository;
         this.properties = properties;
+        this.guessResultService = guessResultService;
     }
 
     @GetMapping("/round")
@@ -68,6 +72,10 @@ public class PracticeController {
         Candle actual = roundSelectionService.answerCandleAt(
                 asset, token.timeframe(), token.startIndex(), token.guessNumber());
         Direction actualDirection = actual.getClose().compareTo(actual.getOpen()) >= 0 ? Direction.LONG : Direction.SHORT;
+
+        // No-op for anonymous play, which stays supported.
+        guessResultService.record(asset, token.timeframe(), token.startIndex(),
+                token.guessNumber(), guess, actualDirection);
 
         int totalGuesses = properties.round().guessesPerChart();
         boolean sessionComplete = token.guessNumber() >= totalGuesses;
