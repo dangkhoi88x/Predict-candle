@@ -1,0 +1,15 @@
+# Build context only needs pom.xml + src. Everything below is either rebuilt inside the
+# image, irrelevant to it, or must never enter it.
+target/
+web/node_modules/
+backup/
+.git/
+.github/
+.idea/
+.claude/
+.mvn/wrapper/maven-wrapper.jar
+.env
+*.iml
+CLAUDE.md
+README.md
+HELP.md
