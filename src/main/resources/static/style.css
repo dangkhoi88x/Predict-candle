@@ -442,6 +442,132 @@ h1, h2, h3 {
     border: 1px solid var(--panel);
 }
 
+
+/* ---- profile ------------------------------------------------------------------------- */
+.view-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.profile-wallet {
+    font: 500 12px var(--mono);
+    color: var(--muted);
+}
+
+.profile-note {
+    margin: 0 0 16px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 12.5px;
+    line-height: 1.5;
+}
+
+.profile-section {
+    margin: 24px 0 10px;
+    font-size: 13px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+}
+
+.profile-empty {
+    margin: 0;
+    color: var(--muted-2);
+    font-size: 13px;
+}
+
+.profile-assets {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 10px;
+}
+
+/* Name and rate on the first row, count beside the rate, bar spanning underneath. */
+.profile-asset {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    align-items: baseline;
+    gap: 4px 10px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+}
+
+.profile-asset-name { font: 600 13px var(--mono); }
+
+.profile-asset-rate {
+    font: 700 15px var(--mono);
+    font-variant-numeric: tabular-nums;
+}
+
+.profile-asset-count {
+    font: 500 11.5px var(--mono);
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.profile-asset-track {
+    grid-column: 1 / -1;
+    height: 4px;
+    margin-top: 6px;
+    border-radius: 999px;
+    background: var(--overlay-strong);
+    overflow: hidden;
+}
+
+.profile-asset-fill {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: var(--up);
+    transition: width var(--duration-normal) var(--ease-out);
+}
+
+.profile-recent {
+    display: grid;
+    gap: 6px;
+}
+
+.profile-guess {
+    display: grid;
+    grid-template-columns: auto auto 1fr auto;
+    align-items: baseline;
+    gap: 10px;
+    padding: 9px 12px;
+    border-radius: 9px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    font-size: 12.5px;
+}
+
+.profile-guess-mark { font-weight: 700; }
+.profile-guess.is-correct .profile-guess-mark { color: var(--up); }
+.profile-guess.is-wrong .profile-guess-mark { color: var(--down); }
+
+.profile-guess-symbol { font: 600 12px var(--mono); }
+.profile-guess-call { color: var(--muted); min-width: 0; }
+
+.profile-guess-when {
+    color: var(--muted-2);
+    font-size: 11.5px;
+    white-space: nowrap;
+}
+
+@media (max-width: 480px) {
+    /* The relative time is the first thing worth dropping when the row runs out of width. */
+    .profile-guess { grid-template-columns: auto auto 1fr; }
+    .profile-guess-when { display: none; }
+}
+
 /* Price ticker strip above the nav */
 .ticker {
     background: var(--panel-2);

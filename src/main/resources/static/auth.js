@@ -88,16 +88,27 @@
         }
     }
 
+    /* Broadcast rather than call into app.js directly: the scoreboard is not the only thing
+       that will care who is signed in, and auth.js should not have to know about any of them. */
+    function announceSession() {
+        document.dispatchEvent(new CustomEvent("candles:session", { detail: { user: state.user } }));
+    }
+
     function applySession(response) {
+        var wasSignedIn = !!state.user;
         state.accessToken = response.accessToken;
         state.user = { userId: response.userId, walletAddress: response.walletAddress, displayName: response.displayName };
         renderAuthUi();
+        // The 10-minute token renewal also lands here; only a real sign-in is news.
+        if (!wasSignedIn) announceSession();
     }
 
     function clearSession() {
+        var wasSignedIn = !!state.user;
         state.accessToken = null;
         state.user = null;
         renderAuthUi();
+        if (wasSignedIn) announceSession();
     }
 
     async function logout() {
@@ -121,6 +132,16 @@
         }
     }
 
+    /* The access token lasts 15 minutes. Practice endpoints are permitAll, so an expired one
+       does not fail loudly — the request still succeeds and the result quietly goes
+       unrecorded. Renewing well inside the window is cheaper than detecting that. */
+    var REFRESH_EVERY_MS = 10 * 60 * 1000;
+
+    setInterval(function () {
+        // Nothing to renew when logged out, and a background tab is not playing.
+        if (state.accessToken && !document.hidden) tryRestoreSession();
+    }, REFRESH_EVERY_MS);
+
     loginBtn.addEventListener("click", function () {
         withWallet(loginBtn, function (wallet) { wallet.connect(); });
     });
@@ -137,5 +158,20 @@
         showError: showError,
         getAccessToken: function () { return state.accessToken; },
         getUser: function () { return state.user; },
+
+        /**
+         * fetch() with the bearer token attached when there is one. Without a session it is
+         * a plain fetch, which is what keeps practice playable for anonymous visitors —
+         * callers do not branch on whether anyone is logged in.
+         */
+        authFetch: function (url, options) {
+            options = options || {};
+            if (state.accessToken) {
+                options.headers = Object.assign({}, options.headers, {
+                    Authorization: "Bearer " + state.accessToken,
+                });
+            }
+            return fetch(url, options);
+        },
     };
 })();

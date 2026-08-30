@@ -9,10 +9,17 @@
         technical: document.getElementById("view-technical"),
         psychology: document.getElementById("view-psychology"),
         blog: document.getElementById("view-blog"),
+        profile: document.getElementById("view-profile"),
     };
     var onFirstShow = {
         heatmap: function () { window.__initHeatmapView && window.__initHeatmapView(); },
         blog: function () { window.__initBlogView && window.__initBlogView(); },
+    };
+
+    /* The profile reloads every time it is opened, not just the first time — a round played
+       on the game tab moves the numbers it shows. */
+    var onEveryShow = {
+        profile: function () { window.__initProfileView && window.__initProfileView(); },
     };
 
     function activate(tab) {
@@ -34,6 +41,7 @@
         });
 
         if (onFirstShow[target]) onFirstShow[target]();
+        if (onEveryShow[target]) onEveryShow[target]();
     }
 
     tabs.forEach(function (tab, index) {
@@ -52,6 +60,19 @@
             activate(next);
             next.focus();
         });
+    });
+
+    /* The profile tab only exists for a signed-in player. Hiding it changes the tab strip's
+       width, which the pill's own ResizeObserver picks up, so the indicator re-measures
+       without nav.js having to tell it anything. */
+    var profileTab = document.getElementById("tab-profile");
+
+    document.addEventListener("candles:session", function (event) {
+        var signedIn = !!event.detail.user;
+        profileTab.classList.toggle("hidden", !signedIn);
+        if (!signedIn && profileTab.classList.contains("active")) {
+            activate(tabs[0]); // signed out while looking at it — nothing left to show
+        }
     });
 
     window.CandlePill.attach(document.querySelector(".nav-tabs"), ".nav-tab");

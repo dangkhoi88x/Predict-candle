@@ -35,6 +35,8 @@
             <button class="nav-tab" role="tab" id="tab-technical" aria-controls="view-technical" aria-selected="false" data-view="technical">Mẫu Hình Kỹ Thuật</button>
             <button class="nav-tab" role="tab" id="tab-psychology" aria-controls="view-psychology" aria-selected="false" data-view="psychology">Tâm Lý Giao Dịch</button>
             <button class="nav-tab" role="tab" id="tab-blog" aria-controls="view-blog" aria-selected="false" data-view="blog">Blog / Kiến Thức</button>
+            <!-- Shown only while signed in; nav.js toggles it on the session event. -->
+            <button class="nav-tab hidden" role="tab" id="tab-profile" aria-controls="view-profile" aria-selected="false" data-view="profile">Hồ Sơ</button>
         </div>
         <div class="auth-area" id="auth-area">
             <span id="auth-error-msg" class="auth-error-msg hidden"></span>
@@ -250,6 +252,28 @@
     <p class="heatmap-caption">Tóm tắt bằng lời riêng từ các bài chia sẻ đáng đọc trên X — không phải lời khuyên đầu tư, xem nguồn gốc ở mỗi bài.</p>
 </main>
 
+<main id="view-profile" class="view app hidden" role="tabpanel" aria-labelledby="tab-profile">
+    <div class="view-head">
+        <h2>Hồ Sơ</h2>
+        <span id="profile-wallet" class="profile-wallet"></span>
+    </div>
+
+    <div class="scoreboard">
+        <div class="stat"><span class="stat-label">Điểm</span><span class="stat-value rolling" id="profile-score">0</span></div>
+        <div class="stat"><span class="stat-label">Lượt đoán</span><span class="stat-value rolling" id="profile-total">0</span></div>
+        <div class="stat"><span class="stat-label">Tỉ lệ đúng</span><span class="stat-value rolling" id="profile-accuracy">–</span></div>
+        <div class="stat"><span class="stat-label">Chuỗi dài nhất</span><span class="stat-value rolling" id="profile-best">0</span></div>
+    </div>
+
+    <p id="profile-legacy-note" class="profile-note hidden"></p>
+
+    <h3 class="profile-section">Theo từng cặp</h3>
+    <div id="profile-by-asset" class="profile-assets"></div>
+
+    <h3 class="profile-section">Gần đây</h3>
+    <div id="profile-recent" class="profile-recent"></div>
+</main>
+
 <script src="theme.js"></script>
 <script src="pill.js"></script>
 <script src="rolling.js"></script>
@@ -265,5 +289,6 @@
 <script src="technical-patterns.js"></script>
 <script src="psychology.js"></script>
 <script src="blog.js"></script>
+<script src="profile.js"></script>
 </body>
 </html>

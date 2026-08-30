@@ -3,6 +3,8 @@
 
     var STORAGE_KEY = "candleGuess.stats.v1";
     var MUTE_STORAGE_KEY = "candleGuess.muted.v1";
+    /** Set once this browser's tally has been carried into some account. */
+    var STATS_CARRIED_KEY = "candleGuess.statsCarried.v1";
     var CANDLE_STEP_SECONDS = 3600;
     var SVG_NS = "http://www.w3.org/2000/svg";
 
@@ -495,6 +497,79 @@
         localStorage.setItem(STORAGE_KEY, JSON.stringify(state.stats));
     }
 
+    /* ---- account stats ------------------------------------------------------------------
+       Signed out, the scoreboard is whatever this browser has tallied. Signed in, the server
+       owns the numbers — it is the only side that can be trusted for a ranking, and having
+       two tallies would guarantee they drift apart. */
+
+    function applyServerStats(data) {
+        state.stats = {
+            score: data.score,
+            streak: data.currentStreak,
+            bestStreak: data.bestStreak,
+            correct: data.correct,
+            total: data.total,
+        };
+        renderStats();
+    }
+
+    /* Runs once per sign-in. The import endpoint takes the browser's tally the first time and
+       is a plain read afterwards, so one call covers both the carry-over and the refresh.
+
+       The tally is offered to one account only. The server already refuses a second import
+       per account, but that does not stop the same browser handing the same history to a
+       second wallet — so once it has been offered anywhere, this marks it spent. */
+    async function adoptAccountStats() {
+        var alreadyOffered = localStorage.getItem(STATS_CARRIED_KEY) === "1";
+        var local = loadStats();
+        try {
+            var res;
+            if (alreadyOffered) {
+                res = await window.CandleAuth.authFetch("/api/stats/me");
+            } else {
+                res = await window.CandleAuth.authFetch("/api/stats/me/legacy", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        total: local.total, correct: local.correct,
+                        score: local.score, bestStreak: local.bestStreak,
+                    }),
+                });
+                if (res.ok) {
+                    try {
+                        localStorage.setItem(STATS_CARRIED_KEY, "1");
+                    } catch (e) {
+                        // Storage full or blocked; the server-side once-per-account rule
+                        // still holds, this only loses the cross-account guard.
+                    }
+                }
+            }
+            if (res.ok) applyServerStats(await res.json());
+        } catch (e) {
+            // Offline or the call failed: leave the local numbers on screen rather than
+            // blanking a scoreboard the player was already looking at.
+        }
+    }
+
+    async function refreshAccountStats() {
+        try {
+            var res = await window.CandleAuth.authFetch("/api/stats/me");
+            if (res.ok) applyServerStats(await res.json());
+        } catch (e) {
+            // Same reasoning as above.
+        }
+    }
+
+    document.addEventListener("candles:session", function (event) {
+        if (event.detail.user) {
+            adoptAccountStats();
+        } else {
+            // Back to this browser's own tally, which was never overwritten.
+            state.stats = loadStats();
+            renderStats();
+        }
+    });
+
     function renderStats() {
         var s = state.stats;
         window.CandleRolling.update(el.score, s.score);
@@ -525,7 +600,10 @@
         resetChart(state.asset);
 
         try {
-            var res = await fetch("/api/practice/round?asset=" + encodeURIComponent(state.asset));
+            // authFetch, not fetch: signed in, the guess gets recorded against the account;
+            // signed out, it is an ordinary request and play carries on unchanged.
+            var res = await window.CandleAuth.authFetch(
+                "/api/practice/round?asset=" + encodeURIComponent(state.asset));
             if (!res.ok) throw new Error((await res.json()).message || "Không tải được vòng chơi");
             var data = await res.json();
 
@@ -615,7 +693,7 @@
         setStatus("Đang chấm điểm…");
 
         try {
-            var res = await fetch("/api/practice/guess", {
+            var res = await window.CandleAuth.authFetch("/api/practice/guess", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ roundToken: state.roundToken, direction: direction }),
@@ -692,6 +770,11 @@
         }
         saveStats();
         renderStats();
+
+        /* Signed in, the guess was recorded server-side and the authoritative totals have
+           moved. The local numbers above stay maintained regardless so that signing out
+           returns to an intact browser tally. */
+        if (window.CandleAuth.getUser()) refreshAccountStats();
     }
 
     el.guessLong.addEventListener("click", function () { unlockAudio(); submitGuess("LONG"); });
