@@ -150,16 +150,23 @@
                 <span class="adm-crumb-pane" id="adm-crumb-pane">Tổng quan</span>
             </div>
             <div class="adm-topbar-tools">
-                <label class="adm-search">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                         stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <circle cx="11" cy="11" r="6.5"/>
-                        <path d="M16 16l4 4"/>
-                    </svg>
-                    <!-- Not wired to anything yet; disabled rather than silently inert. -->
-                    <input type="search" placeholder="Tìm kiếm…" aria-label="Tìm kiếm"
-                           disabled title="Sắp có"/>
-                </label>
+                <!-- The results panel is a sibling of the label, not inside it: a click on a
+                     result inside a <label> would be forwarded to the input instead. -->
+                <div class="adm-search" role="combobox" aria-expanded="false"
+                     aria-haspopup="listbox" aria-owns="adm-search-results">
+                    <label class="adm-search-field">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                             stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <circle cx="11" cy="11" r="6.5"/>
+                            <path d="M16 16l4 4"/>
+                        </svg>
+                        <input id="adm-search-input" type="search" placeholder="Tìm kiếm…"
+                               aria-label="Tìm kiếm" autocomplete="off" aria-autocomplete="list"
+                               aria-controls="adm-search-results"/>
+                    </label>
+                    <div class="adm-search-results hidden" id="adm-search-results"
+                         role="listbox" aria-label="Kết quả tìm kiếm"></div>
+                </div>
                 <button id="theme-toggle" class="theme-toggle" type="button"
                         aria-label="Đổi giao diện sáng/tối">
                     <svg data-theme-icon="moon" width="16" height="16" viewBox="0 0 24 24" fill="none"
@@ -550,6 +557,7 @@
 <script src="wallet-auth.js"></script>
 <script src="auth.js"></script>
 <script src="admin-nav.js"></script>
+<script src="admin-search.js"></script>
 <script src="admin.js"></script>
 <script src="admin-overview.js"></script>
 <script src="admin-ops.js"></script>

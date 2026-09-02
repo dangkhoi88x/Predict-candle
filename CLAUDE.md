@@ -127,6 +127,15 @@ is `correct / guesses`; reading `correct / answered` instead runs about nine poi
 current data. `AdminStatsTest` pins both the split and the JSON field names the pane reads —
 there is no shared schema, so a renamed record component would silently draw zeroes.
 
+The topbar search (`admin-search.js`) searches the **rendered DOM**, not the modules' data —
+every pane is built and in the document at once, only hidden by CSS, so the rows are all there
+for free and no module has to expose its state. The index is therefore exactly what has
+loaded: the content pane holds one kind at a time and the media grid holds the pages fetched
+so far, and the empty state says so. Matching folds diacritics and collapses `- _ / .` to
+spaces (so `van hanh` finds `Vận hành` and `cau truc` finds `cau-truc-thi-truong`), and reads
+`title` attributes, which is where the full wallet address and Cloudinary id live while the
+cell shows an abbreviation. Teaching it about a new pane is one entry in `SOURCES`.
+
 Admin styling lives under `.admin-shell` and reads `--adm-*` tokens, a palette of its own —
 soft grey ground, hairline borders, low shadow, against the game's near-black. The scope is
 load-bearing: `.ghost-btn`, `.pill`, `.status` and `.field` are shared class names, and only

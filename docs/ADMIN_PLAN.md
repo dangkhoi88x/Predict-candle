@@ -226,7 +226,21 @@ Cả sáu giai đoạn (0, 1, 2, 2b, 3, 4, 5) đã xong. Trang admin hiện có:
 hành, CRUD blog, ba thư viện nội dung, thư viện ảnh, quản lý cặp giao dịch và người chơi — tất
 cả trong một vỏ dashboard có sidebar.
 
+**Ô tìm kiếm trong topbar** (`admin-search.js`) đọc **DOM đã render**, không đọc dữ liệu của
+các module. Nghe vòng vo nhưng đúng với vỏ này: cả bảy pane đều đã dựng và nằm sẵn trong tài
+liệu cùng lúc — chỉ có CSS giấu sáu cái còn lại — nên mọi hàng đều ở đó, quét gần như miễn phí
+và không module nào phải mở dữ liệu của mình ra.
+
+Đổi lại, chỉ số là **đúng phần đã tải**: thư viện nội dung chỉ giữ loại đang chọn, thư viện ảnh
+chỉ giữ các trang đã fetch. Trạng thái rỗng nói thẳng điều đó thay vì để người đọc hiểu là
+không có.
+
+So khớp bỏ dấu (`van hanh` ra `Vận hành`) và gộp `- _ / .` thành khoảng trắng (`cau truc` ra
+`cau-truc-thi-truong`) — nửa số chữ tìm được ở đây là slug và id Cloudinary. Cũng quét cả
+thuộc tính `title`, vì đó là chỗ giữ địa chỉ ví đầy đủ và publicId đầy đủ trong khi ô chỉ hiện
+bản rút gọn. Chọn một kết quả thì `CandleAdminNav.go` đổi pane, cuộn tới hàng và tô nền
+`--adm-warn` trong 1,6 giây rồi tự tắt.
+
 Việc còn nợ: gỡ các mảng dự phòng trong `blog.js`, `patterns.js`, `technical-patterns.js`,
-`psychology.js` sau ít nhất một lần deploy thật; nối ô tìm kiếm trong topbar (hiện `disabled`
-kèm `title="Sắp có"` chứ không để im lặng không phản hồi); và trang settings cho
-`candles.round.*` nếu việc cân bằng độ khó bắt đầu cần đổi số thường xuyên.
+`psychology.js` sau ít nhất một lần deploy thật; và trang settings cho `candles.round.*` nếu
+việc cân bằng độ khó bắt đầu cần đổi số thường xuyên.
