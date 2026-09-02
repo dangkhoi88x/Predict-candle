@@ -178,6 +178,10 @@ spaces (so `van hanh` finds `Vận hành` and `cau truc` finds `cau-truc-thi-tru
 `title` attributes, which is where the full wallet address and Cloudinary id live while the
 cell shows an abbreviation. Teaching it about a new pane is one entry in `SOURCES`.
 
+The admin page has its own icon set (`admin-favicon.*`) and its own `theme-color`, on the
+admin ground rather than the game's. `theme.js` reads those colours off the meta tags instead
+of holding a table, so it does not need to know which page it is running on.
+
 Admin styling lives under `.admin-shell` and reads `--adm-*` tokens, a palette of its own —
 soft grey ground, hairline borders, low shadow, against the game's near-black. The scope is
 load-bearing: `.ghost-btn`, `.pill`, `.status` and `.field` are shared class names, and only

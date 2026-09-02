@@ -26,11 +26,24 @@
     /* The two <meta name="theme-color"> tags carry media queries, which follow the OS rather
        than the choice stored here — so a light theme picked on a dark machine would leave the
        mobile browser's chrome dark around a light page. Writing the active colour into both
-       makes whichever one matches the right one. */
-    var THEME_COLOR = { dark: "#0a0a0a", light: "#f6f7f9" };
+       makes whichever one matches the right one.
+       
+       The colours are read off the tags instead of being listed here, because the two pages
+       do not share a background: the game sits on --bg and the admin dashboard on --adm-bg.
+       Each page declares its own pair and this stays ignorant of which one it is running on. */
+    var themeColors = (function () {
+        var found = {};
+        var metas = document.querySelectorAll('meta[name="theme-color"][media]');
+        for (var i = 0; i < metas.length; i++) {
+            var key = metas[i].getAttribute("media").indexOf("dark") !== -1 ? "dark" : "light";
+            found[key] = metas[i].getAttribute("content");
+        }
+        return found;
+    })();
 
     function paintThemeColor() {
-        var colour = THEME_COLOR[current()];
+        var colour = themeColors[current()];
+        if (!colour) return;
         var metas = document.querySelectorAll('meta[name="theme-color"]');
         for (var i = 0; i < metas.length; i++) metas[i].setAttribute("content", colour);
     }

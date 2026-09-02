@@ -5,14 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1"/>
     <title>Quản trị · Candle Guess</title>
     <meta name="robots" content="noindex"/>
-    <!-- .ico first because browsers request /favicon.ico on their own whether or not it is
-         declared, and a 404 on every page load is a poor thing to leave in the log. The SVG
-         wins where it is supported, being sharp at any size and a tenth of the bytes. -->
-    <link rel="icon" href="/favicon.ico" sizes="32x32"/>
-    <link rel="icon" href="/favicon.svg" type="image/svg+xml"/>
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png"/>
-    <meta name="theme-color" content="#0a0a0a" media="(prefers-color-scheme: dark)"/>
-    <meta name="theme-color" content="#f6f7f9" media="(prefers-color-scheme: light)"/>
+    <!-- Its own icon: the game's candles on the admin palette's bone ground rather than the
+         game's near-black. Value is what tells two icons apart at 16px, so the tile inverts
+         and the marks stay put — one dark block, one light block, obviously the same app.
+         theme-color follows --adm-bg here, not the game's --bg; theme.js reads both values
+         off these tags rather than knowing which page it is on. -->
+    <link rel="icon" href="/admin-favicon.ico" sizes="32x32"/>
+    <link rel="icon" href="/admin-favicon.svg" type="image/svg+xml"/>
+    <link rel="apple-touch-icon" href="/admin-apple-touch-icon.png"/>
+    <meta name="theme-color" content="#141416" media="(prefers-color-scheme: dark)"/>
+    <meta name="theme-color" content="#e9e7e4" media="(prefers-color-scheme: light)"/>
     <link rel="stylesheet" href="style.css"/>
     <script>
         // Same pre-paint theme read as index.html: applying it after the body renders would
