@@ -267,13 +267,49 @@
        2.1 MB of screenshots on first paint for a tab most visitors never open. */
     var built = false;
 
-    function init() {
-        if (built) return;
-        built = true;
+    /*
+     * Posts now live in the database and arrive from /api/blog/posts; the POSTS array above is
+     * what they were seeded from and stays as the fallback. Losing the blog tab because a
+     * query failed would be a worse outcome than showing content one edit out of date, and the
+     * two shapes are close enough that one renderer serves both — the API names the same
+     * fields coverSvg and body where the array says cover and content.
+     */
+    function fromApi(post) {
+        return {
+            title: post.title,
+            cover: post.coverSvg,
+            coverImg: post.coverImg,
+            tags: post.tags || [],
+            source: post.source,
+            sourceUrl: post.sourceUrl,
+            content: post.body || [],
+            imageCredit: post.imageCredit,
+        };
+    }
+
+    function render(posts) {
         var list = document.getElementById("blog-list");
-        POSTS.forEach(function (post) {
+        list.innerHTML = "";
+        posts.forEach(function (post) {
             list.appendChild(buildPost(post));
         });
+    }
+
+    async function init() {
+        if (built) return;
+        built = true;
+        render(POSTS);
+
+        try {
+            var res = await fetch("/api/blog/posts");
+            if (!res.ok) return;
+            var posts = await res.json();
+            // An empty result is not a reason to blank the tab — an empty table is far more
+            // likely to be a migration that has not run than an editor who deleted everything.
+            if (posts.length) render(posts.map(fromApi));
+        } catch (e) {
+            // Offline or the endpoint is down: the seeded copy above is already on screen.
+        }
     }
 
     window.__initBlogView = init;
