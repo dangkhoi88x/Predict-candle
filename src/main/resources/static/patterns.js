@@ -19,224 +19,6 @@
         continuation: "Tiếp diễn",
     };
 
-    // Hand-crafted illustrative OHLC — shaped to clearly demonstrate each pattern, not real
-    // market data. Prices sit around 100 purely so the shapes read cleanly at any scale.
-    var PATTERNS = [
-        {
-            id: "doji",
-            name: "Doji",
-            tags: ["neutral", "reversal"],
-            summary: "Giá mở và đóng gần như bằng nhau — phe mua và bán giằng co bất phân thắng bại.",
-            howTo: [
-                "Giá mở cửa và đóng cửa gần như trùng nhau (thân nến rất nhỏ)",
-                "Bóng trên và bóng dưới có thể dài, thể hiện giá đã dao động mạnh trong phiên",
-                "Ý nghĩa phụ thuộc vào xu hướng trước đó: xuất hiện sau xu hướng mạnh thường báo hiệu khả năng đảo chiều hoặc tạm nghỉ",
-            ],
-            candles: [
-                { open: 100, close: 101.2, high: 101.6, low: 99.7 },
-                { open: 101.2, close: 102.3, high: 102.7, low: 100.9 },
-                { open: 102.3, close: 102.42, high: 104.5, low: 100.3 },
-            ],
-        },
-        {
-            id: "hammer",
-            name: "Hammer (Búa)",
-            tags: ["bullish", "reversal"],
-            summary: "Bóng dưới dài, thân nhỏ ở đỉnh, xuất hiện sau xu hướng giảm — lực mua đang quay lại.",
-            howTo: [
-                "Xuất hiện sau một xu hướng giảm rõ ràng",
-                "Bóng dưới dài ít nhất gấp 2 lần thân nến",
-                "Thân nến nhỏ, nằm gần đỉnh của toàn bộ khoảng dao động",
-                "Bóng trên rất ngắn hoặc gần như không có",
-            ],
-            candles: [
-                { open: 105, close: 103, high: 105.3, low: 102.8 },
-                { open: 103, close: 101, high: 103.2, low: 100.8 },
-                { open: 101, close: 101.6, high: 101.9, low: 97.5 },
-            ],
-        },
-        {
-            id: "hanging-man",
-            name: "Hanging Man (Người treo cổ)",
-            tags: ["bearish", "reversal"],
-            summary: "Hình dạng giống hệt Hammer nhưng xuất hiện sau xu hướng tăng — cảnh báo lực bán đang tích lũy.",
-            howTo: [
-                "Xuất hiện sau một xu hướng tăng rõ ràng (khác Hammer ở điểm này)",
-                "Bóng dưới dài ít nhất gấp 2 lần thân nến",
-                "Thân nến nhỏ, nằm gần đỉnh của toàn bộ khoảng dao động",
-                "Cần nến xác nhận giảm giá ngay sau đó để tăng độ tin cậy",
-            ],
-            candles: [
-                { open: 97, close: 99, high: 99.2, low: 96.8 },
-                { open: 99, close: 101, high: 101.2, low: 98.8 },
-                { open: 101, close: 100.4, high: 101.6, low: 97.0 },
-            ],
-        },
-        {
-            id: "shooting-star",
-            name: "Shooting Star (Sao băng)",
-            tags: ["bearish", "reversal"],
-            summary: "Bóng trên dài, thân nhỏ ở đáy, xuất hiện sau xu hướng tăng — lực mua đang đuối sức.",
-            howTo: [
-                "Xuất hiện sau một xu hướng tăng rõ ràng",
-                "Bóng trên dài ít nhất gấp 2 lần thân nến",
-                "Thân nến nhỏ, nằm gần đáy của toàn bộ khoảng dao động",
-                "Bóng dưới rất ngắn hoặc gần như không có",
-            ],
-            candles: [
-                { open: 97, close: 99, high: 99.2, low: 96.8 },
-                { open: 99, close: 101, high: 101.2, low: 98.8 },
-                { open: 101, close: 100.5, high: 104.8, low: 100.3 },
-            ],
-        },
-        {
-            id: "marubozu",
-            name: "Marubozu",
-            tags: ["bullish", "continuation"],
-            summary: "Thân nến dài kín, gần như không có bóng — phe mua (hoặc bán) áp đảo tuyệt đối suốt phiên.",
-            howTo: [
-                "Không có (hoặc rất ít) bóng nến ở cả hai đầu",
-                "Marubozu tăng: mở ở đáy, đóng ở đỉnh phiên — lực mua áp đảo hoàn toàn",
-                "Marubozu giảm: mở ở đỉnh, đóng ở đáy phiên — lực bán áp đảo hoàn toàn",
-                "Thường báo hiệu xu hướng hiện tại sẽ còn tiếp diễn",
-            ],
-            candles: [
-                { open: 99.5, close: 100, high: 100.3, low: 99.3 },
-                { open: 100, close: 105, high: 105.1, low: 99.9 },
-            ],
-        },
-        {
-            id: "bullish-engulfing",
-            name: "Bullish Engulfing (Nhấn chìm tăng)",
-            tags: ["bullish", "reversal"],
-            summary: "Nến xanh lớn 'nuốt chửng' toàn bộ thân nến đỏ trước đó — phe mua giành lại quyền kiểm soát.",
-            howTo: [
-                "Xuất hiện sau xu hướng giảm",
-                "Nến 1: thân đỏ (giảm)",
-                "Nến 2: thân xanh, mở cửa thấp hơn (hoặc bằng) giá đóng cửa nến 1, đóng cửa cao hơn giá mở cửa nến 1",
-                "Thân nến 2 bao trùm hoàn toàn thân nến 1",
-            ],
-            candles: [
-                { open: 102, close: 100.5, high: 102.2, low: 100.3 },
-                { open: 100, close: 103, high: 103.2, low: 99.8 },
-            ],
-        },
-        {
-            id: "bearish-engulfing",
-            name: "Bearish Engulfing (Nhấn chìm giảm)",
-            tags: ["bearish", "reversal"],
-            summary: "Nến đỏ lớn 'nuốt chửng' toàn bộ thân nến xanh trước đó — phe bán giành lại quyền kiểm soát.",
-            howTo: [
-                "Xuất hiện sau xu hướng tăng",
-                "Nến 1: thân xanh (tăng)",
-                "Nến 2: thân đỏ, mở cửa cao hơn (hoặc bằng) giá đóng cửa nến 1, đóng cửa thấp hơn giá mở cửa nến 1",
-                "Thân nến 2 bao trùm hoàn toàn thân nến 1",
-            ],
-            candles: [
-                { open: 100.5, close: 102, high: 102.2, low: 100.3 },
-                { open: 103, close: 100, high: 103.2, low: 99.8 },
-            ],
-        },
-        {
-            id: "piercing-line",
-            name: "Piercing Line (Đường xuyên thấu)",
-            tags: ["bullish", "reversal"],
-            summary: "Nến xanh mở cửa thấp nhưng đóng cửa xuyên sâu vào giữa thân nến đỏ trước đó.",
-            howTo: [
-                "Xuất hiện sau xu hướng giảm",
-                "Nến 1: thân đỏ dài",
-                "Nến 2: mở cửa thấp hơn giá thấp nhất nến 1, nhưng đóng cửa vượt qua điểm giữa thân nến 1",
-                "Khác Bullish Engulfing ở chỗ không bao trùm hoàn toàn, chỉ 'xuyên' qua điểm giữa",
-            ],
-            candles: [
-                { open: 105, close: 101, high: 105.2, low: 100.8 },
-                { open: 100.5, close: 103.5, high: 103.7, low: 100.3 },
-            ],
-        },
-        {
-            id: "dark-cloud-cover",
-            name: "Dark Cloud Cover (Mây đen bao phủ)",
-            tags: ["bearish", "reversal"],
-            summary: "Nến đỏ mở cửa cao nhưng đóng cửa xuyên sâu vào giữa thân nến xanh trước đó.",
-            howTo: [
-                "Xuất hiện sau xu hướng tăng",
-                "Nến 1: thân xanh dài",
-                "Nến 2: mở cửa cao hơn giá cao nhất nến 1, nhưng đóng cửa xuyên xuống dưới điểm giữa thân nến 1",
-                "Khác Bearish Engulfing ở chỗ không bao trùm hoàn toàn, chỉ 'xuyên' qua điểm giữa",
-            ],
-            candles: [
-                { open: 100, close: 104, high: 104.2, low: 99.8 },
-                { open: 104.5, close: 101.5, high: 104.7, low: 101.3 },
-            ],
-        },
-        {
-            id: "morning-star",
-            name: "Morning Star (Sao Mai)",
-            tags: ["bullish", "reversal"],
-            summary: "Ba nến: giảm mạnh → do dự → tăng mạnh trở lại — dấu hiệu đảo chiều tăng kinh điển.",
-            howTo: [
-                "Nến 1: thân đỏ dài, tiếp diễn xu hướng giảm",
-                "Nến 2: thân nhỏ (có thể là Doji), mở cửa gap xuống — thể hiện sự do dự",
-                "Nến 3: thân xanh dài, đóng cửa đi sâu vào thân nến 1",
-                "Độ tin cậy càng cao nếu nến 3 đóng cửa vượt quá điểm giữa thân nến 1",
-            ],
-            candles: [
-                { open: 106, close: 102, high: 106.2, low: 101.8 },
-                { open: 101, close: 100.7, high: 101.3, low: 100.3 },
-                { open: 101.2, close: 104.5, high: 104.7, low: 101.0 },
-            ],
-        },
-        {
-            id: "evening-star",
-            name: "Evening Star (Sao Hôm)",
-            tags: ["bearish", "reversal"],
-            summary: "Ba nến: tăng mạnh → do dự → giảm mạnh trở lại — dấu hiệu đảo chiều giảm kinh điển.",
-            howTo: [
-                "Nến 1: thân xanh dài, tiếp diễn xu hướng tăng",
-                "Nến 2: thân nhỏ (có thể là Doji), mở cửa gap lên — thể hiện sự do dự",
-                "Nến 3: thân đỏ dài, đóng cửa đi sâu vào thân nến 1",
-                "Độ tin cậy càng cao nếu nến 3 đóng cửa vượt quá điểm giữa thân nến 1",
-            ],
-            candles: [
-                { open: 98, close: 102, high: 102.2, low: 97.8 },
-                { open: 103, close: 103.3, high: 103.7, low: 102.7 },
-                { open: 102.8, close: 99.5, high: 103.0, low: 99.3 },
-            ],
-        },
-        {
-            id: "three-white-soldiers",
-            name: "Three White Soldiers (Ba chàng lính trắng)",
-            tags: ["bullish", "continuation"],
-            summary: "Ba nến xanh liên tiếp, mỗi nến đóng cửa cao hơn — xu hướng tăng vững chắc, ít bóng nến.",
-            howTo: [
-                "Ba nến xanh liên tiếp, mỗi nến đóng cửa cao hơn nến trước",
-                "Mỗi nến mở cửa nằm trong thân nến trước đó",
-                "Bóng nến ngắn ở cả hai đầu — thể hiện lực mua ổn định, không bị giằng co",
-            ],
-            candles: [
-                { open: 100, close: 102.5, high: 102.7, low: 99.8 },
-                { open: 102, close: 104.5, high: 104.7, low: 101.8 },
-                { open: 104, close: 106.5, high: 106.7, low: 103.8 },
-            ],
-        },
-        {
-            id: "three-black-crows",
-            name: "Three Black Crows (Ba con quạ đen)",
-            tags: ["bearish", "continuation"],
-            summary: "Ba nến đỏ liên tiếp, mỗi nến đóng cửa thấp hơn — xu hướng giảm vững chắc, ít bóng nến.",
-            howTo: [
-                "Ba nến đỏ liên tiếp, mỗi nến đóng cửa thấp hơn nến trước",
-                "Mỗi nến mở cửa nằm trong thân nến trước đó",
-                "Bóng nến ngắn ở cả hai đầu — thể hiện lực bán ổn định, không bị giằng co",
-            ],
-            candles: [
-                { open: 106, close: 103.5, high: 106.2, low: 103.3 },
-                { open: 104, close: 101.5, high: 104.2, low: 101.3 },
-                { open: 102, close: 99.5, high: 102.2, low: 99.3 },
-            ],
-        },
-    ];
-
     function svgEl(tag, attrs) {
         var node = document.createElementNS(SVG_NS, tag);
         for (var k in attrs) node.setAttribute(k, attrs[k]);
@@ -482,9 +264,27 @@
     /* Fetched before building rather than rendering twice: the filter handlers below close
        over the card list, and rebuilding under them would leave the filters driving cards
        that are no longer on the page. */
+    /* The game tab asks this file to name a pattern it found mid-round, which used to mean
+       reading the compiled-in array. That array is gone, so init parks what the API returned
+       here for nameOf to search. */
+    var loaded = [];
+
     async function init() {
-        var items = await window.CandleContent.load("candle-pattern", PATTERNS);
         var grid = document.getElementById("pattern-grid");
+        var items;
+        try {
+            items = await window.CandleContent.load("candle-pattern");
+        } catch (e) {
+            /* No compiled-in copy to fall back to any more, so say so. Silence here
+               would read as "there are no mẫu nến", which is a different claim. */
+            window.CandleContent.notice(grid, "Không tải được mẫu nến. Thử tải lại trang.");
+            return;
+        }
+        if (!items.length) {
+            window.CandleContent.notice(grid, "Chưa có mẫu nến nào.");
+            return;
+        }
+        loaded = items;
         var filters = Array.prototype.slice.call(document.querySelectorAll("#pattern-filters .pill-option"));
         window.CandlePill.attach(document.getElementById("pattern-filters"), ".pill-option");
         var cards = items.map(function (p) {
@@ -522,8 +322,11 @@
        things — everything else about this tab stays private to it. */
     window.CandlePatterns = {
         nameOf: function (id) {
-            for (var i = 0; i < PATTERNS.length; i++) {
-                if (PATTERNS[i].id === id) return PATTERNS[i].name;
+            /* Falling back to the id is not new — it already covered an unknown pattern, and
+               now also covers being asked before the fetch has landed. A raw id in a label is
+               poor, but it is a great deal better than throwing inside the round summary. */
+            for (var i = 0; i < loaded.length; i++) {
+                if (loaded[i].id === id) return loaded[i].name;
             }
             return id;
         },

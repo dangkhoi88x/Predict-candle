@@ -97,8 +97,10 @@ Phần lớn nhất, và là lý do chính có trang admin.
   `POSTS` từ `blog.js` — không chép tay 21 ảnh. SQL dùng dollar-quoting nên SVG và dấu nháy
   trong nội dung không cần escape.
 - `GET /api/blog/posts` công khai; `POST/PUT/DELETE /api/admin/blog/posts` sau `AdminGuard`.
-- `blog.js` đổi sang gọi API. **Giữ mảng `POSTS` làm dự phòng** cho tới khi đường API chạy thật
-  ổn — blog là nội dung công khai, hỏng là trắng tab.
+- `blog.js` đổi sang gọi API. Mảng `POSTS` từng được giữ làm dự phòng cho tới khi đường API
+  chạy thật ổn; **đã gỡ** sau khi API chạy qua deploy thật. Chỗ của nó giờ là một thông báo
+  lỗi thật (`.view-notice`) — nội dung cũ giả làm nội dung mới còn tệ hơn một tab trống có
+  giải thích.
 - Trình soạn (`admin-blog.js`): form + **Tiptap**. `body` giờ là **tài liệu ProseMirror**
   (`{"type":"doc","content":[…]}`), V12 chuyển 3 bài seed từ mảng block cũ sang. Vẫn đúng cột
   `jsonb` đó, không thêm cột.
@@ -142,7 +144,9 @@ Cấm ở tầng service chứ không phải controller, nên luật đúng dù 
 diện cũng không vẽ nút mà server sẽ từ chối. `ContentKeysMatchMatchersTest` khoá bất biến hai
 chiều: mọi thẻ đều có matcher, và mọi matcher đều có thẻ.
 
-`content.js` là global dùng chung cho cả ba tab, luôn có mảng cũ làm dự phòng.
+`content.js` là global dùng chung cho cả ba tab. `load(kind)` giờ **ném lỗi** thay vì trả về
+mảng dự phòng, và `notice(el, text)` là chỗ duy nhất bốn tab nói "không tải được" — nói cùng
+một kiểu.
 
 ### Giai đoạn 3 — bảng vận hành  ·  M  ·  ✅ XONG
 
@@ -233,7 +237,7 @@ trang không phải thoả hiệp về hình thức của nhau.
 
 | Rủi ro | Xử lý |
 |---|---|
-| Blog là nội dung công khai; migration hỏng là trắng tab | Giữ mảng `POSTS` dự phòng qua ít nhất một lần deploy; kiểm số bài trả về trước khi gỡ |
+| Blog là nội dung công khai; migration hỏng là trắng tab | ~~Giữ mảng `POSTS` dự phòng~~ — đã qua deploy thật và đã gỡ. Lỗi giờ hiện thông báo, và tab blog đặt lại cờ `built` để mở lại tab là thử lần nữa |
 | Xoá Cloudinary không hoàn tác | Hộp thoại xác nhận có tên ảnh; không xoá hàng loạt ở bản đầu |
 | Đây là nhóm endpoint ghi đầu tiên ngoài media | Cho `/api/admin/**` vào `RateLimiter` luôn |
 | CSRF | Access token nằm trong bộ nhớ và gửi qua header `Authorization`, không phải cookie, nên CSRF không khai thác được. Đừng chuyển sang cookie auth cho trang admin chỉ vì tiện. |
@@ -260,6 +264,6 @@ thuộc tính `title`, vì đó là chỗ giữ địa chỉ ví đầy đủ v�
 bản rút gọn. Chọn một kết quả thì `CandleAdminNav.go` đổi pane, cuộn tới hàng và tô nền
 `--adm-warn` trong 1,6 giây rồi tự tắt.
 
-Việc còn nợ: gỡ các mảng dự phòng trong `blog.js`, `patterns.js`, `technical-patterns.js`,
-`psychology.js` sau ít nhất một lần deploy thật; và trang settings cho `candles.round.*` nếu
-việc cân bằng độ khó bắt đầu cần đổi số thường xuyên.
+Việc còn nợ: cho `/api/admin/**` vào `RateLimiter` (§4 vẫn ghi là sẽ làm, hiện chưa route admin
+nào dùng); và trang settings cho `candles.round.*` nếu việc cân bằng độ khó bắt đầu cần đổi số
+thường xuyên.

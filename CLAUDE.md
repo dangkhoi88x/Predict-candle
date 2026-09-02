@@ -107,6 +107,18 @@ not at load. Add to it rather than initialising a heavy tab eagerly — `loading
 **not** defer images inside a `display:none` view (an element with no box cannot be deferred
 by position), so anything image-heavy must be built on demand.
 
+**Content comes from the API only.** `blog.js`, `patterns.js`, `technical-patterns.js` and
+`psychology.js` each used to carry the array they were seeded from and serve it when a request
+failed. Those are gone — a failure now draws `.view-notice` through `CandleContent.notice`,
+because stale content presented as current is a worse answer than an honest empty state.
+`CandleContent.load(kind)` throws rather than returning a fallback.
+
+Two consequences worth knowing. `blog.js` builds on first reveal, so its catch clears `built`
+— otherwise one dropped request leaves the tab empty for the whole visit with no way to ask
+again. And `CandlePatterns.nameOf`, which the game tab calls to name a pattern found mid-round,
+now reads what the fetch returned instead of the deleted array; it still falls back to the raw
+id, which also covers being asked before the fetch lands.
+
 ### Admin frontend
 
 `admin.html` is a second, separate page: a dashboard shell — sidebar, sticky topbar, and seven

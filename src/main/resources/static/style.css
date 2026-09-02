@@ -3369,6 +3369,18 @@ body:not(.is-admin) .adm-search {
     margin-top: 14px;
 }
 
+/* The one empty/error state the four content tabs share. They used to carry a compiled-in
+   copy of their data, so a failed request still drew something; now a failure is visible, and
+   this is what it looks like. */
+.view-notice {
+    margin: 0;
+    padding: 28px 16px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 13.5px;
+    line-height: 1.6;
+}
+
 /* --- market heatmap --- */
 
 .heatmap-toolbar {
