@@ -521,9 +521,25 @@
                             <label class="field">Link nguồn
                                 <input id="f-source-url" type="url" maxlength="600"/>
                             </label>
-                            <label class="field field-wide">Ảnh bìa (URL)
-                                <input id="f-cover-img" type="url" maxlength="600"/>
-                            </label>
+                            <div class="field field-wide">
+                                <span class="field-label">Ảnh bìa</span>
+                                <div class="cover-field">
+                                    <img id="f-cover-preview" class="cover-preview" alt=""/>
+                                    <div class="cover-empty" id="f-cover-empty">Chưa có ảnh</div>
+                                    <div class="cover-actions">
+                                        <button id="f-cover-upload" class="ghost-btn" type="button">Tải ảnh từ máy</button>
+                                        <button id="f-cover-pick" class="ghost-btn" type="button">Chọn từ thư viện</button>
+                                        <button id="f-cover-clear" class="ghost-btn danger-btn hidden" type="button">Bỏ ảnh</button>
+                                        <input id="f-cover-file" type="file"
+                                               accept="image/jpeg,image/png,image/webp" hidden/>
+                                    </div>
+                                </div>
+                                <!-- Still the field that carries the value. Left visible and
+                                     editable because an external image is a legitimate cover
+                                     and pasting its URL should not need an upload first. -->
+                                <input id="f-cover-img" class="cover-url" type="url" maxlength="600"
+                                       placeholder="hoặc dán URL ảnh" aria-label="URL ảnh bìa"/>
+                            </div>
                             <label class="field field-wide">Ghi công ảnh
                                 <input id="f-image-credit" type="text"/>
                             </label>

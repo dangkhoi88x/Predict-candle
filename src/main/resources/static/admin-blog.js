@@ -40,6 +40,12 @@
             source: document.getElementById("f-source"),
             sourceUrl: document.getElementById("f-source-url"),
             coverImg: document.getElementById("f-cover-img"),
+            coverPreview: document.getElementById("f-cover-preview"),
+            coverEmpty: document.getElementById("f-cover-empty"),
+            coverUpload: document.getElementById("f-cover-upload"),
+            coverPick: document.getElementById("f-cover-pick"),
+            coverClear: document.getElementById("f-cover-clear"),
+            coverFile: document.getElementById("f-cover-file"),
             imageCredit: document.getElementById("f-image-credit"),
             coverSvg: document.getElementById("f-cover-svg"),
             published: document.getElementById("f-published"),
@@ -231,6 +237,7 @@
         el.f.source.value = (post && post.source) || "";
         el.f.sourceUrl.value = (post && post.sourceUrl) || "";
         el.f.coverImg.value = (post && post.coverImg) || "";
+        paintCover();
         el.f.imageCredit.value = (post && post.imageCredit) || "";
         el.f.coverSvg.value = (post && post.coverSvg) || "";
         el.f.published.checked = !!(post && post.published);
@@ -265,16 +272,7 @@
             /* Paste and drop upload through the endpoint the library already uses, and the
                response now carries width and height — which is what lets a pasted image
                reserve its box on the public page the same way a picked one does. */
-            upload: async function (file) {
-                var form = new FormData();
-                form.append("file", file);
-                var res = await window.CandleAuth.authFetch(
-                    "/api/media/images?folder=" + encodeURIComponent(mediaFolder()),
-                    { method: "POST", body: form });
-                var payload = await res.json();
-                if (!res.ok) throw new Error(payload.message || ("Máy chủ trả về " + res.status));
-                return payload;
-            },
+            upload: uploadImage,
         });
         composer.onSelection(paintToolbar);
         return composer;
@@ -324,6 +322,44 @@
         return composer ? composer.json() : emptyDoc();
     }
 
+    /* ---- cover image ---- */
+
+    /* One upload path for the whole page: the same endpoint the library and the editor's
+       paste handler use, so a cover lands in the same Cloudinary folder as everything else
+       and is deletable from the library like any other image. */
+    async function uploadImage(file) {
+        var form = new FormData();
+        form.append("file", file);
+        var res = await window.CandleAuth.authFetch(
+            "/api/media/images?folder=" + encodeURIComponent(mediaFolder()),
+            { method: "POST", body: form });
+        var payload = await res.json();
+        if (!res.ok) throw new Error(payload.message || ("Máy chủ trả về " + res.status));
+        return payload;
+    }
+
+    function paintCover(failed) {
+        var url = el.f.coverImg.value.trim();
+        var show = !!url && !failed;
+        el.f.coverPreview.classList.toggle("hidden", !show);
+        el.f.coverEmpty.classList.toggle("hidden", show);
+        el.f.coverClear.classList.toggle("hidden", !url);
+        // A URL that does not resolve is worth saying out loud — a broken-image glyph looks
+        // like the page is broken rather than the address being wrong.
+        el.f.coverEmpty.textContent = failed ? "Không tải được ảnh" : "Chưa có ảnh";
+        // Only touch src when it changes: reassigning the same URL restarts the fetch and
+        // flashes the preview on every keystroke in the URL field.
+        if (url && el.f.coverPreview.getAttribute("src") !== url) {
+            el.f.coverPreview.src = url;
+        }
+        if (!url) el.f.coverPreview.removeAttribute("src");
+    }
+
+    function setCover(url) {
+        el.f.coverImg.value = url || "";
+        paintCover();
+    }
+
     /* ---- toolbar ---- */
 
     function paintToolbar() {
@@ -348,6 +384,35 @@
         composer.run(btn.dataset.cmd);
         paintToolbar();
     });
+
+    el.f.coverUpload.addEventListener("click", function () { el.f.coverFile.click(); });
+
+    el.f.coverFile.addEventListener("change", async function () {
+        var file = el.f.coverFile.files[0];
+        el.f.coverFile.value = "";          // so re-picking the same file fires change again
+        if (!file) return;
+        setStatus("Đang tải ảnh bìa lên…");
+        try {
+            var media = await uploadImage(file);
+            setCover(media.url);
+            setStatus("Đã tải ảnh bìa lên.");
+        } catch (e) {
+            setStatus("Không tải được ảnh bìa: " + e.message);
+        }
+    });
+
+    el.f.coverPick.addEventListener("click", function () {
+        if (!window.CandleMedia) return;
+        window.CandleMedia.open(function (media) { setCover(media.deliveryUrl); });
+    });
+
+    el.f.coverClear.addEventListener("click", function () { setCover(""); });
+
+    el.f.coverImg.addEventListener("input", function () { paintCover(false); });
+    el.f.coverPreview.addEventListener("error", function () {
+        if (el.f.coverImg.value.trim()) paintCover(true);
+    });
+    el.f.coverPreview.addEventListener("load", function () { paintCover(false); });
 
     el.addImage.addEventListener("click", function () {
         if (!window.CandleMedia || !composer) return;

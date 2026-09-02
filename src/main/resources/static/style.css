@@ -2752,6 +2752,13 @@ body:not(.is-admin) .adm-search {
     color: var(--adm-muted);
 }
 
+/* A .field that wraps controls rather than one input cannot be a <label> — clicking it would
+   forward to whichever control the browser picked first. It gets its caption from this. */
+.field-label {
+    font-size: 13px;
+    color: var(--adm-muted);
+}
+
 .field-wide {
     grid-column: 1 / -1;
 }
@@ -2804,13 +2811,70 @@ body:not(.is-admin) .adm-search {
     font-size: 12.5px;
 }
 
+/* ---- cover image ---- */
+
+.cover-field {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px;
+    border: 1px solid var(--adm-border);
+    border-radius: 10px;
+    background: var(--adm-panel-2);
+}
+
+.cover-preview,
+.cover-empty {
+    width: 104px;
+    height: 68px;
+    flex: 0 0 104px;
+    border-radius: 8px;
+    border: 1px solid var(--adm-border);
+    background: var(--adm-panel-3);
+}
+
+.cover-preview {
+    object-fit: cover;
+}
+
+.cover-empty {
+    display: grid;
+    place-items: center;
+    font-size: 11.5px;
+    color: var(--adm-muted-2);
+}
+
+.cover-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.admin-shell .cover-actions button {
+    padding: 7px 12px;
+    font-size: 12.5px;
+    box-shadow: none;
+}
+
+/* The URL is still the stored value and still editable — pasting an external image should
+   not require uploading it first — but it reads as the fallback, not the main way in. */
+.cover-url {
+    margin-top: 8px;
+    font-family: var(--mono);
+    font-size: 12px;
+}
+
 /* ---- the blog writing surface ---- */
 
+/* No `overflow: hidden` here, however tempting it is for clipping the toolbar to the rounded
+   corners. Any overflow other than visible makes this element the scroll container for the
+   sticky toolbar inside it — and since it never scrolls, the toolbar pins 68px down from the
+   shell's own top and sits on the first line of the post. The toolbar rounds its own corners
+   instead. */
 .blog-editor-shell {
     border: 1px solid var(--adm-border);
     border-radius: 10px;
     background: var(--adm-panel);
-    overflow: hidden;
 }
 
 .blog-editor-shell:focus-within {
@@ -2824,9 +2888,12 @@ body:not(.is-admin) .adm-search {
     gap: 2px;
     padding: 6px 8px;
     border-bottom: 1px solid var(--adm-border);
+    border-radius: 9px 9px 0 0;
     background: var(--adm-panel-2);
+    /* Sticky against the page, clearing the admin topbar, so the controls stay reachable
+       while writing a long post. */
     position: sticky;
-    top: 68px;
+    top: 69px;
     z-index: 4;
 }
 
