@@ -131,14 +131,32 @@
         renderRecent(data.recent);
     }
 
+    var loaded = false;
+
+    /* On a first open that fails there is nothing on screen to fall back to, and the two
+       list sections would sit empty with no explanation — indistinguishable from an account
+       that has never played. Say so instead. */
+    function showLoadFailure() {
+        var message = '<p class="profile-empty">Không tải được thống kê. Kiểm tra kết nối rồi mở lại tab này.</p>';
+        el.byAsset.innerHTML = message;
+        el.recent.innerHTML = message;
+    }
+
     async function load() {
         if (!window.CandleAuth.getUser()) return;
         try {
             var res = await window.CandleAuth.authFetch("/api/stats/me");
-            if (res.ok) render(await res.json());
+            if (res.ok) {
+                render(await res.json());
+                loaded = true;
+                return;
+            }
         } catch (e) {
-            // Leave whatever was last rendered rather than blanking the page.
+            // Falls through to the same handling as a non-ok response.
         }
+        // Once something has rendered, leaving it up beats replacing real numbers with an
+        // error the player can do nothing about.
+        if (!loaded) showLoadFailure();
     }
 
     window.__initProfileView = load;

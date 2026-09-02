@@ -33,6 +33,7 @@ public class GuessResultService {
         this.userRepository = userRepository;
     }
 
+    /** {@code guessed} is null when the player ran out of time — recorded as an unanswered guess. */
     public void record(Asset asset, String timeframe, int startIndex, int guessNumber,
                        Direction guessed, Direction actual) {
         Long userId = currentUserId();

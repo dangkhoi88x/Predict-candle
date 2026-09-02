@@ -955,6 +955,231 @@ h1, h2, h3 {
     font-variant-numeric: tabular-nums;
 }
 
+/* The end-of-session reveal: which stretch of history the chart actually was. Sits between
+   the chart and the controls so it reads as a caption of what is still on screen. */
+.round-identity {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 4px 12px;
+    margin-bottom: 10px;
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--panel-2);
+    font-size: 13px;
+    animation: identity-in var(--duration-enter) var(--ease-out) both;
+}
+
+.round-identity .ri-label {
+    color: var(--muted-2);
+    font: 500 11px var(--mono);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.round-identity .ri-asset {
+    color: var(--text);
+    font-weight: 600;
+}
+
+.round-identity .ri-range {
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+}
+
+.round-identity .ri-link {
+    margin-left: auto;
+    color: var(--accent);
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.round-identity .ri-link:hover {
+    text-decoration: underline;
+}
+
+@keyframes identity-in {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: none; }
+}
+
+/* Post-session context chart. Deliberately a separate block below the result rather than
+   more candles on the game chart: what happened around the round is a different question
+   from what the player was just asked, and mixing them muddles both. */
+.round-context {
+    margin-bottom: 12px;
+    padding: 14px 16px 12px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--panel);
+    animation: identity-in var(--duration-enter) var(--ease-out) both;
+}
+
+.round-context .rc-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 2px 10px;
+}
+
+.round-context .rc-title {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+}
+
+.round-context .rc-sub {
+    margin: 0;
+    color: var(--muted);
+    font: 400 12px var(--mono);
+    font-variant-numeric: tabular-nums;
+}
+
+.round-context .rc-chart {
+    margin-top: 8px;
+    height: 200px;
+}
+
+.round-context .rc-chart svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+}
+
+.round-context .rc-patterns {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+}
+
+.round-context .rc-patterns-label {
+    margin: 0 0 6px;
+    color: var(--muted-2);
+    font: 500 11px var(--mono);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.round-context .rc-patterns-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.rc-pattern {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 7px;
+    padding: 5px 10px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--panel-2);
+    color: var(--text);
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: border-color var(--duration-fast) var(--ease-out),
+                color var(--duration-fast) var(--ease-out);
+}
+
+.rc-pattern:hover,
+.rc-pattern:focus-visible {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.rc-pattern .rc-pattern-at {
+    color: var(--muted);
+    font: 400 11px var(--mono);
+    font-variant-numeric: tabular-nums;
+}
+
+/* Briefly rings the card the game tab just sent the player to, so it is obvious which of
+   the thirteen cards answered the question they clicked on. */
+.pattern-card-called {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+    transition: outline-color var(--duration-normal) var(--ease-out);
+}
+
+.round-context .rc-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 16px;
+    margin: 10px 0 0;
+    padding: 0;
+    list-style: none;
+    color: var(--muted);
+    font-size: 11.5px;
+}
+
+.round-context .rc-legend li {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.round-context .rc-key {
+    width: 14px;
+    height: 10px;
+    border-radius: 3px;
+    border: 1px solid var(--border);
+}
+
+.rc-key-before { background: transparent; }
+.rc-key-played { background: color-mix(in srgb, var(--muted) 16%, transparent); }
+.rc-key-guess { background: color-mix(in srgb, var(--accent) 22%, transparent); }
+
+/* Countdown for the current guess. The fill is driven from JS, one width per tick, rather
+   than a CSS transition — the reduced-motion block collapses the duration tokens, and a
+   shot clock that finishes instantly is not a shot clock. */
+.guess-timer {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.guess-timer-track {
+    flex: 1;
+    height: 4px;
+    border-radius: 999px;
+    background: var(--overlay-strong);
+    overflow: hidden;
+}
+
+.guess-timer-fill {
+    height: 100%;
+    width: 100%;
+    border-radius: 999px;
+    background: var(--accent);
+}
+
+.guess-timer-value {
+    color: var(--muted);
+    font: 500 12px var(--mono);
+    font-variant-numeric: tabular-nums;
+    min-width: 3ch;
+    text-align: right;
+}
+
+/* Colour only, no pulse: an infinite animation would have to be switched off by hand in the
+   reduced-motion block, and the colour already says everything the pulse would. */
+.guess-timer.urgent .guess-timer-fill { background: var(--down); }
+.guess-timer.urgent .guess-timer-value { color: var(--down); }
+
+.admin-link {
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+}
+
 .next-btn {
     display: block;
     width: 100%;
