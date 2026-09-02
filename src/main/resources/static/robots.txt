@@ -1,0 +1,41 @@
+# Candle Guess
+#
+# There is one address worth crawling. Every view — chart, patterns, technical patterns,
+# psychology, heatmap, blog, profile — is a tab inside index.html, and blog posts expand in
+# place rather than getting their own URLs, so a sitemap would list a single line.
+#
+# Two things about the shape of the record below, both of which are easy to get wrong and
+# silent when you do:
+#
+# 1. No blank line between `User-agent:` and its rules. A blank line ends a record, so a rule
+#    after one belongs to no agent at all and strict parsers drop it. Comment lines are safe
+#    inside a record; empty lines are not.
+#
+# 2. Every blocked prefix is named outright, with no Allow rule overriding a broader Disallow.
+#    That pattern only works where conflicts resolve by longest match, as Google and Bing do;
+#    parsers that take the first matching line in order read it the opposite way and the block
+#    evaporates. Naming narrow prefixes makes every crawler agree.
+#
+# What is deliberately not blocked is the rest of /api/. This page fetches its content at
+# runtime, so /api/assets, /api/blog/ and /api/content/ carry the pattern libraries and the
+# posts — exactly the text worth indexing. Block those and a crawler renders an empty shell.
+#
+# /admin.html is deliberately absent too, and that is not an oversight. Listing it would
+# announce it to everyone who reads this file, and would stop crawlers fetching the page at
+# all — which is the only way they can see the <meta name="robots" content="noindex"> that
+# actually keeps it out of results. A URL blocked here can still be indexed as a bare link
+# found elsewhere, and the noindex cannot be read through a block. Blocking it would defeat
+# the thing doing the work.
+#
+# None of this is access control. Every /api/admin/** route is behind hasRole("ADMIN") and
+# re-checked against the database before any write.
+User-agent: *
+# Mints a real round and spends the per-minute limit meant for actual players.
+Disallow: /api/practice/
+# Behind hasRole("ADMIN") or a session; a crawler gets 401/403 and learns nothing.
+Disallow: /api/admin/
+Disallow: /api/media/
+Disallow: /api/stats/
+Disallow: /api/auth/
+# Proxies Yahoo Finance for a tab that is only built when a human opens it.
+Disallow: /api/market/
