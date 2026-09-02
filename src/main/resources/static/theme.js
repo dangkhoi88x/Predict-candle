@@ -17,11 +17,22 @@
         return document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark";
     }
 
+    // The admin page draws the toggle with two inline Lucide icons instead of an emoji, so
+    // writing textContent there would erase them. Whichever markup the page supplies, the
+    // rule below is the same one.
+    var moon = button.querySelector('[data-theme-icon="moon"]');
+    var sun = button.querySelector('[data-theme-icon="sun"]');
+
     function paintButton() {
         // The icon shows the theme you'd switch *to*, which is what people expect from a
         // single-button toggle.
         var isLight = current() === "light";
-        button.textContent = isLight ? "🌙" : "☀️";
+        if (moon && sun) {
+            moon.classList.toggle("hidden", !isLight);
+            sun.classList.toggle("hidden", isLight);
+        } else {
+            button.textContent = isLight ? "🌙" : "☀️";
+        }
         button.setAttribute("aria-pressed", isLight ? "true" : "false");
     }
 
