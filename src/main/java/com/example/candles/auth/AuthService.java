@@ -1,5 +1,6 @@
 package com.example.candles.auth;
 
+import com.example.candles.domain.Role;
 import com.example.candles.domain.User;
 import com.example.candles.repository.UserRepository;
 import org.slf4j.Logger;
@@ -16,13 +17,15 @@ public class AuthService {
     private final JwtService jwtService;
     private final NonceService nonceService;
     private final WalletSignatureVerifier signatureVerifier;
+    private final AdminWallets adminWallets;
 
     public AuthService(UserRepository userRepository, JwtService jwtService, NonceService nonceService,
-                        WalletSignatureVerifier signatureVerifier) {
+                        WalletSignatureVerifier signatureVerifier, AdminWallets adminWallets) {
         this.userRepository = userRepository;
         this.jwtService = jwtService;
         this.nonceService = nonceService;
         this.signatureVerifier = signatureVerifier;
+        this.adminWallets = adminWallets;
     }
 
     public WalletNonceResponse issueNonce(String rawAddress) {
@@ -50,14 +53,54 @@ public class AuthService {
 
         User user = userRepository.findByWalletAddress(address)
                 .orElseGet(() -> userRepository.save(new User(address, shortAddress(address))));
+
+        /*
+         * A wallet named in candles.admin.wallets that has never signed in has no row for the
+         * startup reconciler to promote, so the first login is where it gets its role. Doing
+         * it here as well means the config list never has to be applied in a given order.
+         */
+        if (adminWallets.grantsAdmin(address) && user.assignRole(Role.ADMIN)) {
+            log.info("Promoted {} to ADMIN on login (wallet is in candles.admin.wallets)", address);
+            userRepository.save(user);
+        }
         return issueSession(user);
     }
 
     @Transactional
     public AuthSession refresh(String rawRefreshToken) {
-        Long userId = jwtService.parseRefreshToken(rawRefreshToken);
-        User user = userRepository.findById(userId).orElseThrow(InvalidRefreshTokenException::new);
+        JwtService.RefreshClaims claims = jwtService.parseRefreshToken(rawRefreshToken);
+        User user = userRepository.findById(claims.userId()).orElseThrow(InvalidRefreshTokenException::new);
+        if (claims.tokenVersion() != user.getTokenVersion()) {
+            log.warn("Refresh rejected for user {}: token version {}, account is at {}",
+                    user.getId(), claims.tokenVersion(), user.getTokenVersion());
+            throw new InvalidRefreshTokenException();
+        }
         return issueSession(user);
+    }
+
+    /**
+     * Ends every session for the account the refresh token belongs to, not just this browser.
+     * Signing out on a shared machine should not leave a copied cookie working for a month.
+     *
+     * Tolerates a missing or unusable token: the caller is on their way out either way, and
+     * the cookie gets cleared regardless.
+     */
+    @Transactional
+    public void logout(String rawRefreshToken) {
+        try {
+            JwtService.RefreshClaims claims = jwtService.parseRefreshToken(rawRefreshToken);
+            userRepository.findById(claims.userId()).ifPresent(user -> {
+                user.revokeSessions();
+                userRepository.save(user);
+            });
+        } catch (InvalidRefreshTokenException e) {
+            log.debug("Logout without a usable refresh token; nothing to revoke");
+        } catch (RuntimeException e) {
+            // Anything else is a real failure and the sessions are still live. Logging out
+            // the browser regardless is the lesser problem, but this must not pass silently
+            // the way a catch-all would.
+            log.error("Failed to revoke sessions on logout", e);
+        }
     }
 
     @Transactional(readOnly = true)
