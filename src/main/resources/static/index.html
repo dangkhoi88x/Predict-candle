@@ -46,6 +46,7 @@
             <div id="auth-user" class="auth-user hidden">
                 <button id="auth-display-name" class="auth-display-name" type="button"
                         title="Xem chi tiết ví"></button>
+                    <a id="admin-link" class="ghost-btn admin-link hidden" href="/admin.html">⚙ Quản trị</a>
                 <button id="auth-logout-btn" class="ghost-btn" type="button">Ngắt kết nối</button>
             </div>
         </div>
@@ -130,7 +131,31 @@
         </div>
     </div>
 
+    <div id="round-identity" class="round-identity hidden" aria-live="polite"></div>
+
+    <section id="round-context" class="round-context hidden" aria-label="Bối cảnh của biểu đồ vừa chơi">
+        <div class="rc-head">
+            <h3 class="rc-title">Toàn cảnh setup</h3>
+            <p class="rc-sub" id="rc-sub"></p>
+        </div>
+        <div class="rc-chart" id="rc-chart"></div>
+        <div class="rc-patterns hidden" id="rc-patterns">
+            <p class="rc-patterns-label">Mẫu nến xuất hiện trong vòng này</p>
+            <div class="rc-patterns-list" id="rc-patterns-list"></div>
+        </div>
+        <ul class="rc-legend">
+            <li><span class="rc-key rc-key-before"></span>Trước &amp; sau — phần bạn không được xem</li>
+            <li><span class="rc-key rc-key-played"></span>20 nến bạn đã xem</li>
+            <li><span class="rc-key rc-key-guess"></span>5 nến bạn phải đoán</li>
+        </ul>
+    </section>
+
     <div id="guess-progress" class="guess-progress hidden"></div>
+
+    <div id="guess-timer" class="guess-timer hidden">
+        <div class="guess-timer-track"><div class="guess-timer-fill" id="guess-timer-fill"></div></div>
+        <span class="guess-timer-value" id="guess-timer-value"></span>
+    </div>
 
     <div class="controls">
         <button id="guess-long" class="guess-btn long" disabled>▲ LONG</button>
@@ -277,6 +302,7 @@
 <script src="theme.js"></script>
 <script src="pill.js"></script>
 <script src="rolling.js"></script>
+<script src="content.js"></script>
 <script src="auth.js"></script>
 <script src="ticker.js"></script>
 <script src="nav.js"></script>

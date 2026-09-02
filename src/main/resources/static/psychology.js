@@ -107,10 +107,12 @@
         return card;
     }
 
-    function init() {
+    async function init() {
+        var tips = await window.CandleContent.load("psychology", TIPS);
         var grid = document.getElementById("psychology-grid");
+        // The case study is a one-off layout rather than a list entry, so it stays in code.
         grid.appendChild(buildCaseStudyCard(CASE_STUDY));
-        TIPS.forEach(function (tip, index) {
+        tips.forEach(function (tip, index) {
             grid.appendChild(buildCard(tip, index));
         });
     }

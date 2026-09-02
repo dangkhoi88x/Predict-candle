@@ -353,6 +353,7 @@
         var card = document.createElement("div");
         card.className = "pattern-card";
         card.dataset.tags = pattern.tags.join(",");
+        card.dataset.pattern = pattern.id;
 
         var chartBox = document.createElement("div");
         chartBox.className = "pattern-chart";
@@ -478,11 +479,15 @@
         }
     }
 
-    function init() {
+    /* Fetched before building rather than rendering twice: the filter handlers below close
+       over the card list, and rebuilding under them would leave the filters driving cards
+       that are no longer on the page. */
+    async function init() {
+        var items = await window.CandleContent.load("candle-pattern", PATTERNS);
         var grid = document.getElementById("pattern-grid");
         var filters = Array.prototype.slice.call(document.querySelectorAll("#pattern-filters .pill-option"));
         window.CandlePill.attach(document.getElementById("pattern-filters"), ".pill-option");
-        var cards = PATTERNS.map(function (p) {
+        var cards = items.map(function (p) {
             var card = buildCard(p);
             grid.appendChild(card);
             return card;
@@ -511,4 +516,34 @@
     }
 
     init();
+
+    /* The game tab names the patterns it found in a finished round, and needs both the
+       Vietnamese name and a way to send the player to the full card. Kept to those two
+       things — everything else about this tab stays private to it. */
+    window.CandlePatterns = {
+        nameOf: function (id) {
+            for (var i = 0; i < PATTERNS.length; i++) {
+                if (PATTERNS[i].id === id) return PATTERNS[i].name;
+            }
+            return id;
+        },
+
+        reveal: function (id) {
+            document.getElementById("tab-patterns").click();
+
+            // A filter left on "Tăng" would hide the very card we are pointing at.
+            var showAll = document.querySelector('#pattern-filters .pill-option[data-filter="all"]');
+            if (showAll) showAll.click();
+
+            var card = document.querySelector('.pattern-card[data-pattern="' + id + '"]');
+            if (!card) return;
+            var detail = card.querySelector(".pattern-detail");
+            var toggle = card.querySelector(".pattern-toggle");
+            if (detail && detail.classList.contains("hidden") && toggle) toggle.click();
+
+            card.scrollIntoView({ block: "center", behavior: "smooth" });
+            card.classList.add("pattern-card-called");
+            setTimeout(function () { card.classList.remove("pattern-card-called"); }, 1600);
+        },
+    };
 })();

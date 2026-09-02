@@ -497,11 +497,13 @@
         }
     }
 
-    function init() {
+    /* Same reason as patterns.js: fetch first, build once. */
+    async function init() {
+        var items = await window.CandleContent.load("technical-pattern", TECHNICAL_PATTERNS);
         var grid = document.getElementById("technical-grid");
         var filters = Array.prototype.slice.call(document.querySelectorAll("#technical-filters .pill-option"));
         window.CandlePill.attach(document.getElementById("technical-filters"), ".pill-option");
-        var cards = TECHNICAL_PATTERNS.map(function (p) {
+        var cards = items.map(function (p) {
             var card = buildCard(p);
             grid.appendChild(card);
             return card;
