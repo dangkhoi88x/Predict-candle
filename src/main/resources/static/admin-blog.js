@@ -37,8 +37,6 @@
             slug: document.getElementById("f-slug"),
             tags: document.getElementById("f-tags"),
             position: document.getElementById("f-position"),
-            source: document.getElementById("f-source"),
-            sourceUrl: document.getElementById("f-source-url"),
             coverImg: document.getElementById("f-cover-img"),
             coverPreview: document.getElementById("f-cover-preview"),
             coverEmpty: document.getElementById("f-cover-empty"),
@@ -46,8 +44,6 @@
             coverPick: document.getElementById("f-cover-pick"),
             coverClear: document.getElementById("f-cover-clear"),
             coverFile: document.getElementById("f-cover-file"),
-            imageCredit: document.getElementById("f-image-credit"),
-            coverSvg: document.getElementById("f-cover-svg"),
             published: document.getElementById("f-published"),
         },
     };
@@ -157,10 +153,14 @@
             title: el.f.title.value.trim(),
             tags: el.f.tags.value.split(",").map(function (t) { return t.trim(); })
                 .filter(function (t) { return t; }),
-            source: el.f.source.value.trim() || null,
-            sourceUrl: el.f.sourceUrl.value.trim() || null,
-            imageCredit: el.f.imageCredit.value.trim() || null,
-            coverSvg: el.f.coverSvg.value.trim() || null,
+            /* No longer editable here, but PUT replaces the whole post and BlogService.apply
+               writes every field it is handed — so these travel back exactly as they came.
+               Sending null instead would silently erase the attribution the seeded posts
+               carry, and the SVG that is the only cover the first one has. */
+            source: (editing && editing.source) || null,
+            sourceUrl: (editing && editing.sourceUrl) || null,
+            imageCredit: (editing && editing.imageCredit) || null,
+            coverSvg: (editing && editing.coverSvg) || null,
             coverImg: el.f.coverImg.value.trim() || null,
             body: readBody(),
             published: el.f.published.checked,
@@ -234,12 +234,8 @@
         el.f.slug.value = (post && post.slug) || "";
         el.f.tags.value = ((post && post.tags) || []).join(", ");
         el.f.position.value = post ? post.position : 0;
-        el.f.source.value = (post && post.source) || "";
-        el.f.sourceUrl.value = (post && post.sourceUrl) || "";
         el.f.coverImg.value = (post && post.coverImg) || "";
         paintCover();
-        el.f.imageCredit.value = (post && post.imageCredit) || "";
-        el.f.coverSvg.value = (post && post.coverSvg) || "";
         el.f.published.checked = !!(post && post.published);
         el.editor.classList.remove("hidden");
         el.f.title.focus();
