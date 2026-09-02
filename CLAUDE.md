@@ -49,12 +49,25 @@ Wallet-signature login, no passwords. `GET /wallet/nonce` → client signs it �
 
 Access token lives **in memory only** (never localStorage); the refresh token is an HttpOnly
 cookie, so `auth.js` silently POSTs `/api/auth/refresh` on load to restore a session.
-`JwtAuthenticationFilter` authenticates the request as a bare `Long` user id — there are **no
-roles or authorities**, every authenticated user is equal. Anything needing narrower access
-has to check something else (see `MediaController`, which matches the caller's wallet against
-`candles.media.admin-wallets`).
+`JwtAuthenticationFilter` authenticates the request as a bare `Long` principal (much of the
+codebase pattern-matches on that) plus one authority, `ROLE_USER` or `ROLE_ADMIN`.
 
-Since anyone can connect a wallet, `.authenticated()` alone means "everyone" on this app.
+Since anyone can connect a wallet, **`.authenticated()` alone means "everyone"** on this app.
+Anything narrower uses the role.
+
+### Roles
+
+Two: `USER` and `ADMIN`, on `users.role`. Who is an admin comes from `candles.admin.wallets`
+(env `ADMIN_WALLETS`), not from the database — `AdminRoleReconciler` promotes listed wallets
+and **demotes** unlisted admins at every startup, and `AuthService` promotes at login for a
+listed wallet that has never signed in. So an admin screen cannot grant the role; editing the
+config and restarting is the only way, which is deliberate (revoking has to be as easy as
+granting). Change that class if that trade stops being worth it.
+
+The role travels in the access token, so `hasRole(...)` in `SecurityConfig` costs no query.
+That claim is a snapshot up to 15 minutes stale, so **anything that writes calls
+`AdminAccess.requireAdmin()`**, which re-reads the role from the database. `User.assignRole`
+also bumps `tokenVersion`, killing the account's refresh tokens on any role change.
 
 ### Frontend
 
@@ -77,6 +90,47 @@ keep their own click handlers unchanged and only add one `attach()` line.
 not at load. Add to it rather than initialising a heavy tab eagerly — `loading="lazy"` does
 **not** defer images inside a `display:none` view (an element with no box cannot be deferred
 by position), so anything image-heavy must be built on demand.
+
+### Admin frontend
+
+`admin.html` is a second, separate page: a dashboard shell — sidebar, sticky topbar, and seven
+panes of which exactly one shows. It shares `style.css`, `theme.js` and `auth.js` with the game
+and nothing else.
+
+**Pane switching is an attribute, never `.hidden`.** Every `admin-*.js` module already owns
+`.hidden` on its own section and re-asserts it each time it hears `candles:admin` — so a nav
+writing the same class would lose the pane the moment a module refreshed (press Sync in Vận
+hành and watch it jump back). `admin-nav.js` sets `data-pane` on `.admin-panes` instead, and
+CSS shows a section only when the container selects its pane **and** its module has not hidden
+it. `body.is-admin`, set once by `admin.js`, is what hides the nav and panes before the server
+has confirmed the role.
+
+| Event | Fired by | Carries |
+|---|---|---|
+| `candles:admin` | `admin.js` | whether `/api/admin/me` said yes; every module loads off this |
+| `candles:ops` | `admin-ops.js` | the ops snapshot, so the overview pane reuses it instead of fetching again |
+| `candles:pane` | `admin-nav.js` | the pane just switched to |
+
+`CandleAdminNav.go(pane)` is the way to move between panes from code — `admin-media.js` uses it
+to take the blog editor's image picker to the library and back.
+
+Overview charts come from `GET /api/admin/stats?range=week|month|year` (`AdminStatsService`,
+cached 60s, bucketed in UTC; `&fresh=true` is the refresh button skipping that cache). The four
+KPI figures do **not**: they come off the `candles:ops` snapshot, because two panes asking the
+same question twice can only disagree.
+
+**Two guess totals, and picking the wrong one is a visible bug.** A timed-out guess has no
+`guessed_direction`, so each `AdminStats.Bucket` carries both `guesses` (every row — the
+denominator `PlayerScore` and the ops panel already score on) and `answered` (long + short, the
+chart column's height, because the legend says SHORT and LONG). Accuracy anywhere on the page
+is `correct / guesses`; reading `correct / answered` instead runs about nine points high on
+current data. `AdminStatsTest` pins both the split and the JSON field names the pane reads —
+there is no shared schema, so a renamed record component would silently draw zeroes.
+
+Admin styling lives under `.admin-shell` and reads `--adm-*` tokens, a palette of its own —
+soft grey ground, hairline borders, low shadow, against the game's near-black. The scope is
+load-bearing: `.ghost-btn`, `.pill`, `.status` and `.field` are shared class names, and only
+the `.admin-shell` prefix keeps the two pages from having to agree on how they look.
 
 ### CSS conventions
 
@@ -103,6 +157,10 @@ and S&P 500 (`/api/market/sp500` → `YahooFinanceClient`). `treemap.js` does th
 
 ## Notes
 
+- **Schema is Flyway's, not Hibernate's.** `ddl-auto` is `validate`: adding a field to an
+  entity without a matching migration in `src/main/resources/db/migration` fails startup
+  rather than silently altering the table. Existing databases predating Flyway are stamped
+  at V1 by `baseline-on-migrate` and pick up V2 onwards.
 - **Spring Boot 4.1.1 / Java 25**, and Jackson **3** (`tools.jackson.*`, not
   `com.fasterxml.jackson.*`) — this bites when hand-writing JSON handling.
 - JWT uses `jjwt` with the **Gson** serializer to stay clear of Jackson 3.
@@ -112,7 +170,9 @@ and S&P 500 (`/api/market/sp500` → `YahooFinanceClient`). `treemap.js` does th
 - Blog images live in this project's Cloudinary account behind an `f_auto,q_auto` transform.
   Dropping the transform segment from the URL returns the untouched original.
 - `ROUND_TOKEN_SECRET` and `AUTH_JWT_SECRET` default to dev values and must be set for real
-  deployments. `MEDIA_ADMIN_WALLETS` is empty by default, which closes `/api/media/**`
-  entirely rather than leaving it open.
+  deployments. `ADMIN_WALLETS` is empty by default, which closes `/api/admin/**` and
+  `/api/media/**` entirely rather than leaving them open. `MEDIA_ADMIN_WALLETS` is still read
+  as a fallback for deployments that predate roles (`AdminWallets` logs a warning); move those
+  addresses over.
 - Config knobs (assets, backfill start, dead-round threshold, repeat cache TTL, visible candle
   count) live under `candles.*` in `application.yaml`.
