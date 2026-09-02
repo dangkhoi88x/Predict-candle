@@ -46,8 +46,13 @@ public class CandleSyncScheduler implements ApplicationRunner {
     }
 
     private void syncAll() {
-        List<Asset> assets = ensureAssets();
-        for (Asset asset : assets) {
+        ensureAssets();
+        /*
+         * Seeded from configuration, driven by the database. A pair an admin disabled should
+         * stop being fetched — it is off the menu — and one added from the admin screen has no
+         * entry in candles.assets to be found under.
+         */
+        for (Asset asset : assetRepository.findByEnabledTrueOrderByPositionAscSymbolAsc()) {
             try {
                 candleSyncService.sync(asset);
             } catch (Exception e) {
@@ -56,6 +61,7 @@ public class CandleSyncScheduler implements ApplicationRunner {
         }
     }
 
+    /** Keeps the configured pairs present. Never removes: taking one off the menu is the enabled flag's job. */
     private List<Asset> ensureAssets() {
         return properties.assets().stream()
                 .map(config -> assetRepository.findBySymbol(config.symbol())

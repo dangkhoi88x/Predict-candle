@@ -37,6 +37,40 @@ public class Asset {
         this.type = type;
     }
 
+    /**
+     * Whether the pair is offered to players. False keeps the row and its candles but takes it
+     * out of the picker, the sync loop and round selection.
+     */
+    @Column(nullable = false)
+    private boolean enabled = true;
+
+    public boolean isEnabled() {
+        return enabled;
+    }
+
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
+    }
+
+    /** Where the pair sits in the picker, low to high. Ties fall back to the symbol. */
+    @Column(nullable = false)
+    private int position = 100;
+
+    public int getPosition() {
+        return position;
+    }
+
+    public void setPosition(int position) {
+        this.position = position;
+    }
+
+    /** "BTCUSDT" reads as "BTC" everywhere a person sees it. */
+    public String shortSymbol() {
+        return symbol != null && symbol.endsWith("USDT") && symbol.length() > 4
+                ? symbol.substring(0, symbol.length() - 4)
+                : symbol;
+    }
+
     public Long getId() {
         return id;
     }
