@@ -2804,6 +2804,76 @@ body:not(.is-admin) .adm-search {
     font-size: 12.5px;
 }
 
+/* ---- the blog writing surface ---- */
+
+.blog-compose {
+    min-height: 260px;
+    padding: 18px 20px;
+    border: 1px solid var(--adm-border);
+    border-radius: 10px;
+    background: var(--adm-panel);
+    font-size: 15px;
+    line-height: 1.7;
+    outline: none;
+    transition: border-color var(--duration-fast) var(--ease-out);
+}
+
+.blog-compose:focus-within {
+    border-color: var(--adm-border-2);
+}
+
+.blog-compose > p {
+    margin: 0 0 14px;
+}
+
+.blog-compose > p:last-child {
+    margin-bottom: 0;
+}
+
+/* The placeholder only stands in for a genuinely empty document — one paragraph holding
+   nothing but the <br> the caret needs to sit on. */
+.blog-compose > p:only-child:has(> br:only-child)::before {
+    content: attr(data-placeholder);
+    color: var(--adm-muted-2);
+}
+
+.blog-compose-figure {
+    margin: 18px 0;
+    border: 1px solid var(--adm-border);
+    border-radius: 10px;
+    overflow: hidden;
+    background: var(--adm-panel-2);
+}
+
+.blog-compose-figure img {
+    display: block;
+    width: 100%;
+    min-height: 120px;
+    max-height: 320px;
+    object-fit: contain;
+    background: var(--adm-panel-3);
+}
+
+.blog-compose-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border-top: 1px solid var(--adm-border);
+}
+
+.blog-compose-alt {
+    flex: 1;
+    min-width: 0;
+    padding: 5px 8px;
+    border: 1px solid var(--adm-border);
+    border-radius: 8px;
+    background: var(--adm-panel);
+    color: var(--adm-text);
+    font-family: inherit;
+    font-size: 12.5px;
+}
+
 .block-list {
     display: flex;
     flex-direction: column;

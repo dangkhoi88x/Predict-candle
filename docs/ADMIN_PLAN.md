@@ -99,9 +99,18 @@ Phần lớn nhất, và là lý do chính có trang admin.
 - `GET /api/blog/posts` công khai; `POST/PUT/DELETE /api/admin/blog/posts` sau `AdminGuard`.
 - `blog.js` đổi sang gọi API. **Giữ mảng `POSTS` làm dự phòng** cho tới khi đường API chạy thật
   ổn — blog là nội dung công khai, hỏng là trắng tab.
-- Trình soạn (`admin-blog.js`): form + trình dựng block (thêm đoạn văn / thêm ảnh, đổi thứ tự,
-  xoá). Danh sách khối được giữ trong một mảng của JS và vẽ lại từ đó, **không** đọc ngược từ
-  DOM lúc lưu — đó là chỗ một editor có thể sắp xếp lại khối bắt đầu tự mâu thuẫn.
+- Trình soạn (`admin-blog.js`): form + **một khung soạn duy nhất** (`#blog-body`,
+  contenteditable). Gõ ra đoạn văn, bấm "Ảnh từ thư viện" để chèn ảnh ngay tại con trỏ. Lúc
+  lưu thì duyệt DOM của khung đó ra **đúng mảng block cũ** — `{type:"text"}` /
+  `{type:"image", src, alt, w, h}`. Không đổi định dạng lưu, không đổi `blog.js`.
+
+  Bản đầu là trình dựng block (thêm đoạn / thêm ảnh / đổi thứ tự) giữ mảng trong JS và **không**
+  đọc ngược từ DOM — vì một danh sách sắp xếp lại được mà đọc ngược thì có hai nguồn thứ tự.
+  Khung soạn không có vấn đề đó: khung **chính là** thứ tự tài liệu, không còn mảng nào để lệch.
+
+  Cố ý **không** có in đậm / in nghiêng / link: block chỉ giữ chuỗi thuần. Muốn có thì phải mở
+  rộng định dạng block chứ không phải nới `blog.js` sang `innerHTML` — `body` là `JsonNode`
+  server không kiểm, và trang blog là trang công khai.
 - Chọn ảnh từ thư viện: đã xong ở giai đoạn 1.
 
 ### Giai đoạn 2b — ba thư viện nội dung  ·  M  ·  ✅ XONG

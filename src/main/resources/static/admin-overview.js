@@ -197,8 +197,11 @@
         }
 
         var act = snapshot.activity;
-        var daily = stats ? stats.daily : [];
-        var weekly = stats ? stats.weekly : [];
+        /* `stats &&` is not enough on its own: a 200 carrying an unexpected shape leaves the
+           object truthy and the series undefined, and this runs inside the candles:ops
+           listener where a throw never reaches loadStats's catch — the pane would just stop. */
+        var daily = (stats && stats.daily) || [];
+        var weekly = (stats && stats.weekly) || [];
         var accounts = (stats && stats.accounts) || [];
         var deltas = (stats && stats.deltas) || {};
         var accuracyToday = act.guessesToday ? act.correctToday / act.guessesToday : null;

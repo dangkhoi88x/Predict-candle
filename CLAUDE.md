@@ -127,6 +127,18 @@ is `correct / guesses`; reading `correct / answered` instead runs about nine poi
 current data. `AdminStatsTest` pins both the split and the JSON field names the pane reads —
 there is no shared schema, so a renamed record component would silently draw zeroes.
 
+The blog body is written in **one contenteditable surface** (`#blog-body`) — paragraphs from
+typing, images dropped in at the caret — and read back out of that DOM on save as the block
+array the database has always held. Reading the DOM back is exactly what a block *builder*
+must not do (a reorderable list would then have an order in two places), but here the surface
+*is* the document order, so there is no second copy to drift.
+
+Bold, italic and links are deliberately absent: the stored block holds a plain string, and an
+editor offering them would have to drop them on save or start storing markup — and markup
+means `blog.js` renders with `innerHTML` instead of `textContent`, on a public page, from a
+`body` column the server does not validate. Grow the block format to add them; do not loosen
+the renderer.
+
 The topbar search (`admin-search.js`) searches the **rendered DOM**, not the modules' data —
 every pane is built and in the document at once, only hidden by CSS, so the rows are all there
 for free and no module has to expose its state. The index is therefore exactly what has

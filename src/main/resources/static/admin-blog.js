@@ -1,10 +1,19 @@
 /**
  * Blog CRUD for the admin page: the list of posts, and the editor behind it.
  *
- * The editor keeps the post being edited in a plain object and re-renders the block list from
- * it, rather than reading values back out of the DOM on save. Blocks get added, removed and
- * moved, and reading a reordered list out of the document is where that kind of editor starts
- * disagreeing with itself.
+ * The body is written in one contenteditable surface — type paragraphs, drop images in at the
+ * caret — and read back out of that DOM on save as the same block array the database has
+ * always held: `{type:"text", text}` and `{type:"image", src, alt, w, h}`.
+ *
+ * Reading the DOM back is the thing a block builder must not do, because a list you can
+ * reorder has an order in two places. Here there is only one place: the surface *is* the
+ * document order, and there is no separate array to drift from it.
+ *
+ * What is deliberately absent is bold, italic and links. The stored block holds a plain
+ * string, so an editor offering them would have to either drop them on save or start storing
+ * markup — and storing markup means `blog.js` renders with innerHTML instead of textContent,
+ * on a public page, with a `body` column the server does not validate. Growing the block
+ * format is the way to add them, not loosening the renderer.
  */
 (function () {
     "use strict";
@@ -16,10 +25,8 @@
         editorTitle: document.getElementById("blog-editor-title"),
         newBtn: document.getElementById("blog-new"),
         cancelBtn: document.getElementById("blog-cancel"),
-        addText: document.getElementById("blog-add-text"),
         addImage: document.getElementById("blog-add-image"),
-        blocks: document.getElementById("blog-blocks"),
-        blocksEmpty: document.getElementById("blog-blocks-empty"),
+        body: document.getElementById("blog-body"),
         status: document.getElementById("admin-status"),
         f: {
             title: document.getElementById("f-title"),
@@ -36,7 +43,10 @@
     };
 
     var editing = null;   // the post being edited, or null when the editor is closed
-    var blocks = [];      // the block list, owned here rather than read back from the DOM
+    /* The writing surface is the source of truth while the editor is open, and the block
+       array is produced from it on save. That is the opposite of the old block builder, and
+       it is only safe because the surface holds nothing that a block cannot carry: a
+       paragraph is text, a figure is an image, and there is no third thing to lose. */
 
     function setStatus(text) {
         el.status.textContent = text || "";
@@ -135,7 +145,7 @@
             imageCredit: el.f.imageCredit.value.trim() || null,
             coverSvg: el.f.coverSvg.value.trim() || null,
             coverImg: el.f.coverImg.value.trim() || null,
-            body: blocks,
+            body: readBody(),
             published: el.f.published.checked,
             position: Number(el.f.position.value) || 0,
         };
@@ -201,7 +211,7 @@
 
     function openEditor(post) {
         editing = post || {};
-        blocks = JSON.parse(JSON.stringify((post && post.body) || []));
+        writeBody((post && post.body) || []);
         el.editorTitle.textContent = post ? "Sửa bài" : "Bài mới";
         el.f.title.value = (post && post.title) || "";
         el.f.slug.value = (post && post.slug) || "";
@@ -213,114 +223,189 @@
         el.f.imageCredit.value = (post && post.imageCredit) || "";
         el.f.coverSvg.value = (post && post.coverSvg) || "";
         el.f.published.checked = !!(post && post.published);
-        renderBlocks();
         el.editor.classList.remove("hidden");
         el.f.title.focus();
     }
 
     function closeEditor() {
         editing = null;
-        blocks = [];
+        el.body.innerHTML = "";
         el.editor.classList.add("hidden");
         setStatus("");
     }
 
-    function renderBlocks() {
-        el.blocks.innerHTML = "";
-        el.blocksEmpty.classList.toggle("hidden", blocks.length > 0);
-        blocks.forEach(function (block, index) {
-            el.blocks.appendChild(blockEditor(block, index));
+    /* ---- the writing surface ----------------------------------------------------------
+       Blocks in, blocks out. Nothing between those two functions is stored: the markup here
+       exists only for the duration of an edit, which is what keeps this from becoming an
+       HTML-storing editor and dragging a sanitiser in behind it. blog.js still renders every
+       paragraph with textContent. */
+
+    /** blocks -> the surface. */
+    function writeBody(body) {
+        el.body.innerHTML = "";
+        (body || []).forEach(function (block) {
+            el.body.appendChild(block.type === "image" ? figureFor(block) : paragraphFor(block.text));
+        });
+        // Always leave somewhere to type, or an empty post has no caret to place.
+        if (!el.body.firstChild) el.body.appendChild(paragraphFor(""));
+    }
+
+    /**
+     * The surface -> blocks, in document order.
+     *
+     * Recursive because browsers wrap things unpredictably: typing after an image can leave a
+     * div holding both a figure and text, and a flat pass over childNodes would swallow the
+     * figure into the paragraph's textContent.
+     */
+    function readBody() {
+        var out = [];
+        collect(el.body, out);
+        return out;
+    }
+
+    function collect(node, out) {
+        Array.prototype.forEach.call(node.childNodes, function (child) {
+            if (child.nodeType === 1 && child.dataset && child.dataset.block === "image") {
+                var src = child.dataset.src || "";
+                if (!src) return;
+                var block = { type: "image", src: src };
+                var alt = child.querySelector(".blog-compose-alt");
+                if (alt && alt.value.trim()) block.alt = alt.value.trim();
+                // Width and height reserve the image's space on the public page. They come
+                // from the library and are carried through rather than re-typed.
+                if (child.dataset.w) block.w = Number(child.dataset.w);
+                if (child.dataset.h) block.h = Number(child.dataset.h);
+                out.push(block);
+                return;
+            }
+            if (child.nodeType === 1 && child.querySelector('[data-block="image"]')) {
+                collect(child, out);
+                return;
+            }
+            var text = (child.textContent || "").replace(/\s+/g, " ").trim();
+            if (text) out.push({ type: "text", text: text });
         });
     }
 
-    function blockEditor(block, index) {
-        var wrap = document.createElement("div");
-        wrap.className = "block";
+    function paragraphFor(text) {
+        var p = document.createElement("p");
+        p.textContent = text || "";
+        // The <br> is what gives an empty paragraph a line for the caret to sit on, and it is
+        // also what the placeholder rule in style.css keys off.
+        if (!text) p.appendChild(document.createElement("br"));
+        p.setAttribute("data-placeholder", el.body.getAttribute("data-placeholder") || "");
+        return p;
+    }
 
-        var head = document.createElement("div");
-        head.className = "block-head";
-        var kind = document.createElement("span");
-        kind.className = "block-kind";
-        kind.textContent = block.type === "image" ? "Ảnh" : "Đoạn văn";
-        head.appendChild(kind);
+    /**
+     * contenteditable="false" is what makes the image behave like one object: the caret
+     * cannot get inside it, and Backspace beside it removes the whole figure instead of
+     * eating it a character at a time.
+     */
+    function figureFor(block) {
+        var figure = document.createElement("figure");
+        figure.className = "blog-compose-figure";
+        figure.contentEditable = "false";
+        figure.dataset.block = "image";
+        figure.dataset.src = block.src || "";
+        if (block.w) figure.dataset.w = block.w;
+        if (block.h) figure.dataset.h = block.h;
 
-        var tools = document.createElement("div");
-        tools.className = "block-tools";
-        tools.appendChild(button("↑", function () { move(index, -1); }));
-        tools.appendChild(button("↓", function () { move(index, 1); }));
-        tools.appendChild(button("✕", function () {
-            blocks.splice(index, 1);
-            renderBlocks();
+        var img = document.createElement("img");
+        img.src = block.src || "";
+        img.alt = block.alt || "";
+        img.loading = "lazy";
+        figure.appendChild(img);
+
+        var bar = document.createElement("figcaption");
+        bar.className = "blog-compose-bar";
+        var alt = document.createElement("input");
+        alt.type = "text";
+        alt.className = "blog-compose-alt";
+        alt.placeholder = "Mô tả ảnh (alt)";
+        alt.value = block.alt || "";
+        alt.addEventListener("input", function () { img.alt = alt.value; });
+        bar.appendChild(alt);
+        bar.appendChild(button("Xoá", function () {
+            var next = figure.nextSibling;
+            figure.remove();
+            if (!el.body.firstChild) el.body.appendChild(paragraphFor(""));
+            placeCaret(next);
         }, "danger-btn"));
-        head.appendChild(tools);
-        wrap.appendChild(head);
+        figure.appendChild(bar);
+        return figure;
+    }
 
-        if (block.type === "image") {
-            var srcField = input("URL ảnh", block.src || "", function (v) { block.src = v; });
-            /* Picking from the library fills the dimensions too. Those drive the image's
-               reserved space on the blog, and typing them by hand is both tedious and the
-               kind of thing that ends up wrong and shifts the layout as the page loads. */
-            srcField.appendChild(button("Chọn từ thư viện", function () {
-                if (!window.CandleMedia) return;
-                window.CandleMedia.open(function (media) {
-                    block.src = media.deliveryUrl;
-                    block.w = media.width;
-                    block.h = media.height;
-                    renderBlocks();
-                    el.editor.scrollIntoView({ block: "start", behavior: "smooth" });
-                });
-            }));
-            wrap.appendChild(srcField);
-            wrap.appendChild(input("Mô tả (alt)", block.alt || "", function (v) { block.alt = v; }));
-            var size = document.createElement("div");
-            size.className = "block-size";
-            size.appendChild(input("Rộng", block.w || "", function (v) { block.w = Number(v) || undefined; }, "number"));
-            size.appendChild(input("Cao", block.h || "", function (v) { block.h = Number(v) || undefined; }, "number"));
-            wrap.appendChild(size);
+    /* ---- caret ---- */
+
+    /* Picking an image sends the reader to the media pane, which takes the focus and the
+       selection with it. The last caret position inside the surface is remembered so the
+       image lands where they were writing rather than at the end. */
+    var savedRange = null;
+
+    function rememberCaret() {
+        var selection = window.getSelection();
+        if (!selection.rangeCount) return;
+        var range = selection.getRangeAt(0);
+        if (el.body.contains(range.commonAncestorContainer)) savedRange = range.cloneRange();
+    }
+
+    function topLevelAt(node) {
+        while (node && node.parentNode !== el.body) node = node.parentNode;
+        return node;
+    }
+
+    function placeCaret(before) {
+        var target = before && before.nodeType === 1 && before.dataset.block === "image"
+            ? null
+            : before;
+        var p = target || paragraphFor("");
+        if (!target) el.body.insertBefore(p, before);
+        var range = document.createRange();
+        range.selectNodeContents(p);
+        range.collapse(true);
+        var selection = window.getSelection();
+        selection.removeAllRanges();
+        selection.addRange(range);
+        el.body.focus();
+    }
+
+    function insertImage(media) {
+        var figure = figureFor({
+            src: media.deliveryUrl, alt: "", w: media.width, h: media.height,
+        });
+        var anchor = savedRange ? topLevelAt(savedRange.startContainer) : null;
+        if (anchor && anchor.parentNode === el.body) {
+            el.body.insertBefore(figure, anchor.nextSibling);
         } else {
-            var label = document.createElement("label");
-            label.className = "field field-wide";
-            label.textContent = "Nội dung";
-            var area = document.createElement("textarea");
-            area.rows = 4;
-            area.value = block.text || "";
-            area.addEventListener("input", function () { block.text = area.value; });
-            label.appendChild(area);
-            wrap.appendChild(label);
+            el.body.appendChild(figure);
         }
-        return wrap;
-    }
-
-    function input(label, value, onInput, type) {
-        var wrap = document.createElement("label");
-        wrap.className = "field field-wide";
-        wrap.textContent = label;
-        var field = document.createElement("input");
-        field.type = type || "text";
-        field.value = value;
-        field.addEventListener("input", function () { onInput(field.value); });
-        wrap.appendChild(field);
-        return wrap;
-    }
-
-    function move(index, delta) {
-        var to = index + delta;
-        if (to < 0 || to >= blocks.length) return;
-        var moved = blocks.splice(index, 1)[0];
-        blocks.splice(to, 0, moved);
-        renderBlocks();
+        // Somewhere to keep typing under the image, rather than a dead end.
+        var after = paragraphFor("");
+        el.body.insertBefore(after, figure.nextSibling);
+        placeCaret(after);
+        savedRange = null;
     }
 
     el.newBtn.addEventListener("click", function () { openEditor(null); });
     el.cancelBtn.addEventListener("click", closeEditor);
     el.editor.addEventListener("submit", save);
-    el.addText.addEventListener("click", function () {
-        blocks.push({ type: "text", text: "" });
-        renderBlocks();
-    });
     el.addImage.addEventListener("click", function () {
-        blocks.push({ type: "image", src: "", alt: "" });
-        renderBlocks();
+        if (!window.CandleMedia) return;
+        rememberCaret();
+        window.CandleMedia.open(insertImage);
+    });
+
+    ["keyup", "mouseup", "blur"].forEach(function (type) {
+        el.body.addEventListener(type, rememberCaret);
+    });
+
+    /* Paste as plain text. Pasted markup would be flattened by readBody anyway, so keeping it
+       would only mean the surface showed something the saved post would not have. */
+    el.body.addEventListener("paste", function (event) {
+        event.preventDefault();
+        var text = (event.clipboardData || window.clipboardData).getData("text/plain");
+        document.execCommand("insertText", false, text);
     });
 
     /* admin.js decides whether this account is an admin; this only reacts to that. */
