@@ -33,6 +33,13 @@ different bundle from an unchanged source.
 IIFE takes exactly one entry, so these cannot be one multi-entry build — `vite.config.js`
 switches on `--mode` and `npm run build` runs both.
 
+`package.json` carries an `overrides` pin on **axios**. `@coinbase/cdp-sdk`, four levels down
+under the Reown wallet adapter, depends on axios at an exact `1.16.0` — which npm cannot
+upgrade past ten advisories, so `npm audit fix` loops and even `--force` proposes nothing. The
+override is the only route, and it is safe because that path is tree-shaken out: bumping axios
+to 1.20.0 leaves `wallet-auth.js` byte-identical. Do not delete it without re-running
+`npm audit`.
+
 ## Architecture
 
 ### Round flow (the game)
