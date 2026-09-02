@@ -39,6 +39,7 @@
             position: document.getElementById("f-position"),
             coverImg: document.getElementById("f-cover-img"),
             coverPreview: document.getElementById("f-cover-preview"),
+            coverSvgPreview: document.getElementById("f-cover-svg-preview"),
             coverEmpty: document.getElementById("f-cover-empty"),
             coverUpload: document.getElementById("f-cover-upload"),
             coverPick: document.getElementById("f-cover-pick"),
@@ -86,17 +87,24 @@
         item.className = "blog-admin-row" + (post.published ? "" : " is-draft");
 
         /* The cover is what makes a list of thirty titles scannable. A post without one gets
-           the empty square rather than a shorter row, so the titles stay on one line. */
-        var cover;
-        if (post.coverImg) {
-            cover = document.createElement("img");
-            cover.src = post.coverImg;
-            cover.alt = "";
-            cover.loading = "lazy";
-        } else {
-            cover = document.createElement("div");
-        }
+           the empty square rather than a shorter row, so the titles stay on one line.
+
+           Two kinds of cover, matching what blog.js draws publicly: an uploaded image, or an
+           inline SVG. The SVG ones are painted with var(--panel-2) / var(--accent) and follow
+           the theme, so they have to be inlined rather than loaded through an <img>, which
+           would cut them off from the document's custom properties and render them blank. */
+        var cover = document.createElement("div");
         cover.className = "blog-admin-cover";
+        if (post.coverImg) {
+            var coverImg = document.createElement("img");
+            coverImg.src = post.coverImg;
+            coverImg.alt = "";
+            coverImg.loading = "lazy";
+            cover.appendChild(coverImg);
+        } else if (post.coverSvg) {
+            cover.classList.add("is-svg");
+            cover.innerHTML = post.coverSvg;
+        }
         item.appendChild(cover);
 
         var text = document.createElement("div");
@@ -235,6 +243,7 @@
         el.f.tags.value = ((post && post.tags) || []).join(", ");
         el.f.position.value = post ? post.position : 0;
         el.f.coverImg.value = (post && post.coverImg) || "";
+        el.f.coverSvgPreview.dataset.drawn = "";
         paintCover();
         el.f.published.checked = !!(post && post.published);
         el.editor.classList.remove("hidden");
@@ -337,8 +346,20 @@
     function paintCover(failed) {
         var url = el.f.coverImg.value.trim();
         var show = !!url && !failed;
+
+        /* A post can carry an inline SVG cover instead of an image. That field is no longer
+           editable, so it is shown read-only — otherwise post one reads as having no cover
+           while the public page draws it, and the obvious response is to upload a second one
+           over the top without knowing the first exists. */
+        var svg = !url && editing && editing.coverSvg;
+        el.f.coverSvgPreview.classList.toggle("hidden", !svg);
+        if (svg && el.f.coverSvgPreview.dataset.drawn !== "1") {
+            el.f.coverSvgPreview.innerHTML = editing.coverSvg;
+            el.f.coverSvgPreview.dataset.drawn = "1";
+        }
+
         el.f.coverPreview.classList.toggle("hidden", !show);
-        el.f.coverEmpty.classList.toggle("hidden", show);
+        el.f.coverEmpty.classList.toggle("hidden", show || !!svg);
         el.f.coverClear.classList.toggle("hidden", !url);
         // A URL that does not resolve is worth saying out loud — a broken-image glyph looks
         // like the page is broken rather than the address being wrong.

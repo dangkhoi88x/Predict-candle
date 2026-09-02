@@ -529,6 +529,10 @@
                                 <span class="field-label">Ảnh bìa</span>
                                 <div class="cover-field">
                                     <img id="f-cover-preview" class="cover-preview" alt=""/>
+                                    <!-- An inline SVG cover, shown read-only: it follows the
+                                         theme through var() and cannot survive an <img>. -->
+                                    <div id="f-cover-svg-preview" class="cover-svg-preview hidden"
+                                         title="Ảnh bìa SVG có sẵn của bài này"></div>
                                     <div class="cover-empty" id="f-cover-empty">Chưa có ảnh</div>
                                     <div class="cover-actions">
                                         <button id="f-cover-upload" class="ghost-btn" type="button">Tải ảnh từ máy</button>

@@ -2692,7 +2692,14 @@ body:not(.is-admin) .adm-search {
     flex: 0 0 44px;
     border-radius: 8px;
     background: var(--adm-panel-3);
+    overflow: hidden;
+}
+
+.blog-admin-cover img {
+    width: 100%;
+    height: 100%;
     object-fit: cover;
+    display: block;
 }
 
 /* The middle column has to be allowed to shrink, or a long title pushes the action buttons
@@ -2824,6 +2831,7 @@ body:not(.is-admin) .adm-search {
 }
 
 .cover-preview,
+.cover-svg-preview,
 .cover-empty {
     width: 104px;
     height: 68px;
@@ -2835,6 +2843,24 @@ body:not(.is-admin) .adm-search {
 
 .cover-preview {
     object-fit: cover;
+}
+
+/* The SVG is authored against the game's tokens, so it lands in an admin panel reading
+   colours that belong to the other palette. Clipping it and letting it fill is enough — it is
+   an identifying thumbnail here, not the finished artwork the public page draws. */
+.cover-svg-preview {
+    overflow: hidden;
+}
+
+.cover-svg-preview svg,
+.blog-admin-cover.is-svg svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.blog-admin-cover.is-svg {
+    overflow: hidden;
 }
 
 .cover-empty {
