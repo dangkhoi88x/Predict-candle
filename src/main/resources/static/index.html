@@ -4,6 +4,14 @@
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1"/>
     <title>Candle Guess</title>
+    <!-- .ico first because browsers request /favicon.ico on their own whether or not it is
+         declared, and a 404 on every page load is a poor thing to leave in the log. The SVG
+         wins where it is supported, being sharp at any size and a tenth of the bytes. -->
+    <link rel="icon" href="/favicon.ico" sizes="32x32"/>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml"/>
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png"/>
+    <meta name="theme-color" content="#0a0a0a" media="(prefers-color-scheme: dark)"/>
+    <meta name="theme-color" content="#f6f7f9" media="(prefers-color-scheme: light)"/>
     <link rel="stylesheet" href="style.css"/>
     <script>
         // Runs before the first paint on purpose: applying the theme from JS after the body

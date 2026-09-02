@@ -23,6 +23,18 @@
     var moon = button.querySelector('[data-theme-icon="moon"]');
     var sun = button.querySelector('[data-theme-icon="sun"]');
 
+    /* The two <meta name="theme-color"> tags carry media queries, which follow the OS rather
+       than the choice stored here — so a light theme picked on a dark machine would leave the
+       mobile browser's chrome dark around a light page. Writing the active colour into both
+       makes whichever one matches the right one. */
+    var THEME_COLOR = { dark: "#0a0a0a", light: "#f6f7f9" };
+
+    function paintThemeColor() {
+        var colour = THEME_COLOR[current()];
+        var metas = document.querySelectorAll('meta[name="theme-color"]');
+        for (var i = 0; i < metas.length; i++) metas[i].setAttribute("content", colour);
+    }
+
     function paintButton() {
         // The icon shows the theme you'd switch *to*, which is what people expect from a
         // single-button toggle.
@@ -34,6 +46,7 @@
             button.textContent = isLight ? "🌙" : "☀️";
         }
         button.setAttribute("aria-pressed", isLight ? "true" : "false");
+        paintThemeColor();
     }
 
     function apply(theme) {
