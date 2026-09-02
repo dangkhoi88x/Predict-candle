@@ -99,18 +99,28 @@ Phần lớn nhất, và là lý do chính có trang admin.
 - `GET /api/blog/posts` công khai; `POST/PUT/DELETE /api/admin/blog/posts` sau `AdminGuard`.
 - `blog.js` đổi sang gọi API. **Giữ mảng `POSTS` làm dự phòng** cho tới khi đường API chạy thật
   ổn — blog là nội dung công khai, hỏng là trắng tab.
-- Trình soạn (`admin-blog.js`): form + **một khung soạn duy nhất** (`#blog-body`,
-  contenteditable). Gõ ra đoạn văn, bấm "Ảnh từ thư viện" để chèn ảnh ngay tại con trỏ. Lúc
-  lưu thì duyệt DOM của khung đó ra **đúng mảng block cũ** — `{type:"text"}` /
-  `{type:"image", src, alt, w, h}`. Không đổi định dạng lưu, không đổi `blog.js`.
+- Trình soạn (`admin-blog.js`): form + **Tiptap**. `body` giờ là **tài liệu ProseMirror**
+  (`{"type":"doc","content":[…]}`), V12 chuyển 3 bài seed từ mảng block cũ sang. Vẫn đúng cột
+  `jsonb` đó, không thêm cột.
 
-  Bản đầu là trình dựng block (thêm đoạn / thêm ảnh / đổi thứ tự) giữ mảng trong JS và **không**
-  đọc ngược từ DOM — vì một danh sách sắp xếp lại được mà đọc ngược thì có hai nguồn thứ tự.
-  Khung soạn không có vấn đề đó: khung **chính là** thứ tự tài liệu, không còn mảng nào để lệch.
+  Bản trước lần lượt là trình dựng block, rồi một khung `contenteditable` tự viết. Cả hai đều
+  vướng cùng một trần: block chỉ giữ **chuỗi thuần**, nên không có tiêu đề, danh sách, trích
+  dẫn, hay in đậm giữa câu. Kéo dài định dạng đó thêm nữa là tự viết một Tiptap tệ hơn.
 
-  Cố ý **không** có in đậm / in nghiêng / link: block chỉ giữ chuỗi thuần. Muốn có thì phải mở
-  rộng định dạng block chứ không phải nới `blog.js` sang `innerHTML` — `body` là `JsonNode`
-  server không kiểm, và trang blog là trang công khai.
+  **Trang blog công khai KHÔNG nạp Tiptap.** `blog-render.js` (7 KB) vẽ cùng tài liệu đó bằng
+  `createElement`. Nạp extension của Tiptap ở đó nghĩa là mỗi người đọc tải ~395 KB trình soạn
+  để xem ba bài — trên đúng trang mà cả một release vừa dồn sức giảm cân nặng (4.374 KB → 335 KB).
+  Đo thực tế: JS trang công khai 208 KB → **215 KB**, còn 395 KB nằm lại ở `admin.html`.
+
+  Giá phải trả là một ràng buộc cần nói rõ: **mọi node/mark mà trình soạn sinh ra đều phải có
+  nhánh trong `blog-render.js`.** Thêm extension mà quên thì trang công khai không vẽ được thứ
+  admin vừa đăng. Node lạ rơi về text của nó kèm `console.warn`, chứ không biến mất im lặng.
+
+  Hai điểm cố ý khác: `Image` là node tự mở rộng có `width`/`height` (Tiptap gốc bỏ), vì trang
+  công khai giữ chỗ cho ảnh bằng hai số đó — nên `POST /api/media/images` cũng trả về kích
+  thước, để ảnh **dán vào** được đối xử như ảnh chọn từ thư viện. Và `href` bị kiểm ở **cả hai
+  đầu**: Tiptap chỉ nhận http/https, `blog-render.js` kiểm lại lúc vẽ — trình soạn là tiện lợi,
+  không phải ranh giới an toàn.
 - Chọn ảnh từ thư viện: đã xong ở giai đoạn 1.
 
 ### Giai đoạn 2b — ba thư viện nội dung  ·  M  ·  ✅ XONG

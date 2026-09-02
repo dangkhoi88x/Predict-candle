@@ -2,13 +2,24 @@
   "name": "candles-wallet-auth",
   "private": true,
   "version": "0.0.1",
-  "description": "Bundles the Reown AppKit wallet-login widget into a plain <script> file for the static Candles frontend.",
+  "description": "Bundles the Reown AppKit wallet widget and the Tiptap blog editor into plain <script> files for the static Candles frontend.",
   "scripts": {
-    "build": "vite build"
+    "build": "npm run build:wallet && npm run build:editor",
+    "build:wallet": "vite build",
+    "build:editor": "vite build --mode editor"
   },
   "dependencies": {
     "@reown/appkit": "^1.8.21",
     "@reown/appkit-adapter-ethers": "^1.8.21",
+    "@tiptap/core": "^3.31.0",
+    "@tiptap/extension-character-count": "^3.31.0",
+    "@tiptap/extension-file-handler": "^3.31.0",
+    "@tiptap/extension-image": "^3.31.0",
+    "@tiptap/extension-link": "^3.31.0",
+    "@tiptap/extension-placeholder": "^3.31.0",
+    "@tiptap/extension-text-align": "^3.31.0",
+    "@tiptap/extension-underline": "^3.31.0",
+    "@tiptap/starter-kit": "^3.31.0",
     "ethers": "^6.13.2"
   },
   "devDependencies": {

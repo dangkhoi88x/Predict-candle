@@ -200,29 +200,13 @@
         var body = document.createElement("div");
         body.className = "blog-post-body";
         if (post.content) {
-            post.content.forEach(function (block) {
-                if (block.type === "image") {
-                    var figure = document.createElement("figure");
-                    figure.className = "blog-post-figure";
-                    var img = document.createElement("img");
-                    img.src = block.src;
-                    img.alt = block.alt || "";
-                    img.loading = "lazy";
-                    // Intrinsic size, so the figure's box is reserved before the file lands.
-                    // These vary per image (3:2, 16:9, 1.91:1), so one CSS aspect-ratio for
-                    // the lot would reserve the wrong height for most of them.
-                    if (block.w && block.h) {
-                        img.width = block.w;
-                        img.height = block.h;
-                    }
-                    figure.appendChild(img);
-                    body.appendChild(figure);
-                } else {
-                    var p = document.createElement("p");
-                    p.textContent = block.text;
-                    body.appendChild(p);
-                }
-            });
+            /* blog-render.js draws both shapes the column can hold — a ProseMirror document
+               from the Tiptap editor, and the older flat block array — and hands back a
+               fragment rather than a string, so nothing here can reach for innerHTML. The
+               intrinsic width and height still travel with each image, which is what reserves
+               its box before the file lands; these vary per image (3:2, 16:9, 1.91:1), so one
+               CSS aspect-ratio for the lot would reserve the wrong height for most of them. */
+            body.appendChild(window.CandleBlogRender.toFragment(post.content));
         } else {
             post.paragraphs.forEach(function (text) {
                 var p = document.createElement("p");

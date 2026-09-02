@@ -35,12 +35,18 @@ public class CloudinaryMediaStorageService implements MediaStorageService {
                     "overwrite", false));
             String publicId = (String) result.get("public_id");
             String secureUrl = (String) result.get("secure_url");
-            return new UploadedMedia(publicId, secureUrl);
+            return new UploadedMedia(publicId, secureUrl,
+                    intValue(result.get("width")), intValue(result.get("height")));
         } catch (IOException e) {
             throw new IllegalStateException("Không tải lên được ảnh.", e);
         } catch (RuntimeException e) {
             throw new IllegalStateException("Cloudinary từ chối ảnh: " + e.getMessage(), e);
         }
+    }
+
+    /** Cloudinary returns these as Integer, but a JSON number has no guaranteed Java type. */
+    private static int intValue(Object value) {
+        return value instanceof Number number ? number.intValue() : 0;
     }
 
     @Override

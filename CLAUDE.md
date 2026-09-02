@@ -20,9 +20,18 @@ First run backfills ~40k candles per asset from Binance (2022-01-01 → now), 15
 The running server picks the change up on the next request — no restart. This does **not**
 apply to `application.yaml` or Java changes; those need a real restart.
 
-**Wallet bundle:** `cd web && npm install && npm run build` rebuilds
-`static/wallet-auth.js` from `web/src/wallet-auth.js`. Only needed when that file changes.
-Vite emits an IIFE assigning `window.CandleWallet`; `web/` exists solely for this one bundle.
+**Bundles:** `cd web && npm ci && npm run build` rebuilds both, each as an IIFE assigning one
+global. Only needed when the matching source changes. Use `npm ci`, not `npm install` —
+`package.json` uses carets, so an install can silently pull newer minors and produce a
+different bundle from an unchanged source.
+
+| source | output | global | loaded by |
+|---|---|---|---|
+| `web/src/wallet-auth.js` | `static/wallet-auth.js` (4.1 MB) | `CandleWallet` | both pages, deferred |
+| `web/src/blog-editor.js` | `static/blog-editor.js` (395 KB) | `CandleEditor` | `admin.html` only |
+
+IIFE takes exactly one entry, so these cannot be one multi-entry build — `vite.config.js`
+switches on `--mode` and `npm run build` runs both.
 
 ## Architecture
 
@@ -127,17 +136,31 @@ is `correct / guesses`; reading `correct / answered` instead runs about nine poi
 current data. `AdminStatsTest` pins both the split and the JSON field names the pane reads —
 there is no shared schema, so a renamed record component would silently draw zeroes.
 
-The blog body is written in **one contenteditable surface** (`#blog-body`) — paragraphs from
-typing, images dropped in at the caret — and read back out of that DOM on save as the block
-array the database has always held. Reading the DOM back is exactly what a block *builder*
-must not do (a reorderable list would then have an order in two places), but here the surface
-*is* the document order, so there is no second copy to drift.
+The blog body is **Tiptap in the admin, a ProseMirror document in `body`, and a hand-written
+walker on the public page**. That split is the load-bearing decision:
 
-Bold, italic and links are deliberately absent: the stored block holds a plain string, and an
-editor offering them would have to drop them on save or start storing markup — and markup
-means `blog.js` renders with `innerHTML` instead of `textContent`, on a public page, from a
-`body` column the server does not validate. Grow the block format to add them; do not loosen
-the renderer.
+- `admin-blog.js` holds only the handle `web/src/blog-editor.js` returns. It never imports
+  Tiptap and never sees a ProseMirror object beyond the JSON going into the column.
+- `blog-render.js` (7 KB) draws the same documents on the public page with `createElement`.
+  Rendering them with Tiptap's own extensions would put 395 KB of editor in front of every
+  reader, on the page whose weight this project spent a release cutting. It also means
+  `blog.js` still never touches `innerHTML`.
+
+**The cost is a coupling: every node or mark the editor can emit needs a branch in
+`blog-render.js`.** Add a Tiptap extension without one and the public page cannot draw what
+an admin just published. Unknown types fall back to their text and `console.warn` rather than
+vanishing silently.
+
+Two other things are deliberate. `Image` is a custom node carrying `width`/`height`, because
+the public page reserves an image's box from them and stock Tiptap Image drops them — which is
+also why `POST /api/media/images` returns dimensions, so a *pasted* image gets the same
+treatment as a picked one. And an `href` is validated in both places: Tiptap refuses anything
+but http/https, and `blog-render.js` checks again on the way out, because the editor is a
+convenience and not the security boundary.
+
+`body` still reads both shapes. V12 converted the seeded posts to documents, but a database
+that has not run it yet holds the older flat block array, and opening one of those must not
+present an empty editor that then saves over the post.
 
 The topbar search (`admin-search.js`) searches the **rendered DOM**, not the modules' data —
 every pane is built and in the document at once, only hidden by CSS, so the rows are all there

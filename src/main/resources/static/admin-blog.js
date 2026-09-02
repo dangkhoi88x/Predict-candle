@@ -1,19 +1,20 @@
 /**
  * Blog CRUD for the admin page: the list of posts, and the editor behind it.
  *
- * The body is written in one contenteditable surface — type paragraphs, drop images in at the
- * caret — and read back out of that DOM on save as the same block array the database has
- * always held: `{type:"text", text}` and `{type:"image", src, alt, w, h}`.
+ * The body is written in Tiptap and stored as the ProseMirror document it produces. This file
+ * holds only the handle that `web/src/blog-editor.js` hands back — it never imports Tiptap and
+ * never touches a ProseMirror object beyond the plain JSON going into the `body` column, so
+ * the editor bundle stays a detail of the admin page.
  *
- * Reading the DOM back is the thing a block builder must not do, because a list you can
- * reorder has an order in two places. Here there is only one place: the surface *is* the
- * document order, and there is no separate array to drift from it.
+ * The public blog does **not** load that bundle. `blog-render.js` draws the same documents
+ * with its own walker, which is what keeps ~395 KB of editor off a page whose weight this
+ * project spent a release cutting. The cost is that both ends have to know the same node
+ * types: adding a Tiptap extension means adding a branch in blog-render.js, and that file
+ * warns rather than silently dropping anything it has not been taught.
  *
- * What is deliberately absent is bold, italic and links. The stored block holds a plain
- * string, so an editor offering them would have to either drop them on save or start storing
- * markup — and storing markup means `blog.js` renders with innerHTML instead of textContent,
- * on a public page, with a `body` column the server does not validate. Growing the block
- * format is the way to add them, not loosening the renderer.
+ * Both body shapes are read. Until V12 has run against a given database the column may still
+ * hold the older flat block array, and opening one of those must not present an empty editor
+ * that then saves over the post.
  */
 (function () {
     "use strict";
@@ -26,6 +27,9 @@
         newBtn: document.getElementById("blog-new"),
         cancelBtn: document.getElementById("blog-cancel"),
         addImage: document.getElementById("blog-add-image"),
+        linkBtn: document.getElementById("blog-link"),
+        toolbar: document.getElementById("blog-toolbar"),
+        count: document.getElementById("blog-count"),
         body: document.getElementById("blog-body"),
         status: document.getElementById("admin-status"),
         f: {
@@ -65,7 +69,14 @@
     function summarise(post) {
         var tags = (post.tags || []).join(" · ") || "chưa gắn thẻ";
         var state = post.published ? "Đã đăng" : "Nháp";
-        return tags + " · " + state + " · " + (post.body || []).length + " khối";
+        return tags + " · " + state + " · " + blockCount(post.body) + " khối";
+    }
+
+    /** A document counts its top-level nodes; the older array counts itself. */
+    function blockCount(body) {
+        if (Array.isArray(body)) return body.length;
+        if (body && body.type === "doc") return (body.content || []).length;
+        return 0;
     }
 
     function row(post) {
@@ -229,183 +240,133 @@
 
     function closeEditor() {
         editing = null;
-        el.body.innerHTML = "";
+        /* Clear through the editor, never by emptying #blog-body: Tiptap owns that element,
+           and wiping its innerHTML tears out the mount while leaving `composer` pointing at
+           the wreckage — the next post then opens into an editor with no DOM. */
+        if (composer) composer.setContent(emptyDoc());
         el.editor.classList.add("hidden");
         setStatus("");
     }
 
     /* ---- the writing surface ----------------------------------------------------------
-       Blocks in, blocks out. Nothing between those two functions is stored: the markup here
-       exists only for the duration of an edit, which is what keeps this from becoming an
-       HTML-storing editor and dragging a sanitiser in behind it. blog.js still renders every
-       paragraph with textContent. */
+       Tiptap owns everything inside #blog-body and is bundled from web/src/blog-editor.js.
+       This module only holds the handle: it never imports Tiptap, never sees a ProseMirror
+       object beyond the plain JSON that goes in the `body` column, and would degrade to a
+       read-only editor rather than break if the bundle failed to load. */
 
-    /** blocks -> the surface. */
+    var composer = null;
+
+    function ensureComposer() {
+        if (composer || !window.CandleEditor) return composer;
+        composer = window.CandleEditor.mount(el.body, {
+            placeholder: "Viết ở đây. Dán hoặc kéo ảnh vào thẳng khung này.",
+            onStatus: setStatus,
+            onUpdate: paintToolbar,
+            /* Paste and drop upload through the endpoint the library already uses, and the
+               response now carries width and height — which is what lets a pasted image
+               reserve its box on the public page the same way a picked one does. */
+            upload: async function (file) {
+                var form = new FormData();
+                form.append("file", file);
+                var res = await window.CandleAuth.authFetch(
+                    "/api/media/images?folder=" + encodeURIComponent(mediaFolder()),
+                    { method: "POST", body: form });
+                var payload = await res.json();
+                if (!res.ok) throw new Error(payload.message || ("Máy chủ trả về " + res.status));
+                return payload;
+            },
+        });
+        composer.onSelection(paintToolbar);
+        return composer;
+    }
+
+    function mediaFolder() {
+        var input = document.getElementById("media-folder");
+        return (input && input.value.trim()) || "candles/blog";
+    }
+
+    /** An empty document still needs one paragraph, or there is nowhere to put the caret. */
+    function emptyDoc() {
+        return { type: "doc", content: [{ type: "paragraph" }] };
+    }
+
+    /**
+     * The column holds either a ProseMirror document or, until V12 has run against whatever
+     * database this is pointed at, the older flat block array. Reading both here means an
+     * un-migrated post opens in the editor instead of appearing empty and being saved over.
+     */
+    function toDoc(body) {
+        if (body && body.type === "doc") return body;
+        if (!Array.isArray(body) || !body.length) return emptyDoc();
+        return {
+            type: "doc",
+            content: body.map(function (block) {
+                if (block.type === "image") {
+                    return { type: "image", attrs: {
+                        src: block.src, alt: block.alt || "",
+                        width: block.w || null, height: block.h || null,
+                    } };
+                }
+                return block.text
+                    ? { type: "paragraph", content: [{ type: "text", text: block.text }] }
+                    : { type: "paragraph" };
+            }),
+        };
+    }
+
     function writeBody(body) {
-        el.body.innerHTML = "";
-        (body || []).forEach(function (block) {
-            el.body.appendChild(block.type === "image" ? figureFor(block) : paragraphFor(block.text));
-        });
-        // Always leave somewhere to type, or an empty post has no caret to place.
-        if (!el.body.firstChild) el.body.appendChild(paragraphFor(""));
+        var editor = ensureComposer();
+        if (editor) editor.setContent(toDoc(body));
+        paintToolbar();
     }
 
-    /**
-     * The surface -> blocks, in document order.
-     *
-     * Recursive because browsers wrap things unpredictably: typing after an image can leave a
-     * div holding both a figure and text, and a flat pass over childNodes would swallow the
-     * figure into the paragraph's textContent.
-     */
     function readBody() {
-        var out = [];
-        collect(el.body, out);
-        return out;
+        return composer ? composer.json() : emptyDoc();
     }
 
-    function collect(node, out) {
-        Array.prototype.forEach.call(node.childNodes, function (child) {
-            if (child.nodeType === 1 && child.dataset && child.dataset.block === "image") {
-                var src = child.dataset.src || "";
-                if (!src) return;
-                var block = { type: "image", src: src };
-                var alt = child.querySelector(".blog-compose-alt");
-                if (alt && alt.value.trim()) block.alt = alt.value.trim();
-                // Width and height reserve the image's space on the public page. They come
-                // from the library and are carried through rather than re-typed.
-                if (child.dataset.w) block.w = Number(child.dataset.w);
-                if (child.dataset.h) block.h = Number(child.dataset.h);
-                out.push(block);
-                return;
-            }
-            if (child.nodeType === 1 && child.querySelector('[data-block="image"]')) {
-                collect(child, out);
-                return;
-            }
-            var text = (child.textContent || "").replace(/\s+/g, " ").trim();
-            if (text) out.push({ type: "text", text: text });
+    /* ---- toolbar ---- */
+
+    function paintToolbar() {
+        if (!composer) return;
+        Array.prototype.forEach.call(el.toolbar.querySelectorAll("[data-active]"), function (btn) {
+            var spec = btn.dataset.active.split(":");
+            var on = spec.length > 1
+                ? composer.isActive(spec[0], { level: Number(spec[1]) })
+                : composer.isActive(spec[0]);
+            btn.classList.toggle("is-on", on);
+            btn.setAttribute("aria-pressed", on ? "true" : "false");
         });
-    }
-
-    function paragraphFor(text) {
-        var p = document.createElement("p");
-        p.textContent = text || "";
-        // The <br> is what gives an empty paragraph a line for the caret to sit on, and it is
-        // also what the placeholder rule in style.css keys off.
-        if (!text) p.appendChild(document.createElement("br"));
-        p.setAttribute("data-placeholder", el.body.getAttribute("data-placeholder") || "");
-        return p;
-    }
-
-    /**
-     * contenteditable="false" is what makes the image behave like one object: the caret
-     * cannot get inside it, and Backspace beside it removes the whole figure instead of
-     * eating it a character at a time.
-     */
-    function figureFor(block) {
-        var figure = document.createElement("figure");
-        figure.className = "blog-compose-figure";
-        figure.contentEditable = "false";
-        figure.dataset.block = "image";
-        figure.dataset.src = block.src || "";
-        if (block.w) figure.dataset.w = block.w;
-        if (block.h) figure.dataset.h = block.h;
-
-        var img = document.createElement("img");
-        img.src = block.src || "";
-        img.alt = block.alt || "";
-        img.loading = "lazy";
-        figure.appendChild(img);
-
-        var bar = document.createElement("figcaption");
-        bar.className = "blog-compose-bar";
-        var alt = document.createElement("input");
-        alt.type = "text";
-        alt.className = "blog-compose-alt";
-        alt.placeholder = "Mô tả ảnh (alt)";
-        alt.value = block.alt || "";
-        alt.addEventListener("input", function () { img.alt = alt.value; });
-        bar.appendChild(alt);
-        bar.appendChild(button("Xoá", function () {
-            var next = figure.nextSibling;
-            figure.remove();
-            if (!el.body.firstChild) el.body.appendChild(paragraphFor(""));
-            placeCaret(next);
-        }, "danger-btn"));
-        figure.appendChild(bar);
-        return figure;
-    }
-
-    /* ---- caret ---- */
-
-    /* Picking an image sends the reader to the media pane, which takes the focus and the
-       selection with it. The last caret position inside the surface is remembered so the
-       image lands where they were writing rather than at the end. */
-    var savedRange = null;
-
-    function rememberCaret() {
-        var selection = window.getSelection();
-        if (!selection.rangeCount) return;
-        var range = selection.getRangeAt(0);
-        if (el.body.contains(range.commonAncestorContainer)) savedRange = range.cloneRange();
-    }
-
-    function topLevelAt(node) {
-        while (node && node.parentNode !== el.body) node = node.parentNode;
-        return node;
-    }
-
-    function placeCaret(before) {
-        var target = before && before.nodeType === 1 && before.dataset.block === "image"
-            ? null
-            : before;
-        var p = target || paragraphFor("");
-        if (!target) el.body.insertBefore(p, before);
-        var range = document.createRange();
-        range.selectNodeContents(p);
-        range.collapse(true);
-        var selection = window.getSelection();
-        selection.removeAllRanges();
-        selection.addRange(range);
-        el.body.focus();
-    }
-
-    function insertImage(media) {
-        var figure = figureFor({
-            src: media.deliveryUrl, alt: "", w: media.width, h: media.height,
-        });
-        var anchor = savedRange ? topLevelAt(savedRange.startContainer) : null;
-        if (anchor && anchor.parentNode === el.body) {
-            el.body.insertBefore(figure, anchor.nextSibling);
-        } else {
-            el.body.appendChild(figure);
-        }
-        // Somewhere to keep typing under the image, rather than a dead end.
-        var after = paragraphFor("");
-        el.body.insertBefore(after, figure.nextSibling);
-        placeCaret(after);
-        savedRange = null;
+        el.count.textContent = composer.words() + " từ · " + composer.characters() + " ký tự";
     }
 
     el.newBtn.addEventListener("click", function () { openEditor(null); });
     el.cancelBtn.addEventListener("click", closeEditor);
     el.editor.addEventListener("submit", save);
+    el.toolbar.addEventListener("click", function (event) {
+        var btn = event.target.closest("[data-cmd]");
+        if (!btn || !composer) return;
+        composer.run(btn.dataset.cmd);
+        paintToolbar();
+    });
+
     el.addImage.addEventListener("click", function () {
-        if (!window.CandleMedia) return;
-        rememberCaret();
-        window.CandleMedia.open(insertImage);
+        if (!window.CandleMedia || !composer) return;
+        window.CandleMedia.open(function (media) {
+            composer.insertImage(media);
+        });
     });
 
-    ["keyup", "mouseup", "blur"].forEach(function (type) {
-        el.body.addEventListener(type, rememberCaret);
-    });
-
-    /* Paste as plain text. Pasted markup would be flattened by readBody anyway, so keeping it
-       would only mean the surface showed something the saved post would not have. */
-    el.body.addEventListener("paste", function (event) {
-        event.preventDefault();
-        var text = (event.clipboardData || window.clipboardData).getData("text/plain");
-        document.execCommand("insertText", false, text);
+    el.linkBtn.addEventListener("click", function () {
+        if (!composer) return;
+        var href = window.prompt("Địa chỉ liên kết (http hoặc https):", "https://");
+        if (href === null) return;
+        if (!href.trim()) {
+            composer.unsetLink();
+            return;
+        }
+        // The editor refuses anything but http/https, and blog-render.js checks again when it
+        // draws — the editor is a convenience, not the boundary.
+        if (!composer.setLink(href)) setStatus("Chỉ nhận liên kết http hoặc https.");
     });
 
     /* admin.js decides whether this account is an admin; this only reacts to that. */

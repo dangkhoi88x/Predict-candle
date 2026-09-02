@@ -537,24 +537,38 @@
 
                         <div class="admin-bar">
                             <h3 class="admin-h3">Nội dung</h3>
-                            <div class="editor-actions">
-                                <button id="blog-add-image" class="ghost-btn" type="button">
-                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                         stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                        <rect x="3" y="4" width="18" height="16" rx="2"/>
-                                        <circle cx="8.5" cy="9.5" r="1.5"/>
-                                        <path d="M21 16l-5-5-6 6"/>
-                                    </svg>
-                                    Ảnh từ thư viện
-                                </button>
-                            </div>
+                            <span class="blog-count" id="blog-count"></span>
                         </div>
-                        <!-- One writing surface. Paragraphs come from typing; images are dropped
-                             in at the caret. It still saves the same block array — admin-blog.js
-                             walks this DOM rather than storing the markup. -->
-                        <div id="blog-body" class="blog-compose" contenteditable="true"
-                             role="textbox" aria-multiline="true" aria-label="Nội dung bài viết"
-                             data-placeholder="Viết ở đây. Enter để xuống đoạn mới, và bấm “Ảnh từ thư viện” để chèn ảnh vào chỗ con trỏ."></div>
+                        <!-- Tiptap mounts into #blog-body and owns everything inside it. The
+                             toolbar lives outside so it is plain markup this page controls,
+                             and blog-editor.js only says what each button does. -->
+                        <div class="blog-editor-shell">
+                            <div class="blog-toolbar" id="blog-toolbar" role="toolbar"
+                                 aria-label="Định dạng">
+                                <button type="button" class="blog-tool" data-cmd="bold" data-active="bold" title="Đậm"><b>B</b></button>
+                                <button type="button" class="blog-tool" data-cmd="italic" data-active="italic" title="Nghiêng"><i>I</i></button>
+                                <button type="button" class="blog-tool" data-cmd="underline" data-active="underline" title="Gạch chân"><u>U</u></button>
+                                <button type="button" class="blog-tool" data-cmd="strike" data-active="strike" title="Gạch ngang"><s>S</s></button>
+                                <span class="blog-tool-sep" aria-hidden="true"></span>
+                                <button type="button" class="blog-tool" data-cmd="h2" data-active="heading:2" title="Tiêu đề lớn">H2</button>
+                                <button type="button" class="blog-tool" data-cmd="h3" data-active="heading:3" title="Tiêu đề nhỏ">H3</button>
+                                <button type="button" class="blog-tool" data-cmd="bulletList" data-active="bulletList" title="Danh sách">• —</button>
+                                <button type="button" class="blog-tool" data-cmd="orderedList" data-active="orderedList" title="Danh sách đánh số">1.</button>
+                                <button type="button" class="blog-tool" data-cmd="blockquote" data-active="blockquote" title="Trích dẫn">❝</button>
+                                <button type="button" class="blog-tool" data-cmd="codeBlock" data-active="codeBlock" title="Khối mã">&lt;/&gt;</button>
+                                <span class="blog-tool-sep" aria-hidden="true"></span>
+                                <button type="button" class="blog-tool" data-cmd="alignLeft" title="Canh trái">⭰</button>
+                                <button type="button" class="blog-tool" data-cmd="alignCenter" title="Canh giữa">⭤</button>
+                                <button type="button" class="blog-tool" data-cmd="alignRight" title="Canh phải">⭲</button>
+                                <span class="blog-tool-sep" aria-hidden="true"></span>
+                                <button type="button" class="blog-tool" id="blog-link" title="Chèn liên kết">🔗</button>
+                                <button type="button" class="blog-tool" id="blog-add-image" title="Ảnh từ thư viện">🖼</button>
+                                <span class="blog-tool-sep" aria-hidden="true"></span>
+                                <button type="button" class="blog-tool" data-cmd="undo" title="Hoàn tác">↺</button>
+                                <button type="button" class="blog-tool" data-cmd="redo" title="Làm lại">↻</button>
+                            </div>
+                            <div id="blog-body" class="blog-compose"></div>
+                        </div>
                     </form>
                 </section>
             </div>
@@ -567,6 +581,7 @@
 <script src="theme.js"></script>
 <script src="wallet-auth.js"></script>
 <script src="auth.js"></script>
+<script src="blog-editor.js"></script>
 <script src="admin-nav.js"></script>
 <script src="admin-search.js"></script>
 <script src="admin.js"></script>

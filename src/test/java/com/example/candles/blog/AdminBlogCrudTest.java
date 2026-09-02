@@ -6,6 +6,8 @@ import com.example.candles.domain.User;
 import com.example.candles.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -139,10 +141,51 @@ class AdminBlogCrudTest {
                 .andExpect(status().isBadRequest());
     }
 
+    /**
+     * V12 rewrote every body from a flat block array into a ProseMirror document. The posts
+     * are the only content this app ships with, and a conversion that quietly emptied one
+     * would show up as a blank article rather than as an error, so this checks the shape and
+     * that both kinds of block came through — not merely that the column parses.
+     */
     @Test
-    void seededPostsSurvivedTheMoveOutOfBlogJs() {
+    void seededPostsSurvivedTheMoveToProseMirror() {
+        ObjectMapper mapper = new ObjectMapper();
         assertThat(blogPostRepository.findByPublishedTrueOrderByPositionAscIdAsc())
                 .hasSize(3)
-                .allSatisfy(post -> assertThat(post.getBody()).startsWith("["));
+                .allSatisfy(post -> {
+                    JsonNode body = mapper.readTree(post.getBody());
+                    assertThat(body.path("type").asString()).isEqualTo("doc");
+
+                    JsonNode content = body.path("content");
+                    assertThat(content.isArray()).isTrue();
+                    assertThat(content).isNotEmpty();
+
+                    long paragraphs = count(content, "paragraph");
+                    long images = count(content, "image");
+                    assertThat(paragraphs).isPositive();
+                    assertThat(images).isPositive();
+                    assertThat(paragraphs + images).isEqualTo(content.size());
+
+                    // A paragraph carrying an empty text node is invalid ProseMirror and
+                    // throws when the editor loads it; the migration emits no content instead.
+                    content.forEach(node -> node.path("content").forEach(child ->
+                            assertThat(child.path("text").asString()).isNotEmpty()));
+
+                    // The dimensions are what reserve an image's box on the public page.
+                    content.forEach(node -> {
+                        if (!"image".equals(node.path("type").asString())) return;
+                        assertThat(node.path("attrs").path("src").asString()).isNotBlank();
+                        assertThat(node.path("attrs").path("width").asInt()).isPositive();
+                        assertThat(node.path("attrs").path("height").asInt()).isPositive();
+                    });
+                });
+    }
+
+    private static long count(JsonNode content, String type) {
+        long total = 0;
+        for (JsonNode node : content) {
+            if (type.equals(node.path("type").asString())) total++;
+        }
+        return total;
     }
 }

@@ -48,7 +48,8 @@ public class MediaController {
                                        @RequestParam(defaultValue = "candles/blog") String folder) {
         adminAccess.requireAdmin();
         UploadedMedia uploaded = mediaStorageService.uploadImage(folder, file);
-        return new MediaUploadResponse(uploaded.publicId(), uploaded.url());
+        return new MediaUploadResponse(uploaded.publicId(), uploaded.url(),
+                uploaded.width(), uploaded.height());
     }
 
     @DeleteMapping("/images")
@@ -57,6 +58,7 @@ public class MediaController {
         mediaStorageService.deleteImage(publicId);
     }
 
-    public record MediaUploadResponse(String publicId, String url) {
+    /** The editor inserts a pasted image straight from this, dimensions included. */
+    public record MediaUploadResponse(String publicId, String url, int width, int height) {
     }
 }

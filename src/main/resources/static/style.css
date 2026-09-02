@@ -2806,72 +2806,161 @@ body:not(.is-admin) .adm-search {
 
 /* ---- the blog writing surface ---- */
 
-.blog-compose {
-    min-height: 260px;
-    padding: 18px 20px;
+.blog-editor-shell {
     border: 1px solid var(--adm-border);
     border-radius: 10px;
     background: var(--adm-panel);
-    font-size: 15px;
-    line-height: 1.7;
-    outline: none;
-    transition: border-color var(--duration-fast) var(--ease-out);
+    overflow: hidden;
 }
 
-.blog-compose:focus-within {
+.blog-editor-shell:focus-within {
     border-color: var(--adm-border-2);
 }
 
-.blog-compose > p {
-    margin: 0 0 14px;
+.blog-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 2px;
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--adm-border);
+    background: var(--adm-panel-2);
+    position: sticky;
+    top: 68px;
+    z-index: 4;
 }
 
-.blog-compose > p:last-child {
-    margin-bottom: 0;
+.blog-tool {
+    min-width: 30px;
+    height: 30px;
+    padding: 0 7px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: none;
+    color: var(--adm-muted);
+    font-family: inherit;
+    font-size: 13px;
+    line-height: 1;
+    cursor: pointer;
+    transition: color var(--duration-fast) var(--ease-out),
+                background var(--duration-fast) var(--ease-out),
+                border-color var(--duration-fast) var(--ease-out);
 }
 
-/* The placeholder only stands in for a genuinely empty document — one paragraph holding
-   nothing but the <br> the caret needs to sit on. */
-.blog-compose > p:only-child:has(> br:only-child)::before {
-    content: attr(data-placeholder);
+.blog-tool:hover {
+    color: var(--adm-text);
+    border-color: var(--adm-border);
+}
+
+/* Pressed state, not hover state: this says the caret is inside bold text right now. */
+.blog-tool.is-on {
+    background: var(--adm-panel);
+    border-color: var(--adm-border);
+    color: var(--adm-text);
+    box-shadow: var(--adm-shadow-sm);
+}
+
+.blog-tool-sep {
+    width: 1px;
+    height: 18px;
+    margin: 0 4px;
+    background: var(--adm-border);
+}
+
+.blog-count {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 11.5px;
     color: var(--adm-muted-2);
 }
 
-.blog-compose-figure {
-    margin: 18px 0;
-    border: 1px solid var(--adm-border);
-    border-radius: 10px;
-    overflow: hidden;
+/* Tiptap renders into a .ProseMirror element inside #blog-body. Styling that rather than
+   #blog-body itself is what keeps the padding on the editable region, so clicking the margin
+   still puts the caret in the text. */
+.blog-compose .ProseMirror {
+    min-height: 300px;
+    padding: 18px 20px;
+    outline: none;
+    font-size: 15px;
+    line-height: 1.7;
+}
+
+.blog-compose .ProseMirror > * + * {
+    margin-top: 14px;
+}
+
+.blog-compose .ProseMirror p {
+    margin: 0;
+}
+
+.blog-compose .ProseMirror h2 { margin: 0; font-size: 22px; font-weight: 600; letter-spacing: -0.02em; }
+.blog-compose .ProseMirror h3 { margin: 0; font-size: 18px; font-weight: 600; letter-spacing: -0.01em; }
+
+.blog-compose .ProseMirror ul,
+.blog-compose .ProseMirror ol {
+    margin: 0;
+    padding-left: 24px;
+}
+
+.blog-compose .ProseMirror li + li {
+    margin-top: 6px;
+}
+
+.blog-compose .ProseMirror blockquote {
+    margin: 0;
+    padding-left: 14px;
+    border-left: 3px solid var(--adm-border-2);
+    color: var(--adm-muted);
+}
+
+.blog-compose .ProseMirror pre {
+    margin: 0;
+    padding: 12px 14px;
+    border-radius: 8px;
     background: var(--adm-panel-2);
+    font-family: var(--mono);
+    font-size: 12.5px;
+    overflow-x: auto;
 }
 
-.blog-compose-figure img {
-    display: block;
-    width: 100%;
-    min-height: 120px;
-    max-height: 320px;
-    object-fit: contain;
-    background: var(--adm-panel-3);
+.blog-compose .ProseMirror code {
+    font-family: var(--mono);
+    font-size: 0.92em;
 }
 
-.blog-compose-bar {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 10px;
+.blog-compose .ProseMirror hr {
+    border: none;
     border-top: 1px solid var(--adm-border);
 }
 
-.blog-compose-alt {
-    flex: 1;
-    min-width: 0;
-    padding: 5px 8px;
-    border: 1px solid var(--adm-border);
-    border-radius: 8px;
-    background: var(--adm-panel);
+.blog-compose .ProseMirror a {
     color: var(--adm-text);
-    font-family: inherit;
-    font-size: 12.5px;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.blog-compose .ProseMirror img {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+}
+
+/* ProseMirror marks the node the caret has selected; without this an image reads as no
+   different from one the caret is merely near. */
+.blog-compose .ProseMirror .ProseMirror-selectednode {
+    outline: 2px solid var(--adm-text);
+    outline-offset: 2px;
+}
+
+/* Placeholder comes from the Tiptap extension, which stamps this attribute on the first
+   empty node rather than on the container. */
+.blog-compose .ProseMirror p.is-editor-empty:first-child::before {
+    content: attr(data-placeholder);
+    float: left;
+    height: 0;
+    pointer-events: none;
+    color: var(--adm-muted-2);
 }
 
 .block-list {
