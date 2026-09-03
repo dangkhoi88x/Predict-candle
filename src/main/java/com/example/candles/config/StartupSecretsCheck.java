@@ -86,15 +86,16 @@ public class StartupSecretsCheck {
         return found;
     }
 
+    /**
+     * `matchesProfiles`, not `getActiveProfiles`. The two differ exactly where it matters here:
+     * a checkout has no *active* profile at all — `spring.profiles.default: dev` supplies the
+     * default — so `getActiveProfiles()` returns an empty array and reading it made every
+     * ordinary run look like an unnamed deployment. The first version of this class did that
+     * and turned the whole test suite red on CI, while passing locally, because a developer
+     * machine has a gitignored `.env` with real secrets that stopped the check ever reaching
+     * the profile question. `matchesProfiles` consults the default profiles too.
+     */
     private boolean isDevelopment() {
-        for (String profile : environment.getActiveProfiles()) {
-            if ("dev".equals(profile) || "test".equals(profile)) {
-                return true;
-            }
-        }
-        /* No active profile at all means nobody has said what this is. `spring.profiles.default`
-           makes that `dev`, so reaching here with an empty list would mean the default was
-           removed — treat that as a deployment rather than as permission. */
-        return false;
+        return environment.matchesProfiles("dev", "test");
     }
 }

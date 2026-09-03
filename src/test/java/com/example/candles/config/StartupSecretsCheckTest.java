@@ -77,14 +77,43 @@ class StartupSecretsCheckTest {
     }
 
     /**
-     * No profile at all is the case that would otherwise slip through. `spring.profiles.default`
-     * makes a checkout `dev`, so an empty list means that default was removed — not that someone
-     * chose to develop.
+     * The case an earlier version of this test could not see, because it only ever set *active*
+     * profiles. A checkout activates nothing — `spring.profiles.default: dev` supplies the
+     * profile — so this is what every ordinary run and the whole test suite actually look like.
+     * Reading getActiveProfiles() there returns an empty array, which the guard read as an
+     * unnamed deployment and used to refuse. It turned CI red while passing on a machine whose
+     * .env made the secrets real, so the check never got that far.
      */
     @Test
-    void anUnnamedEnvironmentIsTreatedAsADeployment() {
-        assertThatThrownBy(() -> onDefaults().refuseDevelopmentSecretsOutsideDevelopment())
+    void theDefaultProfileCountsAsDevelopmentEvenWithNothingActive() {
+        MockEnvironment env = new MockEnvironment();
+        env.setDefaultProfiles("dev");
+
+        assertThatCode(() -> new StartupSecretsCheck(
+                StartupSecretsCheck.DEV_AUTH_SECRET, StartupSecretsCheck.DEV_ROUND_SECRET, env)
+                .refuseDevelopmentSecretsOutsideDevelopment())
+                .doesNotThrowAnyException();
+    }
+
+    /** With no default either, nobody has said what this is — and that is not permission. */
+    @Test
+    void anEnvironmentThatNamesNothingAtAllIsTreatedAsADeployment() {
+        MockEnvironment env = new MockEnvironment();
+        env.setDefaultProfiles("none-of-the-development-ones");
+
+        assertThatThrownBy(() -> new StartupSecretsCheck(
+                StartupSecretsCheck.DEV_AUTH_SECRET, StartupSecretsCheck.DEV_ROUND_SECRET, env)
+                .refuseDevelopmentSecretsOutsideDevelopment())
                 .isInstanceOf(IllegalStateException.class);
+    }
+
+    /** And the file that supplies that default has to keep supplying it. */
+    @Test
+    void applicationYamlStillDefaultsTheProfileToDev() throws IOException {
+        try (InputStream in = getClass().getResourceAsStream("/application.yaml")) {
+            assertThat(new String(in.readAllBytes(), StandardCharsets.UTF_8))
+                    .contains("default: dev");
+        }
     }
 
     @Test
