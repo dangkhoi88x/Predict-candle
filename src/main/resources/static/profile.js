@@ -91,10 +91,13 @@
 
             var call = document.createElement("span");
             call.className = "profile-guess-call";
-            // Show what was actually right too, so a miss says why it was a miss.
-            call.textContent = row.correct
-                ? "đoán " + row.guessed
-                : "đoán " + row.guessed + " · thực tế " + row.actual;
+            // Show what was actually right too, so a miss says why it was a miss. A guess with
+            // no direction is one the countdown ate — saying "đoán null" would be worse than
+            // saying nothing, and calling it a wrong guess would be untrue.
+            call.textContent = row.guessed
+                ? (row.correct ? "đoán " + row.guessed
+                               : "đoán " + row.guessed + " · thực tế " + row.actual)
+                : "hết giờ · thực tế " + row.actual;
 
             var when = document.createElement("span");
             when.className = "profile-guess-when";

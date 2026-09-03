@@ -59,7 +59,11 @@ public class StatsService {
                 .findRecent(userId, PageRequest.of(0, RECENT_LIMIT)).stream()
                 .map(g -> new StatsResponse.RecentGuess(
                         g.getAsset().getSymbol(),
-                        g.getGuessedDirection().name(),
+                        // Null when the countdown expired before an answer. V3 made the column
+                        // nullable precisely so "no answer" and "wrong answer" stay different
+                        // rows; calling name() on it took the whole profile down with a 500 the
+                        // moment a player let one clock run out.
+                        g.getGuessedDirection() == null ? null : g.getGuessedDirection().name(),
                         g.getActualDirection().name(),
                         g.isCorrect(),
                         g.getCreatedAt()))
