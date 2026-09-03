@@ -1,8 +1,10 @@
 package com.example.candles.repository;
 
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -12,6 +14,12 @@ import com.example.candles.entity.Candle;
 public interface CandleRepository extends JpaRepository<Candle, Long> {
 
     Optional<Candle> findTopByAssetAndTimeframeOrderByOpenTimeDesc(Asset asset, String timeframe);
+
+    /** The one settled candle for a given round, once it exists — the live game reads its outcome this way. */
+    Optional<Candle> findByAssetAndTimeframeAndOpenTime(Asset asset, String timeframe, Instant openTime);
+
+    /** Most recent settled candles, newest first — the live game's round history strip. */
+    List<Candle> findByAssetAndTimeframeOrderByOpenTimeDesc(Asset asset, String timeframe, Pageable page);
 
     long countByAssetAndTimeframe(Asset asset, String timeframe);
 

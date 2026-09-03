@@ -120,6 +120,17 @@ candles:
       # script walking the history.
       rounds-per-minute: 40
       guesses-per-minute: 120
+  live:
+    # Picks close this long before the candle does. Rekto uses 30 minutes of a four-hour
+    # candle; this is the same eighth of an hourly one. Shrinking it towards zero turns the
+    # game into "watch the price and call the obvious", which is the failure worth guarding.
+    lock-before: PT8M
+    # Past rounds shown in the strip. They cost nothing to produce — every stored candle is
+    # already a settled round — so this is a display choice, not a budget.
+    history-size: 24
+    # Every open browser tab asks for the live price on a timer, and they all want the same
+    # number. One upstream call per this interval serves all of them.
+    price-cache-ttl: PT2S
   jwt:
     secret: ${ROUND_TOKEN_SECRET:dev-only-secret-change-me-0123456789abcdef}
     ttl: PT10M

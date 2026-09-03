@@ -3,6 +3,7 @@ package com.example.candles.config;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -40,6 +41,11 @@ public class SecurityConfig {
                         .requestMatchers("/api/media/**").hasRole("ADMIN")
                         // Personal totals — nothing meaningful to serve anonymously.
                         .requestMatchers("/api/stats/**").authenticated()
+                        // The round and its history are public, like /api/practice and
+                        // /api/leaderboard; calling a direction is a per-account record and
+                        // needs a wallet, the same reasoning as /api/stats/**.
+                        .requestMatchers(HttpMethod.POST, "/api/live/predict")
+                        .authenticated()
                         .anyRequest().permitAll())
                 /*
                  * Rejections that happen in the filter chain never reach the controller advice,

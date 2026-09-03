@@ -13,8 +13,20 @@ public record CandlesProperties(
         List<AssetConfig> assets,
         Backfill backfill,
         Round round,
+        Live live,
         Jwt jwt
 ) {
+
+    /**
+     * The live round: one shared call on the real candle that is open right now.
+     *
+     * `lockBefore` is the gap between picks closing and the candle closing, and it is the only
+     * thing standing between this and a coin flip you can watch land — without it a player waits
+     * until the last second, reads the price against the open, and calls a candle that has
+     * already decided.
+     */
+    public record Live(Duration lockBefore, int historySize, Duration priceCacheTtl) {
+    }
 
     public record Binance(String baseUrl) {
     }
