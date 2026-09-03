@@ -23,5 +23,10 @@ COPY --from=build /app/target/*.jar app.jar
 RUN useradd --create-home --uid 10001 candles
 USER candles
 
+# The only way this application is deployed, so it is where "this is not a developer's
+# laptop" gets stated. StartupSecretsCheck refuses to boot under this profile while
+# AUTH_JWT_SECRET or ROUND_TOKEN_SECRET are still the defaults published in application.yaml.
+ENV SPRING_PROFILES_ACTIVE=prod
+
 EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "app.jar"]

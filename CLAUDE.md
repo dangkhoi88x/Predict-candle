@@ -315,8 +315,13 @@ and S&P 500 (`/api/market/sp500` → `YahooFinanceClient`). `treemap.js` does th
   `unicode-range` subsets; there is no external font request.
 - Blog images live in this project's Cloudinary account behind an `f_auto,q_auto` transform.
   Dropping the transform segment from the URL returns the untouched original.
-- `ROUND_TOKEN_SECRET` and `AUTH_JWT_SECRET` default to dev values and must be set for real
-  deployments. `ADMIN_WALLETS` is empty by default, which closes `/api/admin/**` and
+- `ROUND_TOKEN_SECRET` and `AUTH_JWT_SECRET` default to dev values, and **the app now refuses
+  to start on those defaults outside the `dev` profile** (`StartupSecretsCheck`). A checkout
+  runs as `dev` via `spring.profiles.default`; the Dockerfile sets `prod`, and the container is
+  the only way this is deployed, so a deployment that forgets the variables fails at boot
+  instead of signing sessions and round answers with a key published in this repository. The
+  check is `@PostConstruct`, not `ApplicationReadyEvent`, so the port is never bound — the
+  first version fired after Tomcat was already accepting connections. `ADMIN_WALLETS` is empty by default, which closes `/api/admin/**` and
   `/api/media/**` entirely rather than leaving them open. `MEDIA_ADMIN_WALLETS` is still read
   as a fallback for deployments that predate roles (`AdminWallets` logs a warning); move those
   addresses over.
