@@ -1,11 +1,11 @@
 package com.example.candles.pattern;
 
-import com.example.candles.domain.Candle;
-
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.List;
+
+import com.example.candles.entity.Candle;
 
 import static com.example.candles.pattern.CandleMetrics.cl;
 
@@ -17,7 +17,7 @@ import static com.example.candles.pattern.CandleMetrics.cl;
  * pragmatic approximations tuned to read reasonably on continuous crypto price action, not
  * textbook-exact TA rules.
  */
-final class TechnicalPatternLibrary {
+public final class TechnicalPatternLibrary {
 
     private static final double SHOULDER_TOL = 0.07;
     private static final double HEAD_MARGIN = 0.03;
@@ -195,7 +195,7 @@ final class TechnicalPatternLibrary {
     private TechnicalPatternLibrary() {
     }
 
-    static TechnicalPatternDefinition get(String patternId) {
+    public static TechnicalPatternDefinition get(String patternId) {
         return DEFINITIONS.get(patternId);
     }
 

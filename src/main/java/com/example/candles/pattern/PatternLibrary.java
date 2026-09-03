@@ -1,10 +1,10 @@
 package com.example.candles.pattern;
 
-import com.example.candles.domain.Candle;
-
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
+
+import com.example.candles.entity.Candle;
 
 import static com.example.candles.pattern.CandleMetrics.body;
 import static com.example.candles.pattern.CandleMetrics.bullish;

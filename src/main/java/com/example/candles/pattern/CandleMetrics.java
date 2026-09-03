@@ -1,6 +1,6 @@
 package com.example.candles.pattern;
 
-import com.example.candles.domain.Candle;
+import com.example.candles.entity.Candle;
 
 /**
  * Cheap double-based OHLC measurements shared by the pattern matchers. Precision doesn't

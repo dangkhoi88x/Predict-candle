@@ -1,7 +1,5 @@
 package com.example.candles.config;
 
-import com.example.candles.auth.JwtAuthenticationFilter;
-import com.example.candles.auth.JwtService;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -13,6 +11,9 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+
+import com.example.candles.security.JwtAuthenticationFilter;
+import com.example.candles.security.JwtService;
 
 @Configuration
 public class SecurityConfig {

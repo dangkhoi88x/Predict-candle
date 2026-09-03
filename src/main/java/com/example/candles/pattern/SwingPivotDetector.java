@@ -1,9 +1,9 @@
 package com.example.candles.pattern;
 
-import com.example.candles.domain.Candle;
-
 import java.util.ArrayList;
 import java.util.List;
+
+import com.example.candles.entity.Candle;
 
 import static com.example.candles.pattern.CandleMetrics.cl;
 
@@ -14,12 +14,12 @@ import static com.example.candles.pattern.CandleMetrics.cl;
  * high/low swing points rather than individual candles, unlike the 1-3 candle candlestick
  * patterns in {@link PatternLibrary}.
  */
-final class SwingPivotDetector {
+public final class SwingPivotDetector {
 
     private SwingPivotDetector() {
     }
 
-    static List<SwingPoint> detect(List<Candle> candles, double deviationPct) {
+    public static List<SwingPoint> detect(List<Candle> candles, double deviationPct) {
         List<SwingPoint> pivots = new ArrayList<>();
         int n = candles.size();
         if (n < 3) return pivots;

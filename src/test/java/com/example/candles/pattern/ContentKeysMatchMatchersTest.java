@@ -1,13 +1,13 @@
 package com.example.candles.pattern;
 
-import com.example.candles.content.ContentItem;
-import com.example.candles.content.ContentItemRepository;
-import com.example.candles.content.ContentKind;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-
 import java.util.List;
+
+import com.example.candles.entity.ContentItem;
+import com.example.candles.entity.ContentKind;
+import com.example.candles.repository.ContentItemRepository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
