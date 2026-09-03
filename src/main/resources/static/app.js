@@ -46,6 +46,7 @@
         guessShort: document.getElementById("guess-short"),
         nextChart: document.getElementById("next-chart"),
         guessProgress: document.getElementById("guess-progress"),
+        viewGame: document.getElementById("view-game"),
         guessTimer: document.getElementById("guess-timer"),
         guessTimerFill: document.getElementById("guess-timer-fill"),
         guessTimerValue: document.getElementById("guess-timer-value"),
@@ -1015,6 +1016,52 @@
         setStatus("Bấm “Biểu đồ mới” khi bạn sẵn sàng.");
     }
 
+    /* ---- not dealing to an empty chair -------------------------------------------------
+       Auto-advance used to run whether or not anyone was watching: a tab left open in the
+       background finished its chart, waited 4.5s, fetched another, let all five of its
+       guesses expire, and started again — about a hundred and seventy recorded misses an
+       hour, against the account of someone who had walked away. One session of this put 101
+       timeouts into a single hour and dragged the visible timeout rate to 76%.
+
+       The fix is to stop dealing, not to stop the clock. The countdown stays wall-clock on
+       purpose — it is what stops a player parking a round and going to look the chart up —
+       and a round already on screen still expires and is still recorded, because the player
+       was given it. What ends here is the manufacture of rounds nobody ever saw. */
+
+    var PAUSED_MESSAGE = "Tạm dừng — bấm “Biểu đồ mới” để chơi tiếp.";
+
+    /* Two ways to not be watching, and both produced the same rows. The browser tab in the
+       background is the obvious one; the other is switching to Blog or Mẫu Nến inside the
+       app, which leaves `visibilityState` on "visible" while the game view carries `.hidden`.
+       That second one is the likelier of the two — reading a few articles was enough to bank
+       a dozen misses. */
+    function isAway() {
+        return document.visibilityState === "hidden" || el.viewGame.classList.contains("hidden");
+    }
+
+    function scheduleNextChart() {
+        if (isAway()) {
+            // Nobody is looking. Leave the board where it is and wait to be asked.
+            setStatus(PAUSED_MESSAGE);
+            return;
+        }
+        setStatus("Đang chuẩn bị biểu đồ mới…");
+        autoNextChartTimer = setTimeout(loadRound, AUTO_NEXT_CHART_DELAY_MS);
+    }
+
+    /* Going away mid-wait: drop the pending chart rather than let it land unseen. The round
+       in progress, if there is one, is deliberately left alone — it was dealt to someone who
+       was there, and it expires on the server's clock either way. */
+    function pauseIfAway() {
+        if (!isAway() || !autoNextChartTimer) return;
+        clearTimeout(autoNextChartTimer);
+        autoNextChartTimer = null;
+        setStatus(PAUSED_MESSAGE);
+    }
+
+    document.addEventListener("visibilitychange", pauseIfAway);
+    document.addEventListener("candles:view", pauseIfAway);
+
     el.roundIdentity.addEventListener("pointerenter", cancelAutoNextChart);
     el.roundIdentity.addEventListener("focusin", cancelAutoNextChart);
     el.roundContext.addEventListener("pointerenter", cancelAutoNextChart);
@@ -1079,8 +1126,7 @@
                 showRoundIdentity(result.identity);
                 showRoundContext(result.context);
 
-                setStatus("Đang chuẩn bị biểu đồ mới…");
-                autoNextChartTimer = setTimeout(loadRound, AUTO_NEXT_CHART_DELAY_MS);
+                scheduleNextChart();
             } else {
                 state.roundToken = result.nextRoundToken;
                 state.tokenReceivedAt = tokenArrivedAt;

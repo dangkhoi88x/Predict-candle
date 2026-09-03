@@ -103,6 +103,14 @@ later files call at load time.
 | `pill.js` | `CandlePill.attach(track, sel)` | nav + 6 asset/filter pickers |
 | `rolling.js` | `CandleRolling.update(el, text)` | price, delta, scoreboard, ticker, heatmap |
 
+`nav.js` fires `candles:view` (`detail.view`) on every switch, mirroring `candles:pane` on the
+admin page. The game listens for it: **auto-advance stops dealing charts when nobody is
+watching** — the browser tab backgrounded, or the game view switched away from inside the app.
+The countdown itself stays wall-clock and a round already on screen still expires and is still
+recorded, because that is what stops a player parking a round and going to look the chart up.
+What stops is the manufacture of rounds nobody saw: an unattended tab used to bank roughly 170
+recorded misses an hour.
+
 `CandlePill` watches the `active` class via MutationObserver rather than clicks, so callers
 keep their own click handlers unchanged and only add one `attach()` line.
 
