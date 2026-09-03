@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.example.candles.domain.PlayerScore;
-import com.example.candles.dto.Leaderboard;
+import com.example.candles.dto.response.Leaderboard;
 import com.example.candles.entity.User;
 import com.example.candles.repository.GuessResultRepository;
 import com.example.candles.repository.UserRepository;

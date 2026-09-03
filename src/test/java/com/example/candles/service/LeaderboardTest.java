@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-import com.example.candles.dto.Leaderboard;
+import com.example.candles.dto.response.Leaderboard;
 import com.example.candles.entity.Asset;
 import com.example.candles.entity.Direction;
 import com.example.candles.entity.GuessResult;

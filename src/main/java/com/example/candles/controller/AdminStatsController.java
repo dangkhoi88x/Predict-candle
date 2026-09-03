@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.example.candles.dto.AdminStats;
+import com.example.candles.dto.response.AdminStats;
 import com.example.candles.service.AdminStatsService;
 import com.example.candles.service.RateLimiter;
 

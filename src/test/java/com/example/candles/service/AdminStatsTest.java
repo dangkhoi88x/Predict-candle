@@ -10,7 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.UUID;
 
-import com.example.candles.dto.AdminStats;
+import com.example.candles.dto.response.AdminStats;
 import com.example.candles.entity.Asset;
 import com.example.candles.entity.Direction;
 import com.example.candles.entity.GuessResult;

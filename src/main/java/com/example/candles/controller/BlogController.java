@@ -5,7 +5,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
-import com.example.candles.dto.BlogPostDto;
+import com.example.candles.dto.response.BlogPostDto;
 import com.example.candles.service.BlogService;
 
 /** The public reading side: published posts, in display order. No auth — this is the tab. */

@@ -18,9 +18,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.example.candles.config.AuthProperties;
 import com.example.candles.domain.AuthSession;
-import com.example.candles.dto.AuthResponse;
-import com.example.candles.dto.WalletNonceResponse;
-import com.example.candles.dto.WalletVerifyRequest;
+import com.example.candles.dto.request.WalletVerifyRequest;
+import com.example.candles.dto.response.AuthResponse;
+import com.example.candles.dto.response.WalletNonceResponse;
 import com.example.candles.entity.User;
 import com.example.candles.exception.InvalidCredentialsException;
 import com.example.candles.service.AuthService;

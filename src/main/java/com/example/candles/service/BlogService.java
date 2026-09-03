@@ -8,8 +8,8 @@ import java.text.Normalizer;
 import java.util.List;
 import java.util.Locale;
 
-import com.example.candles.dto.BlogPostDto;
-import com.example.candles.dto.BlogPostRequest;
+import com.example.candles.dto.request.BlogPostRequest;
+import com.example.candles.dto.response.BlogPostDto;
 import com.example.candles.entity.BlogPost;
 import com.example.candles.repository.BlogPostRepository;
 

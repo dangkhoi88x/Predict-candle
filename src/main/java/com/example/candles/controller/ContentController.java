@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
-import com.example.candles.dto.ContentItemDto;
+import com.example.candles.dto.response.ContentItemDto;
 import com.example.candles.entity.ContentKind;
 import com.example.candles.service.ContentService;
 

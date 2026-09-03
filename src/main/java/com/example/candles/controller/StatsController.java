@@ -8,8 +8,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.example.candles.dto.LegacyStatsRequest;
-import com.example.candles.dto.StatsResponse;
+import com.example.candles.dto.request.LegacyStatsRequest;
+import com.example.candles.dto.response.StatsResponse;
 import com.example.candles.exception.InvalidCredentialsException;
 import com.example.candles.service.StatsService;
 

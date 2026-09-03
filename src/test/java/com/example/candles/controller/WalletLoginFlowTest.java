@@ -17,7 +17,7 @@ import tools.jackson.databind.ObjectMapper;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 
-import com.example.candles.dto.WalletVerifyRequest;
+import com.example.candles.dto.request.WalletVerifyRequest;
 import com.example.candles.repository.UserRepository;
 
 import static org.assertj.core.api.Assertions.assertThat;

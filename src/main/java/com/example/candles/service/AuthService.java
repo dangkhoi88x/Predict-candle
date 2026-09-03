@@ -6,9 +6,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.example.candles.domain.AuthSession;
-import com.example.candles.dto.AuthResponse;
-import com.example.candles.dto.WalletNonceResponse;
-import com.example.candles.dto.WalletVerifyRequest;
+import com.example.candles.dto.request.WalletVerifyRequest;
+import com.example.candles.dto.response.AuthResponse;
+import com.example.candles.dto.response.WalletNonceResponse;
 import com.example.candles.entity.Role;
 import com.example.candles.entity.User;
 import com.example.candles.exception.InvalidCredentialsException;

@@ -10,7 +10,7 @@ import java.util.List;
 
 import com.example.candles.client.SP500Constituent;
 import com.example.candles.client.YahooFinanceClient;
-import com.example.candles.dto.MarketQuote;
+import com.example.candles.dto.response.MarketQuote;
 
 @RestController
 @RequestMapping("/api/market")

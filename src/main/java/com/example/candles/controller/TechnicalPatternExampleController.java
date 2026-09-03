@@ -6,8 +6,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.example.candles.dto.CandleDto;
-import com.example.candles.dto.PatternExampleResponse;
+import com.example.candles.dto.response.CandleDto;
+import com.example.candles.dto.response.PatternExampleResponse;
 import com.example.candles.pattern.PatternExample;
 import com.example.candles.service.TechnicalPatternExampleService;
 

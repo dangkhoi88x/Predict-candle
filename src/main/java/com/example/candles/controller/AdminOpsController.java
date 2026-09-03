@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.example.candles.dto.OpsSnapshot;
+import com.example.candles.dto.response.OpsSnapshot;
 import com.example.candles.security.AdminAccess;
 import com.example.candles.service.OpsService;
 import com.example.candles.service.RateLimiter;

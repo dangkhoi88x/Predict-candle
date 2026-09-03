@@ -8,7 +8,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.UUID;
 
-import com.example.candles.dto.OpsSnapshot;
+import com.example.candles.dto.response.OpsSnapshot;
 import com.example.candles.entity.Role;
 import com.example.candles.entity.User;
 import com.example.candles.repository.UserRepository;

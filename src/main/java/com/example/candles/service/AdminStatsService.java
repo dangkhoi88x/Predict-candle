@@ -16,7 +16,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.example.candles.dto.AdminStats;
+import com.example.candles.dto.response.AdminStats;
 import com.example.candles.repository.GuessResultRepository;
 import com.example.candles.repository.UserRepository;
 

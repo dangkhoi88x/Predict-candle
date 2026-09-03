@@ -1,4 +1,4 @@
-package com.example.candles.dto;
+package com.example.candles.dto.response;
 
 /**
  * {@code width} and {@code height} come back from the upload and are carried through rather

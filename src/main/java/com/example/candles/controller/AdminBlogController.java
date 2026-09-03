@@ -13,8 +13,8 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
-import com.example.candles.dto.BlogPostDto;
-import com.example.candles.dto.BlogPostRequest;
+import com.example.candles.dto.request.BlogPostRequest;
+import com.example.candles.dto.response.BlogPostDto;
 import com.example.candles.security.AdminAccess;
 import com.example.candles.service.BlogService;
 

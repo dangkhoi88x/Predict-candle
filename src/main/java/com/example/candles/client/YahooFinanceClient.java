@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import com.example.candles.dto.MarketQuote;
+import com.example.candles.dto.response.MarketQuote;
 
 /**
  * Pulls live price/change quotes from Yahoo Finance's unofficial "spark" endpoint. It caps

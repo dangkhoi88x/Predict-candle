@@ -13,7 +13,7 @@ import java.util.List;
 
 import com.example.candles.client.Timeframes;
 import com.example.candles.config.CandlesProperties;
-import com.example.candles.dto.OpsSnapshot;
+import com.example.candles.dto.response.OpsSnapshot;
 import com.example.candles.entity.Asset;
 import com.example.candles.entity.Candle;
 import com.example.candles.entity.Role;
