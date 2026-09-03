@@ -20,9 +20,25 @@ First run backfills ~40k candles per asset from Binance (2022-01-01 → now), 15
 The running server picks the change up on the next request — no restart. This does **not**
 apply to `application.yaml` or Java changes; those need a real restart.
 
-**Wallet bundle:** `cd web && npm install && npm run build` rebuilds
-`static/wallet-auth.js` from `web/src/wallet-auth.js`. Only needed when that file changes.
-Vite emits an IIFE assigning `window.CandleWallet`; `web/` exists solely for this one bundle.
+**Bundles:** `cd web && npm ci && npm run build` rebuilds both, each as an IIFE assigning one
+global. Only needed when the matching source changes. Use `npm ci`, not `npm install` —
+`package.json` uses carets, so an install can silently pull newer minors and produce a
+different bundle from an unchanged source.
+
+| source | output | global | loaded by |
+|---|---|---|---|
+| `web/src/wallet-auth.js` | `static/wallet-auth.js` (4.1 MB) | `CandleWallet` | both pages, deferred |
+| `web/src/blog-editor.js` | `static/blog-editor.js` (395 KB) | `CandleEditor` | `admin.html` only |
+
+IIFE takes exactly one entry, so these cannot be one multi-entry build — `vite.config.js`
+switches on `--mode` and `npm run build` runs both.
+
+`package.json` carries an `overrides` pin on **axios**. `@coinbase/cdp-sdk`, four levels down
+under the Reown wallet adapter, depends on axios at an exact `1.16.0` — which npm cannot
+upgrade past ten advisories, so `npm audit fix` loops and even `--force` proposes nothing. The
+override is the only route, and it is safe because that path is tree-shaken out: bumping axios
+to 1.20.0 leaves `wallet-auth.js` byte-identical. Do not delete it without re-running
+`npm audit`.
 
 ## Architecture
 
@@ -49,12 +65,25 @@ Wallet-signature login, no passwords. `GET /wallet/nonce` → client signs it �
 
 Access token lives **in memory only** (never localStorage); the refresh token is an HttpOnly
 cookie, so `auth.js` silently POSTs `/api/auth/refresh` on load to restore a session.
-`JwtAuthenticationFilter` authenticates the request as a bare `Long` user id — there are **no
-roles or authorities**, every authenticated user is equal. Anything needing narrower access
-has to check something else (see `MediaController`, which matches the caller's wallet against
-`candles.media.admin-wallets`).
+`JwtAuthenticationFilter` authenticates the request as a bare `Long` principal (much of the
+codebase pattern-matches on that) plus one authority, `ROLE_USER` or `ROLE_ADMIN`.
 
-Since anyone can connect a wallet, `.authenticated()` alone means "everyone" on this app.
+Since anyone can connect a wallet, **`.authenticated()` alone means "everyone"** on this app.
+Anything narrower uses the role.
+
+### Roles
+
+Two: `USER` and `ADMIN`, on `users.role`. Who is an admin comes from `candles.admin.wallets`
+(env `ADMIN_WALLETS`), not from the database — `AdminRoleReconciler` promotes listed wallets
+and **demotes** unlisted admins at every startup, and `AuthService` promotes at login for a
+listed wallet that has never signed in. So an admin screen cannot grant the role; editing the
+config and restarting is the only way, which is deliberate (revoking has to be as easy as
+granting). Change that class if that trade stops being worth it.
+
+The role travels in the access token, so `hasRole(...)` in `SecurityConfig` costs no query.
+That claim is a snapshot up to 15 minutes stale, so **anything that writes calls
+`AdminAccess.requireAdmin()`**, which re-reads the role from the database. `User.assignRole`
+also bumps `tokenVersion`, killing the account's refresh tokens on any role change.
 
 ### Frontend
 
@@ -77,6 +106,120 @@ keep their own click handlers unchanged and only add one `attach()` line.
 not at load. Add to it rather than initialising a heavy tab eagerly — `loading="lazy"` does
 **not** defer images inside a `display:none` view (an element with no box cannot be deferred
 by position), so anything image-heavy must be built on demand.
+
+**Content comes from the API only.** `blog.js`, `patterns.js`, `technical-patterns.js` and
+`psychology.js` each used to carry the array they were seeded from and serve it when a request
+failed. Those are gone — a failure now draws `.view-notice` through `CandleContent.notice`,
+because stale content presented as current is a worse answer than an honest empty state.
+`CandleContent.load(kind)` throws rather than returning a fallback.
+
+Two consequences worth knowing. `blog.js` builds on first reveal, so its catch clears `built`
+— otherwise one dropped request leaves the tab empty for the whole visit with no way to ask
+again. And `CandlePatterns.nameOf`, which the game tab calls to name a pattern found mid-round,
+now reads what the fetch returned instead of the deleted array; it still falls back to the raw
+id, which also covers being asked before the fetch lands.
+
+### Admin frontend
+
+`admin.html` is a second, separate page: a dashboard shell — sidebar, sticky topbar, and seven
+panes of which exactly one shows. It shares `style.css`, `theme.js` and `auth.js` with the game
+and nothing else.
+
+**Pane switching is an attribute, never `.hidden`.** Every `admin-*.js` module already owns
+`.hidden` on its own section and re-asserts it each time it hears `candles:admin` — so a nav
+writing the same class would lose the pane the moment a module refreshed (press Sync in Vận
+hành and watch it jump back). `admin-nav.js` sets `data-pane` on `.admin-panes` instead, and
+CSS shows a section only when the container selects its pane **and** its module has not hidden
+it. `body.is-admin`, set once by `admin.js`, is what hides the nav and panes before the server
+has confirmed the role.
+
+| Event | Fired by | Carries |
+|---|---|---|
+| `candles:admin` | `admin.js` | whether `/api/admin/me` said yes; every module loads off this |
+| `candles:ops` | `admin-ops.js` | the ops snapshot, so the overview pane reuses it instead of fetching again |
+| `candles:pane` | `admin-nav.js` | the pane just switched to |
+
+`CandleAdminNav.go(pane)` is the way to move between panes from code — `admin-media.js` uses it
+to take the blog editor's image picker to the library and back.
+
+Overview charts come from `GET /api/admin/stats?range=week|month|year` (`AdminStatsService`,
+cached 60s, bucketed in UTC; `&fresh=true` is the refresh button skipping that cache). The four
+KPI figures do **not**: they come off the `candles:ops` snapshot, because two panes asking the
+same question twice can only disagree.
+
+**Two guess totals, and picking the wrong one is a visible bug.** A timed-out guess has no
+`guessed_direction`, so each `AdminStats.Bucket` carries both `guesses` (every row — the
+denominator `PlayerScore` and the ops panel already score on) and `answered` (long + short, the
+chart column's height, because the legend says SHORT and LONG). Accuracy anywhere on the page
+is `correct / guesses`; reading `correct / answered` instead runs about nine points high on
+current data. `AdminStatsTest` pins both the split and the JSON field names the pane reads —
+there is no shared schema, so a renamed record component would silently draw zeroes.
+
+The blog body is **Tiptap in the admin, a ProseMirror document in `body`, and a hand-written
+walker on the public page**. That split is the load-bearing decision:
+
+- `admin-blog.js` holds only the handle `web/src/blog-editor.js` returns. It never imports
+  Tiptap and never sees a ProseMirror object beyond the JSON going into the column.
+- `blog-render.js` (7 KB) draws the same documents on the public page with `createElement`.
+  Rendering them with Tiptap's own extensions would put 395 KB of editor in front of every
+  reader, on the page whose weight this project spent a release cutting. It also means
+  `blog.js` still never touches `innerHTML`.
+
+**The cost is a coupling: every node or mark the editor can emit needs a branch in
+`blog-render.js`.** Add a Tiptap extension without one and the public page cannot draw what
+an admin just published. Unknown types fall back to their text and `console.warn` rather than
+vanishing silently.
+
+Two other things are deliberate. `Image` is a custom node carrying `width`/`height`, because
+the public page reserves an image's box from them and stock Tiptap Image drops them — which is
+also why `POST /api/media/images` returns dimensions, so a *pasted* image gets the same
+treatment as a picked one. And an `href` is validated in both places: Tiptap refuses anything
+but http/https, and `blog-render.js` checks again on the way out, because the editor is a
+convenience and not the security boundary.
+
+`body` still reads both shapes. V12 converted the seeded posts to documents, but a database
+that has not run it yet holds the older flat block array, and opening one of those must not
+present an empty editor that then saves over the post.
+
+The topbar search (`admin-search.js`) searches the **rendered DOM**, not the modules' data —
+every pane is built and in the document at once, only hidden by CSS, so the rows are all there
+for free and no module has to expose its state. The index is therefore exactly what has
+loaded: the content pane holds one kind at a time and the media grid holds the pages fetched
+so far, and the empty state says so. Matching folds diacritics and collapses `- _ / .` to
+spaces (so `van hanh` finds `Vận hành` and `cau truc` finds `cau-truc-thi-truong`), and reads
+`title` attributes, which is where the full wallet address and Cloudinary id live while the
+cell shows an abbreviation. Teaching it about a new pane is one entry in `SOURCES`.
+
+The admin page has its own icon set (`admin-favicon.*`) and its own `theme-color`, on the
+admin ground rather than the game's. `theme.js` reads those colours off the meta tags instead
+of holding a table, so it does not need to know which page it is running on.
+
+Admin styling lives under `.admin-shell` and reads `--adm-*` tokens, a palette of its own —
+soft grey ground, hairline borders, low shadow, against the game's near-black. The scope is
+load-bearing: `.ghost-btn`, `.pill`, `.status` and `.field` are shared class names, and only
+the `.admin-shell` prefix keeps the two pages from having to agree on how they look.
+
+### Leaderboard
+
+`GET /api/leaderboard` is public — anonymous callers get the board without the `me` row, and
+signing in adds it. Ranked on `score` from `PlayerScore`, the same function the profile and the
+game tab use, so a rank is computed from the number the player already sees.
+
+**It ranks on server-recorded results only.** The `legacy_*` columns are a browser tally folded
+in at first sign-in; every figure in them is client-supplied and `isCoherent()` only rejects the
+absurd. Counting them would make posting a large believable number the fastest way up the
+board, so `LeaderboardService` never reads them — the visible gap is real, and deliberate: on
+the seeded admin account the profile shows 642 and the board shows 140.
+
+Score depends on the order guesses were made, so it cannot be a `SUM`. One query
+(`resultFlagsByUserInPlayOrder`) walks `idx_guess_results_user_time` and the fold happens once
+in Java, cached 60s — this is the only open endpoint whose cache miss scans the guess table,
+which is also why it is the only read endpoint in `RateLimiter`. Denormalising onto `users` is
+the next step if it ever gets slow; `docs/LEADERBOARD_PLAN.md` records the trigger.
+
+Adding a tab means **three** edits, not two: the button, the `<main>` panel, and the `views` map
+in `nav.js`. Miss the map and `activate()` hides every panel and unhides none — the tab's init
+still runs, so the data is correct and the screen is blank.
 
 ### CSS conventions
 
@@ -103,6 +246,10 @@ and S&P 500 (`/api/market/sp500` → `YahooFinanceClient`). `treemap.js` does th
 
 ## Notes
 
+- **Schema is Flyway's, not Hibernate's.** `ddl-auto` is `validate`: adding a field to an
+  entity without a matching migration in `src/main/resources/db/migration` fails startup
+  rather than silently altering the table. Existing databases predating Flyway are stamped
+  at V1 by `baseline-on-migrate` and pick up V2 onwards.
 - **Spring Boot 4.1.1 / Java 25**, and Jackson **3** (`tools.jackson.*`, not
   `com.fasterxml.jackson.*`) — this bites when hand-writing JSON handling.
 - JWT uses `jjwt` with the **Gson** serializer to stay clear of Jackson 3.
@@ -112,7 +259,9 @@ and S&P 500 (`/api/market/sp500` → `YahooFinanceClient`). `treemap.js` does th
 - Blog images live in this project's Cloudinary account behind an `f_auto,q_auto` transform.
   Dropping the transform segment from the URL returns the untouched original.
 - `ROUND_TOKEN_SECRET` and `AUTH_JWT_SECRET` default to dev values and must be set for real
-  deployments. `MEDIA_ADMIN_WALLETS` is empty by default, which closes `/api/media/**`
-  entirely rather than leaving it open.
+  deployments. `ADMIN_WALLETS` is empty by default, which closes `/api/admin/**` and
+  `/api/media/**` entirely rather than leaving them open. `MEDIA_ADMIN_WALLETS` is still read
+  as a fallback for deployments that predate roles (`AdminWallets` logs a warning); move those
+  addresses over.
 - Config knobs (assets, backfill start, dead-round threshold, repeat cache TTL, visible candle
   count) live under `candles.*` in `application.yaml`.

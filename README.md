@@ -42,7 +42,7 @@ Mặc định expose ở `localhost:5544` (đã tránh cổng `5432`/`5433` ph�
 ```
 
 Lần chạy đầu tiên app sẽ tự:
-- Tạo bảng (`ddl-auto: update`)
+- Tạo bảng (Flyway chạy `src/main/resources/db/migration`)
 - Insert 2 asset (BTCUSDT, SOLUSDT)
 - Backfill ~40.000 nến/asset từ Binance (2022-01-01 → hiện tại) — mất khoảng 15-30 giây, xem log `Synced N candles for ...` để biết đã xong.
 
@@ -63,6 +63,8 @@ Tất cả nằm trong [application.yaml](src/main/resources/application.yaml), 
 | `DB_URL` | `jdbc:postgresql://localhost:5544/candles` | JDBC URL Postgres |
 | `DB_USERNAME` / `DB_PASSWORD` | `candles` / `candles` | Thông tin đăng nhập DB |
 | `ROUND_TOKEN_SECRET` | secret dev mặc định | Khóa ký JWT cho `roundToken` — **bắt buộc đổi khi deploy thật** |
+| `AUTH_JWT_SECRET` | secret dev mặc định | Khóa ký access/refresh token — **bắt buộc đổi khi deploy thật** |
+| `ADMIN_WALLETS` | rỗng | Danh sách ví giữ vai trò ADMIN, ngăn cách bằng dấu phẩy. Rỗng thì `/api/admin/**` và `/api/media/**` đóng hoàn toàn |
 
 Các cấu hình khác (asset list, ngày backfill, ngưỡng lọc round "chết", TTL cache chống lặp...) sửa trực tiếp trong `application.yaml` phần `candles.*`.
 

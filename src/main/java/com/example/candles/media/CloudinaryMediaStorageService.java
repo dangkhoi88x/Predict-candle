@@ -7,6 +7,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -33,12 +35,18 @@ public class CloudinaryMediaStorageService implements MediaStorageService {
                     "overwrite", false));
             String publicId = (String) result.get("public_id");
             String secureUrl = (String) result.get("secure_url");
-            return new UploadedMedia(publicId, secureUrl);
+            return new UploadedMedia(publicId, secureUrl,
+                    intValue(result.get("width")), intValue(result.get("height")));
         } catch (IOException e) {
             throw new IllegalStateException("Không tải lên được ảnh.", e);
         } catch (RuntimeException e) {
             throw new IllegalStateException("Cloudinary từ chối ảnh: " + e.getMessage(), e);
         }
+    }
+
+    /** Cloudinary returns these as Integer, but a JSON number has no guaranteed Java type. */
+    private static int intValue(Object value) {
+        return value instanceof Number number ? number.intValue() : 0;
     }
 
     @Override
@@ -51,6 +59,69 @@ public class CloudinaryMediaStorageService implements MediaStorageService {
         } catch (IOException e) {
             throw new IllegalStateException("Không xoá được ảnh.", e);
         }
+    }
+
+    @Override
+    public MediaPage listImages(String folder, String cursor, int limit) {
+        requireConfigured();
+        try {
+            Map<String, Object> options = new LinkedHashMap<>(Map.of(
+                    "type", "upload",
+                    "resource_type", "image",
+                    "prefix", folder,
+                    "max_results", Math.clamp(limit, 1, 100)));
+            if (cursor != null && !cursor.isBlank()) {
+                options.put("next_cursor", cursor);
+            }
+
+            Map<?, ?> response = cloudinary.api().resources(options);
+            List<?> resources = (List<?>) response.get("resources");
+            List<StoredMedia> items = resources == null ? List.of() : resources.stream()
+                    .map(resource -> toStoredMedia((Map<?, ?>) resource))
+                    .toList();
+            return new MediaPage(items, (String) response.get("next_cursor"));
+        } catch (RuntimeException e) {
+            throw new IllegalStateException("Không đọc được thư viện ảnh: " + e.getMessage(), e);
+        } catch (Exception e) {
+            // The Cloudinary Admin API declares a checked Exception, so this is not the
+            // catch-all it looks like — it is the only way to call it.
+            throw new IllegalStateException("Không đọc được thư viện ảnh.", e);
+        }
+    }
+
+    private StoredMedia toStoredMedia(Map<?, ?> resource) {
+        String secureUrl = (String) resource.get("secure_url");
+        return new StoredMedia(
+                (String) resource.get("public_id"),
+                secureUrl,
+                transformed(secureUrl, "f_auto,q_auto,w_320"),
+                transformed(secureUrl, "f_auto,q_auto,w_1120"),
+                (String) resource.get("format"),
+                asLong(resource.get("bytes")),
+                (int) asLong(resource.get("width")),
+                (int) asLong(resource.get("height")),
+                String.valueOf(resource.get("created_at")));
+    }
+
+    /**
+     * Splices a transform into a delivery URL, which Cloudinary reads from the path segment
+     * right after /upload/. Built here rather than with the SDK's url builder so the result is
+     * character-for-character the shape already stored in the blog content.
+     */
+    static String transformed(String secureUrl, String transform) {
+        if (secureUrl == null) {
+            return null;
+        }
+        int marker = secureUrl.indexOf("/upload/");
+        if (marker < 0) {
+            return secureUrl;
+        }
+        int after = marker + "/upload/".length();
+        return secureUrl.substring(0, after) + transform + "/" + secureUrl.substring(after);
+    }
+
+    private static long asLong(Object value) {
+        return value instanceof Number number ? number.longValue() : 0L;
     }
 
     private void validateImage(MultipartFile file) {

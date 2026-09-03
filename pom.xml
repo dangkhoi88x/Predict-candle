@@ -51,6 +51,16 @@
             <artifactId>spring-boot-starter-json</artifactId>
         </dependency>
 
+        <!-- The starter, not flyway-core on its own: Boot 4 keeps the Flyway auto-configuration
+             in its own module, so the bare library sits on the classpath and never runs. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-flyway</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-database-postgresql</artifactId>
+        </dependency>
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>

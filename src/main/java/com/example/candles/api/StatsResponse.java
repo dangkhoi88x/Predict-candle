@@ -32,6 +32,7 @@ public record StatsResponse(
     }
 
     /** Only guesses the server recorded appear here — an imported tally has no detail. */
+    /** {@code guessed} is null for a guess the countdown ate — no answer, not a wrong one. */
     public record RecentGuess(String symbol, String guessed, String actual, boolean correct,
                               java.time.Instant at) {
     }

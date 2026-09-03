@@ -2,6 +2,8 @@ package com.example.candles.domain;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -53,6 +55,25 @@ public class User {
     @Column(name = "legacy_imported_at")
     private Instant legacyImportedAt;
 
+    /*
+     * Bumped on logout. Refresh tokens carry the value they were minted under, so raising it
+     * invalidates every one still outstanding. Without this, signing out only cleared the
+     * cookie: a copy of it stayed usable for the refresh token's full 30 days.
+     *
+     * Nullable because rows predating the column have no value; absent means zero.
+     */
+    @Column(name = "token_version")
+    private Integer tokenVersion;
+
+    /*
+     * Authoritative for what this account may do. Reconciled from candles.admin.wallets at
+     * startup and at wallet login, so the deployment's configuration — not a row anyone with
+     * database access could edit — decides who is an admin.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 16)
+    private Role role = Role.USER;
+
     protected User() {
     }
 
@@ -76,6 +97,44 @@ public class User {
 
     public Instant getCreatedAt() {
         return createdAt;
+    }
+
+    /** Admins can correct a name; players cannot rename themselves today. */
+    public void setDisplayName(String displayName) {
+        this.displayName = displayName;
+    }
+
+    public Role getRole() {
+        return role;
+    }
+
+    public boolean isAdmin() {
+        return role == Role.ADMIN;
+    }
+
+    /**
+     * Changing what an account may do also ends its sessions: an access token already issued
+     * carries the old role for up to its fifteen minutes, and a demotion that leaves the
+     * demoted account admin for another quarter of an hour is not a demotion.
+     *
+     * @return true when the role actually changed
+     */
+    public boolean assignRole(Role newRole) {
+        if (role == newRole) {
+            return false;
+        }
+        role = newRole;
+        revokeSessions();
+        return true;
+    }
+
+    public int getTokenVersion() {
+        return tokenVersion == null ? 0 : tokenVersion;
+    }
+
+    /** Invalidates every refresh token issued to this account so far. */
+    public void revokeSessions() {
+        tokenVersion = getTokenVersion() + 1;
     }
 
     public boolean hasImportedLegacyStats() {

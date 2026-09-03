@@ -1,0 +1,614 @@
+<!doctype html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>Quản trị · Candle Guess</title>
+    <meta name="robots" content="noindex"/>
+    <!-- Its own icon: the game's candles on the admin palette's bone ground rather than the
+         game's near-black. Value is what tells two icons apart at 16px, so the tile inverts
+         and the marks stay put — one dark block, one light block, obviously the same app.
+         theme-color follows --adm-bg here, not the game's --bg; theme.js reads both values
+         off these tags rather than knowing which page it is on. -->
+    <link rel="icon" href="/admin-favicon.ico" sizes="32x32"/>
+    <link rel="icon" href="/admin-favicon.svg" type="image/svg+xml"/>
+    <link rel="apple-touch-icon" href="/admin-apple-touch-icon.png"/>
+    <meta name="theme-color" content="#141416" media="(prefers-color-scheme: dark)"/>
+    <meta name="theme-color" content="#e9e7e4" media="(prefers-color-scheme: light)"/>
+    <link rel="stylesheet" href="style.css"/>
+    <script>
+        // Same pre-paint theme read as index.html: applying it after the body renders would
+        // flash the wrong palette.
+        (function () {
+            var theme = "dark";
+            try {
+                theme = localStorage.getItem("candles-theme")
+                    || (window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+            } catch (e) {
+                // Storage blocked — fall back to dark.
+            }
+            document.documentElement.setAttribute("data-theme", theme);
+        })();
+    </script>
+</head>
+<body>
+<div class="admin-shell">
+    <aside class="adm-side">
+        <button class="adm-workspace" type="button" title="Candle Guess">
+            <span class="adm-workspace-mark" aria-hidden="true">C</span>
+            <span class="adm-workspace-text">
+                <span class="adm-workspace-kicker">Quản trị</span>
+                <span class="adm-workspace-name">Candle Guess</span>
+            </span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M8 9l4-4 4 4M8 15l4 4 4-4"/>
+            </svg>
+        </button>
+
+        <nav class="adm-nav" aria-label="Khu vực quản trị">
+            <div class="adm-nav-group">
+                <p class="adm-nav-label">Chính</p>
+                <button class="adm-nav-item" type="button" data-pane-link="overview" title="Tổng quan">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                         stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/>
+                    </svg>
+                    <span>Tổng quan</span>
+                </button>
+                <button class="adm-nav-item" type="button" data-pane-link="ops" title="Vận hành">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                         stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M3 12h4l2.5-6 4 12 2.5-6h5"/>
+                    </svg>
+                    <span>Vận hành</span>
+                    <span class="adm-nav-badge hidden" id="nav-stale-count"></span>
+                </button>
+            </div>
+
+            <div class="adm-nav-group">
+                <p class="adm-nav-label">Nội dung</p>
+                <button class="adm-nav-item" type="button" data-pane-link="blog" title="Bài viết">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                         stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/>
+                        <path d="M14 3v5h5"/>
+                    </svg>
+                    <span>Bài viết</span>
+                </button>
+                <button class="adm-nav-item" type="button" data-pane-link="content" title="Thư viện nội dung">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                         stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <rect x="3" y="4" width="7" height="16" rx="1"/>
+                        <rect x="14" y="4" width="7" height="9" rx="1"/>
+                    </svg>
+                    <span>Thư viện nội dung</span>
+                </button>
+                <button class="adm-nav-item" type="button" data-pane-link="media" title="Thư viện ảnh">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                         stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <rect x="3" y="4" width="18" height="16" rx="2"/>
+                        <circle cx="8.5" cy="9.5" r="1.5"/>
+                        <path d="M21 16l-5-5-6 6"/>
+                    </svg>
+                    <span>Thư viện ảnh</span>
+                </button>
+            </div>
+
+            <div class="adm-nav-group">
+                <p class="adm-nav-label">Hệ thống</p>
+                <button class="adm-nav-item" type="button" data-pane-link="assets" title="Cặp giao dịch">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                         stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M7 4v16M7 8h4M7 16h4"/>
+                        <path d="M17 4v16M13 7h4M13 15h4"/>
+                    </svg>
+                    <span>Cặp giao dịch</span>
+                </button>
+                <button class="adm-nav-item" type="button" data-pane-link="players" title="Người chơi">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                         stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <circle cx="9" cy="8" r="3.2"/>
+                        <path d="M3 20c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"/>
+                        <path d="M16 5.5a3 3 0 0 1 0 5.6M18 20c0-2.4-.9-4.2-2.4-5.2"/>
+                    </svg>
+                    <span>Người chơi</span>
+                </button>
+            </div>
+        </nav>
+
+        <div class="adm-side-foot">
+            <a class="adm-back" href="/" title="Về trang chơi">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M19 12H5M11 6l-6 6 6 6"/>
+                </svg>
+                <span>Về trang chơi</span>
+            </a>
+
+            <div class="auth-area" id="auth-area">
+                <span id="auth-error-msg" class="auth-error-msg hidden"></span>
+                <button id="auth-login-btn" class="primary-btn" type="button">Kết nối ví</button>
+                <div id="auth-user" class="auth-user hidden">
+                    <span class="adm-avatar" id="adm-avatar" aria-hidden="true"></span>
+                    <span class="adm-wallet-text">
+                        <button id="auth-display-name" class="auth-display-name" type="button"
+                                title="Quản lý ví"></button>
+                        <span class="adm-wallet-meta" id="adm-wallet-meta"></span>
+                    </span>
+                    <button id="auth-logout-btn" class="adm-icon-btn" type="button"
+                            title="Ngắt kết nối" aria-label="Ngắt kết nối">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                             stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M15 4h3a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-3"/>
+                            <path d="M10 8l-4 4 4 4M6 12h9"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <main class="adm-main">
+        <header class="adm-topbar">
+            <div class="adm-crumb">
+                <span>Quản trị</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M9 6l6 6-6 6"/>
+                </svg>
+                <span class="adm-crumb-pane" id="adm-crumb-pane">Tổng quan</span>
+            </div>
+            <div class="adm-topbar-tools">
+                <!-- The results panel is a sibling of the label, not inside it: a click on a
+                     result inside a <label> would be forwarded to the input instead. -->
+                <div class="adm-search" role="combobox" aria-expanded="false"
+                     aria-haspopup="listbox" aria-owns="adm-search-results">
+                    <label class="adm-search-field">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                             stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <circle cx="11" cy="11" r="6.5"/>
+                            <path d="M16 16l4 4"/>
+                        </svg>
+                        <input id="adm-search-input" type="search" placeholder="Tìm kiếm…"
+                               aria-label="Tìm kiếm" autocomplete="off" aria-autocomplete="list"
+                               aria-controls="adm-search-results"/>
+                    </label>
+                    <div class="adm-search-results hidden" id="adm-search-results"
+                         role="listbox" aria-label="Kết quả tìm kiếm"></div>
+                </div>
+                <button id="theme-toggle" class="theme-toggle" type="button"
+                        aria-label="Đổi giao diện sáng/tối">
+                    <svg data-theme-icon="moon" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="1.7" stroke-linecap="round"
+                         stroke-linejoin="round" aria-hidden="true">
+                        <path d="M20 14.5A8 8 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/>
+                    </svg>
+                    <svg data-theme-icon="sun" class="hidden" width="16" height="16" viewBox="0 0 24 24"
+                         fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"
+                         stroke-linejoin="round" aria-hidden="true">
+                        <circle cx="12" cy="12" r="4"/>
+                        <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+        <div class="adm-content">
+            <!-- Three states, one at a time: signed out, signed in without the role, and admin.
+                 They sit above the panes and outside them, so the nav never has to know about
+                 permission at all. -->
+            <section id="admin-anon" class="admin-state hidden">
+                <h2>Cần đăng nhập</h2>
+                <p>Kết nối ví để tiếp tục. Chỉ những ví nằm trong <code>candles.admin.wallets</code> mới vào được trang này.</p>
+            </section>
+
+            <section id="admin-denied" class="admin-state hidden">
+                <h2>Ví này không có quyền quản trị</h2>
+                <p>Tài khoản đã đăng nhập nhưng không giữ vai trò ADMIN. Quyền được cấp qua cấu hình triển khai, không cấp được từ trong ứng dụng.</p>
+                <div class="admin-who" id="admin-denied-who"></div>
+            </section>
+
+            <!-- Confirmed-admin card. admin.js hides it once the wallet card in the sidebar
+                 carries the same answer; it exists for the moment before that. -->
+            <section id="admin-ok" class="admin-state hidden">
+                <h2>Đã xác thực quyền quản trị</h2>
+                <p>Máy chủ đã xác nhận vai trò ADMIN cho tài khoản này.</p>
+                <div class="admin-who" id="admin-who"></div>
+            </section>
+
+            <div class="admin-panes" id="admin-panes" data-pane="overview">
+
+                <section id="admin-overview" data-pane="overview">
+                    <div class="adm-hero">
+                        <div class="adm-hero-text">
+                            <h1 class="admin-h1 adm-hero-title" id="ov-greeting">Tổng quan</h1>
+                            <p class="adm-hero-sub" id="ov-sub">Đang đọc trạng thái…</p>
+                        </div>
+                        <div class="adm-hero-actions">
+                            <button id="ov-refresh" class="ghost-btn" type="button">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                     stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <path d="M20 12a8 8 0 1 1-2.3-5.7M20 4v4h-4"/>
+                                </svg>
+                                Làm mới
+                            </button>
+                            <button id="ov-new-post" class="primary-btn" type="button">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                     stroke-width="1.9" stroke-linecap="round" aria-hidden="true">
+                                    <path d="M12 5v14M5 12h14"/>
+                                </svg>
+                                Bài mới
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- One strip instead of a second copy of #ops-assets: the table has one id
+                         and one home, and what this pane needs to say is only "something is late". -->
+                    <div id="ov-alert" class="adm-alert hidden">
+                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                             stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M10.3 3.9 1.9 18a2 2 0 0 0 1.7 3h16.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/>
+                            <path d="M12 9v4M12 17h.01"/>
+                        </svg>
+                        <span id="ov-alert-text"></span>
+                        <button id="ov-alert-go" class="ghost-btn" type="button">Xem vận hành</button>
+                    </div>
+
+                    <div class="adm-kpis" id="ov-kpis"></div>
+
+                    <div class="adm-tray">
+                        <div class="adm-tray-head">
+                            <span class="adm-kicker">Lượt đoán theo ngày</span>
+                            <span class="adm-info-dot" title="Mỗi ô là một phần lượt đoán trong mốc — cột càng cao, càng nhiều lượt.">i</span>
+                        </div>
+                        <div class="adm-card adm-chart-card">
+                            <div class="adm-chart-bar">
+                                <!-- Named for the stack it sums, not "lượt": the KPI above counts
+                                     timed-out guesses too, and two different totals sharing one
+                                     word on one screen is how a dashboard stops being trusted. -->
+                                <span class="adm-chart-total">Đã trả lời : <b id="ov-total">—</b></span>
+                                <span class="adm-legend"><i></i>SHORT</span>
+                                <span class="adm-legend is-long"><i></i>LONG</span>
+                                <div class="pill adm-range" id="ov-range">
+                                    <button class="pill-option" type="button" data-range="week">Tuần</button>
+                                    <button class="pill-option active" type="button" data-range="month">Tháng</button>
+                                    <button class="pill-option" type="button" data-range="year">Năm</button>
+                                </div>
+                            </div>
+                            <div class="adm-chart-body">
+                                <div class="adm-yaxis" id="ov-yaxis"></div>
+                                <div class="adm-plot">
+                                    <div class="adm-grid" id="ov-grid"></div>
+                                    <div class="adm-xaxis" id="ov-xaxis"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="adm-duo">
+                        <div class="adm-tray">
+                            <div class="adm-tray-head">
+                                <span class="adm-kicker">Tỉ lệ đoán đúng</span>
+                                <span class="adm-kicker-note" id="ov-accuracy-span">—</span>
+                            </div>
+                            <div class="adm-card adm-mini-card">
+                                <div class="adm-mini-head">
+                                    <b class="adm-mini-value" id="ov-accuracy">—</b>
+                                    <span class="adm-mini-note">toàn hệ thống</span>
+                                    <span class="adm-mini-aside">ngẫu nhiên = 50%</span>
+                                </div>
+                                <svg class="adm-accuracy-svg" viewBox="0 0 320 96" preserveAspectRatio="none"
+                                     aria-hidden="true">
+                                    <line x1="0" y1="48" x2="320" y2="48" stroke="var(--adm-border-2)"
+                                          stroke-width="1" stroke-dasharray="3 4"/>
+                                    <polyline id="ov-accuracy-line" fill="none" stroke="var(--adm-ink)"
+                                              stroke-width="2" stroke-linejoin="round" points=""/>
+                                    <circle id="ov-accuracy-dot" r="3.5" fill="var(--adm-ink)" cx="320" cy="48"
+                                            class="hidden"/>
+                                </svg>
+                                <div class="adm-mini-axis" id="ov-accuracy-axis"></div>
+                                <p class="adm-chart-empty hidden" id="ov-accuracy-empty">Cần ít nhất hai tuần có lượt đoán mới vẽ được đường tỉ lệ.</p>
+                            </div>
+                        </div>
+
+                        <div class="adm-tray">
+                            <div class="adm-tray-head">
+                                <span class="adm-kicker">Người chơi hoạt động</span>
+                                <span class="adm-kicker-note" id="ov-players-span">—</span>
+                            </div>
+                            <div class="adm-card adm-mini-card">
+                                <div class="adm-mini-head">
+                                    <b class="adm-mini-value" id="ov-players-now">—</b>
+                                    <span class="adm-mini-note">ví hoạt động hôm nay</span>
+                                </div>
+                                <div class="adm-bars" id="ov-players-bars"></div>
+                                <div class="adm-mini-axis" id="ov-players-axis"></div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="admin-ops" data-pane="ops" class="hidden">
+                    <div class="admin-bar">
+                        <h1 class="admin-h1">Vận hành</h1>
+                        <span id="ops-generated" class="ops-generated"></span>
+                        <div class="editor-actions">
+                            <button id="ops-refresh" class="ghost-btn" type="button">Làm mới</button>
+                        </div>
+                    </div>
+
+                    <div id="ops-cards" class="ops-cards"></div>
+
+                    <div class="adm-table-card">
+                        <div class="adm-table-head">
+                            <b>Dữ liệu nến</b>
+                            <span>Sync chạy đúng delta fetch mà cron hằng giờ chạy.</span>
+                        </div>
+                        <div class="scroller">
+                            <table class="ops-table" id="ops-assets">
+                                <thead>
+                                    <tr><th>Asset</th><th>Khung</th><th class="num">Số nến</th><th>Nến mới nhất</th>
+                                        <th class="num">Trễ</th><th>Trạng thái</th><th></th></tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="admin-bar">
+                        <h2 class="admin-h2">Cấu hình đang chạy</h2>
+                    </div>
+                    <p class="content-note">Chỉ đọc — sửa trong <code>application.yaml</code> rồi khởi động lại.</p>
+                    <div id="ops-settings" class="ops-settings"></div>
+                </section>
+
+                <section id="admin-assets" data-pane="assets" class="hidden">
+                    <div class="admin-bar">
+                        <h1 class="admin-h1">Cặp giao dịch</h1>
+                        <form id="asset-add" class="editor-actions">
+                            <input id="asset-symbol" class="folder-input" type="text" placeholder="ADAUSDT"
+                                   maxlength="20" aria-label="Mã cặp"/>
+                            <input id="asset-name" class="folder-input" type="text" placeholder="Cardano"
+                                   maxlength="60" aria-label="Tên hiển thị"/>
+                            <button class="primary-btn" type="submit">+ Thêm</button>
+                        </form>
+                    </div>
+                    <p class="content-note">Thứ tự trong bảng này là thứ tự nút chọn trong game. Cặp mới được tạo ở trạng thái tắt — chạy backfill để tải lịch sử rồi mới bật được.</p>
+                    <div class="adm-table-card">
+                        <div class="scroller">
+                            <table class="ops-table" id="asset-table">
+                                <thead>
+                                    <tr><th>Cặp</th><th>Tên</th><th class="num">Số nến</th><th>Trạng thái</th><th></th></tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="admin-players" data-pane="players" class="hidden">
+                    <div class="admin-bar">
+                        <h1 class="admin-h1">Người chơi</h1>
+                        <span id="players-count" class="ops-generated"></span>
+                    </div>
+                    <p class="content-note">Vai trò lấy từ <code>candles.admin.wallets</code> nên không sửa được ở đây.</p>
+                    <div class="adm-table-card">
+                        <div class="scroller">
+                            <table class="ops-table" id="player-table">
+                                <thead>
+                                    <tr><th>Ví</th><th>Tên hiển thị</th><th>Vai trò</th><th class="num">Lượt</th>
+                                        <th class="num">Đúng</th><th>Chơi gần nhất</th><th></th></tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="admin-content" data-pane="content" class="hidden">
+                    <div class="admin-bar">
+                        <h1 class="admin-h1">Thư viện nội dung</h1>
+                        <div class="editor-actions">
+                            <div class="pill" id="content-kind-pill">
+                                <button class="pill-option active" type="button" data-kind="candle-pattern">Mẫu nến</button>
+                                <button class="pill-option" type="button" data-kind="technical-pattern">Mẫu hình</button>
+                                <button class="pill-option" type="button" data-kind="psychology">Tâm lý</button>
+                            </div>
+                            <button id="content-new" class="primary-btn hidden" type="button">+ Mục mới</button>
+                        </div>
+                    </div>
+
+                    <p class="content-note" id="content-note"></p>
+                    <div id="content-list" class="blog-admin-list"></div>
+
+                    <form id="content-editor" class="blog-editor hidden" autocomplete="off">
+                        <div class="admin-bar">
+                            <h3 class="admin-h3" id="content-editor-title">Sửa mục</h3>
+                            <div class="editor-actions">
+                                <button id="content-cancel" class="ghost-btn" type="button">Huỷ</button>
+                                <button class="primary-btn" type="submit">Lưu</button>
+                            </div>
+                        </div>
+
+                        <div class="field-grid">
+                            <label class="field field-wide">Tên hiển thị
+                                <input id="c-title" type="text" required maxlength="300"/>
+                            </label>
+                            <label class="field">Khoá <span id="c-key-lock" class="key-lock hidden">· khoá cứng theo matcher</span>
+                                <input id="c-key" type="text" maxlength="80"/>
+                            </label>
+                            <label class="field">Thứ tự
+                                <input id="c-position" type="number" value="0"/>
+                            </label>
+                            <label class="field field-wide">Thẻ (ngăn cách bằng dấu phẩy)
+                                <input id="c-tags" type="text" placeholder="bullish, reversal"/>
+                            </label>
+                            <label class="field field-wide">Tóm tắt
+                                <textarea id="c-summary" rows="3"></textarea>
+                            </label>
+                            <label class="field checkbox-field">
+                                <input id="c-published" type="checkbox"/> Hiển thị công khai
+                            </label>
+                        </div>
+
+                        <div class="admin-bar" id="c-howto-bar">
+                            <h3 class="admin-h3">Cách nhận diện</h3>
+                            <div class="editor-actions">
+                                <button id="c-add-step" class="ghost-btn" type="button">+ Ý</button>
+                            </div>
+                        </div>
+                        <div id="c-howto" class="block-list"></div>
+
+                        <details class="raw-json" id="c-raw-wrap">
+                            <summary>Dữ liệu minh hoạ (JSON)</summary>
+                            <p class="raw-json-note">Toạ độ nến hoặc điểm vẽ của thẻ. Sửa sai thì hình minh hoạ không còn đúng với mẫu.</p>
+                            <textarea id="c-raw" rows="6"></textarea>
+                        </details>
+                    </form>
+                </section>
+
+                <section id="admin-media" data-pane="media" class="hidden">
+                    <div class="admin-bar">
+                        <h1 class="admin-h1">Thư viện ảnh</h1>
+                        <div class="editor-actions">
+                            <input id="media-folder" class="folder-input" type="text" value="candles/blog"
+                                   aria-label="Thư mục Cloudinary"/>
+                            <button id="media-reload" class="ghost-btn" type="button">Tải lại</button>
+                        </div>
+                    </div>
+
+                    <label id="media-drop" class="media-drop" for="media-file">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                             stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M12 16V4M7 9l5-5 5 5"/>
+                            <path d="M4 17v2a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-2"/>
+                        </svg>
+                        <span>Kéo ảnh vào đây, hoặc bấm để chọn</span>
+                        <small>JPEG · PNG · WebP · tối đa 10 MB</small>
+                        <input id="media-file" type="file" accept="image/jpeg,image/png,image/webp" multiple hidden/>
+                    </label>
+
+                    <div id="media-grid" class="media-grid"></div>
+                    <p id="media-empty" class="block-empty hidden">Thư mục này chưa có ảnh nào.</p>
+                    <button id="media-more" class="ghost-btn hidden" type="button">Tải thêm</button>
+                </section>
+
+                <section id="admin-blog" data-pane="blog" class="hidden">
+                    <div class="admin-bar">
+                        <h1 class="admin-h1">Bài viết</h1>
+                        <div class="editor-actions">
+                            <button id="blog-new" class="primary-btn" type="button">+ Bài mới</button>
+                        </div>
+                    </div>
+                    <div id="blog-list-admin" class="blog-admin-list"></div>
+
+                    <form id="blog-editor" class="blog-editor hidden" autocomplete="off">
+                        <div class="admin-bar">
+                            <h3 class="admin-h3" id="blog-editor-title">Bài mới</h3>
+                            <div class="editor-actions">
+                                <button id="blog-cancel" class="ghost-btn" type="button">Huỷ</button>
+                                <button id="blog-save" class="primary-btn" type="submit">Lưu</button>
+                            </div>
+                        </div>
+
+                        <div class="field-grid">
+                            <label class="field field-wide">Tiêu đề
+                                <input id="f-title" type="text" required maxlength="300"/>
+                            </label>
+                            <label class="field field-wide">Đường dẫn (bỏ trống để tự sinh từ tiêu đề)
+                                <input id="f-slug" type="text" maxlength="180" placeholder="tu-dong-sinh"/>
+                            </label>
+                            <label class="field">Thẻ (ngăn cách bằng dấu phẩy)
+                                <input id="f-tags" type="text" placeholder="Market Structure, Đáy thị trường"/>
+                            </label>
+                            <label class="field">Thứ tự hiển thị
+                                <input id="f-position" type="number" value="0"/>
+                            </label>
+                            <div class="field field-wide">
+                                <span class="field-label">Ảnh bìa</span>
+                                <div class="cover-field">
+                                    <img id="f-cover-preview" class="cover-preview" alt=""/>
+                                    <!-- An inline SVG cover, shown read-only: it follows the
+                                         theme through var() and cannot survive an <img>. -->
+                                    <div id="f-cover-svg-preview" class="cover-svg-preview hidden"
+                                         title="Ảnh bìa SVG có sẵn của bài này"></div>
+                                    <div class="cover-empty" id="f-cover-empty">Chưa có ảnh</div>
+                                    <div class="cover-actions">
+                                        <button id="f-cover-upload" class="ghost-btn" type="button">Tải ảnh từ máy</button>
+                                        <button id="f-cover-pick" class="ghost-btn" type="button">Chọn từ thư viện</button>
+                                        <button id="f-cover-clear" class="ghost-btn danger-btn hidden" type="button">Bỏ ảnh</button>
+                                        <input id="f-cover-file" type="file"
+                                               accept="image/jpeg,image/png,image/webp" hidden/>
+                                    </div>
+                                </div>
+                                <!-- Still the field that carries the value. Left visible and
+                                     editable because an external image is a legitimate cover
+                                     and pasting its URL should not need an upload first. -->
+                                <input id="f-cover-img" class="cover-url" type="url" maxlength="600"
+                                       placeholder="hoặc dán URL ảnh" aria-label="URL ảnh bìa"/>
+                            </div>
+                            <label class="field checkbox-field">
+                                <input id="f-published" type="checkbox"/> Đăng công khai
+                            </label>
+                        </div>
+
+                        <div class="admin-bar">
+                            <h3 class="admin-h3">Nội dung</h3>
+                            <span class="blog-count" id="blog-count"></span>
+                        </div>
+                        <!-- Tiptap mounts into #blog-body and owns everything inside it. The
+                             toolbar lives outside so it is plain markup this page controls,
+                             and blog-editor.js only says what each button does. -->
+                        <div class="blog-editor-shell">
+                            <div class="blog-toolbar" id="blog-toolbar" role="toolbar"
+                                 aria-label="Định dạng">
+                                <button type="button" class="blog-tool" data-cmd="bold" data-active="bold" title="Đậm"><b>B</b></button>
+                                <button type="button" class="blog-tool" data-cmd="italic" data-active="italic" title="Nghiêng"><i>I</i></button>
+                                <button type="button" class="blog-tool" data-cmd="underline" data-active="underline" title="Gạch chân"><u>U</u></button>
+                                <button type="button" class="blog-tool" data-cmd="strike" data-active="strike" title="Gạch ngang"><s>S</s></button>
+                                <span class="blog-tool-sep" aria-hidden="true"></span>
+                                <button type="button" class="blog-tool" data-cmd="h2" data-active="heading:2" title="Tiêu đề lớn">H2</button>
+                                <button type="button" class="blog-tool" data-cmd="h3" data-active="heading:3" title="Tiêu đề nhỏ">H3</button>
+                                <button type="button" class="blog-tool" data-cmd="bulletList" data-active="bulletList" title="Danh sách">• —</button>
+                                <button type="button" class="blog-tool" data-cmd="orderedList" data-active="orderedList" title="Danh sách đánh số">1.</button>
+                                <button type="button" class="blog-tool" data-cmd="blockquote" data-active="blockquote" title="Trích dẫn">❝</button>
+                                <button type="button" class="blog-tool" data-cmd="codeBlock" data-active="codeBlock" title="Khối mã">&lt;/&gt;</button>
+                                <span class="blog-tool-sep" aria-hidden="true"></span>
+                                <button type="button" class="blog-tool" data-cmd="alignLeft" title="Canh trái">⭰</button>
+                                <button type="button" class="blog-tool" data-cmd="alignCenter" title="Canh giữa">⭤</button>
+                                <button type="button" class="blog-tool" data-cmd="alignRight" title="Canh phải">⭲</button>
+                                <span class="blog-tool-sep" aria-hidden="true"></span>
+                                <button type="button" class="blog-tool" id="blog-link" title="Chèn liên kết">🔗</button>
+                                <button type="button" class="blog-tool" id="blog-add-image" title="Ảnh từ thư viện">🖼</button>
+                                <span class="blog-tool-sep" aria-hidden="true"></span>
+                                <button type="button" class="blog-tool" data-cmd="undo" title="Hoàn tác">↺</button>
+                                <button type="button" class="blog-tool" data-cmd="redo" title="Làm lại">↻</button>
+                            </div>
+                            <div id="blog-body" class="blog-compose"></div>
+                        </div>
+                    </form>
+                </section>
+            </div>
+        </div>
+    </main>
+</div>
+
+<p id="admin-status" class="status" role="status" aria-live="polite"></p>
+
+<script src="theme.js"></script>
+<script src="wallet-auth.js"></script>
+<script src="auth.js"></script>
+<script src="blog-editor.js"></script>
+<script src="admin-nav.js"></script>
+<script src="admin-search.js"></script>
+<script src="admin.js"></script>
+<script src="admin-overview.js"></script>
+<script src="admin-ops.js"></script>
+<script src="admin-assets.js"></script>
+<script src="admin-players.js"></script>
+<script src="admin-content.js"></script>
+<script src="admin-media.js"></script>
+<script src="admin-blog.js"></script>
+</body>
+</html>

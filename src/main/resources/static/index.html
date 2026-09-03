@@ -4,6 +4,14 @@
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1"/>
     <title>Candle Guess</title>
+    <!-- .ico first because browsers request /favicon.ico on their own whether or not it is
+         declared, and a 404 on every page load is a poor thing to leave in the log. The SVG
+         wins where it is supported, being sharp at any size and a tenth of the bytes. -->
+    <link rel="icon" href="/favicon.ico" sizes="32x32"/>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml"/>
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png"/>
+    <meta name="theme-color" content="#0a0a0a" media="(prefers-color-scheme: dark)"/>
+    <meta name="theme-color" content="#f6f7f9" media="(prefers-color-scheme: light)"/>
     <link rel="stylesheet" href="style.css"/>
     <script>
         // Runs before the first paint on purpose: applying the theme from JS after the body
@@ -36,6 +44,7 @@
             <button class="nav-tab" role="tab" id="tab-psychology" aria-controls="view-psychology" aria-selected="false" data-view="psychology">Tâm Lý Giao Dịch</button>
             <button class="nav-tab" role="tab" id="tab-blog" aria-controls="view-blog" aria-selected="false" data-view="blog">Blog / Kiến Thức</button>
             <!-- Shown only while signed in; nav.js toggles it on the session event. -->
+            <button class="nav-tab" role="tab" id="tab-leaderboard" aria-controls="view-leaderboard" aria-selected="false" data-view="leaderboard">Bảng Xếp Hạng</button>
             <button class="nav-tab hidden" role="tab" id="tab-profile" aria-controls="view-profile" aria-selected="false" data-view="profile">Hồ Sơ</button>
         </div>
         <div class="auth-area" id="auth-area">
@@ -46,6 +55,7 @@
             <div id="auth-user" class="auth-user hidden">
                 <button id="auth-display-name" class="auth-display-name" type="button"
                         title="Xem chi tiết ví"></button>
+                    <a id="admin-link" class="ghost-btn admin-link hidden" href="/admin.html">⚙ Quản trị</a>
                 <button id="auth-logout-btn" class="ghost-btn" type="button">Ngắt kết nối</button>
             </div>
         </div>
@@ -130,7 +140,31 @@
         </div>
     </div>
 
+    <div id="round-identity" class="round-identity hidden" aria-live="polite"></div>
+
+    <section id="round-context" class="round-context hidden" aria-label="Bối cảnh của biểu đồ vừa chơi">
+        <div class="rc-head">
+            <h3 class="rc-title">Toàn cảnh setup</h3>
+            <p class="rc-sub" id="rc-sub"></p>
+        </div>
+        <div class="rc-chart" id="rc-chart"></div>
+        <div class="rc-patterns hidden" id="rc-patterns">
+            <p class="rc-patterns-label">Mẫu nến xuất hiện trong vòng này</p>
+            <div class="rc-patterns-list" id="rc-patterns-list"></div>
+        </div>
+        <ul class="rc-legend">
+            <li><span class="rc-key rc-key-before"></span>Trước &amp; sau — phần bạn không được xem</li>
+            <li><span class="rc-key rc-key-played"></span>20 nến bạn đã xem</li>
+            <li><span class="rc-key rc-key-guess"></span>5 nến bạn phải đoán</li>
+        </ul>
+    </section>
+
     <div id="guess-progress" class="guess-progress hidden"></div>
+
+    <div id="guess-timer" class="guess-timer hidden">
+        <div class="guess-timer-track"><div class="guess-timer-fill" id="guess-timer-fill"></div></div>
+        <span class="guess-timer-value" id="guess-timer-value"></span>
+    </div>
 
     <div class="controls">
         <button id="guess-long" class="guess-btn long" disabled>▲ LONG</button>
@@ -252,6 +286,17 @@
     <p class="heatmap-caption">Tóm tắt bằng lời riêng từ các bài chia sẻ đáng đọc trên X — không phải lời khuyên đầu tư, xem nguồn gốc ở mỗi bài.</p>
 </main>
 
+<main id="view-leaderboard" class="view app hidden" role="tabpanel" aria-labelledby="tab-leaderboard">
+    <div class="view-head">
+        <h2>Bảng Xếp Hạng</h2>
+        <span id="leaderboard-note" class="profile-wallet"></span>
+    </div>
+
+    <!-- Filled by leaderboard.js on first reveal; the notice element doubles as the empty and
+         error state, the same way the other content tabs do. -->
+    <div id="leaderboard-body"></div>
+</main>
+
 <main id="view-profile" class="view app hidden" role="tabpanel" aria-labelledby="tab-profile">
     <div class="view-head">
         <h2>Hồ Sơ</h2>
@@ -277,6 +322,7 @@
 <script src="theme.js"></script>
 <script src="pill.js"></script>
 <script src="rolling.js"></script>
+<script src="content.js"></script>
 <script src="auth.js"></script>
 <script src="ticker.js"></script>
 <script src="nav.js"></script>
@@ -288,7 +334,9 @@
 <script src="patterns.js"></script>
 <script src="technical-patterns.js"></script>
 <script src="psychology.js"></script>
+<script src="blog-render.js"></script>
 <script src="blog.js"></script>
+<script src="leaderboard.js"></script>
 <script src="profile.js"></script>
 </body>
 </html>

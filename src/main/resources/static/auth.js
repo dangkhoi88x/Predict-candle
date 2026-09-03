@@ -19,7 +19,7 @@
 
     var state = {
         accessToken: null,
-        user: null, // { userId, walletAddress, displayName }
+        user: null, // { userId, walletAddress, displayName, role }
     };
 
     var loginBtn = document.getElementById("auth-login-btn");
@@ -91,13 +91,27 @@
     /* Broadcast rather than call into app.js directly: the scoreboard is not the only thing
        that will care who is signed in, and auth.js should not have to know about any of them. */
     function announceSession() {
+        /* Convenience, not a gate: the link is hidden for everyone else, but the page it
+           points at asks the server again and every admin route enforces on its own. */
+        var adminLink = document.getElementById("admin-link");
+        if (adminLink) {
+            adminLink.classList.toggle("hidden", !state.user || state.user.role !== "ADMIN");
+        }
+
         document.dispatchEvent(new CustomEvent("candles:session", { detail: { user: state.user } }));
     }
 
     function applySession(response) {
         var wasSignedIn = !!state.user;
         state.accessToken = response.accessToken;
-        state.user = { userId: response.userId, walletAddress: response.walletAddress, displayName: response.displayName };
+        /* role is what the server last told us this account is. It decides whether the
+           admin link is drawn and nothing else — every admin route checks for itself. */
+        state.user = {
+            userId: response.userId,
+            walletAddress: response.walletAddress,
+            displayName: response.displayName,
+            role: response.role,
+        };
         renderAuthUi();
         // The 10-minute token renewal also lands here; only a real sign-in is news.
         if (!wasSignedIn) announceSession();
@@ -158,6 +172,7 @@
         showError: showError,
         getAccessToken: function () { return state.accessToken; },
         getUser: function () { return state.user; },
+        isAdmin: function () { return !!state.user && state.user.role === "ADMIN"; },
 
         /**
          * fetch() with the bearer token attached when there is one. Without a session it is

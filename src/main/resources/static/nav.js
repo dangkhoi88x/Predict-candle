@@ -9,6 +9,7 @@
         technical: document.getElementById("view-technical"),
         psychology: document.getElementById("view-psychology"),
         blog: document.getElementById("view-blog"),
+        leaderboard: document.getElementById("view-leaderboard"),
         profile: document.getElementById("view-profile"),
     };
     var onFirstShow = {
@@ -20,6 +21,10 @@
        on the game tab moves the numbers it shows. */
     var onEveryShow = {
         profile: function () { window.__initProfileView && window.__initProfileView(); },
+        /* Rebuilt on every reveal, not just the first: ranks move while you play, and a board
+           showing where you stood when the page loaded is the one thing it must not do. The
+           server caches for a minute, so reopening the tab costs a request and nothing more. */
+        leaderboard: function () { window.__initLeaderboardView && window.__initLeaderboardView(); },
     };
 
     function activate(tab) {

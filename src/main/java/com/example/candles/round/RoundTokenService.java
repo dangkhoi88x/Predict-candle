@@ -40,19 +40,28 @@ public class RoundTokenService {
                 .compact();
     }
 
-    public RoundToken verify(String jwt) {
+    /**
+     * The verified round together with when the token was minted — the clock the guess
+     * deadline is measured against. Nothing else in the request can be trusted for timing:
+     * the client's own idea of elapsed time is the thing being checked.
+     */
+    public record Verified(RoundToken round, Instant issuedAt) {
+    }
+
+    public Verified verify(String jwt) {
         try {
             Claims claims = Jwts.parser()
                     .verifyWith(key)
                     .build()
                     .parseSignedClaims(jwt)
                     .getPayload();
-            return new RoundToken(
+            RoundToken round = new RoundToken(
                     claims.get("assetId", Number.class).longValue(),
                     claims.get("timeframe", String.class),
                     claims.get("startIndex", Number.class).intValue(),
                     claims.get("guessNumber", Number.class).intValue()
             );
+            return new Verified(round, claims.getIssuedAt().toInstant());
         } catch (JwtException | IllegalArgumentException e) {
             throw new InvalidRoundTokenException(e);
         }
