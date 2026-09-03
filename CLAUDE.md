@@ -248,6 +248,39 @@ soft grey ground, hairline borders, low shadow, against the game's near-black. T
 load-bearing: `.ghost-btn`, `.pill`, `.status` and `.field` are shared class names, and only
 the `.admin-shell` prefix keeps the two pages from having to agree on how they look.
 
+### Live round
+
+A second game shape next to practice: not a random historical chart, but one shared call on
+whichever candle the exchange is building this second — the kind of thing rekto.fun's
+next-candle mini-game does. `GET /api/live/round` and `GET /api/live/history` are public;
+`POST /api/live/predict` needs a wallet, enforced in `SecurityConfig` the same way
+`/api/stats/**` is.
+
+**Nothing stores a round.** `LiveRound.at(now, timeframe, lockBefore)` names the round from the
+clock alone — a round *is* the real candle open at that instant — so two servers, a page reload
+and a player who joins mid-round all agree on which round is running without a token. Picks lock
+`candles.live.lock-before` (default 8 minutes on the 1h timeframe) before the candle closes;
+without that gap a player could watch the price and call the obvious.
+
+The live price is `PriceDataProvider.fetchCandles` asked for exactly the candle
+`CandleSyncService` deliberately never stores — that service stops one millisecond short of
+"now" so it never freezes a still-moving candle, and the live round asks for exactly that one,
+cached `candles.live.price-cache-ttl` (2s) so concurrent viewers share one upstream call. Once a
+round has closed, the settled row is authoritative and cheaper, so the exchange is only asked
+while a round is still open.
+
+`live_predictions` carries the same integrity story as `guess_results`: one row per (user,
+asset, timeframe, open_time), a unique constraint rather than a check the application could
+forget. Recording checks first and inserts second — an insert that fails its constraint leaves
+the persistence context needing a rollback, so a caller reusing that context (any request inside
+one transaction) finds unrelated later queries broken by an exception a different request
+already recovered from.
+
+Frontend is deliberately not a live-updating candlestick chart. A big rolling price, a sparkline
+of the last `candles.live.history-size` closes, a lock/close countdown reusing `.guess-timer`,
+and a pool-split bar are what `live.js` renders — same visual language as practice
+(`.guess-btn.long/.short`, `--up`/`--down`), built on first reveal like heatmap and blog.
+
 ### Leaderboard
 
 `GET /api/leaderboard` is public — anonymous callers get the board without the `me` row, and
