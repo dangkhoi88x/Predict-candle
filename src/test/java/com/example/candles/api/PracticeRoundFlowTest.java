@@ -1,8 +1,14 @@
 package com.example.candles.api;
 
 import com.example.candles.auth.JwtService;
+import com.example.candles.config.CandlesProperties;
+import com.example.candles.domain.Asset;
+import com.example.candles.domain.AssetType;
+import com.example.candles.domain.Candle;
 import com.example.candles.domain.Role;
 import com.example.candles.domain.User;
+import com.example.candles.repository.AssetRepository;
+import com.example.candles.repository.CandleRepository;
 import com.example.candles.repository.GuessResultRepository;
 import com.example.candles.repository.UserRepository;
 import org.junit.jupiter.api.Test;
@@ -16,6 +22,11 @@ import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -42,9 +53,48 @@ class PracticeRoundFlowTest {
     @Autowired private MockMvc mockMvc;
     @Autowired private UserRepository users;
     @Autowired private GuessResultRepository guessResults;
+    @Autowired private AssetRepository assets;
+    @Autowired private CandleRepository candles;
+    @Autowired private CandlesProperties properties;
     @Autowired private JwtService jwt;
 
     private final ObjectMapper mapper = new ObjectMapper();
+
+    /**
+     * A pair of this test's own, with history of this test's own.
+     *
+     * Playing BTCUSDT instead passed here and failed on CI, and the reason is worth keeping:
+     * a developer machine has ~40k candles per pair from the first-run Binance backfill, while
+     * CI starts on an empty database and cannot reach Binance at all. The round endpoint needs
+     * `visible + guesses + reveal` candles to exist before it can deal anything, so the suite
+     * was quietly asserting that someone had already run the app.
+     *
+     * Seeding here also makes the fixture legible: 60 candles alternating direction with a 1%
+     * body inside a 1.5% range clear both gates the selector applies — answers decisive enough
+     * to have a direction, and a window not so flat it is a coin flip.
+     */
+    private String seedTradablePair() {
+        Asset asset = assets.saveAndFlush(
+                new Asset("TEST" + UUID.randomUUID().toString().substring(0, 6).toUpperCase(),
+                        "Test pair", AssetType.CRYPTO));
+        Instant start = Instant.parse("2024-01-01T00:00:00Z");
+        List<Candle> seeded = new ArrayList<>();
+        BigDecimal price = BigDecimal.valueOf(100);
+        for (int i = 0; i < 60; i++) {
+            boolean up = i % 2 == 0;
+            BigDecimal open = price;
+            BigDecimal close = up ? open.multiply(BigDecimal.valueOf(1.01))
+                                  : open.multiply(BigDecimal.valueOf(0.99));
+            BigDecimal high = (up ? close : open).multiply(BigDecimal.valueOf(1.005));
+            BigDecimal low = (up ? open : close).multiply(BigDecimal.valueOf(0.995));
+            seeded.add(new Candle(asset, properties.timeframe(),
+                    start.plus(i, ChronoUnit.HOURS), open, high, low, close,
+                    BigDecimal.valueOf(1000)));
+            price = close;
+        }
+        candles.saveAllAndFlush(seeded);
+        return asset.getSymbol();
+    }
 
     /** Under min-think-time (250ms) a guess is refused as automation, so pause like a human. */
     private static void think() throws InterruptedException {
@@ -75,9 +125,10 @@ class PracticeRoundFlowTest {
 
     @Test
     void aRoundArrivesWithCandlesAndASignedTokenButNeverTheAnswer() throws Exception {
-        JsonNode round = round("BTCUSDT");
+        String pair = seedTradablePair();
+        JsonNode round = round(pair);
 
-        assertThat(round.path("asset").asString()).isEqualTo("BTCUSDT");
+        assertThat(round.path("asset").asString()).isEqualTo(pair);
         assertThat(round.path("candles").size()).isEqualTo(20);
         assertThat(round.path("guessSeconds").asInt()).isPositive();
 
@@ -91,11 +142,12 @@ class PracticeRoundFlowTest {
 
     @Test
     void answeringScoresTheGuessAndRecordsItForASignedInPlayer() throws Exception {
+        String pair = seedTradablePair();
         User player = player();
         String bearer = "Bearer " + jwt.createAccessToken(player);
         long before = guessResults.resultFlagsInPlayOrder(player.getId()).size();
 
-        JsonNode round = round("BTCUSDT");
+        JsonNode round = round(pair);
         think();
         MvcResult result = guess(round.path("roundToken").asString(), "LONG", bearer);
 
@@ -112,9 +164,10 @@ class PracticeRoundFlowTest {
 
     @Test
     void anonymousPlayIsScoredButNeverRecorded() throws Exception {
+        String pair = seedTradablePair();
         long before = guessResults.count();
 
-        JsonNode round = round("BTCUSDT");
+        JsonNode round = round(pair);
         think();
         MvcResult result = guess(round.path("roundToken").asString(), "SHORT", null);
 
@@ -125,10 +178,11 @@ class PracticeRoundFlowTest {
 
     @Test
     void aTimeoutIsRecordedAsAnAnswerlessGuessRatherThanAWrongOne() throws Exception {
+        String pair = seedTradablePair();
         User player = player();
         String bearer = "Bearer " + jwt.createAccessToken(player);
 
-        JsonNode round = round("BTCUSDT");
+        JsonNode round = round(pair);
         think();
         // No direction: the client reporting that its countdown expired.
         MvcResult result = guess(round.path("roundToken").asString(), null, bearer);
@@ -148,10 +202,11 @@ class PracticeRoundFlowTest {
      */
     @Test
     void replayingTheSameTokenDoesNotScoreTwice() throws Exception {
+        String pair = seedTradablePair();
         User player = player();
         String bearer = "Bearer " + jwt.createAccessToken(player);
 
-        JsonNode round = round("BTCUSDT");
+        JsonNode round = round(pair);
         String token = round.path("roundToken").asString();
         think();
 
@@ -163,7 +218,8 @@ class PracticeRoundFlowTest {
 
     @Test
     void aTamperedOrInventedTokenIsRefused() throws Exception {
-        JsonNode round = round("BTCUSDT");
+        String pair = seedTradablePair();
+        JsonNode round = round(pair);
         String token = round.path("roundToken").asString();
         think();
 
@@ -182,8 +238,9 @@ class PracticeRoundFlowTest {
      */
     @Test
     void answeringFasterThanAPersonCouldIsRefusedEveryTime() throws Exception {
+        String pair = seedTradablePair();
         for (int i = 0; i < 8; i++) {
-            JsonNode round = round("BTCUSDT");
+            JsonNode round = round(pair);
             int status = guess(round.path("roundToken").asString(), "LONG", null)
                     .getResponse().getStatus();
             // 408, not 400: the request is well-formed, it just arrived outside its window.
