@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="Candle Guess">
+    <!--
+      Two candles, one up and one down, on the game's own near-black tile.
+
+      Drawn for 16px first, not scaled down from something larger: bodies are 6px wide with
+      2px wicks, because at tab size anything thinner turns to grey mush and the shape stops
+      reading as a candle chart at all. The tile stays dark in both colour schemes — it is the
+      game's background, and a solid dark square with saturated marks holds its edge against a
+      light tab strip as well as a dark one, which an inverting tile would not.
+
+      Colours are --bg, --up and --down from style.css. If those change, change these.
+    -->
+    <rect width="32" height="32" rx="7" fill="#0a0a0a"/>
+
+    <g stroke-linecap="round">
+        <!-- Up candle sits high, down candle sits low: the offset is what makes the pair read
+             as movement rather than as two matching bars. -->
+        <path d="M11 4.5v15" stroke="#34d399" stroke-width="2"/>
+        <rect x="8" y="7" width="6" height="10" rx="1.5" fill="#34d399"/>
+
+        <path d="M21 12.5v15" stroke="#fb7185" stroke-width="2"/>
+        <rect x="18" y="15" width="6" height="10" rx="1.5" fill="#fb7185"/>
+    </g>
+</svg>

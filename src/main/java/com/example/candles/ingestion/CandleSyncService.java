@@ -5,6 +5,7 @@ import com.example.candles.domain.Asset;
 import com.example.candles.domain.Candle;
 import com.example.candles.provider.CandleData;
 import com.example.candles.provider.PriceDataProvider;
+import com.example.candles.provider.Timeframes;
 import com.example.candles.repository.CandleRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,7 +40,14 @@ public class CandleSyncService {
         Instant from = candleRepository.findTopByAssetAndTimeframeOrderByOpenTimeDesc(asset, timeframe)
                 .map(c -> c.getOpenTime().plusSeconds(1))
                 .orElse(properties.backfill().start());
-        Instant to = Instant.now();
+        /*
+         * Stop at the last closed candle. The one covering "now" still has its high, low and
+         * close moving, and storing it freezes those partial values for good: the next sync
+         * starts from the newest stored open time, so a candle written early is never fetched
+         * again to be corrected. Ending a millisecond before the current period opens keeps
+         * it out regardless of whether a provider treats its end bound as inclusive.
+         */
+        Instant to = Timeframes.currentPeriodStart(Instant.now(), timeframe).minusMillis(1);
 
         if (!from.isBefore(to)) {
             return;

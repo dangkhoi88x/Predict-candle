@@ -2,6 +2,7 @@ package com.example.candles.pattern;
 
 import com.example.candles.domain.Candle;
 
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -126,5 +127,10 @@ public final class PatternLibrary {
 
     public static PatternDefinition get(String patternId) {
         return DEFINITIONS.get(patternId);
+    }
+
+    /** Every pattern in the library, in the order the "Mẫu Nến" tab lists them. */
+    public static Map<String, PatternDefinition> all() {
+        return Collections.unmodifiableMap(DEFINITIONS);
     }
 }

@@ -56,7 +56,9 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<Void> logout() {
+    public ResponseEntity<Void> logout(
+            @CookieValue(name = REFRESH_COOKIE_NAME, required = false) String refreshToken) {
+        authService.logout(refreshToken);
         return ResponseEntity.noContent()
                 .header(HttpHeaders.SET_COOKIE, refreshCookie("", 0).toString())
                 .build();
@@ -69,7 +71,7 @@ public class AuthController {
         }
         Long userId = (Long) authentication.getPrincipal();
         User user = authService.currentUser(userId);
-        return new AuthResponse(user.getId(), user.getWalletAddress(), user.getDisplayName(), null);
+        return AuthResponse.from(user, null);
     }
 
     private ResponseEntity<AuthResponse> withRefreshCookie(HttpStatus status, AuthSession session) {

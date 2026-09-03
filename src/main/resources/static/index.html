@@ -4,41 +4,71 @@
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1"/>
     <title>Candle Guess</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com"/>
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap"/>
+    <!-- .ico first because browsers request /favicon.ico on their own whether or not it is
+         declared, and a 404 on every page load is a poor thing to leave in the log. The SVG
+         wins where it is supported, being sharp at any size and a tenth of the bytes. -->
+    <link rel="icon" href="/favicon.ico" sizes="32x32"/>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml"/>
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png"/>
+    <meta name="theme-color" content="#0a0a0a" media="(prefers-color-scheme: dark)"/>
+    <meta name="theme-color" content="#f6f7f9" media="(prefers-color-scheme: light)"/>
     <link rel="stylesheet" href="style.css"/>
+    <script>
+        // Runs before the first paint on purpose: applying the theme from JS after the body
+        // renders would flash the wrong palette on every page load.
+        (function () {
+            var theme = "dark";
+            try {
+                theme = localStorage.getItem("candles-theme")
+                    || (window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+            } catch (e) {
+                // Storage blocked (private mode / disabled cookies) — fall back to dark.
+            }
+            document.documentElement.setAttribute("data-theme", theme);
+        })();
+    </script>
 </head>
 <body>
+<div class="ticker hidden" id="ticker" aria-label="Giá các đồng coin vốn hóa lớn">
+    <div class="ticker-track" id="ticker-track"></div>
+</div>
+
 <nav class="top-nav">
     <div class="top-nav-inner">
         <span class="brand">🕯️ Candle Guess</span>
-        <div class="nav-tabs" role="tablist">
-            <button class="nav-tab active" role="tab" aria-selected="true" data-view="game">Đoán Nến</button>
-            <button class="nav-tab" role="tab" aria-selected="false" data-view="heatmap">Market Heatmap</button>
-            <button class="nav-tab" role="tab" aria-selected="false" data-view="patterns">Mẫu Nến</button>
-            <button class="nav-tab" role="tab" aria-selected="false" data-view="technical">Mẫu Hình Kỹ Thuật</button>
-            <button class="nav-tab" role="tab" aria-selected="false" data-view="psychology">Tâm Lý Giao Dịch</button>
-            <button class="nav-tab" role="tab" aria-selected="false" data-view="blog">Blog / Kiến Thức</button>
+        <div class="nav-tabs" role="tablist" aria-label="Khu vực của ứng dụng">
+            <button class="nav-tab active" role="tab" id="tab-game" aria-controls="view-game" aria-selected="true" data-view="game">Đoán Nến</button>
+            <button class="nav-tab" role="tab" id="tab-heatmap" aria-controls="view-heatmap" aria-selected="false" data-view="heatmap">Market Heatmap</button>
+            <button class="nav-tab" role="tab" id="tab-patterns" aria-controls="view-patterns" aria-selected="false" data-view="patterns">Mẫu Nến</button>
+            <button class="nav-tab" role="tab" id="tab-technical" aria-controls="view-technical" aria-selected="false" data-view="technical">Mẫu Hình Kỹ Thuật</button>
+            <button class="nav-tab" role="tab" id="tab-psychology" aria-controls="view-psychology" aria-selected="false" data-view="psychology">Tâm Lý Giao Dịch</button>
+            <button class="nav-tab" role="tab" id="tab-blog" aria-controls="view-blog" aria-selected="false" data-view="blog">Blog / Kiến Thức</button>
+            <!-- Shown only while signed in; nav.js toggles it on the session event. -->
+            <button class="nav-tab" role="tab" id="tab-leaderboard" aria-controls="view-leaderboard" aria-selected="false" data-view="leaderboard">Bảng Xếp Hạng</button>
+            <button class="nav-tab hidden" role="tab" id="tab-profile" aria-controls="view-profile" aria-selected="false" data-view="profile">Hồ Sơ</button>
         </div>
         <div class="auth-area" id="auth-area">
             <span id="auth-error-msg" class="auth-error-msg hidden"></span>
+            <button id="theme-toggle" class="theme-toggle" type="button"
+                    aria-label="Chuyển giao diện sáng/tối" title="Chuyển giao diện sáng/tối"></button>
             <button id="auth-login-btn" class="ghost-btn" type="button">Kết nối ví</button>
             <div id="auth-user" class="auth-user hidden">
-                <span id="auth-display-name" class="auth-display-name"></span>
+                <button id="auth-display-name" class="auth-display-name" type="button"
+                        title="Xem chi tiết ví"></button>
+                    <a id="admin-link" class="ghost-btn admin-link hidden" href="/admin.html">⚙ Quản trị</a>
                 <button id="auth-logout-btn" class="ghost-btn" type="button">Ngắt kết nối</button>
             </div>
         </div>
     </div>
 </nav>
 
-<main id="view-game" class="view app">
+<main id="view-game" class="view app" role="tabpanel" aria-labelledby="tab-game">
     <div class="game-toolbar">
-        <div class="asset-picker">
-            <button class="asset-btn active" data-asset="BTCUSDT">BTC/USDT</button>
-            <button class="asset-btn" data-asset="ETHUSDT">ETH/USDT</button>
-            <button class="asset-btn" data-asset="BNBUSDT">BNB/USDT</button>
-            <button class="asset-btn" data-asset="SOLUSDT">SOL/USDT</button>
+        <div class="pill" id="asset-pill">
+            <button class="pill-option active" data-asset="BTCUSDT">BTC/USDT</button>
+            <button class="pill-option" data-asset="ETHUSDT">ETH/USDT</button>
+            <button class="pill-option" data-asset="BNBUSDT">BNB/USDT</button>
+            <button class="pill-option" data-asset="SOLUSDT">SOL/USDT</button>
         </div>
         <button id="sound-toggle" class="ghost-btn sound-toggle" type="button" aria-label="Bật/tắt âm thanh và rung">🔊</button>
     </div>
@@ -46,19 +76,19 @@
     <div class="scoreboard">
         <div class="stat">
             <span class="stat-label">Điểm</span>
-            <span class="stat-value" id="score">0</span>
+            <span class="stat-value rolling" id="score">0</span>
         </div>
         <div class="stat">
             <span class="stat-label">Streak</span>
-            <span class="stat-value" id="streak">0</span>
+            <span class="stat-value rolling" id="streak">0</span>
         </div>
         <div class="stat">
             <span class="stat-label">Best streak</span>
-            <span class="stat-value" id="best-streak">0</span>
+            <span class="stat-value rolling" id="best-streak">0</span>
         </div>
         <div class="stat">
             <span class="stat-label">Tỉ lệ đúng</span>
-            <span class="stat-value" id="accuracy">–</span>
+            <span class="stat-value rolling" id="accuracy">–</span>
         </div>
     </div>
 
@@ -72,17 +102,69 @@
                     <span class="market-name" id="market-name">Bitcoin</span>
                 </div>
                 <div class="market-price-row">
-                    <span class="market-price" id="market-price" aria-live="polite"></span>
-                    <span class="market-delta" id="market-delta"></span>
+                    <span class="market-price rolling" id="market-price" aria-live="polite"></span>
+                    <span class="market-delta rolling" id="market-delta"></span>
+                    <span class="skeleton market-price-skeleton" aria-hidden="true"></span>
+                    <span class="skeleton market-delta-skeleton" aria-hidden="true"></span>
                 </div>
                 <div class="market-ohlc" id="market-ohlc" aria-hidden="true"></div>
             </div>
         </div>
 
         <div class="chart" id="chart"></div>
+        <div class="chart-skeleton" aria-hidden="true">
+            <span class="skeleton"></span>
+            <span class="skeleton"></span>
+            <span class="skeleton"></span>
+            <span class="skeleton"></span>
+            <span class="skeleton"></span>
+            <span class="skeleton"></span>
+            <span class="skeleton"></span>
+            <span class="skeleton"></span>
+            <span class="skeleton"></span>
+            <span class="skeleton"></span>
+            <span class="skeleton"></span>
+            <span class="skeleton"></span>
+            <span class="skeleton"></span>
+            <span class="skeleton"></span>
+            <span class="skeleton"></span>
+            <span class="skeleton"></span>
+            <span class="skeleton"></span>
+            <span class="skeleton"></span>
+            <span class="skeleton"></span>
+            <span class="skeleton"></span>
+            <span class="skeleton"></span>
+            <span class="skeleton"></span>
+            <span class="skeleton"></span>
+            <span class="skeleton"></span>
+        </div>
     </div>
 
+    <div id="round-identity" class="round-identity hidden" aria-live="polite"></div>
+
+    <section id="round-context" class="round-context hidden" aria-label="Bối cảnh của biểu đồ vừa chơi">
+        <div class="rc-head">
+            <h3 class="rc-title">Toàn cảnh setup</h3>
+            <p class="rc-sub" id="rc-sub"></p>
+        </div>
+        <div class="rc-chart" id="rc-chart"></div>
+        <div class="rc-patterns hidden" id="rc-patterns">
+            <p class="rc-patterns-label">Mẫu nến xuất hiện trong vòng này</p>
+            <div class="rc-patterns-list" id="rc-patterns-list"></div>
+        </div>
+        <ul class="rc-legend">
+            <li><span class="rc-key rc-key-before"></span>Trước &amp; sau — phần bạn không được xem</li>
+            <li><span class="rc-key rc-key-played"></span>20 nến bạn đã xem</li>
+            <li><span class="rc-key rc-key-guess"></span>5 nến bạn phải đoán</li>
+        </ul>
+    </section>
+
     <div id="guess-progress" class="guess-progress hidden"></div>
+
+    <div id="guess-timer" class="guess-timer hidden">
+        <div class="guess-timer-track"><div class="guess-timer-fill" id="guess-timer-fill"></div></div>
+        <span class="guess-timer-value" id="guess-timer-value"></span>
+    </div>
 
     <div class="controls">
         <button id="guess-long" class="guess-btn long" disabled>▲ LONG</button>
@@ -94,7 +176,7 @@
     <p id="status" class="status"></p>
 </main>
 
-<main id="view-heatmap" class="view app hidden">
+<main id="view-heatmap" class="view app hidden" role="tabpanel" aria-labelledby="tab-heatmap">
     <div class="heatmap-toolbar">
         <h2>Market Heatmap</h2>
         <div class="heatmap-meta">
@@ -103,9 +185,9 @@
         </div>
     </div>
 
-    <div class="asset-picker">
-        <button class="heatmap-subtab active" data-source="crypto">Crypto</button>
-        <button class="heatmap-subtab" data-source="sp500">S&amp;P 500</button>
+    <div class="pill" id="heatmap-source-pill">
+        <button class="pill-option active" data-source="crypto">Crypto</button>
+        <button class="pill-option" data-source="sp500">S&amp;P 500</button>
     </div>
 
     <p id="heatmap-status" class="status"></p>
@@ -123,8 +205,8 @@
         <div class="heatmap-detail-head">
             <span id="heatmap-detail-name" class="heatmap-detail-name"></span>
             <div class="heatmap-detail-stats">
-                <span id="heatmap-detail-price" class="heatmap-detail-price"></span>
-                <span id="heatmap-detail-delta" class="heatmap-detail-delta"></span>
+                <span id="heatmap-detail-price" class="heatmap-detail-price rolling"></span>
+                <span id="heatmap-detail-delta" class="heatmap-detail-delta rolling"></span>
             </div>
         </div>
         <div id="heatmap-detail-chart" class="heatmap-detail-chart"></div>
@@ -132,57 +214,61 @@
     </div>
 </main>
 
-<main id="view-patterns" class="view app hidden">
+<main id="view-patterns" class="view app hidden" role="tabpanel" aria-labelledby="tab-patterns">
     <div class="heatmap-toolbar">
         <h2>Mẫu Nến</h2>
     </div>
 
-    <div class="pattern-filters" id="pattern-filters">
-        <button class="pattern-filter active" data-filter="all">Tất cả</button>
-        <button class="pattern-filter" data-filter="bullish">Tăng</button>
-        <button class="pattern-filter" data-filter="bearish">Giảm</button>
-        <button class="pattern-filter" data-filter="reversal">Đảo chiều</button>
-        <button class="pattern-filter" data-filter="continuation">Tiếp diễn</button>
+    <div class="pill pattern-filters" id="pattern-filters">
+        <button class="pill-option active" data-filter="all">Tất cả</button>
+        <button class="pill-option" data-filter="bullish">Tăng</button>
+        <button class="pill-option" data-filter="bearish">Giảm</button>
+        <button class="pill-option" data-filter="reversal">Đảo chiều</button>
+        <button class="pill-option" data-filter="continuation">Tiếp diễn</button>
     </div>
 
     <div class="pattern-asset-toggle" id="pattern-asset-toggle">
         <span class="pattern-asset-label">Tìm ví dụ thật trên:</span>
-        <button class="pattern-filter active" data-asset="BTCUSDT">BTC/USDT</button>
-        <button class="pattern-filter" data-asset="ETHUSDT">ETH/USDT</button>
-        <button class="pattern-filter" data-asset="BNBUSDT">BNB/USDT</button>
-        <button class="pattern-filter" data-asset="SOLUSDT">SOL/USDT</button>
+        <div class="pill" id="pattern-asset-pill">
+            <button class="pill-option active" data-asset="BTCUSDT">BTC/USDT</button>
+            <button class="pill-option" data-asset="ETHUSDT">ETH/USDT</button>
+            <button class="pill-option" data-asset="BNBUSDT">BNB/USDT</button>
+            <button class="pill-option" data-asset="SOLUSDT">SOL/USDT</button>
+        </div>
     </div>
 
     <div id="pattern-grid" class="pattern-grid"></div>
     <p class="heatmap-caption">Dữ liệu minh họa mang tính mô phỏng để thể hiện rõ hình dạng mẫu nến, không phải giá thị trường thật.</p>
 </main>
 
-<main id="view-technical" class="view app hidden">
+<main id="view-technical" class="view app hidden" role="tabpanel" aria-labelledby="tab-technical">
     <div class="heatmap-toolbar">
         <h2>Mẫu Hình Kỹ Thuật</h2>
     </div>
 
-    <div class="pattern-filters" id="technical-filters">
-        <button class="pattern-filter active" data-filter="all">Tất cả</button>
-        <button class="pattern-filter" data-filter="bullish">Tăng</button>
-        <button class="pattern-filter" data-filter="bearish">Giảm</button>
-        <button class="pattern-filter" data-filter="reversal">Đảo chiều</button>
-        <button class="pattern-filter" data-filter="continuation">Tiếp diễn</button>
+    <div class="pill pattern-filters" id="technical-filters">
+        <button class="pill-option active" data-filter="all">Tất cả</button>
+        <button class="pill-option" data-filter="bullish">Tăng</button>
+        <button class="pill-option" data-filter="bearish">Giảm</button>
+        <button class="pill-option" data-filter="reversal">Đảo chiều</button>
+        <button class="pill-option" data-filter="continuation">Tiếp diễn</button>
     </div>
 
     <div class="pattern-asset-toggle" id="technical-asset-toggle">
         <span class="pattern-asset-label">Tìm ví dụ thật trên:</span>
-        <button class="pattern-filter active" data-asset="BTCUSDT">BTC/USDT</button>
-        <button class="pattern-filter" data-asset="ETHUSDT">ETH/USDT</button>
-        <button class="pattern-filter" data-asset="BNBUSDT">BNB/USDT</button>
-        <button class="pattern-filter" data-asset="SOLUSDT">SOL/USDT</button>
+        <div class="pill" id="technical-asset-pill">
+            <button class="pill-option active" data-asset="BTCUSDT">BTC/USDT</button>
+            <button class="pill-option" data-asset="ETHUSDT">ETH/USDT</button>
+            <button class="pill-option" data-asset="BNBUSDT">BNB/USDT</button>
+            <button class="pill-option" data-asset="SOLUSDT">SOL/USDT</button>
+        </div>
     </div>
 
     <div id="technical-grid" class="pattern-grid technical-grid"></div>
     <p class="heatmap-caption">Dữ liệu minh họa mang tính mô phỏng để thể hiện rõ hình dạng mẫu hình biểu đồ, không phải giá thị trường thật.</p>
 </main>
 
-<main id="view-psychology" class="view app hidden">
+<main id="view-psychology" class="view app hidden" role="tabpanel" aria-labelledby="tab-psychology">
     <div class="heatmap-toolbar">
         <h2>Tâm Lý Giao Dịch</h2>
     </div>
@@ -191,7 +277,7 @@
     <p class="heatmap-caption">Nội dung tổng hợp từ chia sẻ của trader Mizer (<a href="https://x.com/MizerXBT" target="_blank" rel="noopener">@MizerXBT</a>) về tâm lý giao dịch — không phải lời khuyên đầu tư.</p>
 </main>
 
-<main id="view-blog" class="view app hidden">
+<main id="view-blog" class="view app hidden" role="tabpanel" aria-labelledby="tab-blog">
     <div class="heatmap-toolbar">
         <h2>Blog / Kiến Thức</h2>
     </div>
@@ -200,8 +286,45 @@
     <p class="heatmap-caption">Tóm tắt bằng lời riêng từ các bài chia sẻ đáng đọc trên X — không phải lời khuyên đầu tư, xem nguồn gốc ở mỗi bài.</p>
 </main>
 
-<script src="wallet-auth.js"></script>
+<main id="view-leaderboard" class="view app hidden" role="tabpanel" aria-labelledby="tab-leaderboard">
+    <div class="view-head">
+        <h2>Bảng Xếp Hạng</h2>
+        <span id="leaderboard-note" class="profile-wallet"></span>
+    </div>
+
+    <!-- Filled by leaderboard.js on first reveal; the notice element doubles as the empty and
+         error state, the same way the other content tabs do. -->
+    <div id="leaderboard-body"></div>
+</main>
+
+<main id="view-profile" class="view app hidden" role="tabpanel" aria-labelledby="tab-profile">
+    <div class="view-head">
+        <h2>Hồ Sơ</h2>
+        <span id="profile-wallet" class="profile-wallet"></span>
+    </div>
+
+    <div class="scoreboard">
+        <div class="stat"><span class="stat-label">Điểm</span><span class="stat-value rolling" id="profile-score">0</span></div>
+        <div class="stat"><span class="stat-label">Lượt đoán</span><span class="stat-value rolling" id="profile-total">0</span></div>
+        <div class="stat"><span class="stat-label">Tỉ lệ đúng</span><span class="stat-value rolling" id="profile-accuracy">–</span></div>
+        <div class="stat"><span class="stat-label">Chuỗi dài nhất</span><span class="stat-value rolling" id="profile-best">0</span></div>
+    </div>
+
+    <p id="profile-legacy-note" class="profile-note hidden"></p>
+
+    <h3 class="profile-section">Theo từng cặp</h3>
+    <div id="profile-by-asset" class="profile-assets"></div>
+
+    <h3 class="profile-section">Gần đây</h3>
+    <div id="profile-recent" class="profile-recent"></div>
+</main>
+
+<script src="theme.js"></script>
+<script src="pill.js"></script>
+<script src="rolling.js"></script>
+<script src="content.js"></script>
 <script src="auth.js"></script>
+<script src="ticker.js"></script>
 <script src="nav.js"></script>
 <script src="app.js"></script>
 <script src="treemap.js"></script>
@@ -211,6 +334,9 @@
 <script src="patterns.js"></script>
 <script src="technical-patterns.js"></script>
 <script src="psychology.js"></script>
+<script src="blog-render.js"></script>
 <script src="blog.js"></script>
+<script src="leaderboard.js"></script>
+<script src="profile.js"></script>
 </body>
 </html>

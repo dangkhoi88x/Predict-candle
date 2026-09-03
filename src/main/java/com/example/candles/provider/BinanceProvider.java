@@ -22,7 +22,7 @@ public class BinanceProvider implements PriceDataProvider {
 
     @Override
     public List<CandleData> fetchCandles(String symbol, String timeframe, Instant from, Instant to) {
-        long intervalMillis = intervalMillis(timeframe);
+        long intervalMillis = Timeframes.parse(timeframe).toMillis();
         long cursor = from.toEpochMilli();
         long endTime = to.toEpochMilli();
         List<CandleData> result = new ArrayList<>();
@@ -76,14 +76,4 @@ public class BinanceProvider implements PriceDataProvider {
         return candles;
     }
 
-    private long intervalMillis(String timeframe) {
-        char unit = timeframe.charAt(timeframe.length() - 1);
-        long value = Long.parseLong(timeframe.substring(0, timeframe.length() - 1));
-        return switch (unit) {
-            case 'm' -> value * 60_000L;
-            case 'h' -> value * 3_600_000L;
-            case 'd' -> value * 86_400_000L;
-            default -> throw new IllegalArgumentException("Unsupported timeframe: " + timeframe);
-        };
-    }
 }

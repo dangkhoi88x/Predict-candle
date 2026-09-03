@@ -1,4 +1,22 @@
+server:
+  compression:
+    enabled: true
+    # woff2 and the jpegs are already compressed; re-compressing them only burns CPU.
+    mime-types: text/html,text/css,text/javascript,application/javascript,application/json,image/svg+xml
+    min-response-size: 1024
+
 spring:
+  # Loads .env from the working directory when there is one, as a plain properties file.
+  # Nothing else reads it — Spring Boot has no built-in notion of .env, docker-compose only
+  # uses it for its own substitutions, and ./mvnw spring-boot:run inherits the shell, not the
+  # file. "optional:" keeps startup working where the file does not exist, which is every
+  # real deployment: there, these come from actual environment variables, and those still win
+  # over anything imported here.
+  #
+  # Properties-file rules apply, so a value containing a backslash or a leading # is not read
+  # the way a shell would read it.
+  config:
+    import: optional:file:.env[.properties]
   application:
     name: Candles
   servlet:
@@ -9,20 +27,43 @@ spring:
     resources:
       cache:
         cachecontrol:
-          no-store: true
+          # no-cache, not no-store. "no-store" forbids keeping a copy at all, so every visit
+          # re-downloaded the whole front end — 4.4 MB, most of it the wallet bundle.
+          # "no-cache" still guarantees freshness: the browser keeps its copy but must
+          # revalidate before using it, so an edited file arrives immediately and an
+          # unchanged one costs a 304 with an empty body instead of the file.
+          no-cache: true
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5544/candles}
     username: ${DB_USERNAME:candles}
     password: ${DB_PASSWORD:candles}
+  flyway:
+    # Databases created before Flyway existed here already hold the V1 schema, so they get
+    # stamped at V1 rather than having it re-run at them. A brand new database is empty and
+    # runs every migration from V1.
+    baseline-on-migrate: true
+    # No migration here uses placeholders, and leaving substitution on makes seeded JSON a
+    # trap: a dollar-quoted object starts $c${"id":…, where the quote tag's closing $ and the
+    # object's { read as ${ and Flyway demands a value for a placeholder nobody wrote.
+    placeholder-replacement: false
   jpa:
     hibernate:
-      ddl-auto: update
+      # Flyway owns the schema now. "validate" does not touch it — it only refuses to start
+      # when the entities and the tables have drifted apart, which is the whole reason for
+      # dropping "update": that setting silently patched the difference and told nobody.
+      ddl-auto: validate
     open-in-view: false
     properties:
       hibernate:
         format_sql: true
 
 candles:
+  admin:
+    # Wallet addresses holding the ADMIN role, comma-separated. Reconciled into the users
+    # table at every startup: listed wallets are promoted, unlisted admins are demoted — so
+    # this file, not a database row, decides who can administer the app. Empty closes
+    # /api/admin/** and /api/media/** entirely.
+    wallets: ${ADMIN_WALLETS:}
   auth:
     jwt:
       secret: ${AUTH_JWT_SECRET:dev-only-secret-change-me-0123456789abcdef0123456789abcdef}
@@ -32,6 +73,10 @@ candles:
       secure: ${AUTH_COOKIE_SECURE:false}
   media:
     max-image-size-bytes: ${MEDIA_MAX_IMAGE_SIZE_BYTES:10485760}
+    # Wallet addresses allowed to upload/delete media, comma-separated. Empty by default:
+    # these endpoints write to the shared Cloudinary account, so an unconfigured allowlist
+    # closes them rather than leaving them open to anyone who connected a wallet.
+    admin-wallets: ${MEDIA_ADMIN_WALLETS:}
     cloudinary:
       cloud-name: ${CLOUDINARY_CLOUD_NAME:}
       api-key: ${CLOUDINARY_API_KEY:}
@@ -52,11 +97,29 @@ candles:
       name: Solana
   round:
     min-range-pct: 0.15
+    # Bottom ~3% of candles by body size; below this the direction is decided by the fifth
+    # decimal place and the guess is a coin flip.
+    min-answer-body-pct: 0.01
     max-attempts: 20
     repeat-cache-ttl: PT5M
     visible-candles: 20
     guesses-per-chart: 5
     reveal-candles-after-complete: 5
+    # Candles either side of the round, shown only on the post-session context chart. These
+    # are the ones the player never got to see: what led into the setup, and how it resolved
+    # past the reveal.
+    context-padding: 12
+    timing:
+      seconds: 20
+      # Between the answer candle's reveal animation and a round trip, the honest gap between
+      # "the clock hit zero on screen" and "the request landed" is a second or two.
+      grace: PT5S
+      min-think-time: PT0.25S
+    rate-limit:
+      # Room for a fast player — a round is one fetch plus five guesses — and no room for a
+      # script walking the history.
+      rounds-per-minute: 40
+      guesses-per-minute: 120
   jwt:
     secret: ${ROUND_TOKEN_SECRET:dev-only-secret-change-me-0123456789abcdef}
     ttl: PT10M

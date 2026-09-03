@@ -21,12 +21,18 @@ public class NonceService {
             .expireAfterWrite(TTL)
             .build();
 
+    /**
+     * Returns the address's pending nonce if it still has one, and only mints a new one
+     * otherwise. Wallet SDKs happily fire several account-update events for a single
+     * connection, and handing each request a fresh nonce would invalidate the message the
+     * user is already being asked to sign.
+     */
     public String issue(String address) {
-        byte[] bytes = new byte[16];
-        random.nextBytes(bytes);
-        String nonce = Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
-        nonceByAddress.put(address, nonce);
-        return nonce;
+        return nonceByAddress.get(address, key -> {
+            byte[] bytes = new byte[16];
+            random.nextBytes(bytes);
+            return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+        });
     }
 
     public String consume(String address) {

@@ -11,6 +11,7 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -46,8 +47,13 @@ public class CandleSyncScheduler implements ApplicationRunner {
     }
 
     private void syncAll() {
-        List<Asset> assets = ensureAssets();
-        for (Asset asset : assets) {
+        ensureAssets();
+        /*
+         * Seeded from configuration, driven by the database. A pair an admin disabled should
+         * stop being fetched — it is off the menu — and one added from the admin screen has no
+         * entry in candles.assets to be found under.
+         */
+        for (Asset asset : assetRepository.findByEnabledTrueOrderByPositionAscSymbolAsc()) {
             try {
                 candleSyncService.sync(asset);
             } catch (Exception e) {
@@ -56,11 +62,31 @@ public class CandleSyncScheduler implements ApplicationRunner {
         }
     }
 
-    private List<Asset> ensureAssets() {
-        return properties.assets().stream()
-                .map(config -> assetRepository.findBySymbol(config.symbol())
-                        .orElseGet(() -> assetRepository.save(
-                                new Asset(config.symbol(), config.name(), AssetType.CRYPTO))))
-                .toList();
+    /**
+     * Keeps the configured pairs present. Never removes: taking one off the menu is the enabled
+     * flag's job.
+     *
+     * A pair created here takes its position from where it sits in {@code candles.assets},
+     * because that list is the intended order of the picker and nothing else records it. V10
+     * wrote those positions into existing rows, but migrations run before this does — against a
+     * database that has never booted, its UPDATE matches nothing and every pair would land on
+     * the column default. They would then all tie, the order would fall back to the alphabet,
+     * and BNB would lead the picker again, which is the exact thing V10 exists to prevent.
+     *
+     * Only on create. A restart must not undo an order an admin arranged by hand.
+     */
+    List<Asset> ensureAssets() {
+        List<CandlesProperties.AssetConfig> configured = properties.assets();
+        List<Asset> assets = new ArrayList<>(configured.size());
+        for (int i = 0; i < configured.size(); i++) {
+            CandlesProperties.AssetConfig config = configured.get(i);
+            int position = i;
+            assets.add(assetRepository.findBySymbol(config.symbol()).orElseGet(() -> {
+                Asset asset = new Asset(config.symbol(), config.name(), AssetType.CRYPTO);
+                asset.setPosition(position);
+                return assetRepository.save(asset);
+            }));
+        }
+        return assets;
     }
 }

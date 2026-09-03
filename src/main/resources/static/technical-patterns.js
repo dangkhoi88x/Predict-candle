@@ -11,12 +11,12 @@
 (function () {
     "use strict";
 
-    var UP = "#34d399";
-    var DOWN = "#fb7185";
-    var ACCENT = "#4f8cff";
-    var GRID = "#7d7d82";
-    var HOVER_BADGE_BG = "#f2f2f2";
-    var HOVER_BADGE_TEXT = "#141414";
+    var UP = "var(--up)";
+    var DOWN = "var(--down)";
+    var ACCENT = "var(--accent)";
+    var GRID = "var(--muted)";
+    var HOVER_BADGE_BG = "var(--text)";
+    var HOVER_BADGE_TEXT = "var(--panel)";
     var SVG_NS = "http://www.w3.org/2000/svg";
 
     var selectedAsset = "BTCUSDT";
@@ -51,161 +51,6 @@
         }
         return candles;
     }
-
-    var TECHNICAL_PATTERNS = [
-        {
-            id: "head-shoulders",
-            name: "Vai Đầu Vai (Head & Shoulders)",
-            tags: ["bearish", "reversal"],
-            summary: "Ba đỉnh với đỉnh giữa cao nhất (đầu), hai đỉnh bên gần bằng nhau (vai) — xuất hiện cuối xu hướng tăng.",
-            howTo: [
-                "Xuất hiện sau một xu hướng tăng rõ ràng",
-                "Vai trái: giá tạo đỉnh rồi điều chỉnh giảm",
-                "Đầu: giá tạo đỉnh mới cao hơn vai trái, rồi giảm trở lại vùng đáy tương tự",
-                "Vai phải: giá tạo đỉnh thấp hơn đầu, xấp xỉ vai trái, rồi giảm mạnh",
-                "Xác nhận khi giá phá vỡ 'đường viền cổ' (neckline) nối hai đáy giữa các đỉnh",
-            ],
-            points: [90, 108, 100, 118, 100, 107, 88],
-        },
-        {
-            id: "inverse-head-shoulders",
-            name: "Vai Đầu Vai Ngược (Inverse H&S)",
-            tags: ["bullish", "reversal"],
-            summary: "Ba đáy với đáy giữa thấp nhất (đầu), hai đáy bên gần bằng nhau (vai) — xuất hiện cuối xu hướng giảm.",
-            howTo: [
-                "Xuất hiện sau một xu hướng giảm rõ ràng",
-                "Vai trái: giá tạo đáy rồi hồi phục",
-                "Đầu: giá tạo đáy mới thấp hơn vai trái, rồi hồi lên vùng đỉnh tương tự",
-                "Vai phải: giá tạo đáy cao hơn đầu, xấp xỉ vai trái, rồi bật tăng mạnh",
-                "Xác nhận khi giá phá vỡ đường viền cổ (neckline) nối hai đỉnh giữa các đáy",
-            ],
-            points: [110, 92, 100, 82, 100, 93, 112],
-        },
-        {
-            id: "double-top",
-            name: "Hai Đỉnh (Double Top)",
-            tags: ["bearish", "reversal"],
-            summary: "Giá tạo hai đỉnh gần bằng nhau với một đáy ở giữa — hình chữ M, báo hiệu đảo chiều giảm.",
-            howTo: [
-                "Xuất hiện sau xu hướng tăng",
-                "Đỉnh 1 và đỉnh 2 xấp xỉ cùng một mức giá",
-                "Có một đáy rõ ràng ('đường cổ') giữa hai đỉnh",
-                "Xác nhận khi giá phá vỡ xuống dưới đường cổ",
-            ],
-            points: [90, 112, 98, 112, 86],
-        },
-        {
-            id: "double-bottom",
-            name: "Hai Đáy (Double Bottom)",
-            tags: ["bullish", "reversal"],
-            summary: "Giá tạo hai đáy gần bằng nhau với một đỉnh ở giữa — hình chữ W, báo hiệu đảo chiều tăng.",
-            howTo: [
-                "Xuất hiện sau xu hướng giảm",
-                "Đáy 1 và đáy 2 xấp xỉ cùng một mức giá",
-                "Có một đỉnh rõ ràng ('đường cổ') giữa hai đáy",
-                "Xác nhận khi giá phá vỡ lên trên đường cổ",
-            ],
-            points: [110, 88, 102, 88, 114],
-        },
-        {
-            id: "ascending-triangle",
-            name: "Tam Giác Tăng (Ascending Triangle)",
-            tags: ["bullish", "continuation"],
-            summary: "Đường kháng cự nằm ngang phía trên, đáy sau cao hơn đáy trước — áp lực mua tăng dần.",
-            howTo: [
-                "Đường kháng cự trên gần như nằm ngang (các đỉnh xấp xỉ bằng nhau)",
-                "Các đáy liên tiếp cao dần, tạo đường hỗ trợ dốc lên",
-                "Thường là mẫu hình tiếp diễn trong xu hướng tăng",
-                "Xác nhận khi giá phá vỡ lên trên đường kháng cự",
-            ],
-            points: [90, 110, 96, 109.5, 100, 109, 103, 116],
-        },
-        {
-            id: "descending-triangle",
-            name: "Tam Giác Giảm (Descending Triangle)",
-            tags: ["bearish", "continuation"],
-            summary: "Đường hỗ trợ nằm ngang phía dưới, đỉnh sau thấp hơn đỉnh trước — áp lực bán tăng dần.",
-            howTo: [
-                "Đường hỗ trợ dưới gần như nằm ngang (các đáy xấp xỉ bằng nhau)",
-                "Các đỉnh liên tiếp thấp dần, tạo đường kháng cự dốc xuống",
-                "Thường là mẫu hình tiếp diễn trong xu hướng giảm",
-                "Xác nhận khi giá phá vỡ xuống dưới đường hỗ trợ",
-            ],
-            points: [110, 90, 104, 91, 100, 90.5, 97, 84],
-        },
-        {
-            id: "symmetrical-triangle",
-            name: "Tam Giác Cân (Symmetrical Triangle)",
-            tags: ["bullish", "continuation"],
-            summary: "Đỉnh thấp dần và đáy cao dần cùng lúc, thu hẹp về một điểm — chờ phá vỡ theo hướng xu hướng trước đó.",
-            howTo: [
-                "Đường kháng cự trên dốc xuống, đường hỗ trợ dưới dốc lên",
-                "Biên độ dao động thu hẹp dần khi hai đường tiến sát nhau",
-                "Hướng phá vỡ (lên hoặc xuống) quyết định hướng đi tiếp theo, thường theo xu hướng trước đó",
-            ],
-            points: [90, 112, 92, 108, 96, 104, 100, 112],
-        },
-        {
-            id: "bull-flag",
-            name: "Cờ Tăng (Bull Flag)",
-            tags: ["bullish", "continuation"],
-            summary: "Một đợt tăng mạnh dựng đứng (cột cờ), sau đó tích lũy đi ngang/nghiêng nhẹ xuống (lá cờ), rồi phá vỡ tiếp tục tăng.",
-            howTo: [
-                "Cột cờ: một đợt tăng giá mạnh, dốc trong thời gian ngắn",
-                "Lá cờ: giai đoạn tích lũy đi ngang hoặc nghiêng nhẹ xuống, khối lượng thường giảm",
-                "Mẫu hình tiếp diễn — xác nhận khi giá phá vỡ lên trên lá cờ theo hướng cột cờ",
-            ],
-            points: [90, 118, 112, 115, 109, 112, 106, 122],
-        },
-        {
-            id: "bear-flag",
-            name: "Cờ Giảm (Bear Flag)",
-            tags: ["bearish", "continuation"],
-            summary: "Một đợt giảm mạnh dựng đứng (cột cờ), sau đó tích lũy đi ngang/nghiêng nhẹ lên (lá cờ), rồi phá vỡ tiếp tục giảm.",
-            howTo: [
-                "Cột cờ: một đợt giảm giá mạnh, dốc trong thời gian ngắn",
-                "Lá cờ: giai đoạn tích lũy đi ngang hoặc nghiêng nhẹ lên, khối lượng thường giảm",
-                "Mẫu hình tiếp diễn — xác nhận khi giá phá vỡ xuống dưới lá cờ theo hướng cột cờ",
-            ],
-            points: [110, 82, 88, 85, 91, 88, 94, 78],
-        },
-        {
-            id: "rising-wedge",
-            name: "Nêm Tăng (Rising Wedge)",
-            tags: ["bearish", "reversal"],
-            summary: "Cả đỉnh và đáy đều tăng nhưng thu hẹp dần biên độ — động lực tăng đang yếu đi, thường phá vỡ giảm.",
-            howTo: [
-                "Cả đường kháng cự và đường hỗ trợ đều dốc lên",
-                "Hai đường hội tụ dần (đường hỗ trợ dốc nhanh hơn đường kháng cự)",
-                "Thường xuất hiện cuối xu hướng tăng và phá vỡ theo hướng giảm",
-            ],
-            points: [90, 100, 94, 104, 99, 107, 103, 108.5, 106, 96],
-        },
-        {
-            id: "falling-wedge",
-            name: "Nêm Giảm (Falling Wedge)",
-            tags: ["bullish", "reversal"],
-            summary: "Cả đỉnh và đáy đều giảm nhưng thu hẹp dần biên độ — động lực giảm đang yếu đi, thường phá vỡ tăng.",
-            howTo: [
-                "Cả đường kháng cự và đường hỗ trợ đều dốc xuống",
-                "Hai đường hội tụ dần (đường kháng cự dốc nhanh hơn đường hỗ trợ)",
-                "Thường xuất hiện cuối xu hướng giảm và phá vỡ theo hướng tăng",
-            ],
-            points: [110, 100, 106, 96, 101, 93, 97, 91.5, 94, 104],
-        },
-        {
-            id: "cup-and-handle",
-            name: "Cốc Tay Cầm (Cup and Handle)",
-            tags: ["bullish", "continuation"],
-            summary: "Giá giảm rồi hồi phục theo hình chữ U (cốc), sau đó điều chỉnh nhẹ (tay cầm), rồi phá vỡ tăng tiếp.",
-            howTo: [
-                "Cốc: giá giảm dần, tạo đáy tròn rồi hồi phục về gần đỉnh cũ — hình chữ U, không nhọn",
-                "Tay cầm: một đợt điều chỉnh nhỏ, đi ngang hoặc nghiêng nhẹ xuống, sau khi hồi phục xong",
-                "Mẫu hình tiếp diễn tăng — xác nhận khi giá phá vỡ lên trên đỉnh của cốc",
-            ],
-            points: [110, 100, 92, 86, 84, 86, 92, 100, 108, 104, 106, 114],
-        },
-    ];
 
     function svgEl(tag, attrs) {
         var node = document.createElementNS(SVG_NS, tag);
@@ -445,10 +290,25 @@
         }
     }
 
-    function init() {
+    /* Same reason as patterns.js: fetch first, build once. */
+    async function init() {
         var grid = document.getElementById("technical-grid");
-        var filters = Array.prototype.slice.call(document.querySelectorAll("#technical-filters .pattern-filter"));
-        var cards = TECHNICAL_PATTERNS.map(function (p) {
+        var items;
+        try {
+            items = await window.CandleContent.load("technical-pattern");
+        } catch (e) {
+            /* No compiled-in copy to fall back to any more, so say so. Silence here
+               would read as "there are no mẫu hình kỹ thuật", which is a different claim. */
+            window.CandleContent.notice(grid, "Không tải được mẫu hình kỹ thuật. Thử tải lại trang.");
+            return;
+        }
+        if (!items.length) {
+            window.CandleContent.notice(grid, "Chưa có mẫu hình kỹ thuật nào.");
+            return;
+        }
+        var filters = Array.prototype.slice.call(document.querySelectorAll("#technical-filters .pill-option"));
+        window.CandlePill.attach(document.getElementById("technical-filters"), ".pill-option");
+        var cards = items.map(function (p) {
             var card = buildCard(p);
             grid.appendChild(card);
             return card;
@@ -465,7 +325,8 @@
             });
         });
 
-        var assetButtons = Array.prototype.slice.call(document.querySelectorAll("#technical-asset-toggle .pattern-filter"));
+        var assetButtons = Array.prototype.slice.call(document.querySelectorAll("#technical-asset-pill .pill-option"));
+        window.CandlePill.attach(document.getElementById("technical-asset-pill"), ".pill-option");
         assetButtons.forEach(function (btn) {
             btn.addEventListener("click", function () {
                 if (btn.classList.contains("active")) return;

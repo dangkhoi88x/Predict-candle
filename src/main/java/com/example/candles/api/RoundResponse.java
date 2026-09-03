@@ -7,6 +7,8 @@ public record RoundResponse(
         String timeframe,
         List<CandleDto> candles,
         int totalGuesses,
+        /** Seconds on the countdown for each guess; the server allows a little more than this. */
+        int guessSeconds,
         String roundToken
 ) {
 }

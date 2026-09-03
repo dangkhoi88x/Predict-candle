@@ -10,7 +10,7 @@
     var sources = { crypto: window.CryptoHeatmap, sp500: window.Sp500Heatmap };
 
     var el = {
-        subtabs: Array.prototype.slice.call(document.querySelectorAll(".heatmap-subtab")),
+        subtabs: Array.prototype.slice.call(document.querySelectorAll("#heatmap-source-pill .pill-option")),
         grids: {
             crypto: document.getElementById("heatmap-grid-crypto"),
             sp500: document.getElementById("heatmap-grid-sp500"),
@@ -34,9 +34,10 @@
 
     function showDetail(item) {
         el.detailName.textContent = item.symbol.toUpperCase() + " · " + item.name;
-        el.detailPrice.textContent = item.priceLabel;
-        el.detailDelta.textContent = (item.change >= 0 ? "+" : "") + item.change.toFixed(2) + "% (24h)";
-        el.detailDelta.className = "heatmap-detail-delta " + (item.change >= 0 ? "outcome-up" : "outcome-down");
+        window.CandleRolling.update(el.detailPrice, item.priceLabel);
+        // Reassigning className here would drop .rolling along with the old outcome class.
+        el.detailDelta.className = "heatmap-detail-delta rolling " + (item.change >= 0 ? "outcome-up" : "outcome-down");
+        window.CandleRolling.update(el.detailDelta, (item.change >= 0 ? "+" : "") + item.change.toFixed(2) + "% (24h)");
 
         if (item.sparkline && item.sparkline.length > 1) {
             window.Treemap.renderSparkline(el.detailChart, item.sparkline, {
@@ -60,16 +61,43 @@
 
     window.__showHeatmapDetail = showDetail;
 
+    /* Percentage boxes matching the shape a market-cap treemap actually takes: one dominant
+       tile, a couple of mid ones, then a tail of small ones. The real tiles are positioned
+       the same way, so the grid does not reflow when they replace these. */
+    var SKELETON_TILES = [
+        [0, 0, 46, 58], [46, 0, 30, 58], [76, 0, 24, 58],
+        [0, 58, 22, 24], [22, 58, 20, 24], [42, 58, 20, 24], [62, 58, 19, 24], [81, 58, 19, 24],
+        [0, 82, 15, 18], [15, 82, 14, 18], [29, 82, 15, 18], [44, 82, 14, 18],
+        [58, 82, 14, 18], [72, 82, 14, 18], [86, 82, 14, 18],
+    ];
+
+    function showGridSkeleton(grid) {
+        grid.innerHTML = "";
+        var frag = document.createDocumentFragment();
+        SKELETON_TILES.forEach(function (box) {
+            var tile = document.createElement("div");
+            tile.className = "skeleton heatmap-tile-skeleton";
+            tile.style.left = box[0] + "%";
+            tile.style.top = box[1] + "%";
+            tile.style.width = box[2] + "%";
+            tile.style.height = box[3] + "%";
+            frag.appendChild(tile);
+        });
+        grid.appendChild(frag);
+    }
+
     async function load(source) {
         el.refresh.disabled = true;
         el.status.textContent = "Đang tải dữ liệu thị trường…";
         el.detail.classList.add("hidden");
+        showGridSkeleton(el.grids[source]);
         try {
             await sources[source].load(el.grids[source]);
             loaded[source] = true;
             el.status.textContent = "";
             el.updated.textContent = "Cập nhật lúc " + new Date().toLocaleTimeString("vi-VN");
         } catch (err) {
+            el.grids[source].innerHTML = "";
             el.status.textContent = "Không tải được dữ liệu thị trường: " + err.message;
         } finally {
             el.refresh.disabled = false;
@@ -88,6 +116,8 @@
             load(source);
         }
     }
+
+    window.CandlePill.attach(document.getElementById("heatmap-source-pill"), ".pill-option");
 
     el.subtabs.forEach(function (tab) {
         tab.addEventListener("click", function () {
