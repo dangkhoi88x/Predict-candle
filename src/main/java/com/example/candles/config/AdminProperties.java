@@ -1,7 +1,6 @@
 package com.example.candles.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
-
 import java.util.List;
 import java.util.Locale;
 

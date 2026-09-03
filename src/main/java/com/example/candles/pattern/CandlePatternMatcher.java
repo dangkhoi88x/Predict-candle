@@ -1,8 +1,8 @@
 package com.example.candles.pattern;
 
-import com.example.candles.domain.Candle;
-
 import java.util.List;
+
+import com.example.candles.entity.Candle;
 
 /**
  * Tests whether a fixed-size, oldest-to-newest window of candles exhibits a given pattern.

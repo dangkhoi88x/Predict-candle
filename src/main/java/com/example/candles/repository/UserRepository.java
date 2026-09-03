@@ -1,15 +1,15 @@
 package com.example.candles.repository;
 
-import com.example.candles.domain.Role;
-import com.example.candles.domain.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+
+import com.example.candles.entity.Role;
+import com.example.candles.entity.User;
 
 public interface UserRepository extends JpaRepository<User, Long> {
 

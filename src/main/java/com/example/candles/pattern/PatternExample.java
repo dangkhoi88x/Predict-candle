@@ -1,9 +1,9 @@
 package com.example.candles.pattern;
 
-import com.example.candles.domain.Candle;
-
 import java.time.Instant;
 import java.util.List;
+
+import com.example.candles.entity.Candle;
 
 /**
  * A real occurrence of a pattern found in an asset's history: the candle slice to render

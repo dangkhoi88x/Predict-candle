@@ -47,6 +47,11 @@
 
         if (onFirstShow[target]) onFirstShow[target]();
         if (onEveryShow[target]) onEveryShow[target]();
+
+        /* Mirrors `candles:pane` on the admin page. The game tab needs to know when it has
+           gone off screen — a round left running behind the blog tab keeps timing out and
+           recording misses against a player who is reading, not playing. */
+        document.dispatchEvent(new CustomEvent("candles:view", { detail: { view: target } }));
     }
 
     tabs.forEach(function (tab, index) {

@@ -42,6 +42,36 @@ to 1.20.0 leaves `wallet-auth.js` byte-identical. Do not delete it without re-ru
 
 ## Architecture
 
+### Package layout
+
+Layered, not by feature: `controller/ service/ repository/ entity/ dto/`, plus five supporting
+packages where a layer name would lie about the contents.
+
+| package | holds |
+|---|---|
+| `controller/` | the 18 `@RestController`s |
+| `service/` | the 19 `@Service`s, plus `RateLimiter` and `CandleSyncScheduler` |
+| `repository/` | the 6 Spring Data interfaces |
+| `entity/` | the 6 `@Entity` classes and the 4 persisted enums |
+| `dto/` | records that cross the HTTP boundary — and only those |
+| `domain/` | internal value records that never leave the server: `RoundToken`, `RoundSelection`, `AuthSession`, `PlayerScore`, `StoredMedia` |
+| `security/` | `JwtService`, the filter, `WalletSignatureVerifier`, `AdminAccess`, `AdminWallets`, `AdminRoleReconciler` |
+| `client/` | Binance and Yahoo, their DTOs, and `Timeframes` |
+| `pattern/` | the two pattern libraries and their matchers — algorithm, not a layer |
+| `config/` | `@Configuration`, `@ConfigurationProperties`, the rate-limit interceptor |
+| `exception/` | the 5 exceptions and `GlobalExceptionHandler` |
+
+`dto/` is the boundary, not a dumping ground for records: `RoundToken` is signed into a JWT and
+`AuthSession` carries a refresh token, so neither belongs there even though both are records.
+
+**Tests live in the package of what they test**, which is what lets `AssetSeedOrderTest` and
+`CloudinaryUrlTest` reach package-private members. Moving a test's subject means moving the test.
+
+The layer split cost `pattern/` some encapsulation: `CandleHistoryLoader`, `SwingPivotDetector`,
+`SwingPoint`, `TechnicalPatternDefinition`, `TechnicalPatternLibrary` and
+`TechnicalPatternMatcher` were package-private and had to open up once the three services that
+use them moved to `service/`. Nothing outside those services should call them.
+
 ### Round flow (the game)
 
 ```
@@ -55,7 +85,11 @@ Binance → CandleSyncService (backfill + hourly) → Postgres
 ```
 
 The server keeps **no round state**. `roundToken` is a signed JWT carrying asset, window start
-and which guess the player is on; the client sends it back with each guess. One chart yields
+and which guess the player is on; the client sends it back with each guess. It also carries an
+`iatMs` claim, and **timing is measured from that, never from `iat`** — a JWT's `iat` is a
+NumericDate, so it rounds down to the second and a token minted at `.900` makes an instant
+answer look 900ms old. That is what `min-think-time` is checked against, so reading `iat` let
+roughly two automated answers in three through the floor meant to stop them. One chart yields
 several guesses (`candles.round.guesses-per-chart`), each revealing one more candle.
 
 ### Auth
@@ -98,6 +132,14 @@ later files call at load time.
 |---|---|---|
 | `pill.js` | `CandlePill.attach(track, sel)` | nav + 6 asset/filter pickers |
 | `rolling.js` | `CandleRolling.update(el, text)` | price, delta, scoreboard, ticker, heatmap |
+
+`nav.js` fires `candles:view` (`detail.view`) on every switch, mirroring `candles:pane` on the
+admin page. The game listens for it: **auto-advance stops dealing charts when nobody is
+watching** — the browser tab backgrounded, or the game view switched away from inside the app.
+The countdown itself stays wall-clock and a round already on screen still expires and is still
+recorded, because that is what stops a player parking a round and going to look the chart up.
+What stops is the manufacture of rounds nobody saw: an unattended tab used to bank roughly 170
+recorded misses an hour.
 
 `CandlePill` watches the `active` class via MutationObserver rather than clicks, so callers
 keep their own click handlers unchanged and only add one `attach()` line.
@@ -245,6 +287,12 @@ Heatmap has two sources behind one view: crypto (CoinGecko, called straight from
 and S&P 500 (`/api/market/sp500` → `YahooFinanceClient`). `treemap.js` does the layout for both.
 
 ## Notes
+
+- **Commits carry no `Co-Authored-By` trailer.** GitHub renders that trailer as a second author
+  ("dangkhoi88x and claude committed") and counts it in the repo's contributor list, which
+  misrepresents who owns this work. Author and committer have always been the repo owner alone;
+  the trailer was only ever text in the message body. Leave it off new commits — the 35 that
+  already carry it are staying as they are rather than force-pushing a rewrite over an open PR.
 
 - **Schema is Flyway's, not Hibernate's.** `ddl-auto` is `validate`: adding a field to an
   entity without a matching migration in `src/main/resources/db/migration` fails startup
