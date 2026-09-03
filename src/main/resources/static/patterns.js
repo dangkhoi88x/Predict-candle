@@ -265,26 +265,32 @@
        over the card list, and rebuilding under them would leave the filters driving cards
        that are no longer on the page. */
     /* The game tab asks this file to name a pattern it found mid-round, which used to mean
-       reading the compiled-in array. That array is gone, so init parks what the API returned
-       here for nameOf to search. */
+       reading the compiled-in array. That array is gone, so the fetch parks what the API
+       returned here for nameOf to search. */
     var loaded = [];
+    var pending = null;
+    var built = false;
 
-    async function init() {
+    /* Fetching and drawing are split because they serve different callers. nameOf() can be
+       asked by a player who never opens this tab — a pattern found in a finished round is
+       labelled on the game tab — so the data is fetched at load. The grid is 383 elements
+       that only someone who opens the tab ever sees, so it is built on first reveal, the way
+       heatmap and blog already are.
+
+       A failed fetch clears `pending` so opening the tab tries again; leaving the rejected
+       promise cached would turn one dropped request into a tab that is empty for the rest of
+       the visit. */
+    function loadOnce() {
+        if (!pending) {
+            pending = window.CandleContent.load("candle-pattern")
+                .then(function (items) { loaded = items; return items; })
+                .catch(function (e) { pending = null; throw e; });
+        }
+        return pending;
+    }
+
+    function render(items) {
         var grid = document.getElementById("pattern-grid");
-        var items;
-        try {
-            items = await window.CandleContent.load("candle-pattern");
-        } catch (e) {
-            /* No compiled-in copy to fall back to any more, so say so. Silence here
-               would read as "there are no mẫu nến", which is a different claim. */
-            window.CandleContent.notice(grid, "Không tải được mẫu nến. Thử tải lại trang.");
-            return;
-        }
-        if (!items.length) {
-            window.CandleContent.notice(grid, "Chưa có mẫu nến nào.");
-            return;
-        }
-        loaded = items;
         var filters = Array.prototype.slice.call(document.querySelectorAll("#pattern-filters .pill-option"));
         window.CandlePill.attach(document.getElementById("pattern-filters"), ".pill-option");
         var cards = items.map(function (p) {
@@ -315,7 +321,25 @@
         });
     }
 
-    init();
+    loadOnce().catch(function () { /* the tab's own reveal reports this */ });
+
+    window.__initPatternsView = function () {
+        if (built) return;
+        built = true;
+        var grid = document.getElementById("pattern-grid");
+        loadOnce().then(function (items) {
+            if (!items.length) {
+                window.CandleContent.notice(grid, "Chưa có mẫu nến nào.");
+                return;
+            }
+            render(items);
+        }).catch(function () {
+            /* No compiled-in copy to fall back to any more, so say so. Silence here would
+               read as "there are no mẫu nến", which is a different claim. */
+            built = false;
+            window.CandleContent.notice(grid, "Không tải được mẫu nến. Thử tải lại trang.");
+        });
+    };
 
     /* The game tab names the patterns it found in a finished round, and needs both the
        Vietnamese name and a way to send the player to the full card. Kept to those two
@@ -332,21 +356,27 @@
         },
 
         reveal: function (id) {
+            /* Clicking the tab is what builds the grid now, and that waits on the fetch. The
+               render callback was registered against the same promise first, so by the time
+               this one runs the card exists. */
             document.getElementById("tab-patterns").click();
-
-            // A filter left on "Tăng" would hide the very card we are pointing at.
-            var showAll = document.querySelector('#pattern-filters .pill-option[data-filter="all"]');
-            if (showAll) showAll.click();
-
-            var card = document.querySelector('.pattern-card[data-pattern="' + id + '"]');
-            if (!card) return;
-            var detail = card.querySelector(".pattern-detail");
-            var toggle = card.querySelector(".pattern-toggle");
-            if (detail && detail.classList.contains("hidden") && toggle) toggle.click();
-
-            card.scrollIntoView({ block: "center", behavior: "smooth" });
-            card.classList.add("pattern-card-called");
-            setTimeout(function () { card.classList.remove("pattern-card-called"); }, 1600);
+            loadOnce().then(function () { focusCard(id); }).catch(function () { });
         },
     };
+
+    function focusCard(id) {
+        // A filter left on "Tăng" would hide the very card we are pointing at.
+        var showAll = document.querySelector('#pattern-filters .pill-option[data-filter="all"]');
+        if (showAll) showAll.click();
+
+        var card = document.querySelector('.pattern-card[data-pattern="' + id + '"]');
+        if (!card) return;
+        var detail = card.querySelector(".pattern-detail");
+        var toggle = card.querySelector(".pattern-toggle");
+        if (detail && detail.classList.contains("hidden") && toggle) toggle.click();
+
+        card.scrollIntoView({ block: "center", behavior: "smooth" });
+        card.classList.add("pattern-card-called");
+        setTimeout(function () { card.classList.remove("pattern-card-called"); }, 1600);
+    }
 })();

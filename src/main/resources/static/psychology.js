@@ -72,5 +72,7 @@
         });
     }
 
-    init();
+    /* Built on first reveal, not at load: nothing outside this tab reads it.
+       nav.js drives this through its onFirstShow map. */
+    window.__initPsychologyView = init;
 })();

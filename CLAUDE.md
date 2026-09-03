@@ -151,8 +151,10 @@ recorded misses an hour.
 `CandlePill` watches the `active` class via MutationObserver rather than clicks, so callers
 keep their own click handlers unchanged and only add one `attach()` line.
 
-**Deferred tabs:** `nav.js` has an `onFirstShow` map. Heatmap and blog build on first reveal,
-not at load. Add to it rather than initialising a heavy tab eagerly — `loading="lazy"` does
+**Deferred tabs:** `nav.js` has an `onFirstShow` map. Heatmap, blog, patterns, technical
+patterns and psychology all build on first reveal, not at load — together they were 1863 of
+the 5494 elements on the page, a third of the DOM built for tabs most visitors never open, and
+`view-technical` alone was 1423, four times the game view the player is actually looking at. Add to it rather than initialising a heavy tab eagerly — `loading="lazy"` does
 **not** defer images inside a `display:none` view (an element with no box cannot be deferred
 by position), so anything image-heavy must be built on demand.
 
