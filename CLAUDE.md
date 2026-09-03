@@ -55,7 +55,11 @@ Binance → CandleSyncService (backfill + hourly) → Postgres
 ```
 
 The server keeps **no round state**. `roundToken` is a signed JWT carrying asset, window start
-and which guess the player is on; the client sends it back with each guess. One chart yields
+and which guess the player is on; the client sends it back with each guess. It also carries an
+`iatMs` claim, and **timing is measured from that, never from `iat`** — a JWT's `iat` is a
+NumericDate, so it rounds down to the second and a token minted at `.900` makes an instant
+answer look 900ms old. That is what `min-think-time` is checked against, so reading `iat` let
+roughly two automated answers in three through the floor meant to stop them. One chart yields
 several guesses (`candles.round.guesses-per-chart`), each revealing one more candle.
 
 ### Auth

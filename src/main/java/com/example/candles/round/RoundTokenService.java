@@ -27,6 +27,13 @@ public class RoundTokenService {
         this.key = Keys.hmacShaKeyFor(properties.jwt().secret().getBytes(StandardCharsets.UTF_8));
     }
 
+    /**
+     * `iat` is kept for the expiry window, but the millisecond stamp beside it is what timing
+     * is measured from. A JWT's `iat` is a NumericDate — whole seconds — so a token minted at
+     * .900 comes back reading .000, and a guess sent immediately after looks 900ms old. That is
+     * not a rounding nuisance: it is the anti-automation floor, and it made an instant answer
+     * pass roughly two times in three depending only on when in the second the round was dealt.
+     */
     public String generate(RoundToken token) {
         Instant now = Instant.now();
         return Jwts.builder()
@@ -34,6 +41,7 @@ public class RoundTokenService {
                 .claim("timeframe", token.timeframe())
                 .claim("startIndex", token.startIndex())
                 .claim("guessNumber", token.guessNumber())
+                .claim("iatMs", now.toEpochMilli())
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(now.plus(properties.jwt().ttl())))
                 .signWith(key)
@@ -61,7 +69,14 @@ public class RoundTokenService {
                     claims.get("startIndex", Number.class).intValue(),
                     claims.get("guessNumber", Number.class).intValue()
             );
-            return new Verified(round, claims.getIssuedAt().toInstant());
+            /* Falls back to `iat` for a token minted before this claim existed. Round tokens
+               live minutes, so that window closes on its own — but a signed-in player mid-round
+               at deploy time should not have their next guess rejected. */
+            Number issuedMs = claims.get("iatMs", Number.class);
+            Instant issuedAt = issuedMs != null
+                    ? Instant.ofEpochMilli(issuedMs.longValue())
+                    : claims.getIssuedAt().toInstant();
+            return new Verified(round, issuedAt);
         } catch (JwtException | IllegalArgumentException e) {
             throw new InvalidRoundTokenException(e);
         }
