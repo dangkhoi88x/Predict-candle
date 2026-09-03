@@ -47,11 +47,27 @@ class OpsSnapshotTest {
     void snapshotReportsSchemaAssetsAndSettings() {
         OpsSnapshot snapshot = opsService.snapshot();
 
+        /* Deliberately not asserting that every asset holds candles. That is only true after a
+           backfill has reached Binance, so it made this test a check on the network: it passed
+           on a developer machine with 40k candles per pair and failed in CI against an empty
+           database, where the pairs exist and the fetch never happened. What the snapshot owes
+           the operations panel is a row per configured pair, correctly described — a feed with
+           no candles is a state it must report, not one it may fail on. */
         assertThat(snapshot.assets()).isNotEmpty()
                 .allSatisfy(asset -> {
                     assertThat(asset.symbol()).isNotBlank();
-                    assertThat(asset.candles()).isPositive();
-                    assertThat(asset.latestCandle()).isNotNull();
+                    assertThat(asset.timeframe()).isEqualTo("1h");
+                    assertThat(asset.candles()).isNotNegative();
+                    // An empty feed has no newest candle and no lag to measure, and the panel
+                    // has to show it as behind rather than as healthy.
+                    if (asset.candles() == 0) {
+                        assertThat(asset.latestCandle()).isNull();
+                        assertThat(asset.lagMinutes()).isNull();
+                        assertThat(asset.stale()).isTrue();
+                    } else {
+                        assertThat(asset.latestCandle()).isNotNull();
+                        assertThat(asset.lagMinutes()).isNotNull();
+                    }
                 });
         // Nothing may be waiting to run: the app validates its entities against the schema at
         // startup, so a pending migration means it is live on a schema it was not built for.
