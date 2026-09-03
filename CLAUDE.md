@@ -199,6 +199,28 @@ soft grey ground, hairline borders, low shadow, against the game's near-black. T
 load-bearing: `.ghost-btn`, `.pill`, `.status` and `.field` are shared class names, and only
 the `.admin-shell` prefix keeps the two pages from having to agree on how they look.
 
+### Leaderboard
+
+`GET /api/leaderboard` is public — anonymous callers get the board without the `me` row, and
+signing in adds it. Ranked on `score` from `PlayerScore`, the same function the profile and the
+game tab use, so a rank is computed from the number the player already sees.
+
+**It ranks on server-recorded results only.** The `legacy_*` columns are a browser tally folded
+in at first sign-in; every figure in them is client-supplied and `isCoherent()` only rejects the
+absurd. Counting them would make posting a large believable number the fastest way up the
+board, so `LeaderboardService` never reads them — the visible gap is real, and deliberate: on
+the seeded admin account the profile shows 642 and the board shows 140.
+
+Score depends on the order guesses were made, so it cannot be a `SUM`. One query
+(`resultFlagsByUserInPlayOrder`) walks `idx_guess_results_user_time` and the fold happens once
+in Java, cached 60s — this is the only open endpoint whose cache miss scans the guess table,
+which is also why it is the only read endpoint in `RateLimiter`. Denormalising onto `users` is
+the next step if it ever gets slow; `docs/LEADERBOARD_PLAN.md` records the trigger.
+
+Adding a tab means **three** edits, not two: the button, the `<main>` panel, and the `views` map
+in `nav.js`. Miss the map and `activate()` hides every panel and unhides none — the tab's init
+still runs, so the data is correct and the screen is blank.
+
 ### CSS conventions
 
 Everything reads tokens from `:root` in `style.css`; both themes swap only token values, and

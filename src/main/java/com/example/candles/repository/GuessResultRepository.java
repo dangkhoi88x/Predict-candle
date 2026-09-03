@@ -106,4 +106,17 @@ public interface GuessResultRepository extends JpaRepository<GuessResult, Long> 
     @Query("select count(distinct g.user.id) from GuessResult g"
             + " where g.createdAt >= :since and g.createdAt < :until")
     long activePlayersBetween(@Param("since") Instant since, @Param("until") Instant until);
+
+    /**
+     * Every recorded result, grouped by player and in play order, as rows of
+     * [userId, correct].
+     *
+     * The leaderboard ranks on score, and score depends on the order guesses were made — a
+     * streak is worth more than the same guesses shuffled — so it cannot be reached with
+     * SUM/COUNT. This is the one query that feeds the whole board: it walks
+     * `idx_guess_results_user_time`, which is already ordered exactly this way, and the
+     * folding happens once in Java via PlayerScore.
+     */
+    @Query("select g.user.id, g.correct from GuessResult g order by g.user.id, g.createdAt")
+    List<Object[]> resultFlagsByUserInPlayOrder();
 }

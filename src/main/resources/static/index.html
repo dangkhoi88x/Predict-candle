@@ -44,6 +44,7 @@
             <button class="nav-tab" role="tab" id="tab-psychology" aria-controls="view-psychology" aria-selected="false" data-view="psychology">Tâm Lý Giao Dịch</button>
             <button class="nav-tab" role="tab" id="tab-blog" aria-controls="view-blog" aria-selected="false" data-view="blog">Blog / Kiến Thức</button>
             <!-- Shown only while signed in; nav.js toggles it on the session event. -->
+            <button class="nav-tab" role="tab" id="tab-leaderboard" aria-controls="view-leaderboard" aria-selected="false" data-view="leaderboard">Bảng Xếp Hạng</button>
             <button class="nav-tab hidden" role="tab" id="tab-profile" aria-controls="view-profile" aria-selected="false" data-view="profile">Hồ Sơ</button>
         </div>
         <div class="auth-area" id="auth-area">
@@ -285,6 +286,17 @@
     <p class="heatmap-caption">Tóm tắt bằng lời riêng từ các bài chia sẻ đáng đọc trên X — không phải lời khuyên đầu tư, xem nguồn gốc ở mỗi bài.</p>
 </main>
 
+<main id="view-leaderboard" class="view app hidden" role="tabpanel" aria-labelledby="tab-leaderboard">
+    <div class="view-head">
+        <h2>Bảng Xếp Hạng</h2>
+        <span id="leaderboard-note" class="profile-wallet"></span>
+    </div>
+
+    <!-- Filled by leaderboard.js on first reveal; the notice element doubles as the empty and
+         error state, the same way the other content tabs do. -->
+    <div id="leaderboard-body"></div>
+</main>
+
 <main id="view-profile" class="view app hidden" role="tabpanel" aria-labelledby="tab-profile">
     <div class="view-head">
         <h2>Hồ Sơ</h2>
@@ -324,6 +336,7 @@
 <script src="psychology.js"></script>
 <script src="blog-render.js"></script>
 <script src="blog.js"></script>
+<script src="leaderboard.js"></script>
 <script src="profile.js"></script>
 </body>
 </html>
