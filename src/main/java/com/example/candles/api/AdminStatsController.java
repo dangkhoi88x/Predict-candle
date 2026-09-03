@@ -2,6 +2,7 @@ package com.example.candles.api;
 
 import com.example.candles.admin.AdminStats;
 import com.example.candles.admin.AdminStatsService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -19,10 +20,19 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/admin/stats")
 public class AdminStatsController {
 
-    private final AdminStatsService statsService;
+    /**
+     * Only the cache-skipping form is limited. A plain read is answered from a minute-old copy
+     * and costs nothing worth counting; `fresh=true` walks the guess table on purpose, and the
+     * button that sends it is one people hold down.
+     */
+    private static final int FRESH_READS_PER_MINUTE = 20;
 
-    public AdminStatsController(AdminStatsService statsService) {
+    private final AdminStatsService statsService;
+    private final RateLimiter rateLimiter;
+
+    public AdminStatsController(AdminStatsService statsService, RateLimiter rateLimiter) {
         this.statsService = statsService;
+        this.rateLimiter = rateLimiter;
     }
 
     /**
@@ -32,7 +42,9 @@ public class AdminStatsController {
      */
     @GetMapping
     public AdminStats stats(@RequestParam(required = false) String range,
-                            @RequestParam(defaultValue = "false") boolean fresh) {
+                            @RequestParam(defaultValue = "false") boolean fresh,
+                            HttpServletRequest request) {
+        if (fresh) rateLimiter.check("admin-stats-fresh", FRESH_READS_PER_MINUTE, request);
         return statsService.stats(range, fresh);
     }
 }

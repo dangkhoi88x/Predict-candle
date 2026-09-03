@@ -239,7 +239,7 @@ trang không phải thoả hiệp về hình thức của nhau.
 |---|---|
 | Blog là nội dung công khai; migration hỏng là trắng tab | ~~Giữ mảng `POSTS` dự phòng~~ — đã qua deploy thật và đã gỡ. Lỗi giờ hiện thông báo, và tab blog đặt lại cờ `built` để mở lại tab là thử lần nữa |
 | Xoá Cloudinary không hoàn tác | Hộp thoại xác nhận có tên ảnh; không xoá hàng loạt ở bản đầu |
-| Đây là nhóm endpoint ghi đầu tiên ngoài media | Cho `/api/admin/**` vào `RateLimiter` luôn |
+| Đây là nhóm endpoint ghi đầu tiên ngoài media | ✅ Đã làm. Trần chung 240/phút cho `/api/admin/**` và `/api/media/**` qua interceptor — theo *đường dẫn* nên endpoint thêm sau tự có, không phải nhớ. Ba chỗ đắt hơn có trần riêng, đặt ngay tại chỗ gọi: sync 10/phút (gọi Binance), upload 30/phút (tốn dung lượng Cloudinary), `stats?fresh=true` 20/phút (cố ý bỏ qua cache) |
 | CSRF | Access token nằm trong bộ nhớ và gửi qua header `Authorization`, không phải cookie, nên CSRF không khai thác được. Đừng chuyển sang cookie auth cho trang admin chỉ vì tiện. |
 | Ảnh upload không ai dùng tồn đọng | Giai đoạn 1 chỉ liệt kê; dọn rác để sau, cần biết ảnh nào đang được bài nào tham chiếu |
 
@@ -264,6 +264,5 @@ thuộc tính `title`, vì đó là chỗ giữ địa chỉ ví đầy đủ v�
 bản rút gọn. Chọn một kết quả thì `CandleAdminNav.go` đổi pane, cuộn tới hàng và tô nền
 `--adm-warn` trong 1,6 giây rồi tự tắt.
 
-Việc còn nợ: cho `/api/admin/**` vào `RateLimiter` (§4 vẫn ghi là sẽ làm, hiện chưa route admin
-nào dùng); và trang settings cho `candles.round.*` nếu việc cân bằng độ khó bắt đầu cần đổi số
+Việc còn nợ: trang settings cho `candles.round.*` nếu việc cân bằng độ khó bắt đầu cần đổi số
 thường xuyên.
