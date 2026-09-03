@@ -15,6 +15,7 @@ import com.example.candles.dto.response.Leaderboard;
 import com.example.candles.entity.Asset;
 import com.example.candles.entity.Direction;
 import com.example.candles.entity.GuessResult;
+import com.example.candles.entity.Role;
 import com.example.candles.entity.User;
 import com.example.candles.repository.AssetRepository;
 import com.example.candles.repository.GuessResultRepository;
@@ -83,6 +84,29 @@ class LeaderboardTest {
         assertThat(a.accuracy()).isGreaterThan(b.accuracy());
         assertThat(a.correct()).isEqualTo(30);
         assertThat(a.total()).isEqualTo(35);
+    }
+
+    /**
+     * The seeded/dev admin wallet plays far more rounds than a real player while the app is
+     * being tested, and a public board putting staff in first place reads as gaming their own
+     * leaderboard. An admin who otherwise qualifies must still be absent.
+     */
+    @Test
+    void anAdminAccountNeverAppearsOnTheBoardEvenWhenItQualifies() {
+        String admin = "admin-" + UUID.randomUUID();
+        User adminUser = player(admin, 40, 0); // easily the top score, if it were eligible
+        adminUser.assignRole(Role.ADMIN);
+        users.saveAndFlush(adminUser);
+        String real = "real-" + UUID.randomUUID();
+        player(real, LeaderboardService.MIN_GUESSES, 0);
+        leaderboard.evict();
+
+        Leaderboard board = leaderboard.board(50, adminUser.getId());
+
+        assertThat(rowFor(board, admin)).isNull();
+        assertThat(rowFor(board, real)).isNotNull();
+        // "You are rank N" makes no sense for someone who was deliberately left off the board.
+        assertThat(board.me()).isNull();
     }
 
     @Test

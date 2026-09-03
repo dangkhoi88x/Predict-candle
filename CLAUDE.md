@@ -254,6 +254,11 @@ the `.admin-shell` prefix keeps the two pages from having to agree on how they l
 signing in adds it. Ranked on `score` from `PlayerScore`, the same function the profile and the
 game tab use, so a rank is computed from the number the player already sees.
 
+**Admin accounts never appear.** The seeded/dev admin wallet plays far more rounds than any
+real player while the app is being tested, and a public board showing staff in first place reads
+as gaming their own leaderboard — worse than an empty board. Excluded once, in the same branch
+that already treats "no name to rank" as meaning nobody to rank (a deleted user shares that path).
+
 **It ranks on server-recorded results only.** The `legacy_*` columns are a browser tally folded
 in at first sign-in; every figure in them is client-supplied and `isCoherent()` only rejects the
 absurd. Counting them would make posting a large believable number the fastest way up the

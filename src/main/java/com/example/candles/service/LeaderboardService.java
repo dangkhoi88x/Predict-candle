@@ -15,6 +15,7 @@ import java.util.Map;
 
 import com.example.candles.domain.PlayerScore;
 import com.example.candles.dto.response.Leaderboard;
+import com.example.candles.entity.Role;
 import com.example.candles.entity.User;
 import com.example.candles.repository.GuessResultRepository;
 import com.example.candles.repository.UserRepository;
@@ -94,8 +95,15 @@ public class LeaderboardService {
                     .add(Boolean.TRUE.equals(row[1]));
         }
 
+        /* Admin accounts are excluded here rather than filtered later: the seeded/dev admin
+           wallet plays far more rounds than any real player while testing the app, and a public
+           board that shows it in first place reads as staff gaming their own leaderboard —
+           which is worse than an empty board. Left out of `names` entirely, an admin's rows
+           fall through the same "nobody to rank" branch below that already handles a deleted
+           user, so there is exactly one place that decides who counts. */
         Map<Long, String> names = new HashMap<>();
         for (User user : users.findAllById(flags.keySet())) {
+            if (user.getRole() == Role.ADMIN) continue;
             names.put(user.getId(), user.getDisplayName());
         }
 
@@ -106,7 +114,8 @@ public class LeaderboardService {
         flags.forEach((userId, results) -> {
             if (results.size() < MIN_GUESSES) return;
             String name = names.get(userId);
-            // A guess whose user has since been deleted has nobody to rank.
+            // Absent here means either the user has since been deleted, or is an admin — both
+            // have nobody to rank.
             if (name == null) return;
             qualified.add(new Scored(userId, name, PlayerScore.of(results)));
         });
