@@ -42,6 +42,36 @@ to 1.20.0 leaves `wallet-auth.js` byte-identical. Do not delete it without re-ru
 
 ## Architecture
 
+### Package layout
+
+Layered, not by feature: `controller/ service/ repository/ entity/ dto/`, plus five supporting
+packages where a layer name would lie about the contents.
+
+| package | holds |
+|---|---|
+| `controller/` | the 18 `@RestController`s |
+| `service/` | the 19 `@Service`s, plus `RateLimiter` and `CandleSyncScheduler` |
+| `repository/` | the 6 Spring Data interfaces |
+| `entity/` | the 6 `@Entity` classes and the 4 persisted enums |
+| `dto/` | records that cross the HTTP boundary — and only those |
+| `domain/` | internal value records that never leave the server: `RoundToken`, `RoundSelection`, `AuthSession`, `PlayerScore`, `StoredMedia` |
+| `security/` | `JwtService`, the filter, `WalletSignatureVerifier`, `AdminAccess`, `AdminWallets`, `AdminRoleReconciler` |
+| `client/` | Binance and Yahoo, their DTOs, and `Timeframes` |
+| `pattern/` | the two pattern libraries and their matchers — algorithm, not a layer |
+| `config/` | `@Configuration`, `@ConfigurationProperties`, the rate-limit interceptor |
+| `exception/` | the 5 exceptions and `GlobalExceptionHandler` |
+
+`dto/` is the boundary, not a dumping ground for records: `RoundToken` is signed into a JWT and
+`AuthSession` carries a refresh token, so neither belongs there even though both are records.
+
+**Tests live in the package of what they test**, which is what lets `AssetSeedOrderTest` and
+`CloudinaryUrlTest` reach package-private members. Moving a test's subject means moving the test.
+
+The layer split cost `pattern/` some encapsulation: `CandleHistoryLoader`, `SwingPivotDetector`,
+`SwingPoint`, `TechnicalPatternDefinition`, `TechnicalPatternLibrary` and
+`TechnicalPatternMatcher` were package-private and had to open up once the three services that
+use them moved to `service/`. Nothing outside those services should call them.
+
 ### Round flow (the game)
 
 ```

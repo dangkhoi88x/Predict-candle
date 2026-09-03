@@ -1,13 +1,13 @@
 package com.example.candles.repository;
 
-import com.example.candles.domain.Asset;
-import com.example.candles.domain.Candle;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-
 import java.util.List;
 import java.util.Optional;
+
+import com.example.candles.entity.Asset;
+import com.example.candles.entity.Candle;
 
 public interface CandleRepository extends JpaRepository<Candle, Long> {
 
