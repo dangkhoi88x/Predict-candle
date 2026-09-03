@@ -336,5 +336,7 @@
         });
     }
 
-    init();
+    /* Built on first reveal, not at load: 1423 elements and its own SVG illustrations, none of which the game tab ever asks about.
+       nav.js drives this through its onFirstShow map. */
+    window.__initTechnicalView = init;
 })();

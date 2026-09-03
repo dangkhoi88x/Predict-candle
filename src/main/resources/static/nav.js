@@ -17,6 +17,9 @@
         live: function () { window.__initLiveView && window.__initLiveView(); },
         heatmap: function () { window.__initHeatmapView && window.__initHeatmapView(); },
         blog: function () { window.__initBlogView && window.__initBlogView(); },
+        patterns: function () { window.__initPatternsView && window.__initPatternsView(); },
+        technical: function () { window.__initTechnicalView && window.__initTechnicalView(); },
+        psychology: function () { window.__initPsychologyView && window.__initPsychologyView(); },
     };
 
     /* The profile reloads every time it is opened, not just the first time — a round played

@@ -27,8 +27,8 @@ different bundle from an unchanged source.
 
 | source | output | global | loaded by |
 |---|---|---|---|
-| `web/src/wallet-auth.js` | `static/wallet-auth.js` (4.1 MB) | `CandleWallet` | both pages, deferred |
-| `web/src/blog-editor.js` | `static/blog-editor.js` (395 KB) | `CandleEditor` | `admin.html` only |
+| `web/src/wallet-auth.js` | `static/wallet-auth.js` (4.1 MB) | `CandleWallet` | both pages, injected by `auth.js` on the first connect click — **never a `<script>` tag**: admin.html had one, and it made 1.1 MB of the admin page's 1.4 MB transfer, on every visit including the ones that only read the ops panel |
+| `web/src/blog-editor.js` | `static/blog-editor.js` (395 KB) | `CandleEditor` | injected by `admin-blog.js` when the blog pane is revealed, and awaited before the editor opens — **no `<script>` tag** |
 
 IIFE takes exactly one entry, so these cannot be one multi-entry build — `vite.config.js`
 switches on `--mode` and `npm run build` runs both.
@@ -151,8 +151,10 @@ recorded misses an hour.
 `CandlePill` watches the `active` class via MutationObserver rather than clicks, so callers
 keep their own click handlers unchanged and only add one `attach()` line.
 
-**Deferred tabs:** `nav.js` has an `onFirstShow` map. Heatmap and blog build on first reveal,
-not at load. Add to it rather than initialising a heavy tab eagerly — `loading="lazy"` does
+**Deferred tabs:** `nav.js` has an `onFirstShow` map. Heatmap, blog, patterns, technical
+patterns and psychology all build on first reveal, not at load — together they were 1863 of
+the 5494 elements on the page, a third of the DOM built for tabs most visitors never open, and
+`view-technical` alone was 1423, four times the game view the player is actually looking at. Add to it rather than initialising a heavy tab eagerly — `loading="lazy"` does
 **not** defer images inside a `display:none` view (an element with no box cannot be deferred
 by position), so anything image-heavy must be built on demand.
 
@@ -351,8 +353,13 @@ and S&P 500 (`/api/market/sp500` → `YahooFinanceClient`). `treemap.js` does th
   `unicode-range` subsets; there is no external font request.
 - Blog images live in this project's Cloudinary account behind an `f_auto,q_auto` transform.
   Dropping the transform segment from the URL returns the untouched original.
-- `ROUND_TOKEN_SECRET` and `AUTH_JWT_SECRET` default to dev values and must be set for real
-  deployments. `ADMIN_WALLETS` is empty by default, which closes `/api/admin/**` and
+- `ROUND_TOKEN_SECRET` and `AUTH_JWT_SECRET` default to dev values, and **the app now refuses
+  to start on those defaults outside the `dev` profile** (`StartupSecretsCheck`). A checkout
+  runs as `dev` via `spring.profiles.default`; the Dockerfile sets `prod`, and the container is
+  the only way this is deployed, so a deployment that forgets the variables fails at boot
+  instead of signing sessions and round answers with a key published in this repository. The
+  check is `@PostConstruct`, not `ApplicationReadyEvent`, so the port is never bound — the
+  first version fired after Tomcat was already accepting connections. `ADMIN_WALLETS` is empty by default, which closes `/api/admin/**` and
   `/api/media/**` entirely rather than leaving them open. `MEDIA_ADMIN_WALLETS` is still read
   as a fallback for deployments that predate roles (`AdminWallets` logs a warning); move those
   addresses over.

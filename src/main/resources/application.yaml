@@ -6,6 +6,11 @@ server:
     min-response-size: 1024
 
 spring:
+  profiles:
+    # A checkout runs as `dev`, where the published secrets in this file are fine. The
+    # Dockerfile sets `prod`, and StartupSecretsCheck refuses to boot there while those
+    # defaults are still in use — see that class for why the two cases must differ.
+    default: dev
   # Loads .env from the working directory when there is one, as a plain properties file.
   # Nothing else reads it — Spring Boot has no built-in notion of .env, docker-compose only
   # uses it for its own substitutions, and ./mvnw spring-boot:run inherits the shell, not the
