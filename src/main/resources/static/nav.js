@@ -4,6 +4,7 @@
     var tabs = Array.prototype.slice.call(document.querySelectorAll(".nav-tab"));
     var views = {
         game: document.getElementById("view-game"),
+        live: document.getElementById("view-live"),
         heatmap: document.getElementById("view-heatmap"),
         patterns: document.getElementById("view-patterns"),
         technical: document.getElementById("view-technical"),
@@ -13,6 +14,7 @@
         profile: document.getElementById("view-profile"),
     };
     var onFirstShow = {
+        live: function () { window.__initLiveView && window.__initLiveView(); },
         heatmap: function () { window.__initHeatmapView && window.__initHeatmapView(); },
         blog: function () { window.__initBlogView && window.__initBlogView(); },
     };

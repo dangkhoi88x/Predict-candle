@@ -4156,3 +4156,129 @@ body:not(.is-admin) .adm-search {
         max-width: 200px;
     }
 }
+
+/* ---- live round (G7) --------------------------------------------------------------
+   Round header, sparkline, lock countdown, pool split and history strip. Reuses
+   .market-card, .guess-btn, .guess-timer and .pill wholesale — a live call and a
+   practice guess should look like the same game, not two different products. */
+
+.live-round-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin: 12px 0;
+}
+
+.live-round-number {
+    font: 700 15px var(--mono);
+    color: var(--text);
+}
+
+.live-round-state {
+    font: 600 12px var(--mono);
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.live-round-state.is-open { color: var(--up); }
+.live-round-state.is-locked { color: var(--down); }
+
+.live-sparkline-wrap {
+    margin-top: 4px;
+    height: 60px;
+}
+
+.live-sparkline {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.live-sparkline-line {
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 2;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+}
+
+.live-delta.outcome-up { color: var(--up); background: color-mix(in srgb, var(--up) 14%, transparent); }
+.live-delta.outcome-down { color: var(--down); background: color-mix(in srgb, var(--down) 14%, transparent); }
+
+.live-pool {
+    margin: 14px 0;
+}
+
+.live-pool-track {
+    height: 8px;
+    border-radius: 999px;
+    background: var(--down);
+    overflow: hidden;
+}
+
+.live-pool-long {
+    height: 100%;
+    background: var(--up);
+    width: 50%;
+    transition: width var(--duration-normal) var(--ease-out);
+}
+
+.live-pool-labels {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 4px;
+    font: 600 11px var(--mono);
+    color: var(--muted);
+}
+
+.live-history {
+    margin-top: 20px;
+}
+
+.live-history-title {
+    font-size: 13px;
+    color: var(--muted);
+    margin: 0 0 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.live-history-strip {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+}
+
+.live-history-item {
+    flex: 0 0 auto;
+    min-width: 84px;
+    padding: 8px 10px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--panel);
+    text-align: center;
+}
+
+.live-history-item .lh-round {
+    display: block;
+    font: 600 11px var(--mono);
+    color: var(--muted);
+}
+
+.live-history-item .lh-result {
+    display: block;
+    font: 800 12px var(--mono);
+    margin-top: 2px;
+    letter-spacing: 0.03em;
+}
+
+.live-history-item.lh-long .lh-result { color: var(--up); }
+.live-history-item.lh-short .lh-result { color: var(--down); }
+
+/* Bấm rồi và vẫn hiển thị rõ đã chọn bên nào, dù nút đã bị vô hiệu hoá. */
+.guess-btn.chosen {
+    outline: 3px solid color-mix(in srgb, currentColor 55%, transparent);
+    outline-offset: 2px;
+}

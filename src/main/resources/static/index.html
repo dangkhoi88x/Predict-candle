@@ -38,6 +38,7 @@
         <span class="brand">🕯️ Candle Guess</span>
         <div class="nav-tabs" role="tablist" aria-label="Khu vực của ứng dụng">
             <button class="nav-tab active" role="tab" id="tab-game" aria-controls="view-game" aria-selected="true" data-view="game">Đoán Nến</button>
+            <button class="nav-tab" role="tab" id="tab-live" aria-controls="view-live" aria-selected="false" data-view="live">Dự Đoán Trực Tiếp</button>
             <button class="nav-tab" role="tab" id="tab-heatmap" aria-controls="view-heatmap" aria-selected="false" data-view="heatmap">Market Heatmap</button>
             <button class="nav-tab" role="tab" id="tab-patterns" aria-controls="view-patterns" aria-selected="false" data-view="patterns">Mẫu Nến</button>
             <button class="nav-tab" role="tab" id="tab-technical" aria-controls="view-technical" aria-selected="false" data-view="technical">Mẫu Hình Kỹ Thuật</button>
@@ -174,6 +175,69 @@
     <button id="next-chart" class="next-btn hidden">🔄 Biểu đồ mới</button>
 
     <p id="status" class="status"></p>
+</main>
+
+<main id="view-live" class="view app hidden" role="tabpanel" aria-labelledby="tab-live">
+    <div class="game-toolbar">
+        <div class="pill" id="live-asset-pill">
+            <button class="pill-option active" data-asset="BTCUSDT">BTC/USDT</button>
+            <button class="pill-option" data-asset="ETHUSDT">ETH/USDT</button>
+            <button class="pill-option" data-asset="BNBUSDT">BNB/USDT</button>
+            <button class="pill-option" data-asset="SOLUSDT">SOL/USDT</button>
+        </div>
+    </div>
+
+    <div class="live-round-head">
+        <span class="live-round-number" id="live-round-number">Vòng —</span>
+        <span class="live-round-state" id="live-round-state"></span>
+    </div>
+
+    <div class="market-card">
+        <div class="market-head">
+            <div class="market-quote">
+                <div class="market-symbol-row">
+                    <span class="market-symbol" id="live-symbol">BTC</span>
+                    <span class="market-name">Giá trực tiếp</span>
+                </div>
+                <div class="market-price-row">
+                    <span class="market-price rolling" id="live-price" aria-live="polite"></span>
+                    <span class="market-delta rolling" id="live-delta"></span>
+                </div>
+                <div class="market-ohlc" id="live-open-note"></div>
+            </div>
+        </div>
+
+        <div class="live-sparkline-wrap">
+            <svg class="live-sparkline" id="live-sparkline" viewBox="0 0 300 60" preserveAspectRatio="none" aria-hidden="true"></svg>
+        </div>
+    </div>
+
+    <div id="live-timer" class="guess-timer">
+        <div class="guess-timer-track"><div class="guess-timer-fill" id="live-timer-fill"></div></div>
+        <span class="guess-timer-value" id="live-timer-value"></span>
+    </div>
+
+    <div class="live-pool" id="live-pool" aria-hidden="true">
+        <div class="live-pool-track">
+            <div class="live-pool-long" id="live-pool-long"></div>
+        </div>
+        <div class="live-pool-labels">
+            <span id="live-pool-long-label">LONG 50%</span>
+            <span id="live-pool-short-label">50% SHORT</span>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button id="live-long" class="guess-btn long" disabled>▲ LONG</button>
+        <button id="live-short" class="guess-btn short" disabled>▼ SHORT</button>
+    </div>
+
+    <p id="live-status" class="status"></p>
+
+    <section class="live-history" aria-label="Các vòng trước">
+        <h3 class="live-history-title">Vòng trước</h3>
+        <div class="live-history-strip" id="live-history-strip"></div>
+    </section>
 </main>
 
 <main id="view-heatmap" class="view app hidden" role="tabpanel" aria-labelledby="tab-heatmap">
@@ -324,6 +388,7 @@
 <script src="rolling.js"></script>
 <script src="content.js"></script>
 <script src="auth.js"></script>
+<script src="live.js"></script>
 <script src="ticker.js"></script>
 <script src="nav.js"></script>
 <script src="app.js"></script>
