@@ -223,9 +223,15 @@ class PracticeRoundFlowTest {
         String token = round.path("roundToken").asString();
         think();
 
-        // Same payload, one character of the signature changed.
-        String tampered = token.substring(0, token.length() - 1)
-                + (token.endsWith("A") ? "B" : "A");
+        /* Same payload, one character of the signature changed — and it has to be a
+           character in the middle. An HS256 signature is 32 bytes, which is 43 unpadded
+           base64url characters carrying 258 bits, so the last character's low two bits
+           decode to nothing: flipping it between neighbouring values yields the same bytes
+           and a signature that still verifies. Tampering with the tail passed by luck. */
+        String[] parts = token.split("\\.");
+        char[] signature = parts[2].toCharArray();
+        signature[0] = signature[0] == 'A' ? 'B' : 'A';
+        String tampered = parts[0] + "." + parts[1] + "." + new String(signature);
         assertThat(guess(tampered, "LONG", null).getResponse().getStatus()).isEqualTo(400);
         assertThat(guess("not.a.token", "LONG", null).getResponse().getStatus()).isEqualTo(400);
     }
