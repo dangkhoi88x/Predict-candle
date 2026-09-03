@@ -258,6 +258,12 @@ and S&P 500 (`/api/market/sp500` → `YahooFinanceClient`). `treemap.js` does th
 
 ## Notes
 
+- **Commits carry no `Co-Authored-By` trailer.** GitHub renders that trailer as a second author
+  ("dangkhoi88x and claude committed") and counts it in the repo's contributor list, which
+  misrepresents who owns this work. Author and committer have always been the repo owner alone;
+  the trailer was only ever text in the message body. Leave it off new commits — the 35 that
+  already carry it are staying as they are rather than force-pushing a rewrite over an open PR.
+
 - **Schema is Flyway's, not Hibernate's.** `ddl-auto` is `validate`: adding a field to an
   entity without a matching migration in `src/main/resources/db/migration` fails startup
   rather than silently altering the table. Existing databases predating Flyway are stamped
