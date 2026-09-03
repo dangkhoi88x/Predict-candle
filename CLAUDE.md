@@ -254,7 +254,15 @@ the `.admin-shell` prefix keeps the two pages from having to agree on how they l
 
 A second game shape next to practice: not a random historical chart, but one shared call on
 whichever candle the exchange is building this second — the kind of thing rekto.fun's
-next-candle mini-game does. `GET /api/live/round` and `GET /api/live/history` are public;
+next-candle mini-game does. `
+`LiveRoundService` reads the wall clock through an injected `Clock` bean (`ClockConfig`), not
+`Instant.now()` directly — a test can pin it to an instant known to be inside a round's open
+window. This is not a style preference: `LiveRoundFlowTest` used to read `Instant.now()`
+independently of the service, which agreed right up until a build happened to run in the ~8
+minutes of every hour a round is locked, and a predict() call the test expected to succeed came
+back 400. It reached `main` this way before anyone noticed the pattern.
+
+GET /api/live/round` and `GET /api/live/history` are public;
 `POST /api/live/predict` needs a wallet, enforced in `SecurityConfig` the same way
 `/api/stats/**` is.
 
