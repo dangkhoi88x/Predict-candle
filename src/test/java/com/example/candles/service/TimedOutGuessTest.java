@@ -8,7 +8,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.UUID;
 
-import com.example.candles.dto.StatsResponse;
+import com.example.candles.dto.response.StatsResponse;
 import com.example.candles.entity.Asset;
 import com.example.candles.entity.Direction;
 import com.example.candles.entity.GuessResult;

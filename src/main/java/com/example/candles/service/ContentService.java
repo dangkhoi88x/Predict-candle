@@ -8,8 +8,8 @@ import java.text.Normalizer;
 import java.util.List;
 import java.util.Locale;
 
-import com.example.candles.dto.ContentItemDto;
-import com.example.candles.dto.ContentItemRequest;
+import com.example.candles.dto.request.ContentItemRequest;
+import com.example.candles.dto.response.ContentItemDto;
 import com.example.candles.entity.ContentItem;
 import com.example.candles.entity.ContentKind;
 import com.example.candles.repository.ContentItemRepository;

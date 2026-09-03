@@ -1,4 +1,4 @@
-package com.example.candles.dto;
+package com.example.candles.dto.response;
 
 import java.util.List;
 

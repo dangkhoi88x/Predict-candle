@@ -53,7 +53,8 @@ packages where a layer name would lie about the contents.
 | `service/` | the 19 `@Service`s, plus `RateLimiter` and `CandleSyncScheduler` |
 | `repository/` | the 6 Spring Data interfaces |
 | `entity/` | the 6 `@Entity` classes and the 4 persisted enums |
-| `dto/` | records that cross the HTTP boundary — and only those |
+| `dto/request/` | the 5 records a client sends in: `GuessRequest`, `WalletVerifyRequest`, `BlogPostRequest`, `ContentItemRequest`, `LegacyStatsRequest` |
+| `dto/response/` | the 17 records the server sends out, including the pieces nested inside them (`CandleDto`, `BlogPostDto`, `PlayerSummary`) |
 | `domain/` | internal value records that never leave the server: `RoundToken`, `RoundSelection`, `AuthSession`, `PlayerScore`, `StoredMedia` |
 | `security/` | `JwtService`, the filter, `WalletSignatureVerifier`, `AdminAccess`, `AdminWallets`, `AdminRoleReconciler` |
 | `client/` | Binance and Yahoo, their DTOs, and `Timeframes` |
@@ -63,6 +64,12 @@ packages where a layer name would lie about the contents.
 
 `dto/` is the boundary, not a dumping ground for records: `RoundToken` is signed into a JWT and
 `AuthSession` carries a refresh token, so neither belongs there even though both are records.
+
+The request/response split is by **direction of travel**, not by name. `CandleDto` and
+`BlogPostDto` carry no `Response` suffix but only ever travel outward, so they are responses;
+nothing in `dto/request/` is ever returned. A record that had to go both ways would be the
+signal to stop and split it in two, because a field that is optional coming in and guaranteed
+going out cannot be the same field.
 
 **Tests live in the package of what they test**, which is what lets `AssetSeedOrderTest` and
 `CloudinaryUrlTest` reach package-private members. Moving a test's subject means moving the test.

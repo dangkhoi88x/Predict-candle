@@ -13,8 +13,8 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
-import com.example.candles.dto.ContentItemDto;
-import com.example.candles.dto.ContentItemRequest;
+import com.example.candles.dto.request.ContentItemRequest;
+import com.example.candles.dto.response.ContentItemDto;
 import com.example.candles.entity.ContentKind;
 import com.example.candles.security.AdminAccess;
 import com.example.candles.service.ContentService;

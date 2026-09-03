@@ -12,8 +12,8 @@ import java.util.UUID;
 
 import com.example.candles.config.MediaProperties;
 import com.example.candles.domain.StoredMedia;
-import com.example.candles.dto.MediaPage;
-import com.example.candles.dto.UploadedMedia;
+import com.example.candles.dto.response.MediaPage;
+import com.example.candles.dto.response.UploadedMedia;
 
 @Service
 public class CloudinaryMediaStorageService implements MediaStorageService {

@@ -6,8 +6,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 import com.example.candles.domain.PlayerScore;
-import com.example.candles.dto.LegacyStatsRequest;
-import com.example.candles.dto.StatsResponse;
+import com.example.candles.dto.request.LegacyStatsRequest;
+import com.example.candles.dto.response.StatsResponse;
 import com.example.candles.entity.User;
 import com.example.candles.repository.GuessResultRepository;
 import com.example.candles.repository.UserRepository;

@@ -2,8 +2,8 @@ package com.example.candles.service;
 
 import org.springframework.web.multipart.MultipartFile;
 
-import com.example.candles.dto.MediaPage;
-import com.example.candles.dto.UploadedMedia;
+import com.example.candles.dto.response.MediaPage;
+import com.example.candles.dto.response.UploadedMedia;
 
 public interface MediaStorageService {
 

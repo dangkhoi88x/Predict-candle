@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
-import com.example.candles.dto.PlayerSummary;
+import com.example.candles.dto.response.PlayerSummary;
 import com.example.candles.security.AdminAccess;
 import com.example.candles.service.AdminPlayerService;
 

@@ -7,7 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.example.candles.dto.PlayerSummary;
+import com.example.candles.dto.response.PlayerSummary;
 import com.example.candles.entity.User;
 import com.example.candles.repository.GuessResultRepository;
 import com.example.candles.repository.UserRepository;

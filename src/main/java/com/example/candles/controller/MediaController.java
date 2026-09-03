@@ -11,8 +11,8 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import jakarta.servlet.http.HttpServletRequest;
 
-import com.example.candles.dto.MediaPage;
-import com.example.candles.dto.UploadedMedia;
+import com.example.candles.dto.response.MediaPage;
+import com.example.candles.dto.response.UploadedMedia;
 import com.example.candles.security.AdminAccess;
 import com.example.candles.service.MediaStorageService;
 import com.example.candles.service.RateLimiter;

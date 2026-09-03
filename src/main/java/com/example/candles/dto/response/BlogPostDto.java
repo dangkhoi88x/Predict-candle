@@ -1,4 +1,4 @@
-package com.example.candles.dto;
+package com.example.candles.dto.response;
 
 import tools.jackson.databind.JsonNode;
 import java.time.Instant;
