@@ -28,7 +28,7 @@ different bundle from an unchanged source.
 | source | output | global | loaded by |
 |---|---|---|---|
 | `web/src/wallet-auth.js` | `static/wallet-auth.js` (4.1 MB) | `CandleWallet` | both pages, injected by `auth.js` on the first connect click — **never a `<script>` tag**: admin.html had one, and it made 1.1 MB of the admin page's 1.4 MB transfer, on every visit including the ones that only read the ops panel |
-| `web/src/blog-editor.js` | `static/blog-editor.js` (395 KB) | `CandleEditor` | `admin.html` only |
+| `web/src/blog-editor.js` | `static/blog-editor.js` (395 KB) | `CandleEditor` | injected by `admin-blog.js` when the blog pane is revealed, and awaited before the editor opens — **no `<script>` tag** |
 
 IIFE takes exactly one entry, so these cannot be one multi-entry build — `vite.config.js`
 switches on `--mode` and `npm run build` runs both.

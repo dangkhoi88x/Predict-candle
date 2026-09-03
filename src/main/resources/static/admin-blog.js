@@ -234,7 +234,41 @@
 
     /* ---- editor ---- */
 
+    /* The Tiptap bundle is 123 KB on the wire and only an admin who actually writes a post
+       ever needs it, so admin.html no longer carries a script tag for it. Loading starts when
+       the blog pane is revealed, which is almost always long before the first click; opening
+       the editor still waits on the same promise, because "almost always" would mean a fast
+       click gets a form whose body is not a rich-text field and silently loses what is typed
+       into it. Same shape as auth.js's wallet loader, failure clearing included. */
+    var editorLoader = null;
+
+    function loadEditorBundle() {
+        if (window.CandleEditor) return Promise.resolve(window.CandleEditor);
+        if (editorLoader) return editorLoader;
+
+        editorLoader = new Promise(function (resolve, reject) {
+            var script = document.createElement("script");
+            script.src = "blog-editor.js";
+            script.onload = function () {
+                if (window.CandleEditor) resolve(window.CandleEditor);
+                else reject(new Error("Trình soạn thảo tải xong nhưng không khởi tạo được."));
+            };
+            script.onerror = function () {
+                editorLoader = null;
+                reject(new Error("Không tải được trình soạn thảo. Kiểm tra kết nối rồi thử lại."));
+            };
+            document.head.appendChild(script);
+        });
+        return editorLoader;
+    }
+
     function openEditor(post) {
+        loadEditorBundle().then(function () { showEditor(post); }, function (e) {
+            setStatus(e.message);
+        });
+    }
+
+    function showEditor(post) {
         editing = post || {};
         writeBody((post && post.body) || []);
         el.editorTitle.textContent = post ? "Sửa bài" : "Bài mới";
@@ -452,6 +486,13 @@
     });
 
     /* admin.js decides whether this account is an admin; this only reacts to that. */
+    /* Start the download when the pane appears, so the click that follows finds it ready. */
+    document.addEventListener("candles:pane", function (event) {
+        if (event.detail && event.detail.pane === "blog") {
+            loadEditorBundle().catch(function () { /* openEditor reports it */ });
+        }
+    });
+
     document.addEventListener("candles:admin", function (event) {
         el.section.classList.toggle("hidden", !event.detail.admin);
         if (event.detail.admin) refresh();
