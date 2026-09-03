@@ -1,5 +1,6 @@
 package com.example.candles.api;
 
+import jakarta.validation.ConstraintViolationException;
 import com.example.candles.auth.InvalidCredentialsException;
 import com.example.candles.auth.InvalidRefreshTokenException;
 import com.example.candles.round.GuessOutOfTimeException;
@@ -35,6 +36,22 @@ public class GlobalExceptionHandler {
     @ExceptionHandler({IllegalArgumentException.class, IllegalStateException.class})
     public ResponseEntity<ErrorResponse> handleBadRequest(RuntimeException e) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErrorResponse(e.getMessage()));
+    }
+
+    /**
+     * Constraints on a method parameter — {@code @Pattern} on a {@code @RequestParam} and the
+     * like — throw this rather than the MethodArgumentNotValidException a {@code @RequestBody}
+     * raises, and without a handler it fell through as a 500. A malformed wallet address is the
+     * caller's mistake, not the server's, and answering it with an internal error both misleads
+     * the caller and fills the log with stack traces for ordinary bad input.
+     */
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidParameter(ConstraintViolationException e) {
+        String detail = e.getConstraintViolations().stream()
+                .findFirst()
+                .map(v -> v.getPropertyPath() + " " + v.getMessage())
+                .orElse("Tham số không hợp lệ.");
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErrorResponse(detail));
     }
 
     public record ErrorResponse(String message) {
