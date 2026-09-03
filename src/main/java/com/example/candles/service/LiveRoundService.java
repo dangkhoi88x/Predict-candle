@@ -22,7 +22,9 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * The live round: one shared call on the candle currently forming on the real exchange.
@@ -66,23 +68,31 @@ public class LiveRoundService {
         Instant now = Instant.now();
         LiveRound round = LiveRound.at(now, timeframe, properties.live().lockBefore());
 
-        CandleData forming = liveCandle(asset, timeframe, round, now);
-        BigDecimal openPrice = forming != null ? forming.open() : null;
-        BigDecimal livePrice = forming != null ? forming.close() : null;
-
-        int[] sides = sideCounts(asset.getId(), timeframe, round.openTime());
-        int longCount = sides[0];
-        int shortCount = sides[1];
-
         String myDirection = callerId == null ? null
                 : livePredictionRepository.findByUserAndAssetAndTimeframeAndOpenTime(
                         userRepository.getReferenceById(callerId), asset, timeframe, round.openTime())
                         .map(p -> p.getDirection().name())
                         .orElse(null);
 
+        return buildResponse(asset, timeframe, round, now, myDirection);
+    }
+
+    /**
+     * Shared by {@link #snapshot} and {@link #predict} so a placed call doesn't have to re-fetch
+     * the asset, re-derive the round, or re-query the crowd totals it already computed a few
+     * lines earlier just to describe them back to the caller.
+     */
+    private LiveRoundResponse buildResponse(Asset asset, String timeframe, LiveRound round, Instant now,
+                                            String myDirection) {
+        CandleData forming = liveCandle(asset, timeframe, round, now);
+        BigDecimal openPrice = forming != null ? forming.open() : null;
+        BigDecimal livePrice = forming != null ? forming.close() : null;
+
+        int[] sides = sideCounts(asset.getId(), timeframe, round.openTime());
+
         return new LiveRoundResponse(asset.getSymbol(), timeframe, round.number(), round.openTime(),
                 round.lockAt(), round.closeAt(), round.isLocked(now), openPrice, livePrice,
-                longCount, shortCount, myDirection);
+                sides[0], sides[1], myDirection);
     }
 
     /**
@@ -92,17 +102,15 @@ public class LiveRoundService {
      * to avoid ever storing a candle that is still moving, this asks for exactly that candle,
      * because a still-moving price is the entire point of a live round.
      *
-     * Once the round has closed, the settled row in the database is authoritative and cheaper to
-     * read than another exchange call, so this only reaches the exchange while the round is
-     * still open.
+     * {@code round} is always the round covering {@code now} — every caller builds it via
+     * {@code LiveRound.at(now, ...)} immediately before this call — so it can never have closed
+     * relative to that same {@code now}. There is deliberately no "read the settled row instead"
+     * branch here: that shortcut only makes sense for a round whose identity is already known to
+     * be in the past, which is exactly what {@link #history} does by reading
+     * {@link com.example.candles.repository.CandleRepository} directly rather than going through
+     * this method at all.
      */
     private CandleData liveCandle(Asset asset, String timeframe, LiveRound round, Instant now) {
-        if (round.hasClosed(now)) {
-            return candleRepository.findByAssetAndTimeframeAndOpenTime(asset, timeframe, round.openTime())
-                    .map(c -> new CandleData(c.getOpenTime(), c.getOpen(), c.getHigh(), c.getLow(),
-                            c.getClose(), c.getVolume()))
-                    .orElse(null);
-        }
         String cacheKey = asset.getId() + ":" + timeframe;
         CandleData cached = livePriceCache.getIfPresent(cacheKey);
         if (cached != null && !cached.openTime().isBefore(round.openTime())) {
@@ -152,7 +160,8 @@ public class LiveRoundService {
         } catch (DataIntegrityViolationException e) {
             throw new IllegalStateException("Bạn đã dự đoán vòng này rồi.");
         }
-        return snapshot(assetSymbol, callerId);
+        // The direction just recorded — no need to read it back from a query that only just committed.
+        return buildResponse(asset, timeframe, round, now, direction.name());
     }
 
     /** [longCount, shortCount] for one round — 0/0 when nobody has called it yet. */
@@ -173,10 +182,22 @@ public class LiveRoundService {
         List<Candle> settled = candleRepository.findByAssetAndTimeframeOrderByOpenTimeDesc(
                 asset, timeframe, PageRequest.of(0, size));
 
+        /* One batched query for the whole page rather than one per row — a page of 24 used to
+           mean 24 extra round-trips on a public, unauthenticated endpoint. Rounds nobody called
+           are simply absent from the result and default to [0, 0] below. */
+        Map<Instant, int[]> sidesByOpenTime = new HashMap<>();
+        if (!settled.isEmpty()) {
+            List<Instant> openTimes = settled.stream().map(Candle::getOpenTime).toList();
+            for (Object[] row : livePredictionRepository.countSidesForRounds(asset.getId(), timeframe, openTimes)) {
+                sidesByOpenTime.put((Instant) row[0],
+                        new int[]{((Number) row[1]).intValue(), ((Number) row[2]).intValue()});
+            }
+        }
+
         List<LiveRoundHistoryResponse.Entry> entries = settled.stream().map(candle -> {
             LiveRound round = LiveRound.at(candle.getOpenTime(), timeframe, properties.live().lockBefore());
             Direction result = candle.getClose().compareTo(candle.getOpen()) >= 0 ? Direction.LONG : Direction.SHORT;
-            int[] sides = sideCounts(asset.getId(), timeframe, round.openTime());
+            int[] sides = sidesByOpenTime.getOrDefault(candle.getOpenTime(), new int[]{0, 0});
             return new LiveRoundHistoryResponse.Entry(round.number(), candle.getOpenTime(), round.closeAt(),
                     candle.getOpen(), candle.getClose(), result.name(), sides[0], sides[1]);
         }).toList();

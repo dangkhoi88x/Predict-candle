@@ -72,18 +72,36 @@
             });
     }
 
+    /* The two fetches are independent — round data and history data serve different parts of
+       the screen — so one failing must not blank out the other. Promise.all used to reject the
+       whole call the instant either side did, which meant a transient history-endpoint hiccup
+       (its own, tighter rate limit) froze the price and countdown too, even though the round
+       fetch had already succeeded. Each branch now reports its own failure and leaves whatever
+       state it already had alone. */
     function loadAll() {
         el.status.textContent = "Đang tải…";
-        return Promise.all([fetchRound(), fetchHistory()])
-            .then(function (results) {
-                state.round = results[0];
-                state.history = results[1].rounds;
-                el.status.textContent = "";
-                render();
-            })
-            .catch(function (e) {
+        var roundOk = fetchRound().then(function (round) {
+            state.round = round;
+            return true;
+        }).catch(function (e) {
+            el.status.textContent = "Lỗi: " + e.message;
+            return false;
+        });
+        var historyOk = fetchHistory().then(function (history) {
+            state.history = history.rounds;
+            return true;
+        }).catch(function (e) {
+            if (!el.status.textContent || el.status.textContent === "Đang tải…") {
                 el.status.textContent = "Lỗi: " + e.message;
-            });
+            }
+            return false;
+        });
+        return Promise.all([roundOk, historyOk]).then(function (results) {
+            if (results[0]) {
+                if (results[1]) el.status.textContent = "";
+                render();
+            }
+        });
     }
 
     /* ---- rendering -------------------------------------------------------------------- */
@@ -274,7 +292,12 @@
         else stopPolling();
     });
 
+    var inited = false;
+
     window.__initLiveView = function () {
+        if (inited) return;
+        inited = true;
+
         window.CandlePill.attach(el.assetPill, ".pill-option");
         Array.prototype.slice.call(el.assetPill.querySelectorAll(".pill-option")).forEach(function (btn) {
             btn.addEventListener("click", function () {

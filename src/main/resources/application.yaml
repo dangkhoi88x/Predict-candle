@@ -129,8 +129,12 @@ candles:
     # already a settled round — so this is a display choice, not a budget.
     history-size: 24
     # Every open browser tab asks for the live price on a timer, and they all want the same
-    # number. One upstream call per this interval serves all of them.
-    price-cache-ttl: PT2S
+    # number. This has to be *at least* as long as the frontend's poll interval (live.js's
+    # POLL_MS, 3s) — a shorter TTL means a lone tab's own next poll always finds its own cache
+    # entry already expired, which is a 100% miss rate for exactly the case this cache exists
+    # to help, and only amortises anything once enough concurrent tabs happen to overlap within
+    # the window.
+    price-cache-ttl: PT4S
   jwt:
     secret: ${ROUND_TOKEN_SECRET:dev-only-secret-change-me-0123456789abcdef}
     ttl: PT10M

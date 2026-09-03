@@ -31,6 +31,23 @@ public interface LivePredictionRepository extends JpaRepository<LivePrediction, 
                               @Param("timeframe") String timeframe,
                               @Param("openTime") Instant openTime);
 
+    /**
+     * The same split as {@link #countSides}, batched over every round in one page of history —
+     * one query instead of one per row. Rounds nobody called are simply absent from the result;
+     * the caller fills those in as [0, 0].
+     */
+    @Query("""
+            select p.openTime,
+                   coalesce(sum(case when p.direction = com.example.candles.entity.Direction.LONG then 1 else 0 end), 0),
+                   coalesce(sum(case when p.direction = com.example.candles.entity.Direction.SHORT then 1 else 0 end), 0)
+            from LivePrediction p
+            where p.asset.id = :assetId and p.timeframe = :timeframe and p.openTime in :openTimes
+            group by p.openTime
+            """)
+    List<Object[]> countSidesForRounds(@Param("assetId") Long assetId,
+                                       @Param("timeframe") String timeframe,
+                                       @Param("openTimes") List<Instant> openTimes);
+
     /** A player's own calls, newest first, for scoring their live-round record. */
     List<LivePrediction> findByUserOrderByOpenTimeDesc(User user);
 }
