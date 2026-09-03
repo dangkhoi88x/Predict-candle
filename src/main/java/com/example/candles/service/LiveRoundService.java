@@ -13,6 +13,7 @@ import com.example.candles.entity.LivePrediction;
 import com.example.candles.entity.User;
 import com.example.candles.repository.CandleRepository;
 import com.example.candles.repository.LivePredictionRepository;
+import com.example.candles.config.ClockConfig;
 import com.example.candles.repository.UserRepository;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
@@ -21,6 +22,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
@@ -43,20 +45,28 @@ public class LiveRoundService {
     private final UserRepository userRepository;
     private final PriceDataProvider priceDataProvider;
     private final CandlesProperties properties;
+    private final Clock clock;
     private final Cache<String, CandleData> livePriceCache;
 
+    /**
+     * Reads the clock through {@link Clock} rather than {@code Instant.now()} so a test can pin
+     * it to an instant known to be inside a round's open window — see {@link ClockConfig} for
+     * why that distinction turned out to matter in production, not just in theory.
+     */
     public LiveRoundService(RoundSelectionService roundSelectionService,
                             CandleRepository candleRepository,
                             LivePredictionRepository livePredictionRepository,
                             UserRepository userRepository,
                             PriceDataProvider priceDataProvider,
-                            CandlesProperties properties) {
+                            CandlesProperties properties,
+                            Clock clock) {
         this.roundSelectionService = roundSelectionService;
         this.candleRepository = candleRepository;
         this.livePredictionRepository = livePredictionRepository;
         this.userRepository = userRepository;
         this.priceDataProvider = priceDataProvider;
         this.properties = properties;
+        this.clock = clock;
         this.livePriceCache = Caffeine.newBuilder()
                 .expireAfterWrite(properties.live().priceCacheTtl())
                 .build();
@@ -65,7 +75,7 @@ public class LiveRoundService {
     public LiveRoundResponse snapshot(String assetSymbol, Long callerId) {
         Asset asset = roundSelectionService.resolveAsset(assetSymbol);
         String timeframe = properties.timeframe();
-        Instant now = Instant.now();
+        Instant now = clock.instant();
         LiveRound round = LiveRound.at(now, timeframe, properties.live().lockBefore());
 
         String myDirection = callerId == null ? null
@@ -134,7 +144,7 @@ public class LiveRoundService {
     public LiveRoundResponse predict(String assetSymbol, Direction direction, Long callerId) {
         Asset asset = roundSelectionService.resolveAsset(assetSymbol);
         String timeframe = properties.timeframe();
-        Instant now = Instant.now();
+        Instant now = clock.instant();
         LiveRound round = LiveRound.at(now, timeframe, properties.live().lockBefore());
 
         if (round.isLocked(now)) {

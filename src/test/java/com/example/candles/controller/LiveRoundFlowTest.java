@@ -3,6 +3,7 @@ package com.example.candles.controller;
 import com.example.candles.client.CandleData;
 import com.example.candles.client.PriceDataProvider;
 import com.example.candles.config.CandlesProperties;
+import com.example.candles.config.ClockConfig;
 import com.example.candles.domain.LiveRound;
 import com.example.candles.security.JwtService;
 import com.example.candles.entity.Asset;
@@ -14,6 +15,7 @@ import com.example.candles.repository.AssetRepository;
 import com.example.candles.repository.CandleRepository;
 import com.example.candles.repository.LivePredictionRepository;
 import com.example.candles.repository.UserRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -27,6 +29,7 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -45,11 +48,23 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
  * {@link PriceDataProvider} is mocked rather than left to reach Binance — a live round asks for
  * the still-forming candle on every read, so a real dependency here would be the network call
  * PracticeRoundFlowTest already learned not to make, just on the hot path instead of a setup step.
+ *
+ * {@link Clock} is mocked too, and pinned well inside a round's open window. This class used to
+ * read the wall clock with {@code Instant.now()} the same as {@link LiveRoundService} does — two
+ * independent reads of the same clock, fine right up until a build happened to run in the ~8
+ * minutes of every hour a round is locked ({@code candles.live.lock-before}), where a predict()
+ * call this test expected to succeed came back 400 instead. That reached CI on main, not just
+ * here: nothing local ever ran in that window before it did. Fixing the flake meant the test and
+ * the service could no longer be allowed to each read time on their own — see {@link ClockConfig}.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
 @Transactional
 class LiveRoundFlowTest {
+
+    /** The 15th minute of an arbitrary hour: far from both the open and the 8-minute-before-close
+        lock, so the choice of instant is not itself load-bearing. */
+    private static final Instant FIXED_NOW = Instant.parse("2024-01-01T10:15:00Z");
 
     @Autowired private MockMvc mockMvc;
     @Autowired private UserRepository users;
@@ -59,8 +74,14 @@ class LiveRoundFlowTest {
     @Autowired private CandlesProperties properties;
     @Autowired private JwtService jwt;
     @MockitoBean private PriceDataProvider priceDataProvider;
+    @MockitoBean private Clock clock;
 
     private final ObjectMapper mapper = new ObjectMapper();
+
+    @BeforeEach
+    void pinTheClock() {
+        when(clock.instant()).thenReturn(FIXED_NOW);
+    }
 
     private Asset seedAsset() {
         return assets.saveAndFlush(new Asset(
@@ -74,7 +95,7 @@ class LiveRoundFlowTest {
     }
 
     private LiveRound currentRound(String timeframe) {
-        return LiveRound.at(Instant.now(), timeframe, properties.live().lockBefore());
+        return LiveRound.at(FIXED_NOW, timeframe, properties.live().lockBefore());
     }
 
     /** Stands in for Binance while a round is still open: PriceDataProvider is asked, not the DB. */
@@ -111,7 +132,7 @@ class LiveRoundFlowTest {
         assertThat(round0.path("roundNumber").asLong()).isEqualTo(round.number());
         assertThat(round0.path("openPrice").decimalValue()).isEqualByComparingTo("100.00");
         assertThat(round0.path("livePrice").decimalValue()).isEqualByComparingTo("103.50");
-        assertThat(round0.path("locked").asBoolean()).isEqualTo(round.isLocked(Instant.now()));
+        assertThat(round0.path("locked").asBoolean()).isEqualTo(round.isLocked(FIXED_NOW));
         assertThat(round0.path("myDirection").isNull()).isTrue();
         assertThat(round0.path("longCount").asInt()).isZero();
         assertThat(round0.path("shortCount").asInt()).isZero();
