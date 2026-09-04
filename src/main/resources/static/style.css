@@ -31,7 +31,6 @@
                    U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
-
 /* IBM Plex Mono, self-hosted for the same reasons. It is not published as a variable font,
    so each weight is its own file — 400 for body-ish mono, 500/600 for labels, and 700 for
    the emphasised numbers. 700 in particular was previously never downloaded: the Google
@@ -256,22 +255,29 @@ h1, h2, h3 {
     border-bottom: 1px solid var(--border);
 }
 
-/* Three tracks so the tab group stays centred regardless of how wide the brand on the left
-   or the wallet button on the right happen to be. The middle track is minmax(0, 1fr) so it
-   surrenders width instead of pushing the wallet button off-screen; the pill itself is
-   centred inside that track and scrolls once the tabs no longer fit. */
+/* Two rows rather than one three-track row: a single row that gives brand and the wallet
+   controls first claim on the width (both flex-shrink: 0) leaves whatever is left over for
+   the tabs, and "whatever is left over" shrinks every time the auth side grows — connecting
+   a wallet turns "Kết nối ví" into an address plus, for an admin, a "Quản trị" button, at
+   which point the middle track could lose enough width that even a wide desktop window had
+   the tab pill scrolling. Giving the tabs a row of their own means they always get the full
+   1180px to work with, signed in or not, admin or not — not a fraction of it. */
 .top-nav-inner {
     max-width: 1180px;
     margin: 0 auto;
-    padding: 0 16px;
-    height: 54px;
+    padding: 10px 16px;
     display: grid;
-    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+        "brand auth"
+        "tabs  tabs";
     align-items: center;
-    gap: 8px;
+    row-gap: 10px;
+    column-gap: 8px;
 }
 
 .brand {
+    grid-area: brand;
     font-weight: 800;
     font-size: 15px;
     white-space: nowrap;
@@ -279,16 +285,18 @@ h1, h2, h3 {
 }
 
 .nav-tabs {
+    grid-area: tabs;
     display: flex;
+    flex-wrap: wrap;
     gap: 2px;
     min-width: 0;
-    max-width: 100%;
-    justify-self: center;
-    overflow-x: auto;
+    justify-self: stretch;
+    justify-content: center;
+    overflow-x: visible;
     scrollbar-width: none;
     background: var(--panel-2);
     border: 1px solid var(--border);
-    border-radius: 999px;
+    border-radius: 14px;
     padding: 4px;
     position: relative;
 }
@@ -397,7 +405,6 @@ h1, h2, h3 {
     background: var(--overlay-strong);
 }
 
-
 /* ---- loading skeletons ---------------------------------------------------------------
    Each skeleton carries the geometry of the thing it stands in for, so content landing
    never shifts the layout under the reader. */
@@ -489,7 +496,6 @@ h1, h2, h3 {
     background: var(--overlay-soft);
     border: 1px solid var(--panel);
 }
-
 
 /* ---- profile ------------------------------------------------------------------------- */
 .view-head {
@@ -687,37 +693,6 @@ h1, h2, h3 {
 @keyframes ticker-scroll {
     from { transform: translateX(0); }
     to   { transform: translateX(-50%); }
-}
-
-/* Below this width the brand and the wallet controls alone fill the bar, squeezing the tab
-   pill down to an unusable sliver — so give the tabs their own full-width row instead. */
-@media (max-width: 760px) {
-    .top-nav-inner {
-        grid-template-columns: 1fr auto;
-        grid-template-areas:
-            "brand auth"
-            "tabs  tabs";
-        height: auto;
-        padding: 10px 16px;
-        row-gap: 10px;
-    }
-
-    .brand { grid-area: brand; }
-    .auth-area { grid-area: auth; }
-
-    .nav-tabs {
-        grid-area: tabs;
-        justify-self: stretch;
-        /* The pill track still scrolled sideways here even on its own full-width row: eight
-           tabs of Vietnamese text (four of them multi-word) add up to well past any phone's
-           width, so "full width" alone was never going to fit them on one line — the row just
-           overflowed and had to be dragged to see the rest. Wrapping is the fix a scrollbar
-           can't be: every tab is on screen the moment the page loads, no gesture required. */
-        flex-wrap: wrap;
-        overflow-x: visible;
-        justify-content: center;
-        border-radius: 14px;
-    }
 }
 
 .view.hidden {
@@ -4075,6 +4050,7 @@ body:not(.is-admin) .adm-search {
 }
 
 .auth-area {
+    grid-area: auth;
     position: relative;
     display: flex;
     align-items: center;
