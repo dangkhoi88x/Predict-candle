@@ -90,6 +90,16 @@ public class User {
         return walletAddress;
     }
 
+    /**
+     * The same shorthand {@code AuthService} seeds a new account's display name with —
+     * available here for anywhere else that needs to identify a wallet on screen without
+     * handing over the full 42 characters, which matters once an admin has renamed the
+     * account and {@link #getDisplayName()} no longer is that shorthand.
+     */
+    public String getShortWalletAddress() {
+        return walletAddress.substring(0, 6) + "…" + walletAddress.substring(walletAddress.length() - 4);
+    }
+
     public String getDisplayName() {
         return displayName;
     }

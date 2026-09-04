@@ -107,7 +107,8 @@ public class LiveRoundService {
                         .stream()
                         .limit(MAX_PARTICIPANTS_SHOWN)
                         .map(p -> new LiveRoundResponse.Participant(
-                                p.getUser().getDisplayName(), p.getDirection().name(), p.getCreatedAt()))
+                                p.getUser().getDisplayName(), p.getUser().getShortWalletAddress(),
+                                p.getDirection().name(), p.getCreatedAt()))
                         .toList();
 
         return new LiveRoundResponse(asset.getSymbol(), timeframe, round.number(), round.openTime(),

@@ -26,11 +26,11 @@ public record LiveRoundResponse(
         List<Participant> participants
 ) {
     /**
-     * One call in the current round's roster, newest first — display name only. Never the
-     * wallet address itself, the same rule the leaderboard already holds to: a display name
-     * defaults to a shortened wallet, but a raw 42-character address is never handed to every
-     * other viewer of a page nobody had to sign in to open.
+     * One call in the current round's roster, newest first. {@code walletShort} is the same
+     * shorthand a display name defaults to — an admin-renamed account ("Raccon") still gets
+     * one alongside the name, the way rekto.fun shows both, but never the raw 42-character
+     * address: that rule holds here the same way it does for the leaderboard.
      */
-    public record Participant(String displayName, String direction, Instant createdAt) {
+    public record Participant(String displayName, String walletShort, String direction, Instant createdAt) {
     }
 }

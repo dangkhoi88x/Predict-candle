@@ -295,7 +295,13 @@ the pool split: display name and direction, never a wallet address. `findPartici
 fetch on `user` for exactly this, since every row is about to read `getDisplayName()` and
 without the join that's N+1 queries on every poll. Same rule the leaderboard already holds to:
 a display name defaults to a shortened wallet (`AuthService.shortAddress`), and that is the
-thing shown to a page nobody had to sign in to open — never the raw 42-character address.
+thing shown to a page nobody had to sign in to open — never the raw 42-character address. Each
+row also carries `walletShort` (`User.getShortWalletAddress`) separately from the display name:
+an un-renamed account's name already is that shorthand, so the frontend only draws it as a
+second line when an admin has renamed the account and the two have diverged — the "Raccon" /
+"0xef00…4d45" pairing rekto.fun's own roster shows. The avatar is an emoji plus a background
+color, both chosen by hashing `walletShort` rather than the display name, so a renamed account
+keeps the same avatar it always had.
 
 ### Leaderboard
 

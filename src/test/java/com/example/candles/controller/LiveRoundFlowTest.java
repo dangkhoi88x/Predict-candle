@@ -193,8 +193,10 @@ class LiveRoundFlowTest {
         assertThat(participants).hasSize(2);
         // Bob called second, so Bob's row is newest and comes first.
         assertThat(participants.get(0).path("displayName").asString()).isEqualTo("Bob");
+        assertThat(participants.get(0).path("walletShort").asString()).isEqualTo(bob.getShortWalletAddress());
         assertThat(participants.get(0).path("direction").asString()).isEqualTo("SHORT");
         assertThat(participants.get(1).path("displayName").asString()).isEqualTo("Alice");
+        assertThat(participants.get(1).path("walletShort").asString()).isEqualTo(alice.getShortWalletAddress());
         assertThat(participants.get(1).path("direction").asString()).isEqualTo("LONG");
     }
 

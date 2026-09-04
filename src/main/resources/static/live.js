@@ -149,6 +149,19 @@
        the same as the history strip and sparkline: the list is short (capped server-side at
        50) and changes at most once every few seconds, so the DOM churn this costs is not
        worth guarding against for the gain of a fancier diff. */
+    /* A fixed emoji + a background color chosen by hashing the wallet-short string, not the
+       display name — the wallet is the one field that never changes for an account even if
+       an admin renames it, so the same person keeps the same avatar. Six colors and twelve
+       emoji give 72 combinations, plenty to make a short roster look like distinct people
+       rather than a repeating pattern. */
+    var AVATAR_EMOJI = ["🦊", "🐻", "🐼", "🦁", "🐯", "🐨", "🐰", "🐸", "🐙", "🦝", "🐺", "🐵"];
+
+    function hashCode(text) {
+        var h = 0;
+        for (var i = 0; i < text.length; i++) h = (h * 31 + text.charCodeAt(i)) | 0;
+        return Math.abs(h);
+    }
+
     function renderParticipants(participants) {
         el.participantsList.innerHTML = "";
         el.participantsEmpty.classList.toggle("hidden", participants.length > 0);
@@ -160,27 +173,42 @@
             var row = document.createElement("div");
             row.className = "live-participant-row";
 
+            var seed = hashCode(p.walletShort || p.displayName || "?");
             var avatar = document.createElement("span");
-            avatar.className = "live-participant-avatar";
-            avatar.textContent = (p.displayName || "?").charAt(0).toUpperCase();
+            avatar.className = "live-participant-avatar avatar-bg-" + (seed % 6);
+            avatar.textContent = AVATAR_EMOJI[seed % AVATAR_EMOJI.length];
             avatar.setAttribute("aria-hidden", "true");
 
+            var info = document.createElement("div");
+            info.className = "live-participant-info";
             var name = document.createElement("span");
             name.className = "live-participant-name";
             name.textContent = p.displayName;
+            info.appendChild(name);
+            // Only when it says something the name doesn't already: an un-renamed account's
+            // display name already *is* this shorthand, so a second identical line would be
+            // pure repetition — this is for the "Raccon" case, not the common one.
+            if (p.walletShort && p.walletShort !== p.displayName) {
+                var wallet = document.createElement("span");
+                wallet.className = "live-participant-wallet";
+                wallet.textContent = p.walletShort;
+                info.appendChild(wallet);
+            }
 
+            var meta = document.createElement("div");
+            meta.className = "live-participant-meta";
             var direction = document.createElement("span");
             direction.className = "live-participant-direction " + (p.direction === "LONG" ? "dir-long" : "dir-short");
-            direction.textContent = p.direction === "LONG" ? "▲ LONG" : "▼ SHORT";
-
+            direction.textContent = p.direction === "LONG" ? "↗ LONG" : "↘ SHORT";
             var time = document.createElement("span");
             time.className = "live-participant-time";
             time.textContent = formatTime(p.createdAt);
+            meta.appendChild(direction);
+            meta.appendChild(time);
 
             row.appendChild(avatar);
-            row.appendChild(name);
-            row.appendChild(direction);
-            row.appendChild(time);
+            row.appendChild(info);
+            row.appendChild(meta);
             el.participantsList.appendChild(row);
         });
     }
