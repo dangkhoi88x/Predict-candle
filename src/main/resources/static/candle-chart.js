@@ -27,9 +27,16 @@ window.CandleChart = (function () {
 
     /**
      * Draws {@code candles} (each {time, open, high, low, close}) into {@code svg}, replacing
-     * whatever was there. {@code options.referencePrice}, when given, draws a dashed horizontal
-     * line at that level — the round's open, so a glance shows whether the close finished above
-     * or below where it started, the same read the pool split gives in words.
+     * whatever was there.
+     *
+     * {@code options.referencePrice}, when given, draws a dashed horizontal line at that level
+     * with a filled price tag at its right end — rekto.fun draws the same line at a settled
+     * round's close, colored by who won, so a glance across the chart answers "green or red"
+     * before reading anything else. {@code options.referenceColor} ("up" or "down") picks which
+     * token colors the line and tag; omit it for a neutral line in {@code --accent} instead —
+     * the line and the win/loss color are two different things and callers without a result to
+     * report (there are none yet, but the module doesn't assume there won't be) get the neutral
+     * one rather than a color that implies an outcome that isn't there.
      */
     function draw(svg, candles, options) {
         options = options || {};
@@ -40,7 +47,7 @@ window.CandleChart = (function () {
         var view = svg.viewBox.baseVal;
         var w = view && view.width ? view.width : 300;
         var h = view && view.height ? view.height : 150;
-        var pad = { top: 10, right: 44, bottom: 18, left: 4 };
+        var pad = { top: 10, right: 52, bottom: 18, left: 4 };
         var plotX0 = pad.left, plotX1 = w - pad.right;
         var plotY0 = pad.top, plotY1 = h - pad.bottom;
         var step = (plotX1 - plotX0) / n;
@@ -68,10 +75,28 @@ window.CandleChart = (function () {
 
         if (options.referencePrice != null) {
             var ry = py(options.referencePrice);
+            var refColor = options.referenceColor === "up" ? up
+                : options.referenceColor === "down" ? down
+                : accent;
             svg.appendChild(svgEl("line", {
                 x1: plotX0, x2: plotX1, y1: ry, y2: ry,
-                stroke: accent, "stroke-width": "1", "stroke-dasharray": "3 3", "stroke-opacity": "0.8",
+                stroke: refColor, "stroke-width": "1", "stroke-dasharray": "3 3", "stroke-opacity": "0.8",
             }));
+
+            // A filled tag at the line's right end, the same read a live ticker gives: the
+            // number that matters, not just where it sits relative to the candles.
+            var tagText = options.referenceLabel || formatAxisPrice(options.referencePrice);
+            var tagW = Math.max(30, tagText.length * 6.5 + 8);
+            var tagH = 13;
+            svg.appendChild(svgEl("rect", {
+                x: plotX1 + 2, y: ry - tagH / 2, width: tagW, height: tagH, rx: 2.5, fill: refColor,
+            }));
+            var tag = svgEl("text", {
+                x: plotX1 + 2 + tagW / 2, y: ry, "text-anchor": "middle", "dominant-baseline": "middle",
+                "font-size": "9", "font-weight": "700", fill: "#06110f", "font-family": "var(--mono)",
+            });
+            tag.textContent = tagText;
+            svg.appendChild(tag);
         }
 
         candles.forEach(function (c, i) {
@@ -87,8 +112,11 @@ window.CandleChart = (function () {
             }));
         });
 
+        // Skipped near the reference line's own price tag so the two labels never overlap.
+        var refY = options.referencePrice != null ? py(options.referencePrice) : null;
         [hi, lo + span / 2, lo].forEach(function (tick) {
             var y = py(tick);
+            if (refY != null && Math.abs(y - refY) < 10) return;
             var label = svgEl("text", {
                 x: plotX1 + 6, y: y, "dominant-baseline": "middle",
                 "font-size": "9.5", fill: muted, "font-family": "var(--mono)",

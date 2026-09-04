@@ -340,7 +340,14 @@
         el.modalPoolLongLabel.textContent = "LONG " + pct + "%";
         el.modalPoolShortLabel.textContent = (100 - pct) + "% SHORT";
 
-        window.CandleChart.draw(el.modalChart, detail.context, { referencePrice: detail.openPrice });
+        // The line marks where the round finished, not where it started — colored by who won,
+        // the same read the badge below gives in words. No referenceLabel: the module's own
+        // compact "K" shorthand is what fits the tag inside a 480px chart without it running
+        // past the frame the way the price box's full "$78,898.06" would.
+        window.CandleChart.draw(el.modalChart, detail.context, {
+            referencePrice: detail.closePrice,
+            referenceColor: detail.result === "LONG" ? "up" : "down",
+        });
     }
 
     function closeRoundDetail() {
