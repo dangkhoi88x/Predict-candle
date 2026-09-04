@@ -22,6 +22,7 @@ import com.example.candles.repository.BlogPostRepository;
 import com.example.candles.repository.CandleRepository;
 import com.example.candles.repository.ContentItemRepository;
 import com.example.candles.repository.GuessResultRepository;
+import com.example.candles.repository.LivePredictionRepository;
 import com.example.candles.repository.UserRepository;
 
 /**
@@ -37,6 +38,7 @@ public class OpsService {
     private final AssetRepository assetRepository;
     private final CandleRepository candleRepository;
     private final GuessResultRepository guessResultRepository;
+    private final LivePredictionRepository livePredictionRepository;
     private final UserRepository userRepository;
     private final BlogPostRepository blogPostRepository;
     private final ContentItemRepository contentItemRepository;
@@ -47,6 +49,7 @@ public class OpsService {
     public OpsService(AssetRepository assetRepository,
                       CandleRepository candleRepository,
                       GuessResultRepository guessResultRepository,
+                      LivePredictionRepository livePredictionRepository,
                       UserRepository userRepository,
                       BlogPostRepository blogPostRepository,
                       ContentItemRepository contentItemRepository,
@@ -56,6 +59,7 @@ public class OpsService {
         this.assetRepository = assetRepository;
         this.candleRepository = candleRepository;
         this.guessResultRepository = guessResultRepository;
+        this.livePredictionRepository = livePredictionRepository;
         this.userRepository = userRepository;
         this.blogPostRepository = blogPostRepository;
         this.contentItemRepository = contentItemRepository;
@@ -139,6 +143,8 @@ public class OpsService {
     private OpsSnapshot.Activity activity(Instant now) {
         Object[] today = unwrap(guessResultRepository.activitySince(now.truncatedTo(ChronoUnit.DAYS)));
         Object[] week = unwrap(guessResultRepository.activitySince(now.minus(7, ChronoUnit.DAYS)));
+        Object[] liveToday = unwrap(livePredictionRepository.liveActivitySince(now.truncatedTo(ChronoUnit.DAYS)));
+        Object[] liveWeek = unwrap(livePredictionRepository.liveActivitySince(now.minus(7, ChronoUnit.DAYS)));
 
         return new OpsSnapshot.Activity(
                 userRepository.count(),
@@ -146,7 +152,8 @@ public class OpsService {
                 asLong(today[0]), asLong(today[1]), asLong(week[0]),
                 blogPostRepository.count(),
                 blogPostRepository.findByPublishedTrueOrderByPositionAscIdAsc().size(),
-                contentItemRepository.count());
+                contentItemRepository.count(),
+                asLong(liveToday[0]), asLong(liveToday[1]), asLong(liveToday[2]), asLong(liveWeek[0]));
     }
 
     /**

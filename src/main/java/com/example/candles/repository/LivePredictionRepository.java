@@ -98,4 +98,29 @@ public interface LivePredictionRepository extends JpaRepository<LivePrediction, 
             + "select user_id, created_at, correct from (" + SETTLED_LIVE_FLAGS + ") live"
             + ") combined order by user_id, created_at", nativeQuery = true)
     List<Object[]> combinedResultFlagsByUserInPlayOrder();
+
+    /**
+     * [calls, settled, correctSettled] since an instant — every live call is counted the moment
+     * it is placed, so "calls" moves in real time even though "settled" and "correctSettled"
+     * only move once a call's candle closes, through the same left join
+     * {@link #combinedResultFlagsByUserInPlayOrder} makes an inner join of. An open round is
+     * real activity with no verdict yet, not activity that has not happened — the ops panel
+     * needs to be able to tell those apart, which a straight reuse of the settled-only fragment
+     * above could not.
+     */
+    @Query(value = """
+            select count(*),
+                   count(c.open_time),
+                   count(*) filter (
+                       where c.open_time is not null
+                         and ((p.direction = 'LONG' and c.close >= c.open)
+                           or (p.direction = 'SHORT' and c.close < c.open))
+                   )
+            from live_predictions p
+            left join candles c on c.asset_id = p.asset_id
+                                and c.timeframe = p.timeframe
+                                and c.open_time = p.open_time
+            where p.created_at >= :since
+            """, nativeQuery = true)
+    Object[] liveActivitySince(@Param("since") Instant since);
 }

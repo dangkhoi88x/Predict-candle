@@ -35,8 +35,15 @@ public record OpsSnapshot(
                                 int roundsPerMinute, int guessesPerMinute) {
     }
 
+    /**
+     * {@code liveCallsToday} counts a call the moment it is placed; {@code liveSettledToday}
+     * and {@code liveCorrectToday} only count calls whose candle has since closed, so the panel
+     * can show "how many were called" and "how many of those we know the answer to" as two
+     * different numbers rather than treating a call still in flight as either wrong or missing.
+     */
     public record Activity(long players, long admins, long guessesToday, long correctToday,
                             long guessesWeek, long blogPosts, long publishedBlogPosts,
-                            long contentItems) {
+                            long contentItems, long liveCallsToday, long liveSettledToday,
+                            long liveCorrectToday, long liveCallsWeek) {
     }
 }
