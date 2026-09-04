@@ -89,7 +89,11 @@ class LiveRoundFlowTest {
     }
 
     private User player() {
-        User user = new User("0x" + UUID.randomUUID().toString().replace("-", ""), "P");
+        return player("P");
+    }
+
+    private User player(String displayName) {
+        User user = new User("0x" + UUID.randomUUID().toString().replace("-", ""), displayName);
         user.assignRole(Role.USER);
         return users.saveAndFlush(user);
     }
@@ -165,6 +169,53 @@ class LiveRoundFlowTest {
 
         assertThat(predictions.findByUserOrderByOpenTimeDesc(
                 users.findById(player.getId()).orElseThrow())).hasSize(1);
+    }
+
+    /**
+     * The pool's own roster — who called this round and which way, the same social-proof read
+     * a live crowd gives at a glance.
+     */
+    @Test
+    void theRoundListsWhoCalledItNewestFirst() throws Exception {
+        Asset asset = seedAsset();
+        User alice = player("Alice");
+        User bob = player("Bob");
+        LiveRound round = currentRound(properties.timeframe());
+        stubForming(asset.getSymbol(), properties.timeframe(), round.openTime(),
+                BigDecimal.TEN, BigDecimal.TEN);
+
+        predict(asset.getSymbol(), "LONG", "Bearer " + jwt.createAccessToken(alice));
+        predict(asset.getSymbol(), "SHORT", "Bearer " + jwt.createAccessToken(bob));
+
+        JsonNode round0 = mapper.readTree(getRound(asset.getSymbol(), null).getResponse().getContentAsString());
+        JsonNode participants = round0.path("participants");
+
+        assertThat(participants).hasSize(2);
+        // Bob called second, so Bob's row is newest and comes first.
+        assertThat(participants.get(0).path("displayName").asString()).isEqualTo("Bob");
+        assertThat(participants.get(0).path("direction").asString()).isEqualTo("SHORT");
+        assertThat(participants.get(1).path("displayName").asString()).isEqualTo("Alice");
+        assertThat(participants.get(1).path("direction").asString()).isEqualTo("LONG");
+    }
+
+    /**
+     * Same rule the leaderboard already holds to: a display name defaults to a shortened
+     * wallet, but the full 42-character address itself is never hand over to every other
+     * viewer of a page nobody had to sign in to open.
+     */
+    @Test
+    void theRoundNeverExposesAParticipantsWalletAddress() throws Exception {
+        Asset asset = seedAsset();
+        User player = player();
+        LiveRound round = currentRound(properties.timeframe());
+        stubForming(asset.getSymbol(), properties.timeframe(), round.openTime(),
+                BigDecimal.TEN, BigDecimal.TEN);
+        predict(asset.getSymbol(), "LONG", "Bearer " + jwt.createAccessToken(player));
+
+        String body = getRound(asset.getSymbol(), null).getResponse().getContentAsString();
+
+        assertThat(body).doesNotContain("walletAddress");
+        assertThat(body).doesNotMatch("(?s).*0x[0-9a-fA-F]{40}.*");
     }
 
     @Test

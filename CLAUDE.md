@@ -254,17 +254,16 @@ the `.admin-shell` prefix keeps the two pages from having to agree on how they l
 
 A second game shape next to practice: not a random historical chart, but one shared call on
 whichever candle the exchange is building this second — the kind of thing rekto.fun's
-next-candle mini-game does. `
+next-candle mini-game does. `GET /api/live/round` and `GET /api/live/history` are public;
+`POST /api/live/predict` needs a wallet, enforced in `SecurityConfig` the same way
+`/api/stats/**` is.
+
 `LiveRoundService` reads the wall clock through an injected `Clock` bean (`ClockConfig`), not
 `Instant.now()` directly — a test can pin it to an instant known to be inside a round's open
 window. This is not a style preference: `LiveRoundFlowTest` used to read `Instant.now()`
 independently of the service, which agreed right up until a build happened to run in the ~8
 minutes of every hour a round is locked, and a predict() call the test expected to succeed came
 back 400. It reached `main` this way before anyone noticed the pattern.
-
-GET /api/live/round` and `GET /api/live/history` are public;
-`POST /api/live/predict` needs a wallet, enforced in `SecurityConfig` the same way
-`/api/stats/**` is.
 
 **Nothing stores a round.** `LiveRound.at(now, timeframe, lockBefore)` names the round from the
 clock alone — a round *is* the real candle open at that instant — so two servers, a page reload
@@ -290,6 +289,13 @@ Frontend is deliberately not a live-updating candlestick chart. A big rolling pr
 of the last `candles.live.history-size` closes, a lock/close countdown reusing `.guess-timer`,
 and a pool-split bar are what `live.js` renders — same visual language as practice
 (`.guess-btn.long/.short`, `--up`/`--down`), built on first reveal like heatmap and blog.
+
+The round response carries a `participants` roster — up to 50, newest call first — alongside
+the pool split: display name and direction, never a wallet address. `findParticipants` joins
+fetch on `user` for exactly this, since every row is about to read `getDisplayName()` and
+without the join that's N+1 queries on every poll. Same rule the leaderboard already holds to:
+a display name defaults to a shortened wallet (`AuthService.shortAddress`), and that is the
+thing shown to a page nobody had to sign in to open — never the raw 42-character address.
 
 ### Leaderboard
 
