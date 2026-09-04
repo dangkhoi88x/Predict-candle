@@ -25,6 +25,18 @@ window.CandleChart = (function () {
         return v.toFixed(v >= 100 ? 0 : 2);
     }
 
+    /* The axis ticks stay compact ("81K") — there are several of them stacked down one edge,
+       and losing a digit of precision costs nothing there. The reference tag is the one number
+       on the whole chart a player is meant to actually read off, the same way a live ticker
+       shows the full price rather than a rounded one, so it gets the real digits: thousands
+       separators for readability, no decimals above $1 (a chart this size has no room to spare
+       on cents that don't change which side of the line the price falls on), full precision
+       below $1 where the whole number is the fraction. */
+    function formatTagPrice(v) {
+        if (v >= 1) return Math.round(v).toLocaleString("en-US");
+        return String(v);
+    }
+
     /**
      * Draws {@code candles} (each {time, open, high, low, close}) into {@code svg}, replacing
      * whatever was there.
@@ -85,15 +97,19 @@ window.CandleChart = (function () {
 
             // A filled tag at the line's right end, the same read a live ticker gives: the
             // number that matters, not just where it sits relative to the candles.
-            var tagText = options.referenceLabel || formatAxisPrice(options.referencePrice);
-            var tagW = Math.max(30, tagText.length * 6.5 + 8);
+            var tagText = options.referenceLabel || formatTagPrice(options.referencePrice);
             var tagH = 13;
+            var tagW = Math.max(26, tagText.length * 5.6 + 8);
+            // Clamped to the SVG's own width rather than trusted to fit inside the padding —
+            // a price with more digits than expected shrinks the tag's margin before it would
+            // ever run past the frame.
+            var tagX = Math.min(plotX1 + 2, w - tagW - 2);
             svg.appendChild(svgEl("rect", {
-                x: plotX1 + 2, y: ry - tagH / 2, width: tagW, height: tagH, rx: 2.5, fill: refColor,
+                x: tagX, y: ry - tagH / 2, width: tagW, height: tagH, rx: 2.5, fill: refColor,
             }));
             var tag = svgEl("text", {
-                x: plotX1 + 2 + tagW / 2, y: ry, "text-anchor": "middle", "dominant-baseline": "middle",
-                "font-size": "9", "font-weight": "700", fill: "#06110f", "font-family": "var(--mono)",
+                x: tagX + tagW / 2, y: ry, "text-anchor": "middle", "dominant-baseline": "middle",
+                "font-size": "8.5", "font-weight": "700", fill: "#06110f", "font-family": "var(--mono)",
             });
             tag.textContent = tagText;
             svg.appendChild(tag);
