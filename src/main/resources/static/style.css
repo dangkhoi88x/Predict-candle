@@ -4282,3 +4282,85 @@ body:not(.is-admin) .adm-search {
     outline: 3px solid color-mix(in srgb, currentColor 55%, transparent);
     outline-offset: 2px;
 }
+
+/* ---- who called this round (participants roster) ------------------------------------ */
+
+.live-participants {
+    margin-top: 20px;
+}
+
+.live-participants-title {
+    font-size: 13px;
+    color: var(--muted);
+    margin: 0 0 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.live-participants-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.live-participants-empty {
+    color: var(--muted);
+    font-size: 13px;
+    margin: 0;
+}
+
+.live-participant-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--panel);
+}
+
+.live-participant-avatar {
+    flex: 0 0 auto;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font: 700 12px var(--mono);
+    color: #06110f;
+    background: var(--accent);
+}
+
+.live-participant-name {
+    flex: 1 1 auto;
+    min-width: 0;
+    font: 600 13px var(--mono);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.live-participant-direction {
+    flex: 0 0 auto;
+    font: 700 11px var(--mono);
+    padding: 3px 8px;
+    border-radius: 6px;
+    letter-spacing: 0.03em;
+}
+
+.live-participant-direction.dir-long {
+    color: var(--up);
+    background: color-mix(in srgb, var(--up) 16%, transparent);
+}
+
+.live-participant-direction.dir-short {
+    color: var(--down);
+    background: color-mix(in srgb, var(--down) 16%, transparent);
+}
+
+.live-participant-time {
+    flex: 0 0 auto;
+    font: 600 11px var(--mono);
+    color: var(--muted);
+}

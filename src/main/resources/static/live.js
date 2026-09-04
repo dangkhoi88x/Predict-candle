@@ -23,6 +23,9 @@
         shortBtn: document.getElementById("live-short"),
         status: document.getElementById("live-status"),
         historyStrip: document.getElementById("live-history-strip"),
+        participantsList: document.getElementById("live-participants-list"),
+        participantsEmpty: document.getElementById("live-participants-empty"),
+        participantsTitle: document.getElementById("live-participants-title"),
     };
 
     var SYMBOL_NAME = { BTCUSDT: "BTC", ETHUSDT: "ETH", BNBUSDT: "BNB", SOLUSDT: "SOL" };
@@ -129,9 +132,57 @@
 
         renderPool(r.longCount, r.shortCount);
         renderButtons(r);
+        renderParticipants(r.participants || []);
         renderSparkline();
         renderHistory();
         tick(); // paint the countdown immediately rather than waiting for the first interval tick
+    }
+
+    function formatTime(iso) {
+        var d = new Date(iso);
+        function pad(n) { return String(n).padStart(2, "0"); }
+        return pad(d.getHours()) + ":" + pad(d.getMinutes());
+    }
+
+    /* The roster under the pool bar — who called this round and which way, the same
+       social-proof read a live crowd gives at a glance. Rebuilt from scratch on every poll,
+       the same as the history strip and sparkline: the list is short (capped server-side at
+       50) and changes at most once every few seconds, so the DOM churn this costs is not
+       worth guarding against for the gain of a fancier diff. */
+    function renderParticipants(participants) {
+        el.participantsList.innerHTML = "";
+        el.participantsEmpty.classList.toggle("hidden", participants.length > 0);
+        el.participantsTitle.textContent = participants.length
+            ? "Người chơi vòng này (" + participants.length + ")"
+            : "Người chơi vòng này";
+
+        participants.forEach(function (p) {
+            var row = document.createElement("div");
+            row.className = "live-participant-row";
+
+            var avatar = document.createElement("span");
+            avatar.className = "live-participant-avatar";
+            avatar.textContent = (p.displayName || "?").charAt(0).toUpperCase();
+            avatar.setAttribute("aria-hidden", "true");
+
+            var name = document.createElement("span");
+            name.className = "live-participant-name";
+            name.textContent = p.displayName;
+
+            var direction = document.createElement("span");
+            direction.className = "live-participant-direction " + (p.direction === "LONG" ? "dir-long" : "dir-short");
+            direction.textContent = p.direction === "LONG" ? "▲ LONG" : "▼ SHORT";
+
+            var time = document.createElement("span");
+            time.className = "live-participant-time";
+            time.textContent = formatTime(p.createdAt);
+
+            row.appendChild(avatar);
+            row.appendChild(name);
+            row.appendChild(direction);
+            row.appendChild(time);
+            el.participantsList.appendChild(row);
+        });
     }
 
     function renderPool(longCount, shortCount) {
@@ -142,18 +193,39 @@
         el.poolShortLabel.textContent = (100 - pct) + "% SHORT";
     }
 
+    /* Whether the status line currently holds a message renderButtons itself put there, as
+       opposed to a fetch error loadAll()/place() reported. Needed because "nothing left to
+       say" has to become blank, but only by overwriting text this function owns — clearing an
+       error message just because the button state changed would bury the thing the player
+       actually needs to see. Caught by testing this against the running app, not by any unit
+       test: connecting a wallet re-enabled the buttons correctly but left "Kết nối ví để dự
+       đoán." on screen, because the old code only ever cleared the line when it was already
+       empty — a no-op dressed up as a branch. */
+    function statusOwnedByButtons(text) {
+        return text === "" || text === "Vòng đã khoá. Chờ vòng tiếp theo."
+            || text === "Kết nối ví để dự đoán." || text.indexOf("Bạn đã chọn ") === 0;
+    }
+
     function renderButtons(r) {
         var locked = r.locked;
         var chosen = r.myDirection;
-        el.longBtn.disabled = locked || !!chosen;
-        el.shortBtn.disabled = locked || !!chosen;
+        // Disabled up front rather than left clickable and refused by the server after the
+        // fact: a click that was always going to come back 401 is a worse first answer than
+        // a button that already says what is missing.
+        var signedIn = !!window.CandleAuth.getAccessToken();
+        var disabled = locked || !!chosen || !signedIn;
+        el.longBtn.disabled = disabled;
+        el.shortBtn.disabled = disabled;
         el.longBtn.classList.toggle("chosen", chosen === "LONG");
         el.shortBtn.classList.toggle("chosen", chosen === "SHORT");
+
         if (chosen) {
             el.status.textContent = "Bạn đã chọn " + chosen + " cho vòng này.";
         } else if (locked) {
             el.status.textContent = "Vòng đã khoá. Chờ vòng tiếp theo.";
-        } else if (!el.status.textContent) {
+        } else if (!signedIn) {
+            el.status.textContent = "Kết nối ví để dự đoán.";
+        } else if (statusOwnedByButtons(el.status.textContent)) {
             el.status.textContent = "";
         }
     }
@@ -311,6 +383,12 @@
 
         el.longBtn.addEventListener("click", function () { place("LONG"); });
         el.shortBtn.addEventListener("click", function () { place("SHORT"); });
+
+        /* Connecting or disconnecting a wallet changes whether the buttons should be
+           clickable at all — without this, that only took effect on the next poll, up to
+           POLL_MS late, so a player who just connected saw disabled buttons for a moment
+           that had nothing to do with the round. */
+        document.addEventListener("candles:session", function () { render(); });
 
         loadAll().then(startPolling);
     };
