@@ -708,6 +708,15 @@ h1, h2, h3 {
     .nav-tabs {
         grid-area: tabs;
         justify-self: stretch;
+        /* The pill track still scrolled sideways here even on its own full-width row: eight
+           tabs of Vietnamese text (four of them multi-word) add up to well past any phone's
+           width, so "full width" alone was never going to fit them on one line — the row just
+           overflowed and had to be dragged to see the rest. Wrapping is the fix a scrollbar
+           can't be: every tab is on screen the moment the page loads, no gesture required. */
+        flex-wrap: wrap;
+        overflow-x: visible;
+        justify-content: center;
+        border-radius: 14px;
     }
 }
 
