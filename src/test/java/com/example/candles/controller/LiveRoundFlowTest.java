@@ -208,6 +208,70 @@ class LiveRoundFlowTest {
         assertThat(rounds.get(0).path("closePrice").decimalValue()).isEqualByComparingTo("108");
     }
 
+    /**
+     * The history popup's whole point: replay a settled round with the same neighbourhood of
+     * candles a player watching live would have seen either side of it.
+     */
+    @Test
+    void theRoundDetailPopupShowsTheSettledRoundAndItsNeighbours() throws Exception {
+        Asset asset = seedAsset();
+        String timeframe = properties.timeframe();
+        LiveRound target = currentRound(timeframe).previous(timeframe, properties.live().lockBefore());
+        java.time.Duration period = java.time.Duration.ofHours(1);
+
+        candles.saveAndFlush(new Candle(asset, timeframe, target.openTime().minus(period),
+                new BigDecimal("90"), new BigDecimal("96"), new BigDecimal("88"), new BigDecimal("95"),
+                BigDecimal.TEN));
+        candles.saveAndFlush(new Candle(asset, timeframe, target.openTime(),
+                new BigDecimal("95"), new BigDecimal("112"), new BigDecimal("94"), new BigDecimal("108"),
+                BigDecimal.TEN));
+        candles.saveAndFlush(new Candle(asset, timeframe, target.openTime().plus(period),
+                new BigDecimal("108"), new BigDecimal("115"), new BigDecimal("104"), new BigDecimal("111"),
+                BigDecimal.TEN));
+
+        MvcResult result = mockMvc.perform(
+                get("/api/live/history/" + target.number() + "?asset=" + asset.getSymbol())).andReturn();
+
+        assertThat(result.getResponse().getStatus()).isEqualTo(200);
+        JsonNode body = mapper.readTree(result.getResponse().getContentAsString());
+        assertThat(body.path("roundNumber").asLong()).isEqualTo(target.number());
+        assertThat(body.path("openPrice").decimalValue()).isEqualByComparingTo("95");
+        assertThat(body.path("closePrice").decimalValue()).isEqualByComparingTo("108");
+        assertThat(body.path("result").asString()).isEqualTo("LONG");
+
+        JsonNode context = body.path("context");
+        assertThat(context).hasSize(3);
+        assertThat(context.get(0).path("close").decimalValue()).isEqualByComparingTo("95");
+        assertThat(context.get(1).path("close").decimalValue()).isEqualByComparingTo("108");
+        assertThat(context.get(2).path("close").decimalValue()).isEqualByComparingTo("111");
+    }
+
+    @Test
+    void theRoundStillInProgressHasNoDetailPopupYet() throws Exception {
+        Asset asset = seedAsset();
+        LiveRound current = currentRound(properties.timeframe());
+
+        int status = mockMvc.perform(
+                get("/api/live/history/" + current.number() + "?asset=" + asset.getSymbol()))
+                .andReturn().getResponse().getStatus();
+
+        assertThat(status).isEqualTo(400);
+    }
+
+    @Test
+    void aRoundThatNeverHappenedHasNoDetail() throws Exception {
+        Asset asset = seedAsset();
+        LiveRound farInThePast = currentRound(properties.timeframe())
+                .previous(properties.timeframe(), properties.live().lockBefore());
+
+        int status = mockMvc.perform(
+                get("/api/live/history/" + farInThePast.number() + "?asset=" + asset.getSymbol()))
+                .andReturn().getResponse().getStatus();
+
+        // No candle was ever seeded at that round's openTime.
+        assertThat(status).isEqualTo(400);
+    }
+
     @Test
     void anUnknownPairCannotBeRead() throws Exception {
         mockMvc.perform(get("/api/live/round?asset=NOPEUSDT"))

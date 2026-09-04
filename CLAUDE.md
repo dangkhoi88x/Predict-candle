@@ -286,6 +286,14 @@ the persistence context needing a rollback, so a caller reusing that context (an
 one transaction) finds unrelated later queries broken by an exception a different request
 already recovered from.
 
+`GET /api/live/history/{roundNumber}` replays one settled round for the history strip's
+detail popup: the candle it closed on, plus `candles.live.context-candles` either side (default
+20) so the popup draws the same run-up and aftermath a player watching live would have seen.
+`LiveRound.byNumber` is the inverse of `LiveRound.at` — going from a round number a player
+clicked on back to its `openTime`, pinned by a round-trip test over 50 rounds. Reading the
+in-progress round's own detail is refused (400): that round has no settled candle yet, and
+`GET /api/live/round` already covers it.
+
 Frontend is deliberately not a live-updating candlestick chart. A big rolling price, a sparkline
 of the last `candles.live.history-size` closes, a lock/close countdown reusing `.guess-timer`,
 and a pool-split bar are what `live.js` renders — same visual language as practice

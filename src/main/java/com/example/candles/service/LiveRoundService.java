@@ -2,8 +2,11 @@ package com.example.candles.service;
 
 import com.example.candles.client.CandleData;
 import com.example.candles.client.PriceDataProvider;
+import com.example.candles.client.Timeframes;
 import com.example.candles.config.CandlesProperties;
 import com.example.candles.domain.LiveRound;
+import com.example.candles.dto.response.DatedCandleDto;
+import com.example.candles.dto.response.LiveRoundDetailResponse;
 import com.example.candles.dto.response.LiveRoundHistoryResponse;
 import com.example.candles.dto.response.LiveRoundResponse;
 import com.example.candles.entity.Asset;
@@ -23,6 +26,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
@@ -213,5 +217,34 @@ public class LiveRoundService {
         }).toList();
 
         return new LiveRoundHistoryResponse(asset.getSymbol(), timeframe, entries);
+    }
+
+    /**
+     * One settled round, replayed for the history popup — the candle it settled on, plus the
+     * neighbourhood either side so the chart reads as the same run-up and aftermath a player
+     * watching live would have seen.
+     */
+    public LiveRoundDetailResponse roundDetail(String assetSymbol, long roundNumber) {
+        Asset asset = roundSelectionService.resolveAsset(assetSymbol);
+        String timeframe = properties.timeframe();
+        LiveRound round = LiveRound.byNumber(roundNumber, timeframe, properties.live().lockBefore());
+
+        if (!round.hasClosed(clock.instant())) {
+            throw new IllegalStateException("Vòng này chưa kết thúc.");
+        }
+        Candle settled = candleRepository.findByAssetAndTimeframeAndOpenTime(asset, timeframe, round.openTime())
+                .orElseThrow(() -> new IllegalArgumentException("Chưa có dữ liệu cho vòng này."));
+
+        Duration period = Timeframes.parse(timeframe);
+        Duration padding = period.multipliedBy(properties.live().contextCandles());
+        List<Candle> context = candleRepository.findByAssetAndTimeframeAndOpenTimeBetweenOrderByOpenTimeAsc(
+                asset, timeframe, round.openTime().minus(padding), round.closeAt().plus(padding));
+
+        Direction result = settled.getClose().compareTo(settled.getOpen()) >= 0 ? Direction.LONG : Direction.SHORT;
+        int[] sides = sideCounts(asset.getId(), timeframe, round.openTime());
+
+        return new LiveRoundDetailResponse(round.number(), settled.getOpenTime(), round.closeAt(),
+                settled.getOpen(), settled.getClose(), result.name(), sides[0], sides[1],
+                context.stream().map(DatedCandleDto::from).toList());
     }
 }

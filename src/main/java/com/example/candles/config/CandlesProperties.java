@@ -25,7 +25,7 @@ public record CandlesProperties(
      * until the last second, reads the price against the open, and calls a candle that has
      * already decided.
      */
-    public record Live(Duration lockBefore, int historySize, Duration priceCacheTtl) {
+    public record Live(Duration lockBefore, int historySize, Duration priceCacheTtl, int contextCandles) {
     }
 
     public record Binance(String baseUrl) {

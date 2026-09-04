@@ -66,6 +66,27 @@ class LiveRoundTest {
         assertThat(next).isEqualTo(first + 1);
     }
 
+    /**
+     * The direction the history popup needs: given a round number a player clicked on, get back
+     * to the same openTime/lockAt/closeAt {@link #at} would have produced while that round was
+     * live. If this drifts, "round 19" in the URL and "round 19" on screen stop being the same
+     * round.
+     */
+    @Test
+    void byNumberInvertsAtForAnyRoundEverPlayed() {
+        Instant now = Instant.parse("2026-09-03T14:37:12Z");
+        LiveRound current = LiveRound.at(now, "1h", LOCK);
+
+        for (int stepsBack = 0; stepsBack < 50; stepsBack++) {
+            Instant probe = now.minus(Duration.ofHours(stepsBack));
+            LiveRound expected = LiveRound.at(probe, "1h", LOCK);
+            LiveRound byNumber = LiveRound.byNumber(expected.number(), "1h", LOCK);
+
+            assertThat(byNumber).isEqualTo(expected);
+        }
+        assertThat(LiveRound.byNumber(current.number(), "1h", LOCK)).isEqualTo(current);
+    }
+
     @Test
     void previousStepsBackExactlyOnePeriod() {
         LiveRound round = LiveRound.at(Instant.parse("2026-09-03T14:22:00Z"), "1h", LOCK);
