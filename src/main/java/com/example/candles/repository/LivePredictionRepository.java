@@ -48,6 +48,54 @@ public interface LivePredictionRepository extends JpaRepository<LivePrediction, 
                                        @Param("timeframe") String timeframe,
                                        @Param("openTimes") List<Instant> openTimes);
 
-    /** A player's own calls, newest first, for scoring their live-round record. */
+    /** A player's own calls, newest first. */
     List<LivePrediction> findByUserOrderByOpenTimeDesc(User user);
+
+    /**
+     * Fragment shared by both queries below: a settled live call, as [createdAt, correct],
+     * with "settled" meaning exactly "a row exists in candles for this call's (asset,
+     * timeframe, open_time)" — the same join {@code LiveRoundService.history} does. An open
+     * round simply has no matching candle yet and drops out of the join, contributing nothing
+     * until it closes; there is still no settlement job anywhere, this just reads the same
+     * always-current comparison two other call sites already make.
+     */
+    String SETTLED_LIVE_FLAGS = """
+            select p.user_id, p.created_at,
+                   case when (p.direction = 'LONG' and c.close >= c.open)
+                          or (p.direction = 'SHORT' and c.close < c.open)
+                        then true else false end as correct
+            from live_predictions p
+            join candles c on c.asset_id = p.asset_id
+                           and c.timeframe = p.timeframe
+                           and c.open_time = p.open_time
+            """;
+
+    /**
+     * One player's correct/incorrect flags, practice and live combined, in the order the calls
+     * were actually made — a live call sorts by when it was placed, not when its candle later
+     * closed, so a streak reads the same way the player experienced it.
+     *
+     * {@link com.example.candles.domain.PlayerScore} cannot be handed two separate streams and
+     * reconciled after the fact (see its own docs on why score isn't a SUM), so the interleave
+     * has to happen before the flags reach it — here, in one query, rather than a merge-sort in
+     * Java over two already-sorted lists.
+     */
+    @Query(value = "select correct from ("
+            + "select created_at, correct from guess_results where user_id = :userId "
+            + "union all "
+            + "select created_at, correct from (" + SETTLED_LIVE_FLAGS + ") live where user_id = :userId"
+            + ") combined order by created_at", nativeQuery = true)
+    List<Boolean> combinedResultFlagsInPlayOrder(@Param("userId") Long userId);
+
+    /**
+     * Every player's combined flags at once, grouped and ordered exactly like
+     * {@link GuessResultRepository#resultFlagsByUserInPlayOrder()} — the leaderboard folds
+     * these the same way, one player at a time, in one pass.
+     */
+    @Query(value = "select user_id, correct from ("
+            + "select user_id, created_at, correct from guess_results "
+            + "union all "
+            + "select user_id, created_at, correct from (" + SETTLED_LIVE_FLAGS + ") live"
+            + ") combined order by user_id, created_at", nativeQuery = true)
+    List<Object[]> combinedResultFlagsByUserInPlayOrder();
 }
