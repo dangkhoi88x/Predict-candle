@@ -294,6 +294,16 @@ clicked on back to its `openTime`, pinned by a round-trip test over 50 rounds. R
 in-progress round's own detail is refused (400): that round has no settled candle yet, and
 `GET /api/live/round` already covers it.
 
+Frontend draws that candle context with a new shared module, `candle-chart.js`
+(`window.CandleChart.draw(svg, candles, options)`), rather than the practice tab's own SVG
+renderer in `app.js` — those closures aren't exported on `window`, and reusing them properly
+would mean pulling them into a shared module first, which is a separate change from this one.
+`live.js` clicks a round in the history strip, fetches its detail, and opens a popup: a mini
+candlestick chart with a dashed line at the round's open price, a trophy badge naming the
+winner, and the open/close prices and pool split. Closing follows the modal's own three exits
+(✕ button, backdrop click, Esc) rather than nav.js's tab machinery, since this sits above the
+tab it opened from rather than being one.
+
 Frontend is deliberately not a live-updating candlestick chart. A big rolling price, a sparkline
 of the last `candles.live.history-size` closes, a lock/close countdown reusing `.guess-timer`,
 and a pool-split bar are what `live.js` renders — same visual language as practice
