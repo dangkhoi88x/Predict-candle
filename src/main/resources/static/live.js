@@ -23,6 +23,9 @@
         shortBtn: document.getElementById("live-short"),
         status: document.getElementById("live-status"),
         historyStrip: document.getElementById("live-history-strip"),
+        participantsList: document.getElementById("live-participants-list"),
+        participantsEmpty: document.getElementById("live-participants-empty"),
+        participantsTitle: document.getElementById("live-participants-title"),
     };
 
     var SYMBOL_NAME = { BTCUSDT: "BTC", ETHUSDT: "ETH", BNBUSDT: "BNB", SOLUSDT: "SOL" };
@@ -129,9 +132,85 @@
 
         renderPool(r.longCount, r.shortCount);
         renderButtons(r);
+        renderParticipants(r.participants || []);
         renderSparkline();
         renderHistory();
         tick(); // paint the countdown immediately rather than waiting for the first interval tick
+    }
+
+    function formatTime(iso) {
+        var d = new Date(iso);
+        function pad(n) { return String(n).padStart(2, "0"); }
+        return pad(d.getHours()) + ":" + pad(d.getMinutes());
+    }
+
+    /* The roster under the pool bar — who called this round and which way, the same
+       social-proof read a live crowd gives at a glance. Rebuilt from scratch on every poll,
+       the same as the history strip and sparkline: the list is short (capped server-side at
+       50) and changes at most once every few seconds, so the DOM churn this costs is not
+       worth guarding against for the gain of a fancier diff. */
+    /* A fixed emoji + a background color chosen by hashing the wallet-short string, not the
+       display name — the wallet is the one field that never changes for an account even if
+       an admin renames it, so the same person keeps the same avatar. Six colors and twelve
+       emoji give 72 combinations, plenty to make a short roster look like distinct people
+       rather than a repeating pattern. */
+    var AVATAR_EMOJI = ["🦊", "🐻", "🐼", "🦁", "🐯", "🐨", "🐰", "🐸", "🐙", "🦝", "🐺", "🐵"];
+
+    function hashCode(text) {
+        var h = 0;
+        for (var i = 0; i < text.length; i++) h = (h * 31 + text.charCodeAt(i)) | 0;
+        return Math.abs(h);
+    }
+
+    function renderParticipants(participants) {
+        el.participantsList.innerHTML = "";
+        el.participantsEmpty.classList.toggle("hidden", participants.length > 0);
+        el.participantsTitle.textContent = participants.length
+            ? "Người chơi vòng này (" + participants.length + ")"
+            : "Người chơi vòng này";
+
+        participants.forEach(function (p) {
+            var row = document.createElement("div");
+            row.className = "live-participant-row";
+
+            var seed = hashCode(p.walletShort || p.displayName || "?");
+            var avatar = document.createElement("span");
+            avatar.className = "live-participant-avatar avatar-bg-" + (seed % 6);
+            avatar.textContent = AVATAR_EMOJI[seed % AVATAR_EMOJI.length];
+            avatar.setAttribute("aria-hidden", "true");
+
+            var info = document.createElement("div");
+            info.className = "live-participant-info";
+            var name = document.createElement("span");
+            name.className = "live-participant-name";
+            name.textContent = p.displayName;
+            info.appendChild(name);
+            // Only when it says something the name doesn't already: an un-renamed account's
+            // display name already *is* this shorthand, so a second identical line would be
+            // pure repetition — this is for the "Raccon" case, not the common one.
+            if (p.walletShort && p.walletShort !== p.displayName) {
+                var wallet = document.createElement("span");
+                wallet.className = "live-participant-wallet";
+                wallet.textContent = p.walletShort;
+                info.appendChild(wallet);
+            }
+
+            var meta = document.createElement("div");
+            meta.className = "live-participant-meta";
+            var direction = document.createElement("span");
+            direction.className = "live-participant-direction " + (p.direction === "LONG" ? "dir-long" : "dir-short");
+            direction.textContent = p.direction === "LONG" ? "↗ LONG" : "↘ SHORT";
+            var time = document.createElement("span");
+            time.className = "live-participant-time";
+            time.textContent = formatTime(p.createdAt);
+            meta.appendChild(direction);
+            meta.appendChild(time);
+
+            row.appendChild(avatar);
+            row.appendChild(info);
+            row.appendChild(meta);
+            el.participantsList.appendChild(row);
+        });
     }
 
     function renderPool(longCount, shortCount) {
@@ -142,18 +221,39 @@
         el.poolShortLabel.textContent = (100 - pct) + "% SHORT";
     }
 
+    /* Whether the status line currently holds a message renderButtons itself put there, as
+       opposed to a fetch error loadAll()/place() reported. Needed because "nothing left to
+       say" has to become blank, but only by overwriting text this function owns — clearing an
+       error message just because the button state changed would bury the thing the player
+       actually needs to see. Caught by testing this against the running app, not by any unit
+       test: connecting a wallet re-enabled the buttons correctly but left "Kết nối ví để dự
+       đoán." on screen, because the old code only ever cleared the line when it was already
+       empty — a no-op dressed up as a branch. */
+    function statusOwnedByButtons(text) {
+        return text === "" || text === "Vòng đã khoá. Chờ vòng tiếp theo."
+            || text === "Kết nối ví để dự đoán." || text.indexOf("Bạn đã chọn ") === 0;
+    }
+
     function renderButtons(r) {
         var locked = r.locked;
         var chosen = r.myDirection;
-        el.longBtn.disabled = locked || !!chosen;
-        el.shortBtn.disabled = locked || !!chosen;
+        // Disabled up front rather than left clickable and refused by the server after the
+        // fact: a click that was always going to come back 401 is a worse first answer than
+        // a button that already says what is missing.
+        var signedIn = !!window.CandleAuth.getAccessToken();
+        var disabled = locked || !!chosen || !signedIn;
+        el.longBtn.disabled = disabled;
+        el.shortBtn.disabled = disabled;
         el.longBtn.classList.toggle("chosen", chosen === "LONG");
         el.shortBtn.classList.toggle("chosen", chosen === "SHORT");
+
         if (chosen) {
             el.status.textContent = "Bạn đã chọn " + chosen + " cho vòng này.";
         } else if (locked) {
             el.status.textContent = "Vòng đã khoá. Chờ vòng tiếp theo.";
-        } else if (!el.status.textContent) {
+        } else if (!signedIn) {
+            el.status.textContent = "Kết nối ví để dự đoán.";
+        } else if (statusOwnedByButtons(el.status.textContent)) {
             el.status.textContent = "";
         }
     }
@@ -311,6 +411,12 @@
 
         el.longBtn.addEventListener("click", function () { place("LONG"); });
         el.shortBtn.addEventListener("click", function () { place("SHORT"); });
+
+        /* Connecting or disconnecting a wallet changes whether the buttons should be
+           clickable at all — without this, that only took effect on the next poll, up to
+           POLL_MS late, so a player who just connected saw disabled buttons for a moment
+           that had nothing to do with the round. */
+        document.addEventListener("candles:session", function () { render(); });
 
         loadAll().then(startPolling);
     };

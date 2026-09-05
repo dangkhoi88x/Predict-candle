@@ -4282,3 +4282,115 @@ body:not(.is-admin) .adm-search {
     outline: 3px solid color-mix(in srgb, currentColor 55%, transparent);
     outline-offset: 2px;
 }
+
+/* ---- who called this round (participants roster) ------------------------------------ */
+
+.live-participants {
+    margin-top: 20px;
+}
+
+.live-participants-title {
+    font-size: 13px;
+    color: var(--muted);
+    margin: 0 0 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.live-participants-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.live-participants-empty {
+    color: var(--muted);
+    font-size: 13px;
+    margin: 0;
+}
+
+.live-participant-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--panel);
+}
+
+.live-participant-avatar {
+    flex: 0 0 auto;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    line-height: 1;
+    /* Set inline per row (avatar-bg-N classes below) rather than one fixed color — a roster
+       of one accent-colored circle each read as one anonymous shape; a palette that rotates
+       by name is what makes the list read as people. */
+}
+
+.live-participant-avatar.avatar-bg-0 { background: color-mix(in srgb, #f59e0b 22%, var(--panel)); }
+.live-participant-avatar.avatar-bg-1 { background: color-mix(in srgb, #3b82f6 22%, var(--panel)); }
+.live-participant-avatar.avatar-bg-2 { background: color-mix(in srgb, #ec4899 22%, var(--panel)); }
+.live-participant-avatar.avatar-bg-3 { background: color-mix(in srgb, #10b981 22%, var(--panel)); }
+.live-participant-avatar.avatar-bg-4 { background: color-mix(in srgb, #8b5cf6 22%, var(--panel)); }
+.live-participant-avatar.avatar-bg-5 { background: color-mix(in srgb, #f97316 22%, var(--panel)); }
+
+.live-participant-info {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.live-participant-name {
+    font: 700 14px var(--mono);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.live-participant-wallet {
+    font: 500 11px var(--mono);
+    color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.live-participant-meta {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+}
+
+.live-participant-direction {
+    font: 700 12px var(--mono);
+    padding: 4px 10px;
+    border-radius: 8px;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+}
+
+.live-participant-direction.dir-long {
+    color: var(--up);
+    background: color-mix(in srgb, var(--up) 16%, transparent);
+}
+
+.live-participant-direction.dir-short {
+    color: var(--down);
+    background: color-mix(in srgb, var(--down) 16%, transparent);
+}
+
+.live-participant-time {
+    font: 600 11px var(--mono);
+    color: var(--muted);
+}
