@@ -48,7 +48,22 @@ public interface LivePredictionRepository extends JpaRepository<LivePrediction, 
                                        @Param("timeframe") String timeframe,
                                        @Param("openTimes") List<Instant> openTimes);
 
-    /** A player's own calls, newest first. */
+    /**
+     * Who called this round and which way, newest call first — the pool's own roster, the same
+     * social-proof read a live crowd gives at a glance. {@code join fetch user} because every
+     * row is about to read {@code getUser().getDisplayName()}; without it this would be N+1
+     * queries for a list nobody would otherwise notice growing.
+     */
+    @Query("""
+            select p from LivePrediction p join fetch p.user
+            where p.asset.id = :assetId and p.timeframe = :timeframe and p.openTime = :openTime
+            order by p.createdAt desc
+            """)
+    List<LivePrediction> findParticipants(@Param("assetId") Long assetId,
+                                          @Param("timeframe") String timeframe,
+                                          @Param("openTime") Instant openTime);
+
+    /** A player's own calls, newest first, for scoring their live-round record. */
     List<LivePrediction> findByUserOrderByOpenTimeDesc(User user);
 
     /**

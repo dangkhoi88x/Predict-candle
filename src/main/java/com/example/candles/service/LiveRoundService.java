@@ -87,6 +87,9 @@ public class LiveRoundService {
         return buildResponse(asset, timeframe, round, now, myDirection);
     }
 
+    /** The roster shown alongside the pool — plenty to scroll through, not the whole history. */
+    private static final int MAX_PARTICIPANTS_SHOWN = 50;
+
     /**
      * Shared by {@link #snapshot} and {@link #predict} so a placed call doesn't have to re-fetch
      * the asset, re-derive the round, or re-query the crowd totals it already computed a few
@@ -99,10 +102,18 @@ public class LiveRoundService {
         BigDecimal livePrice = forming != null ? forming.close() : null;
 
         int[] sides = sideCounts(asset.getId(), timeframe, round.openTime());
+        List<LiveRoundResponse.Participant> participants =
+                livePredictionRepository.findParticipants(asset.getId(), timeframe, round.openTime())
+                        .stream()
+                        .limit(MAX_PARTICIPANTS_SHOWN)
+                        .map(p -> new LiveRoundResponse.Participant(
+                                p.getUser().getDisplayName(), p.getUser().getShortWalletAddress(),
+                                p.getDirection().name(), p.getCreatedAt()))
+                        .toList();
 
         return new LiveRoundResponse(asset.getSymbol(), timeframe, round.number(), round.openTime(),
                 round.lockAt(), round.closeAt(), round.isLocked(now), openPrice, livePrice,
-                sides[0], sides[1], myDirection);
+                sides[0], sides[1], myDirection, participants);
     }
 
     /**
