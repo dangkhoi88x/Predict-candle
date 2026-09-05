@@ -9,6 +9,8 @@ import com.example.candles.security.JwtService;
 import com.example.candles.entity.Asset;
 import com.example.candles.entity.AssetType;
 import com.example.candles.entity.Candle;
+import com.example.candles.entity.Direction;
+import com.example.candles.entity.LivePrediction;
 import com.example.candles.entity.Role;
 import com.example.candles.entity.User;
 import com.example.candles.repository.AssetRepository;
@@ -282,6 +284,9 @@ class LiveRoundFlowTest {
                 new BigDecimal("108"), new BigDecimal("115"), new BigDecimal("104"), new BigDecimal("111"),
                 BigDecimal.TEN));
 
+        User caller = player();
+        predictions.saveAndFlush(new LivePrediction(caller, asset, timeframe, target.openTime(), Direction.LONG));
+
         MvcResult result = mockMvc.perform(
                 get("/api/live/history/" + target.number() + "?asset=" + asset.getSymbol())).andReturn();
 
@@ -297,6 +302,13 @@ class LiveRoundFlowTest {
         assertThat(context.get(0).path("close").decimalValue()).isEqualByComparingTo("95");
         assertThat(context.get(1).path("close").decimalValue()).isEqualByComparingTo("108");
         assertThat(context.get(2).path("close").decimalValue()).isEqualByComparingTo("111");
+
+        // The popup's whole point is replaying who called it, not just the price — a settled
+        // round must carry its roster the same way the still-open one does.
+        JsonNode participants = body.path("participants");
+        assertThat(participants).hasSize(1);
+        assertThat(participants.get(0).path("direction").asString()).isEqualTo("LONG");
+        assertThat(participants.get(0).path("displayName").asString()).isEqualTo(caller.getDisplayName());
     }
 
     @Test
