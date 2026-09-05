@@ -18,6 +18,7 @@ public record LiveRoundDetailResponse(
         String result,
         int longCount,
         int shortCount,
-        List<DatedCandleDto> context
+        List<DatedCandleDto> context,
+        List<LiveRoundResponse.Participant> participants
 ) {
 }

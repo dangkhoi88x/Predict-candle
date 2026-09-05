@@ -40,6 +40,9 @@
         participantsList: document.getElementById("live-participants-list"),
         participantsEmpty: document.getElementById("live-participants-empty"),
         participantsTitle: document.getElementById("live-participants-title"),
+        modalParticipantsList: document.getElementById("live-round-modal-participants-list"),
+        modalParticipantsEmpty: document.getElementById("live-round-modal-participants-empty"),
+        modalParticipantsTitle: document.getElementById("live-round-modal-participants-title"),
     };
 
     var SYMBOL_NAME = { BTCUSDT: "BTC", ETHUSDT: "ETH", BNBUSDT: "BNB", SOLUSDT: "SOL" };
@@ -146,7 +149,7 @@
 
         renderPool(r.longCount, r.shortCount);
         renderButtons(r);
-        renderParticipants(r.participants || []);
+        renderParticipants(r.participants || [], el.participantsList, el.participantsEmpty, el.participantsTitle);
         renderSparkline();
         renderHistory();
         tick(); // paint the countdown immediately rather than waiting for the first interval tick
@@ -162,7 +165,10 @@
        social-proof read a live crowd gives at a glance. Rebuilt from scratch on every poll,
        the same as the history strip and sparkline: the list is short (capped server-side at
        50) and changes at most once every few seconds, so the DOM churn this costs is not
-       worth guarding against for the gain of a fancier diff. */
+       worth guarding against for the gain of a fancier diff.
+       Shared by the live round's own roster and the history popup's replay of a settled one —
+       three target elements rather than reading el.participants* directly, since the popup
+       renders into its own live-round-modal-participants-* trio instead. */
     /* A fixed emoji + a background color chosen by hashing the wallet-short string, not the
        display name — the wallet is the one field that never changes for an account even if
        an admin renames it, so the same person keeps the same avatar. Six colors and twelve
@@ -176,10 +182,10 @@
         return Math.abs(h);
     }
 
-    function renderParticipants(participants) {
-        el.participantsList.innerHTML = "";
-        el.participantsEmpty.classList.toggle("hidden", participants.length > 0);
-        el.participantsTitle.textContent = participants.length
+    function renderParticipants(participants, listEl, emptyEl, titleEl) {
+        listEl.innerHTML = "";
+        emptyEl.classList.toggle("hidden", participants.length > 0);
+        titleEl.textContent = participants.length
             ? "Người chơi vòng này (" + participants.length + ")"
             : "Người chơi vòng này";
 
@@ -223,7 +229,7 @@
             row.appendChild(avatar);
             row.appendChild(info);
             row.appendChild(meta);
-            el.participantsList.appendChild(row);
+            listEl.appendChild(row);
         });
     }
 
@@ -412,6 +418,7 @@
         el.modalPoolLongLabel.textContent = "";
         el.modalPoolShortLabel.textContent = "";
         el.modalPoolLong.style.width = "50%";
+        renderParticipants([], el.modalParticipantsList, el.modalParticipantsEmpty, el.modalParticipantsTitle);
         el.modalStatus.textContent = "Đang tải…";
         while (el.modalChart.firstChild) el.modalChart.removeChild(el.modalChart.firstChild);
 
@@ -439,6 +446,8 @@
         el.modalPoolLong.style.width = pct + "%";
         el.modalPoolLongLabel.textContent = "LONG " + pct + "%";
         el.modalPoolShortLabel.textContent = (100 - pct) + "% SHORT";
+        renderParticipants(detail.participants || [],
+            el.modalParticipantsList, el.modalParticipantsEmpty, el.modalParticipantsTitle);
 
         // The line marks where the round finished, not where it started — colored by who won,
         // the same read the badge below gives in words. No referenceLabel: the module's own

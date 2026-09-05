@@ -106,18 +106,26 @@ public class LiveRoundService {
         BigDecimal livePrice = forming != null ? forming.close() : null;
 
         int[] sides = sideCounts(asset.getId(), timeframe, round.openTime());
-        List<LiveRoundResponse.Participant> participants =
-                livePredictionRepository.findParticipants(asset.getId(), timeframe, round.openTime())
-                        .stream()
-                        .limit(MAX_PARTICIPANTS_SHOWN)
-                        .map(p -> new LiveRoundResponse.Participant(
-                                p.getUser().getDisplayName(), p.getUser().getShortWalletAddress(),
-                                p.getDirection().name(), p.getCreatedAt()))
-                        .toList();
+        List<LiveRoundResponse.Participant> participants = participants(asset.getId(), timeframe, round.openTime());
 
         return new LiveRoundResponse(asset.getSymbol(), timeframe, round.number(), round.openTime(),
                 round.lockAt(), round.closeAt(), round.isLocked(now), openPrice, livePrice,
                 sides[0], sides[1], myDirection, participants);
+    }
+
+    /**
+     * Who called one round and which way — shared by the current round's snapshot and the
+     * history popup's replay of a settled one, so "who was in this round" reads the same
+     * whether it is still open or long since closed.
+     */
+    private List<LiveRoundResponse.Participant> participants(Long assetId, String timeframe, Instant openTime) {
+        return livePredictionRepository.findParticipants(assetId, timeframe, openTime)
+                .stream()
+                .limit(MAX_PARTICIPANTS_SHOWN)
+                .map(p -> new LiveRoundResponse.Participant(
+                        p.getUser().getDisplayName(), p.getUser().getShortWalletAddress(),
+                        p.getDirection().name(), p.getCreatedAt()))
+                .toList();
     }
 
     /**
@@ -253,9 +261,10 @@ public class LiveRoundService {
 
         Direction result = settled.getClose().compareTo(settled.getOpen()) >= 0 ? Direction.LONG : Direction.SHORT;
         int[] sides = sideCounts(asset.getId(), timeframe, round.openTime());
+        List<LiveRoundResponse.Participant> participants = participants(asset.getId(), timeframe, round.openTime());
 
         return new LiveRoundDetailResponse(round.number(), settled.getOpenTime(), round.closeAt(),
                 settled.getOpen(), settled.getClose(), result.name(), sides[0], sides[1],
-                context.stream().map(DatedCandleDto::from).toList());
+                context.stream().map(DatedCandleDto::from).toList(), participants);
     }
 }
