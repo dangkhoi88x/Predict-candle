@@ -1,6 +1,7 @@
 package com.example.candles.controller;
 
 import com.example.candles.dto.request.LivePredictRequest;
+import com.example.candles.dto.response.LiveRoundDetailResponse;
 import com.example.candles.dto.response.LiveRoundHistoryResponse;
 import com.example.candles.dto.response.LiveRoundResponse;
 import com.example.candles.entity.Direction;
@@ -10,6 +11,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -53,6 +55,14 @@ public class LiveRoundController {
     public LiveRoundHistoryResponse history(@RequestParam String asset, HttpServletRequest request) {
         rateLimiter.check("live-history", 60, request);
         return liveRoundService.history(asset);
+    }
+
+    /** One settled round, replayed — the history strip's "what happened here" popup. */
+    @GetMapping("/history/{roundNumber}")
+    public LiveRoundDetailResponse roundDetail(@PathVariable long roundNumber, @RequestParam String asset,
+                                                HttpServletRequest request) {
+        rateLimiter.check("live-history", 60, request);
+        return liveRoundService.roundDetail(asset, roundNumber);
     }
 
     private Long callerId(Authentication authentication) {

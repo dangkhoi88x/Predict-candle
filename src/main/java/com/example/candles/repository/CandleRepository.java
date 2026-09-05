@@ -21,6 +21,10 @@ public interface CandleRepository extends JpaRepository<Candle, Long> {
     /** Most recent settled candles, newest first — the live game's round history strip. */
     List<Candle> findByAssetAndTimeframeOrderByOpenTimeDesc(Asset asset, String timeframe, Pageable page);
 
+    /** The neighbourhood around one round, oldest first — the round-detail popup's context chart. */
+    List<Candle> findByAssetAndTimeframeAndOpenTimeBetweenOrderByOpenTimeAsc(
+            Asset asset, String timeframe, Instant from, Instant to);
+
     long countByAssetAndTimeframe(Asset asset, String timeframe);
 
     @Query(value = """

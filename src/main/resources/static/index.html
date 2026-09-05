@@ -246,6 +246,48 @@
     </section>
 </main>
 
+<div id="live-round-modal" class="live-round-modal hidden" role="dialog" aria-modal="true" aria-labelledby="live-round-modal-title">
+    <div class="live-round-modal-backdrop" id="live-round-modal-backdrop"></div>
+    <div class="live-round-modal-card">
+        <button id="live-round-modal-close" class="live-round-modal-close" type="button" aria-label="Đóng">✕</button>
+        <p class="live-round-modal-eyebrow" id="live-round-modal-eyebrow"></p>
+        <h2 class="live-round-modal-title" id="live-round-modal-title"></h2>
+
+        <div class="live-round-modal-chart-wrap">
+            <svg class="live-round-modal-chart" id="live-round-modal-chart" viewBox="0 0 480 220" preserveAspectRatio="none" aria-hidden="true"></svg>
+        </div>
+
+        <div class="live-round-modal-badge" id="live-round-modal-badge">
+            <span class="live-round-modal-badge-icon">🏆</span>
+            <p class="live-round-modal-badge-state" id="live-round-modal-badge-state"></p>
+            <p class="live-round-modal-badge-result" id="live-round-modal-badge-result"></p>
+        </div>
+
+        <div class="live-round-modal-prices">
+            <div>
+                <span class="live-round-modal-price-label">Mở</span>
+                <span class="live-round-modal-price-value" id="live-round-modal-open"></span>
+            </div>
+            <div>
+                <span class="live-round-modal-price-label">Đóng</span>
+                <span class="live-round-modal-price-value" id="live-round-modal-close-price"></span>
+            </div>
+        </div>
+
+        <div class="live-round-modal-pool" id="live-round-modal-pool">
+            <div class="live-pool-track">
+                <div class="live-pool-long" id="live-round-modal-pool-long"></div>
+            </div>
+            <div class="live-pool-labels">
+                <span id="live-round-modal-pool-long-label"></span>
+                <span id="live-round-modal-pool-short-label"></span>
+            </div>
+        </div>
+
+        <p class="live-round-modal-status" id="live-round-modal-status"></p>
+    </div>
+</div>
+
 <main id="view-heatmap" class="view app hidden" role="tabpanel" aria-labelledby="tab-heatmap">
     <div class="heatmap-toolbar">
         <h2>Market Heatmap</h2>
@@ -394,6 +436,7 @@
 <script src="rolling.js"></script>
 <script src="content.js"></script>
 <script src="auth.js"></script>
+<script src="candle-chart.js"></script>
 <script src="live.js"></script>
 <script src="ticker.js"></script>
 <script src="nav.js"></script>

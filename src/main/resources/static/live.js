@@ -23,6 +23,20 @@
         shortBtn: document.getElementById("live-short"),
         status: document.getElementById("live-status"),
         historyStrip: document.getElementById("live-history-strip"),
+        modal: document.getElementById("live-round-modal"),
+        modalBackdrop: document.getElementById("live-round-modal-backdrop"),
+        modalClose: document.getElementById("live-round-modal-close"),
+        modalEyebrow: document.getElementById("live-round-modal-eyebrow"),
+        modalTitle: document.getElementById("live-round-modal-title"),
+        modalChart: document.getElementById("live-round-modal-chart"),
+        modalBadgeState: document.getElementById("live-round-modal-badge-state"),
+        modalBadgeResult: document.getElementById("live-round-modal-badge-result"),
+        modalOpen: document.getElementById("live-round-modal-open"),
+        modalClosePrice: document.getElementById("live-round-modal-close-price"),
+        modalPoolLong: document.getElementById("live-round-modal-pool-long"),
+        modalPoolLongLabel: document.getElementById("live-round-modal-pool-long-label"),
+        modalPoolShortLabel: document.getElementById("live-round-modal-pool-short-label"),
+        modalStatus: document.getElementById("live-round-modal-status"),
         participantsList: document.getElementById("live-participants-list"),
         participantsEmpty: document.getElementById("live-participants-empty"),
         participantsTitle: document.getElementById("live-participants-title"),
@@ -286,7 +300,8 @@
     function renderHistory() {
         el.historyStrip.innerHTML = "";
         state.history.forEach(function (r) {
-            var item = document.createElement("div");
+            var item = document.createElement("button");
+            item.type = "button";
             item.className = "live-history-item " + (r.result === "LONG" ? "lh-long" : "lh-short");
             var num = document.createElement("span");
             num.className = "lh-round";
@@ -296,6 +311,7 @@
             res.textContent = (r.result === "LONG" ? "LONG" : "SHORT") + " thắng";
             item.appendChild(num);
             item.appendChild(res);
+            item.addEventListener("click", function () { openRoundDetail(r.roundNumber); });
             el.historyStrip.appendChild(item);
         });
     }
@@ -378,6 +394,67 @@
         startTicking();
     }
 
+    /* ---- round-detail popup ----------------------------------------------------------- */
+
+    var modalOpenerButton = null;
+
+    function openRoundDetail(roundNumber) {
+        modalOpenerButton = document.activeElement;
+        el.modal.classList.remove("hidden");
+        el.modalClose.focus();
+        el.modalEyebrow.textContent = "4H CANDLE · VÒNG #" + roundNumber;
+        el.modalTitle.textContent = (SYMBOL_NAME[state.asset] || state.asset) + " — vòng đã kết thúc";
+        el.modalBadgeState.textContent = "";
+        el.modalBadgeResult.textContent = "";
+        el.modalBadgeResult.className = "live-round-modal-badge-result";
+        el.modalOpen.textContent = "–";
+        el.modalClosePrice.textContent = "–";
+        el.modalPoolLongLabel.textContent = "";
+        el.modalPoolShortLabel.textContent = "";
+        el.modalPoolLong.style.width = "50%";
+        el.modalStatus.textContent = "Đang tải…";
+        while (el.modalChart.firstChild) el.modalChart.removeChild(el.modalChart.firstChild);
+
+        fetch("/api/live/history/" + roundNumber + "?asset=" + state.asset)
+            .then(function (res) {
+                return res.json().then(function (body) {
+                    if (!res.ok) throw new Error(body.message || "Không tải được vòng này.");
+                    return body;
+                });
+            })
+            .then(function (detail) { renderRoundDetail(detail); })
+            .catch(function (e) { el.modalStatus.textContent = "Lỗi: " + e.message; });
+    }
+
+    function renderRoundDetail(detail) {
+        el.modalStatus.textContent = "";
+        el.modalBadgeState.textContent = "VÒNG #" + detail.roundNumber + " ĐÃ KẾT THÚC";
+        el.modalBadgeResult.textContent = (detail.result === "LONG" ? "LONG" : "SHORT") + " thắng vòng này";
+        el.modalBadgeResult.classList.add(detail.result === "LONG" ? "outcome-up" : "outcome-down");
+        el.modalOpen.textContent = formatUsd(detail.openPrice);
+        el.modalClosePrice.textContent = formatUsd(detail.closePrice);
+
+        var total = detail.longCount + detail.shortCount;
+        var pct = total === 0 ? 50 : Math.round((detail.longCount / total) * 100);
+        el.modalPoolLong.style.width = pct + "%";
+        el.modalPoolLongLabel.textContent = "LONG " + pct + "%";
+        el.modalPoolShortLabel.textContent = (100 - pct) + "% SHORT";
+
+        // The line marks where the round finished, not where it started — colored by who won,
+        // the same read the badge below gives in words. No referenceLabel: the module's own
+        // compact "K" shorthand is what fits the tag inside a 480px chart without it running
+        // past the frame the way the price box's full "$78,898.06" would.
+        window.CandleChart.draw(el.modalChart, detail.context, {
+            referencePrice: detail.closePrice,
+            referenceColor: detail.result === "LONG" ? "up" : "down",
+        });
+    }
+
+    function closeRoundDetail() {
+        el.modal.classList.add("hidden");
+        if (modalOpenerButton) { modalOpenerButton.focus(); modalOpenerButton = null; }
+    }
+
     /* Same reasoning as the practice tab: don't spend a poll on a tab nobody is looking at. */
     function isAway() {
         return document.visibilityState === "hidden"
@@ -411,6 +488,12 @@
 
         el.longBtn.addEventListener("click", function () { place("LONG"); });
         el.shortBtn.addEventListener("click", function () { place("SHORT"); });
+
+        el.modalClose.addEventListener("click", closeRoundDetail);
+        el.modalBackdrop.addEventListener("click", closeRoundDetail);
+        document.addEventListener("keydown", function (event) {
+            if (event.key === "Escape" && !el.modal.classList.contains("hidden")) closeRoundDetail();
+        });
 
         /* Connecting or disconnecting a wallet changes whether the buttons should be
            clickable at all — without this, that only took effect on the next poll, up to

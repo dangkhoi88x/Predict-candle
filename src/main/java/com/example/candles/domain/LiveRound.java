@@ -25,6 +25,21 @@ public record LiveRound(long number, Instant openTime, Instant lockAt, Instant c
     public static LiveRound at(Instant now, String timeframe, Duration lockBefore) {
         Duration period = Timeframes.parse(timeframe);
         Instant open = Timeframes.currentPeriodStart(now, timeframe);
+        return of(open, period, lockBefore);
+    }
+
+    /**
+     * The round a player is asking to look back at by its number — the history strip and the
+     * round-detail popup both need to go from "round 19" back to an {@code openTime} rather than
+     * forward from the clock. The inverse of {@link #numberOf}.
+     */
+    public static LiveRound byNumber(long number, String timeframe, Duration lockBefore) {
+        Duration period = Timeframes.parse(timeframe);
+        Instant open = EPOCH.plus(period.multipliedBy(number - 1));
+        return of(open, period, lockBefore);
+    }
+
+    private static LiveRound of(Instant open, Duration period, Duration lockBefore) {
         Instant close = open.plus(period);
         /* A lock window longer than the round would put the gate before the round opened, which
            reads as "closed" from the first second. Clamping keeps a misconfiguration merely

@@ -140,6 +140,10 @@ candles:
     # to help, and only amortises anything once enough concurrent tabs happen to overlap within
     # the window.
     price-cache-ttl: PT4S
+    # Candles shown either side of a round in its detail popup — enough to see the run-up and
+    # the aftermath without asking for the asset's whole history every time someone clicks a
+    # settled round.
+    context-candles: 20
   jwt:
     secret: ${ROUND_TOKEN_SECRET:dev-only-secret-change-me-0123456789abcdef}
     ttl: PT10M
