@@ -6,11 +6,21 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
+import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.UUID;
 
 import com.example.candles.dto.response.OpsSnapshot;
+import com.example.candles.entity.Asset;
+import com.example.candles.entity.AssetType;
+import com.example.candles.entity.Candle;
+import com.example.candles.entity.Direction;
+import com.example.candles.entity.LivePrediction;
 import com.example.candles.entity.Role;
 import com.example.candles.entity.User;
+import com.example.candles.repository.AssetRepository;
+import com.example.candles.repository.CandleRepository;
+import com.example.candles.repository.LivePredictionRepository;
 import com.example.candles.repository.UserRepository;
 import com.example.candles.security.JwtService;
 
@@ -33,6 +43,15 @@ class OpsSnapshotTest {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private AssetRepository assetRepository;
+
+    @Autowired
+    private CandleRepository candleRepository;
+
+    @Autowired
+    private LivePredictionRepository livePredictionRepository;
 
     @Autowired
     private JwtService jwtService;
@@ -106,5 +125,50 @@ class OpsSnapshotTest {
     void syncingAnAssetThatDoesNotExistIsRejected() throws Exception {
         mockMvc.perform(post("/api/admin/ops/sync/NOPEUSDT").header("Authorization", tokenFor(Role.ADMIN)))
                 .andExpect(status().isBadRequest());
+    }
+
+    /**
+     * Pins the JSON field names {@code admin-ops.js} reads off {@code activity} — a renamed
+     * record component here would compile fine and just silently draw zeroes on the panel,
+     * exactly the failure mode {@code AdminStatsTest} already guards against for its own KPIs.
+     *
+     * Asserts deltas rather than absolute counts: this test runs against whatever the
+     * developer database already holds, and a call still in flight (no matching candle) must
+     * move {@code liveCallsToday} without moving {@code liveSettledToday} or
+     * {@code liveCorrectToday} at all.
+     */
+    @Test
+    void liveRoundActivityCountsCallsSettledAndCorrectSeparately() throws Exception {
+        OpsSnapshot.Activity before = opsService.snapshot().activity();
+
+        Asset asset = assetRepository.saveAndFlush(
+                new Asset("TEST" + UUID.randomUUID().toString().substring(0, 6).toUpperCase(), "Test pair", AssetType.CRYPTO));
+        User user = userRepository.saveAndFlush(new User("0x" + UUID.randomUUID().toString().replace("-", ""), "P"));
+        Instant t1 = Instant.now().minusSeconds(60);
+        Instant t2 = Instant.now().minusSeconds(120);
+        Instant t3 = Instant.now().minusSeconds(180); // left open — no matching candle
+
+        candleRepository.saveAndFlush(new Candle(asset, "1h", t1,
+                new BigDecimal("100"), new BigDecimal("110"), new BigDecimal("90"), new BigDecimal("105"), BigDecimal.TEN));
+        livePredictionRepository.saveAndFlush(new LivePrediction(user, asset, "1h", t1, Direction.LONG)); // settled, correct
+
+        candleRepository.saveAndFlush(new Candle(asset, "1h", t2,
+                new BigDecimal("100"), new BigDecimal("110"), new BigDecimal("90"), new BigDecimal("95"), BigDecimal.TEN));
+        livePredictionRepository.saveAndFlush(new LivePrediction(user, asset, "1h", t2, Direction.LONG)); // settled, wrong
+
+        livePredictionRepository.saveAndFlush(new LivePrediction(user, asset, "1h", t3, Direction.LONG)); // open
+
+        OpsSnapshot.Activity after = opsService.snapshot().activity();
+
+        assertThat(after.liveCallsToday() - before.liveCallsToday()).isEqualTo(3);
+        assertThat(after.liveSettledToday() - before.liveSettledToday()).isEqualTo(2);
+        assertThat(after.liveCorrectToday() - before.liveCorrectToday()).isEqualTo(1);
+
+        mockMvc.perform(get("/api/admin/ops").header("Authorization", tokenFor(Role.ADMIN)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.activity.liveCallsToday").exists())
+                .andExpect(jsonPath("$.activity.liveSettledToday").exists())
+                .andExpect(jsonPath("$.activity.liveCorrectToday").exists())
+                .andExpect(jsonPath("$.activity.liveCallsWeek").exists());
     }
 }

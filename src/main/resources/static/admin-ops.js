@@ -64,6 +64,12 @@
         var accuracy = act.guessesToday
             ? Math.round((act.correctToday / act.guessesToday) * 100) + "%"
             : "—";
+        // "correctToday" only has a verdict for calls whose candle has already closed, so
+        // accuracy is read against that settled count, not against every call placed today —
+        // a call still in flight is not a wrong guess, just one with no answer yet.
+        var liveAccuracy = act.liveSettledToday
+            ? Math.round((act.liveCorrectToday / act.liveSettledToday) * 100) + "%"
+            : "—";
 
         el.cards.innerHTML = "";
         el.cards.appendChild(card("Dữ liệu nến",
@@ -75,6 +81,9 @@
             snapshot.schema.pendingMigrations ? "bad" : "good"));
         el.cards.appendChild(card("Lượt đoán hôm nay", act.guessesToday.toLocaleString("vi-VN"),
             "đúng " + accuracy + " · 7 ngày: " + act.guessesWeek.toLocaleString("vi-VN")));
+        el.cards.appendChild(card("Vòng trực tiếp hôm nay", act.liveCallsToday.toLocaleString("vi-VN"),
+            "đúng " + liveAccuracy + " (" + act.liveSettledToday + "/" + act.liveCallsToday + " đã chốt)"
+            + " · 7 ngày: " + act.liveCallsWeek.toLocaleString("vi-VN")));
         el.cards.appendChild(card("Tài khoản", act.players.toLocaleString("vi-VN"),
             act.admins + " admin"));
         el.cards.appendChild(card("Nội dung", act.contentItems + " mục",

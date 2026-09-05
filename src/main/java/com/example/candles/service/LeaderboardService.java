@@ -17,7 +17,7 @@ import com.example.candles.domain.PlayerScore;
 import com.example.candles.dto.response.Leaderboard;
 import com.example.candles.entity.Role;
 import com.example.candles.entity.User;
-import com.example.candles.repository.GuessResultRepository;
+import com.example.candles.repository.LivePredictionRepository;
 import com.example.candles.repository.UserRepository;
 
 /**
@@ -28,10 +28,14 @@ import com.example.candles.repository.UserRepository;
  * what forces the shape of the query below: score depends on the order guesses were made, so
  * it cannot be reached with SUM or COUNT, and every player's history has to be walked.
  *
- * One query does that for everyone at once, ordered by (user, time) so it rides the index that
- * already exists for the per-player read. The whole board is then cached for a minute, the same
- * arrangement {@code AdminStatsService} uses — this is a public endpoint anyone can call, and
- * recomputing it per request would put a full scan of the guess table behind an open URL.
+ * One player, one score, whichever tab they called it from: the flags this ranks on are
+ * practice guesses and settled live-round calls combined — see
+ * {@link LivePredictionRepository#combinedResultFlagsByUserInPlayOrder()} for how those two
+ * tables get interleaved by when each call was actually made. One query does that for everyone
+ * at once, ordered by (user, time) so it rides the index that already exists for the per-player
+ * read. The whole board is then cached for a minute, the same arrangement {@code
+ * AdminStatsService} uses — this is a public endpoint anyone can call, and recomputing it per
+ * request would put a full scan of both tables behind an open URL.
  */
 @Service
 public class LeaderboardService {
@@ -46,7 +50,7 @@ public class LeaderboardService {
     private static final int MAX_LIMIT = 200;
     private static final String CACHE_KEY = "board";
 
-    private final GuessResultRepository guessResults;
+    private final LivePredictionRepository livePredictions;
     private final UserRepository users;
 
     /** Holds the full ranking; a request's limit is applied after the cache, not inside it. */
@@ -54,8 +58,8 @@ public class LeaderboardService {
             .expireAfterWrite(Duration.ofSeconds(60))
             .build();
 
-    public LeaderboardService(GuessResultRepository guessResults, UserRepository users) {
-        this.guessResults = guessResults;
+    public LeaderboardService(LivePredictionRepository livePredictions, UserRepository users) {
+        this.livePredictions = livePredictions;
         this.users = users;
     }
 
@@ -87,9 +91,10 @@ public class LeaderboardService {
     }
 
     private List<Ranked> rank() {
-        // Rows arrive already grouped and in play order, so one pass fills the per-player lists.
+        // Rows arrive already grouped and in play order — practice and settled live-round
+        // calls interleaved by when each was made — so one pass fills the per-player lists.
         Map<Long, List<Boolean>> flags = new LinkedHashMap<>();
-        for (Object[] row : guessResults.resultFlagsByUserInPlayOrder()) {
+        for (Object[] row : livePredictions.combinedResultFlagsByUserInPlayOrder()) {
             Long userId = ((Number) row[0]).longValue();
             flags.computeIfAbsent(userId, id -> new ArrayList<>())
                     .add(Boolean.TRUE.equals(row[1]));

@@ -10,6 +10,7 @@ import com.example.candles.dto.request.LegacyStatsRequest;
 import com.example.candles.dto.response.StatsResponse;
 import com.example.candles.entity.User;
 import com.example.candles.repository.GuessResultRepository;
+import com.example.candles.repository.LivePredictionRepository;
 import com.example.candles.repository.UserRepository;
 
 @Service
@@ -28,18 +29,23 @@ public class StatsService {
     private static final long MAX_LEGACY_GUESSES = 100_000;
 
     private final GuessResultRepository guessResultRepository;
+    private final LivePredictionRepository livePredictionRepository;
     private final UserRepository userRepository;
 
-    public StatsService(GuessResultRepository guessResultRepository, UserRepository userRepository) {
+    public StatsService(GuessResultRepository guessResultRepository,
+                        LivePredictionRepository livePredictionRepository,
+                        UserRepository userRepository) {
         this.guessResultRepository = guessResultRepository;
+        this.livePredictionRepository = livePredictionRepository;
         this.userRepository = userRepository;
     }
 
     @Transactional(readOnly = true)
     public StatsResponse forUser(Long userId) {
         // Totals come from the same walk as the streak rather than a separate count query, so
-        // there is no window in which the two could disagree.
-        PlayerScore recorded = PlayerScore.of(guessResultRepository.resultFlagsInPlayOrder(userId));
+        // there is no window in which the two could disagree. Practice and settled live-round
+        // calls are combined here — one player, one score, whichever tab they called it from.
+        PlayerScore recorded = PlayerScore.of(livePredictionRepository.combinedResultFlagsInPlayOrder(userId));
 
         List<StatsResponse.AssetTally> byAsset = guessResultRepository.tallyByAsset(userId).stream()
                 .map(row -> new StatsResponse.AssetTally(
