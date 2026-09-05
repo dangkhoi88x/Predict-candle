@@ -31,13 +31,16 @@ public class StatsService {
     private final GuessResultRepository guessResultRepository;
     private final LivePredictionRepository livePredictionRepository;
     private final UserRepository userRepository;
+    private final AuthService authService;
 
     public StatsService(GuessResultRepository guessResultRepository,
                         LivePredictionRepository livePredictionRepository,
-                        UserRepository userRepository) {
+                        UserRepository userRepository,
+                        AuthService authService) {
         this.guessResultRepository = guessResultRepository;
         this.livePredictionRepository = livePredictionRepository;
         this.userRepository = userRepository;
+        this.authService = authService;
     }
 
     @Transactional(readOnly = true)
@@ -54,7 +57,11 @@ public class StatsService {
                         ((Number) row[2]).longValue()))
                 .toList();
 
-        User user = userRepository.findById(userId).orElseThrow();
+        // A valid access token outlives the account it names for up to its own TTL, if the
+        // account is deleted in between — currentUser is what /api/auth/me already treats that
+        // as: an invalid session (401), not a server bug (500), which a bare findById().orElseThrow()
+        // here used to be.
+        User user = authService.currentUser(userId);
 
         // Streaks either side of the carry-over cannot be joined into one run — nothing
         // records whether the last pre-import guess and the first recorded one were even
@@ -100,7 +107,7 @@ public class StatsService {
      */
     @Transactional
     public StatsResponse importLegacy(Long userId, LegacyStatsRequest request) {
-        User user = userRepository.findById(userId).orElseThrow();
+        User user = authService.currentUser(userId);
 
         if (!user.hasImportedLegacyStats() && isCoherent(request)) {
             user.importLegacyStats(request.total(), request.correct(), request.score(), request.bestStreak());
