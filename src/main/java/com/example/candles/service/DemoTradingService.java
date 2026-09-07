@@ -49,8 +49,12 @@ import com.example.candles.repository.DemoTradeRepository;
 @Service
 public class DemoTradingService {
 
-    /** What the chart offers. Anything longer than the stored timeframe is folded from it. */
-    private static final java.util.Set<String> CHART_TIMEFRAMES = java.util.Set.of("1h", "4h", "1d");
+    /**
+     * What the chart offers. Anything longer than the stored timeframe is folded out of it;
+     * anything shorter has to be fetched, because that detail was never recorded.
+     */
+    private static final java.util.Set<String> CHART_TIMEFRAMES =
+            java.util.Set.of("1m", "15m", "1h", "4h", "1d");
 
     private static final MathContext MC = MathContext.DECIMAL64;
     private static final BigDecimal BPS = BigDecimal.valueOf(10_000);
@@ -64,6 +68,7 @@ public class DemoTradingService {
     private final DemoTradeRepository trades;
     private final LivePriceService prices;
     private final MarketStatsService marketStats;
+    private final IntradayCandleService intraday;
     private final CandlesProperties properties;
     private final Clock clock;
 
@@ -73,6 +78,7 @@ public class DemoTradingService {
                               DemoTradeRepository trades,
                               LivePriceService prices,
                               MarketStatsService marketStats,
+                              IntradayCandleService intraday,
                               CandlesProperties properties,
                               Clock clock) {
         this.assets = assets;
@@ -81,6 +87,7 @@ public class DemoTradingService {
         this.trades = trades;
         this.prices = prices;
         this.marketStats = marketStats;
+        this.intraday = intraday;
         this.properties = properties;
         this.clock = clock;
     }
@@ -172,9 +179,19 @@ public class DemoTradingService {
         String target = CHART_TIMEFRAMES.contains(timeframe) ? timeframe : stored;
         int span = Math.clamp(limit, 20, 400);
 
-        // How many stored candles one target bar is worth. A target shorter than what is stored
-        // cannot be built at all, so it falls back to the stored timeframe rather than inventing
-        // detail that was never recorded.
+        /* Shorter than what is stored cannot be folded out of it — an hourly candle cannot be
+           taken apart into the minutes that made it — so it comes from the exchange instead.
+           Falling back to the stored candles here would draw hourly bars under a "1m" label,
+           which is worse than no chart at all. */
+        if (Timeframes.parse(target).compareTo(Timeframes.parse(stored)) < 0) {
+            return new DemoChartResponse(asset.getSymbol(), target,
+                    intraday.recent(asset.getSymbol(), target, span).stream()
+                            .map(c -> new DatedCandleDto(c.openTime(), c.open(), c.high(),
+                                    c.low(), c.close()))
+                            .toList());
+        }
+
+        // How many stored candles one target bar is worth.
         long factor = Math.max(1,
                 Timeframes.parse(target).toMillis() / Timeframes.parse(stored).toMillis());
         int needed = (int) Math.min(span * factor + factor, 20_000);

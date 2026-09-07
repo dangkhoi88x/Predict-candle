@@ -25,6 +25,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 /**
@@ -44,6 +45,7 @@ class DemoTradingTest {
     @Autowired private AssetRepository assets;
     @Autowired private CandlesProperties properties;
     @Autowired private LivePriceService livePrices;
+    @Autowired private IntradayCandleService intradayCandles;
     @Autowired private jakarta.persistence.EntityManager entityManager;
 
     @MockitoBean private PriceDataProvider priceDataProvider;
@@ -245,6 +247,44 @@ class DemoTradingTest {
                 assertThat(c.time().getEpochSecond() % 14_400).as("4h bar starts on a 4h boundary").isZero());
         daily.candles().forEach(c ->
                 assertThat(c.time().getEpochSecond() % 86_400).as("1d bar starts at UTC midnight").isZero());
+    }
+
+    /**
+     * The property that separates the two halves of the chart. 4h and 1d are folded out of the
+     * stored hourly candles; 1m and 15m cannot be, because those minutes were never recorded and
+     * an hourly candle cannot be taken apart into them. Falling back to stored candles would
+     * draw hourly bars under a "1m" label — a chart that lies rather than one that is missing.
+     */
+    @Test
+    void timeframesShorterThanTheStoredOneComeFromTheExchangeRatherThanBeingInvented() {
+        intradayCandles.evict();
+        var minuteCandles = new java.util.ArrayList<CandleData>();
+        Instant base = Instant.parse("2026-03-15T00:00:00Z");
+        for (int i = 0; i < 200; i++) {
+            minuteCandles.add(new CandleData(base.plusSeconds(i * 60L), BigDecimal.valueOf(100),
+                    BigDecimal.valueOf(101), BigDecimal.valueOf(99), BigDecimal.valueOf(100),
+                    BigDecimal.ONE));
+        }
+        when(priceDataProvider.fetchCandles(anyString(), eq("1m"), any(), any()))
+                .thenReturn(minuteCandles);
+
+        var chart = trading.chart(symbol, "1m", 120);
+
+        assertThat(chart.timeframe()).isEqualTo("1m");
+        assertThat(chart.candles()).hasSize(120);
+        // A minute apart, which stored hourly candles could never be.
+        assertThat(chart.candles().get(1).time().getEpochSecond()
+                - chart.candles().get(0).time().getEpochSecond()).isEqualTo(60);
+    }
+
+    @Test
+    void aChartTheExchangeCannotServeComesBackEmptyRatherThanThrowing() {
+        intradayCandles.evict();
+        when(priceDataProvider.fetchCandles(anyString(), eq("15m"), any(), any()))
+                .thenThrow(new IllegalStateException("upstream down"));
+
+        // The chart is context around a trade; losing it must not stop anyone trading.
+        assertThat(trading.chart(symbol, "15m", 120).candles()).isEmpty();
     }
 
     @Test

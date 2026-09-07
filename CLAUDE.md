@@ -389,6 +389,20 @@ animates a strip of digits and needs the `.rolling` class to clip it; these valu
 symbols and separators, and without the class every digit of the strip renders — which is
 exactly what happened.
 
+**The chart's five timeframes come from two different places, and the split is not an
+optimisation.** 4h and 1d are folded out of the stored hourly candles. 1m and 15m cannot be —
+those minutes were never recorded, and an hourly candle cannot be taken apart into the sixty
+that made it — so `IntradayCandleService` fetches them from the exchange and caches them for
+twenty seconds. Falling back to stored candles for a short timeframe would draw hourly bars
+under a "1m" label, which is a chart that lies rather than one that is missing;
+`timeframesShorterThanTheStoredOneComeFromTheExchangeRatherThanBeingInvented` fails with
+`expected 60 but was 3600` if that guard is removed.
+
+Intraday candles are deliberately **not stored**. A minute of history is sixty times the rows an
+hour is, for a chart nobody looks at twice, and it would need its own sync, backfill and gap
+handling. The client does not cache them either — keeping a minute chart across a tab switch
+shows a picture that is quietly minutes old.
+
 **4h and 1d charts are folded from the stored hourly candles**, not synced separately —
 `CandleAggregator`, driven by `GET /api/demo/chart?tf=`. Only one timeframe is ever stored, so
 there is nothing new to keep in step with the hourly sync.

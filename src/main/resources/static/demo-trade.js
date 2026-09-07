@@ -192,9 +192,16 @@
 
     /* Fetched per market and kept, because hourly candles do not move between two clicks and a
        chart that blanks every time you glance at another pair is worse than a slightly old one. */
+    /* 1m and 15m come from the exchange and move constantly, so they are not cached the way
+       the stored timeframes are — keeping a minute chart across a tab switch would show a
+       picture that is quietly minutes old. */
+    function isIntraday(tf) {
+        return tf === "1m" || tf === "15m";
+    }
+
     async function loadChart(symbol, tf) {
         var key = symbol + "@" + tf;
-        if (chartCache[key]) return;
+        if (chartCache[key] && !isIntraday(tf)) return;
         try {
             var res = await window.CandleAuth.authFetch(
                 "/api/demo/chart?asset=" + encodeURIComponent(symbol)
