@@ -124,6 +124,12 @@ public interface LivePredictionRepository extends JpaRepository<LivePrediction, 
      * so this deliberately does not reuse {@link #SETTLED_LIVE_FLAGS}: turning up and calling a
      * round is the thing a day streak measures, and an open round is not a day the player
      * failed to show up for.
+     *
+     * The pattern quiz is unioned in for the same reason, and it is the only place it is: its
+     * rows are invisible to score, the leaderboard, retention and badges on purpose (naming a
+     * pattern and calling a direction are not the same currency), but answering it is still
+     * turning up, which is all this streak claims to measure. Its day is already a date, so it
+     * needs no cast.
      */
     @Query(value = """
             select distinct cast(d.created_at at time zone 'UTC' as date) as day
@@ -132,6 +138,8 @@ public interface LivePredictionRepository extends JpaRepository<LivePrediction, 
                 union all
                 select created_at from live_predictions where user_id = :userId
             ) d
+            union
+            select day from pattern_quiz_results where user_id = :userId
             order by day desc
             """, nativeQuery = true)
     List<LocalDate> distinctPlayDaysDesc(@Param("userId") Long userId);

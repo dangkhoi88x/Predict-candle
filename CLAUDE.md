@@ -49,13 +49,13 @@ packages where a layer name would lie about the contents.
 
 | package | holds |
 |---|---|
-| `controller/` | the 20 `@RestController`s |
-| `service/` | the 23 `@Service`s, plus `RateLimiter` and `CandleSyncScheduler` |
-| `repository/` | the 6 Spring Data interfaces |
-| `entity/` | the 6 `@Entity` classes and the 5 persisted enums (`GuessMode` is PRACTICE / DAILY / ARCHIVE) |
+| `controller/` | the 21 `@RestController`s |
+| `service/` | the 24 `@Service`s, plus `RateLimiter` and `CandleSyncScheduler` |
+| `repository/` | the 7 Spring Data interfaces |
+| `entity/` | the 7 `@Entity` classes and the 5 persisted enums (`GuessMode` is PRACTICE / DAILY / ARCHIVE) |
 | `dto/request/` | the 5 records a client sends in: `GuessRequest`, `WalletVerifyRequest`, `BlogPostRequest`, `ContentItemRequest`, `LegacyStatsRequest` |
 | `dto/response/` | the 17 records the server sends out, including the pieces nested inside them (`CandleDto`, `BlogPostDto`, `PlayerSummary`) |
-| `domain/` | internal value records that never leave the server: `RoundToken`, `RoundSelection`, `AuthSession`, `PlayerScore`, `PlayStreak`, `DailySeed`, `DailyRound`, `HintLevel`, `Achievement`, `StoredMedia` |
+| `domain/` | internal value records that never leave the server: `RoundToken`, `RoundSelection`, `AuthSession`, `PlayerScore`, `PlayStreak`, `DailySeed`, `DailyRound`, `HintLevel`, `Achievement`, `PatternQuizPick`, `StoredMedia` |
 | `security/` | `JwtService`, the filter, `WalletSignatureVerifier`, `AdminAccess`, `AdminWallets`, `AdminRoleReconciler` |
 | `client/` | Binance and Yahoo, their DTOs, and `Timeframes` |
 | `pattern/` | the two pattern libraries and their matchers — algorithm, not a layer |
@@ -320,6 +320,40 @@ second line when an admin has renamed the account and the two have diverged — 
 "0xef00…4d45" pairing rekto.fun's own roster shows. The avatar is an emoji plus a background
 color, both chosen by hashing `walletShort` rather than the display name, so a renamed account
 keeps the same avatar it always had.
+
+### Pattern-of-the-day quiz
+
+One pattern to name a day, on a real chart, from `PatternQuizService` — `GET
+/api/pattern-quiz/today` and `POST /api/pattern-quiz/answer`. Reading is public; answering needs
+an account, because an answer nobody owns cannot be held to one a day.
+
+It reuses the matchers behind the "Mẫu Nến" library but **not** `PatternExampleService`: that
+one picks with `ThreadLocalRandom` over a history that grows hourly, which is both mistakes
+`selectDailyRound` already had to fix. Same two fixes — seed the pick, and count only candles
+that closed before midnight.
+
+**The rule the feature stands on: a window is usable only if exactly one pattern in the library
+matches at its end.** Real charts overlap — a hammer with a small enough body is also a doji —
+and marking a player wrong for naming a pattern that genuinely is present reads as a broken quiz
+rather than a hard one, and cannot be argued with after the fact. If a pattern has no clean
+occurrence anywhere, the day walks on to the next pattern in its own seeded order; the date
+still decides, the data only decides how far down that order it looks.
+
+`everyDaysQuestionMatchesExactlyOnePattern` walks **thirty** days, not one, and that matters: a
+single day passes with or without the filter, because most windows are unambiguous anyway. The
+first version of this test did exactly that and proved nothing. Over thirty days an unfiltered
+selector reliably trips — 2026-03-13 produces a window that is both a shooting star and a
+morning star.
+
+**Storage is its own table on purpose.** `guess_results` answers are CHECK-constrained to
+LONG/SHORT; a pattern answer is one of thirteen ids. The consequence is deliberate: nothing that
+reads `guess_results` — score, the leaderboard, retention, badges — can see these rows. Naming a
+pattern and calling a direction are different skills and one score covering both would say less
+than either. **The day streak is the single exception**, unioned into `distinctPlayDaysDesc`,
+because answering is turning up and that is all that streak claims to measure.
+
+`ON DELETE CASCADE` follows `live_predictions` rather than `guess_results`: a cascade cannot be
+forgotten the way another explicit delete in `AdminPlayerService` could be.
 
 ### Daily archive
 

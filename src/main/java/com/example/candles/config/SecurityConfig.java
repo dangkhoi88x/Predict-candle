@@ -46,6 +46,10 @@ public class SecurityConfig {
                         // needs a wallet, the same reasoning as /api/stats/**.
                         .requestMatchers(HttpMethod.POST, "/api/live/predict")
                         .authenticated()
+                        // Reading the quiz is public; an answer has to belong to an account or
+                        // it cannot be held to one a day, nor reach the day streak it feeds.
+                        .requestMatchers(HttpMethod.POST, "/api/pattern-quiz/answer")
+                        .authenticated()
                         .anyRequest().permitAll())
                 /*
                  * Rejections that happen in the filter chain never reach the controller advice,

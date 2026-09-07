@@ -91,6 +91,21 @@ window.CandleChart = (function () {
         var down = getComputedStyle(svg).getPropertyValue("--down").trim() || "#fb7185";
         var accent = getComputedStyle(svg).getPropertyValue("--accent").trim() || "#4f8cff";
 
+        /* A band behind the candles the caller is asking about. Drawn first so the candles sit
+           on top of it — the pattern quiz would otherwise be asking "name the pattern" of a
+           chart with no indication which candles it means, a far harder and different question. */
+        if (options.highlight) {
+            var hFrom = options.highlight.from, hLen = options.highlight.length;
+            if (hLen > 0 && hFrom >= 0 && hFrom + hLen <= n) {
+                svg.appendChild(svgEl("rect", {
+                    x: cx(hFrom) - step / 2, y: plotY0 - 4,
+                    width: step * hLen, height: (volumes ? volY1 : plotY1) - plotY0 + 8,
+                    rx: 3, fill: accent, "fill-opacity": "0.12",
+                    stroke: accent, "stroke-opacity": "0.5", "stroke-width": "1",
+                }));
+            }
+        }
+
         /* Volume first, so candles and the average draw over it rather than under. Scaled to
            its own strip's tallest bar — volume is read as "big for this chart", never against
            the price axis it shares no units with. */
