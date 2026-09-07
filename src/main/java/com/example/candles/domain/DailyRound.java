@@ -14,7 +14,8 @@ import java.time.LocalDate;
  */
 public record DailyRound(LocalDate day, long number) {
 
-    private static final LocalDate FIRST_DAY = LocalDate.of(2026, 1, 1);
+    /** Public so the archive can refuse a day that predates round #1. */
+    public static final LocalDate FIRST_DAY = LocalDate.of(2026, 1, 1);
 
     public static DailyRound forDay(LocalDate day) {
         return new DailyRound(day, day.toEpochDay() - FIRST_DAY.toEpochDay() + 1);

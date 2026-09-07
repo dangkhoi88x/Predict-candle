@@ -98,6 +98,34 @@ class DayStreakTest {
         assertThat(streak.playedToday()).isFalse();
     }
 
+    /**
+     * Badges are derived, not awarded, so the guarantee worth pinning is that they follow the
+     * recorded history rather than a row someone remembered to write. A player who has just
+     * played has the entry-level badge; one who has never played has none, and still sees the
+     * whole catalogue to aim at.
+     */
+    @Test
+    void badgesFollowTheRecordedHistoryWithoutBeingAwarded() {
+        User fresh = player();
+        StatsResponse before = statsService.forUser(fresh.getId());
+
+        assertThat(before.achievements()).isNotEmpty();
+        assertThat(before.achievements()).allMatch(b -> !b.earned());
+
+        // Five guesses is one full chart, which is what the entry badge asks for.
+        for (int i = 1; i <= 5; i++) guessedDaysAgo(fresh, i, 0);
+
+        StatsResponse after = statsService.forUser(fresh.getId());
+        assertThat(after.achievements()).hasSameSizeAs(before.achievements());
+        assertThat(after.achievements())
+                .filteredOn(b -> b.id().equals("first-chart"))
+                .allMatch(StatsResponse.Badge::earned);
+        // Nothing else came with it — thresholds must not leak into each other.
+        assertThat(after.achievements())
+                .filteredOn(b -> b.id().equals("hundred-guesses"))
+                .allMatch(b -> !b.earned() && b.progress() == 5);
+    }
+
     @Test
     void playingOnlyLongAgoLeavesNothingRunning() {
         User user = player();

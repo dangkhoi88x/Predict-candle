@@ -13,7 +13,9 @@ public record GuessResponse(
         String nextRoundToken,
         List<CandleDto> revealCandles,
         RoundIdentity identity,
-        RoundContext context
+        RoundContext context,
+        /** Readings unlocked for the *next* guess by how many have been missed so far. */
+        RoundHints hints
 ) {
 
     /**

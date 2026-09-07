@@ -34,6 +34,8 @@ public record DailyRoundResponse(
         boolean completed,
         List<Answer> answers,
         List<CandleDto> resolvedCandles,
+        /** Unlocked by misses already recorded today — a resumed session keeps what it earned. */
+        RoundHints hints,
         Streak streak,
         Instant nextRoundAt
 ) {

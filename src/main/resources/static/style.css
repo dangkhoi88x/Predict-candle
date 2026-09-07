@@ -4681,3 +4681,138 @@ body:not(.is-admin) .adm-search {
     resize: vertical;
 }
 
+.daily-hint {
+    margin: -4px 0 12px;
+    font-size: 13px;
+    color: var(--accent);
+}
+
+/* ---- Profile badges ---- */
+
+.profile-badges {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+.profile-badge {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 12px 14px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--panel);
+}
+
+/* Earned reads as lit rather than merely ticked — the accent edge is the reward. */
+.profile-badge.is-earned {
+    border-color: var(--accent);
+    background: var(--panel-2);
+}
+
+.profile-badge-name {
+    font-weight: 700;
+    font-size: 14px;
+}
+
+.profile-badge.is-earned .profile-badge-name {
+    color: var(--accent);
+}
+
+.profile-badge-desc {
+    font-size: 12.5px;
+    color: var(--muted);
+    line-height: 1.4;
+}
+
+.profile-badge-count {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--muted-2);
+    font-variant-numeric: tabular-nums;
+}
+
+.profile-badge-track {
+    height: 4px;
+    border-radius: 999px;
+    background: var(--border);
+    overflow: hidden;
+}
+
+.profile-badge-fill {
+    display: block;
+    height: 100%;
+    background: var(--accent);
+    border-radius: 999px;
+    transition: width var(--duration-normal) var(--ease-out);
+}
+
+/* ---- Daily archive ---- */
+
+.daily-archive {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+    gap: 8px;
+}
+
+.daily-archive-day {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 10px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--panel);
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: border-color var(--duration-fast) var(--ease-out);
+}
+
+.daily-archive-day:hover {
+    border-color: var(--accent);
+}
+
+/* Finished and currently-open are different things and must not look alike: one is a result,
+   the other is where you are. */
+.daily-archive-day.is-done .daily-archive-state {
+    color: var(--up);
+}
+
+.daily-archive-day.is-open {
+    border-color: var(--accent);
+    background: var(--panel-2);
+}
+
+.daily-archive-number {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+}
+
+.daily-archive-date {
+    font-size: 14px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.daily-archive-state {
+    font-size: 12px;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.daily-replay {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 12px;
+    padding: 8px 12px;
+    border: 1px dashed var(--accent);
+    border-radius: 10px;
+    font-size: 13px;
+}

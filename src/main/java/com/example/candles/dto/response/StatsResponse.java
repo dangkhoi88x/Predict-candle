@@ -21,6 +21,8 @@ public record StatsResponse(
         long score,
         Recorded recorded,
         DayStreak dayStreak,
+        /** The whole catalogue, earned and unearned — an unearned badge carries its progress. */
+        List<Badge> achievements,
         boolean legacyImported,
         List<AssetTally> byAsset,
         List<RecentGuess> recent
@@ -36,6 +38,15 @@ public record StatsResponse(
      * tally is four totals with no dates on it, so it cannot say which days were played.
      */
     public record DayStreak(int current, int best, long daysPlayed, boolean playedToday) {
+    }
+
+    /**
+     * One badge as the profile draws it. A copy of {@code Achievement.Progress} rather than that
+     * record itself, because {@code domain/} is where things that never leave the server live —
+     * the rule that decides a badge and the shape sent to a browser are allowed to move apart.
+     */
+    public record Badge(String id, String name, String description,
+                        long progress, long target, boolean earned) {
     }
 
     public record AssetTally(String symbol, long total, long correct) {

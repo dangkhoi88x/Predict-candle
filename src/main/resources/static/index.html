@@ -163,6 +163,10 @@
 
     <div id="guess-progress" class="guess-progress hidden"></div>
 
+    <!-- Names whatever the chart just gained. An indicator appearing unannounced reads as a
+         glitch rather than as the game giving ground after a miss. -->
+    <p id="game-hint" class="daily-hint hidden"></p>
+
     <div id="guess-timer" class="guess-timer hidden">
         <div class="guess-timer-track"><div class="guess-timer-fill" id="guess-timer-fill"></div></div>
         <span class="guess-timer-value" id="guess-timer-value"></span>
@@ -193,12 +197,23 @@
     </div>
 
     <div class="daily-board">
+        <!-- Only while replaying: the board is the same board, so it has to say which day is
+             on it or a player cannot tell a replay from today's round. -->
+        <div class="daily-replay hidden" id="daily-replay">
+            <span id="daily-replay-label"></span>
+            <button class="ghost-btn" type="button" id="daily-back">Về hôm nay</button>
+        </div>
+
         <div class="daily-chart-wrap">
             <svg id="daily-chart" class="daily-chart" viewBox="0 0 720 300" preserveAspectRatio="none"
                  role="img" aria-label="Biểu đồ nến của thử thách hôm nay"></svg>
         </div>
 
         <p class="daily-status" id="daily-status">Đang tải…</p>
+
+        <!-- Says why the chart just gained something. A hint that appears unannounced reads as
+             a glitch rather than as the game giving ground. -->
+        <p class="daily-hint hidden" id="daily-hint"></p>
 
         <!-- The dots are the whole result at a glance, and the same shape the share card
              copies out — so what a player sees is what their friends will see. -->
@@ -221,12 +236,15 @@
             <p class="daily-done-line" id="daily-done-line"></p>
             <p class="daily-next" id="daily-next"></p>
             <button class="ghost-btn" type="button" id="daily-share">Sao chép kết quả</button>
-            <!-- Shown only when the clipboard refuses. A share button that can fail silently is a
-                 share button that does not work, so the text has to become reachable by hand. -->
-            <textarea class="daily-share-text hidden" id="daily-share-text" readonly rows="3"
-                      aria-label="Kết quả để chia sẻ"></textarea>
+        <!-- Shown only when the clipboard refuses. A share button that can fail silently is a
+             share button that does not work, so the text has to become reachable by hand. -->
+        <textarea class="daily-share-text hidden" id="daily-share-text" readonly rows="3"
+                  aria-label="Kết quả để chia sẻ"></textarea>
         </div>
     </div>
+
+    <h3 class="profile-section">Chơi lại ngày trước</h3>
+    <div id="daily-archive" class="daily-archive"></div>
 </main>
 
 <main id="view-live" class="view app hidden" role="tabpanel" aria-labelledby="tab-live">
@@ -485,6 +503,9 @@
 
     <p id="profile-streak-note" class="profile-note hidden"></p>
     <p id="profile-legacy-note" class="profile-note hidden"></p>
+
+    <h3 class="profile-section">Huy hiệu</h3>
+    <div id="profile-badges" class="profile-badges"></div>
 
     <h3 class="profile-section">Theo từng cặp</h3>
     <div id="profile-by-asset" class="profile-assets"></div>
