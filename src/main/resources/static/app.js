@@ -175,7 +175,27 @@
         asset: "BTCUSDT",
         baseTime: 0,
         revealMarkerIndex: null,
+        // Progressive hints, unlocked by misses on this chart. Null until the server sends any.
+        hints: null,
     };
+
+    /* Says out loud what a miss just unlocked, newest rung first. Shared wording with the
+       daily tab, since it is the same ladder. */
+    function announceHints(hints) {
+        var node = document.getElementById("game-hint");
+        if (!node) return;
+        var lines = [];
+        if (hints && hints.patternId) {
+            var name = window.CandlePatterns && window.CandlePatterns.nameOf
+                ? window.CandlePatterns.nameOf(hints.patternId) : hints.patternId;
+            lines.push("mẫu nến gần đây: " + name);
+        }
+        if (hints && hints.movingAverage) lines.push("đường trung bình 5 nến");
+        if (hints && hints.volumes) lines.push("khối lượng");
+
+        node.classList.toggle("hidden", lines.length === 0);
+        if (lines.length) node.textContent = "Gợi ý đã mở — " + lines.join(" · ");
+    }
 
     function svgEl(tag, attrs) {
         var node = document.createElementNS(SVG_NS, tag);
@@ -225,11 +245,19 @@
     function geometry(n) {
         var plotX0 = PAD.left, plotX1 = W - PAD.right;
         var plotY0 = PAD.top, plotY1 = H - PAD.bottom;
+        /* The volume strip comes out of the price plot rather than being added below it: the
+           viewBox is fixed, so the candles have to make room. Reserved only once volume is
+           actually unlocked, so an unhinted chart is drawn exactly as tall as it always was. */
+        var volumes = chart.hints && chart.hints.volumes;
+        var volH = volumes ? (plotY1 - plotY0) * 0.18 : 0;
+        var volY1 = plotY1;
+        if (volumes) plotY1 -= volH + 6;
         var step = (plotX1 - plotX0) / Math.max(n, 1);
         var bodyW = Math.max(4, Math.min(step * 0.55, 44));
         return {
             plotX0: plotX0, plotX1: plotX1, plotY0: plotY0, plotY1: plotY1,
             plotW: plotX1 - plotX0, plotH: plotY1 - plotY0,
+            volH: volH, volY1: volY1,
             step: step, bodyW: bodyW,
             cx: function (i) { return plotX0 + step * (i + 0.5); },
         };
@@ -293,6 +321,44 @@
             label.textContent = formatAxisPrice(tick);
             svg.appendChild(label);
         });
+
+        /* Volume before the candles so they draw over it. Scaled to the tallest bar in its
+           own strip — volume shares no units with the price axis beside it, and is read as
+           "big for this chart" rather than against any number. */
+        var volumes = chart.hints && chart.hints.volumes;
+        if (volumes) {
+            var maxVol = 0;
+            for (var vi = 0; vi < volumes.length && vi < n; vi++) {
+                maxVol = Math.max(maxVol, +volumes[vi] || 0);
+            }
+            for (var vj = 0; vj < volumes.length && vj < n; vj++) {
+                var barH = maxVol ? ((+volumes[vj] || 0) / maxVol) * geo.volH : 0;
+                svg.appendChild(svgEl("rect", {
+                    x: geo.cx(vj) - geo.bodyW / 2, y: geo.volY1 - barH,
+                    width: geo.bodyW, height: Math.max(barH, 0.5),
+                    fill: candles[vj].close >= candles[vj].open ? UP : DOWN,
+                    "fill-opacity": "0.3",
+                }));
+            }
+        }
+
+        /* A smoothing of closes already on screen, so it is drawn in the neutral accent: it
+           adds no facts, it makes the trend readable. Leading nulls have no full period behind
+           them and start the line late rather than at zero. */
+        var ma = chart.hints && chart.hints.movingAverage;
+        if (ma) {
+            var maPoints = [];
+            for (var mi = 0; mi < ma.length && mi < n; mi++) {
+                if (ma[mi] == null) continue;
+                maPoints.push(geo.cx(mi).toFixed(1) + "," + priceY(+ma[mi]).toFixed(1));
+            }
+            if (maPoints.length > 1) {
+                svg.appendChild(svgEl("polyline", {
+                    points: maPoints.join(" "), fill: "none", stroke: ACCENT,
+                    "stroke-width": "1.8", "stroke-linejoin": "round", "stroke-opacity": "0.85",
+                }));
+            }
+        }
 
         // candles
         var newFrom = n > chart.drawnCount ? chart.drawnCount : Infinity;
@@ -487,6 +553,9 @@
         chart.hoverIndex = null;
         chart.drawnCount = 0;
         chart.revealMarkerIndex = null;
+        // A new chart is a new difficulty ladder: whatever the last one gave away is not owed.
+        chart.hints = null;
+        announceHints(null);
         var meta = metaFor(asset);
         el.marketSymbol.textContent = meta.symbol;
         el.marketName.textContent = meta.name;
@@ -1093,6 +1162,13 @@
             // clock when it wrote this response.
             var tokenArrivedAt = Date.now();
 
+            /* Set before the reveal, not after: the animation is what redraws the chart, so
+               assigning these afterwards left every hint showing up a guess late — unlocked in
+               the text, invisible on the chart until the next candle. The series are sized for
+               the chart including the candle about to appear, and the drawing code ignores any
+               entry past the candles it has. */
+            chart.hints = result.hints;
+
             setStatus("Nến đang hình thành…");
             await animateCandleReveal(result.actualCandle);
 
@@ -1131,6 +1207,7 @@
                 state.roundToken = result.nextRoundToken;
                 state.tokenReceivedAt = tokenArrivedAt;
                 state.guessNumber = result.guessNumber + 1;
+                announceHints(result.hints);
                 el.guessProgress.textContent = "Nến " + state.guessNumber + " / " + result.totalGuesses;
 
                 el.resultBanner.textContent =

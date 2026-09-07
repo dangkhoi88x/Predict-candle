@@ -59,7 +59,8 @@ public class PracticeController {
                 selection.timeframe(),
                 selection.startIndex(),
                 1,
-                GuessMode.PRACTICE
+                GuessMode.PRACTICE,
+                0
         ));
 
         return new RoundResponse(

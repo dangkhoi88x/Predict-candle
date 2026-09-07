@@ -45,6 +45,7 @@ public class RoundTokenService {
                 .claim("startIndex", token.startIndex())
                 .claim("guessNumber", token.guessNumber())
                 .claim("mode", token.mode().name())
+                .claim("misses", token.misses())
                 .claim("iatMs", now.toEpochMilli())
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(now.plus(properties.jwt().ttl())))
@@ -72,12 +73,16 @@ public class RoundTokenService {
                minutes, so this window shuts on its own, and a player mid-round at deploy time
                should not have their next guess rejected. */
             String mode = claims.get("mode", String.class);
+            Number misses = claims.get("misses", Number.class);
             RoundToken round = new RoundToken(
                     claims.get("assetId", Number.class).longValue(),
                     claims.get("timeframe", String.class),
                     claims.get("startIndex", Number.class).intValue(),
                     claims.get("guessNumber", Number.class).intValue(),
-                    mode == null ? GuessMode.PRACTICE : GuessMode.valueOf(mode)
+                    mode == null ? GuessMode.PRACTICE : GuessMode.valueOf(mode),
+                    // A token from before hints existed has missed nothing as far as this can
+                    // tell, which errs toward the harder chart rather than a free hint.
+                    misses == null ? 0 : misses.intValue()
             );
             /* Falls back to `iat` for a token minted before this claim existed. Round tokens
                live minutes, so that window closes on its own — but a signed-in player mid-round

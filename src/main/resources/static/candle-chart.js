@@ -62,6 +62,12 @@ window.CandleChart = (function () {
         var pad = { top: 10, right: 52, bottom: 18, left: 4 };
         var plotX0 = pad.left, plotX1 = w - pad.right;
         var plotY0 = pad.top, plotY1 = h - pad.bottom;
+        /* Volume takes its strip out of the price plot rather than growing the chart: the
+           viewBox is fixed by the caller, so the candles have to make room for it. */
+        var volumes = options.volumes || null;
+        var volH = volumes ? (plotY1 - plotY0) * 0.18 : 0;
+        var volY1 = plotY1;
+        if (volumes) plotY1 -= volH + 4;
         var step = (plotX1 - plotX0) / n;
         var bodyW = Math.max(1.5, Math.min(step * 0.62, 14));
 
@@ -84,6 +90,22 @@ window.CandleChart = (function () {
         var up = getComputedStyle(svg).getPropertyValue("--up").trim() || "#34d399";
         var down = getComputedStyle(svg).getPropertyValue("--down").trim() || "#fb7185";
         var accent = getComputedStyle(svg).getPropertyValue("--accent").trim() || "#4f8cff";
+
+        /* Volume first, so candles and the average draw over it rather than under. Scaled to
+           its own strip's tallest bar — volume is read as "big for this chart", never against
+           the price axis it shares no units with. */
+        if (volumes) {
+            var maxVol = 0;
+            volumes.forEach(function (v) { maxVol = Math.max(maxVol, +v || 0); });
+            volumes.forEach(function (v, i) {
+                if (i >= n) return;
+                var barH = maxVol ? ((+v || 0) / maxVol) * volH : 0;
+                svg.appendChild(svgEl("rect", {
+                    x: cx(i) - bodyW / 2, y: volY1 - barH, width: bodyW, height: Math.max(barH, 0.5),
+                    fill: candles[i].close >= candles[i].open ? up : down, "fill-opacity": "0.35",
+                }));
+            });
+        }
 
         if (options.referencePrice != null) {
             var ry = py(options.referencePrice);
@@ -140,6 +162,23 @@ window.CandleChart = (function () {
             label.textContent = formatAxisPrice(tick);
             svg.appendChild(label);
         });
+
+        /* The average is a smoothing of closes already on screen, so it is drawn in the neutral
+           accent rather than up/down colours — it is a reading aid, not a verdict. Leading
+           nulls (no full period behind them yet) start the line late instead of at zero. */
+        if (options.movingAverage) {
+            var points = [];
+            options.movingAverage.forEach(function (v, i) {
+                if (v == null || i >= n) return;
+                points.push(cx(i).toFixed(1) + "," + py(+v).toFixed(1));
+            });
+            if (points.length > 1) {
+                svg.appendChild(svgEl("polyline", {
+                    points: points.join(" "), fill: "none", stroke: accent,
+                    "stroke-width": "1.6", "stroke-linejoin": "round", "stroke-opacity": "0.85",
+                }));
+            }
+        }
 
         /* No time axis when the candles carry no time. The daily challenge is the caller that
            needs this: sending dates with a round the player is still guessing would hand them

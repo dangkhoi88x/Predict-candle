@@ -18,6 +18,7 @@
         streakBest: document.getElementById("daily-streak-best"),
         chart: document.getElementById("daily-chart"),
         status: document.getElementById("daily-status"),
+        hint: document.getElementById("daily-hint"),
         dots: document.getElementById("daily-dots"),
         actions: document.getElementById("daily-actions"),
         long: document.getElementById("daily-long"),
@@ -29,13 +30,22 @@
         doneLine: document.getElementById("daily-done-line"),
         next: document.getElementById("daily-next"),
         share: document.getElementById("daily-share"),
+        replay: document.getElementById("daily-replay"),
+        replayLabel: document.getElementById("daily-replay-label"),
+        back: document.getElementById("daily-back"),
+        archive: document.getElementById("daily-archive"),
         shareText: document.getElementById("daily-share-text"),
     };
 
     var state = null;
     var candles = [];
     var results = [];
+    var hints = null;
     var token = null;
+    /* Which day is on the board: null is today, a "YYYY-MM-DD" string is a replay. Every
+       request and every label reads this, so the board can only ever be showing one day. */
+    var archiveDay = null;
+    var lastArchive = [];
     var timerId = null;
     var deadline = 0;
 
@@ -46,7 +56,27 @@
     }
 
     function drawChart() {
-        window.CandleChart.draw(el.chart, candles.map(toChartCandle));
+        window.CandleChart.draw(el.chart, candles.map(toChartCandle), {
+            volumes: hints && hints.volumes,
+            movingAverage: hints && hints.movingAverage,
+        });
+    }
+
+    /* Names what just appeared, newest rung first. A hint that arrives unannounced reads as a
+       rendering glitch; saying it out loud makes it what it is — the game giving ground because
+       the player is struggling. */
+    function renderHint() {
+        var lines = [];
+        if (hints && hints.patternId) {
+            var name = window.CandlePatterns && window.CandlePatterns.nameOf
+                ? window.CandlePatterns.nameOf(hints.patternId) : hints.patternId;
+            lines.push("mẫu nến gần đây: " + name);
+        }
+        if (hints && hints.movingAverage) lines.push("đường trung bình 5 nến");
+        if (hints && hints.volumes) lines.push("khối lượng");
+
+        el.hint.classList.toggle("hidden", lines.length === 0);
+        if (lines.length) el.hint.textContent = "Gợi ý đã mở — " + lines.join(" · ");
     }
 
     function renderDots() {
@@ -106,6 +136,14 @@
     /* The share text: the round number, the score, and the same dots that are on screen.
        Deliberately no asset name and no dates — that is the answer, and a result you cannot
        post without spoiling the puzzle is one nobody posts. */
+    function roundUrl() {
+        return archiveDay ? "/api/daily/archive/" + archiveDay : "/api/daily/round";
+    }
+
+    function guessUrl() {
+        return archiveDay ? "/api/daily/archive/" + archiveDay + "/guess" : "/api/daily/guess";
+    }
+
     function shareText() {
         var correct = results.filter(Boolean).length;
         var dots = results.map(function (ok) { return ok ? "🟩" : "🟥"; }).join("");
@@ -155,7 +193,7 @@
             : { roundToken: token };
 
         try {
-            var res = await window.CandleAuth.authFetch("/api/daily/guess", {
+            var res = await window.CandleAuth.authFetch(guessUrl(), {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(body),
@@ -166,8 +204,10 @@
             candles.push(payload.actualCandle);
             results.push(payload.correct);
             token = payload.nextRoundToken;
+            hints = payload.hints;
             drawChart();
             renderDots();
+            renderHint();
 
             if (payload.sessionComplete) {
                 /* Signed in, re-read: the streak only moves once the day is finished and the
@@ -182,6 +222,8 @@
                 } else {
                     showDone();
                 }
+                // The day just moved from unplayed to finished, and the list says so.
+                if (archiveDay) await loadArchive();
                 return;
             }
             el.status.textContent = "Nến tiếp theo: đoán hướng.";
@@ -195,34 +237,109 @@
         }
     }
 
+    /* The list is a separate read from the board on purpose: it changes only when a replay
+       finishes, and refetching it on every guess would be a request per candle. */
+    async function loadArchive() {
+        try {
+            var res = await window.CandleAuth.authFetch("/api/daily/archive?days=14");
+            if (!res.ok) throw new Error("Máy chủ trả về " + res.status);
+            lastArchive = await res.json();
+            renderArchive(lastArchive);
+        } catch (e) {
+            el.archive.innerHTML =
+                '<p class="profile-empty">Không tải được danh sách ngày trước.</p>';
+        }
+    }
+
+    function renderArchive(rows) {
+        el.archive.innerHTML = "";
+        if (!rows.length) {
+            el.archive.innerHTML = '<p class="profile-empty">Chưa có ngày nào để chơi lại.</p>';
+            return;
+        }
+        rows.forEach(function (row) {
+            var button = document.createElement("button");
+            button.type = "button";
+            button.className = "daily-archive-day"
+                + (row.completed ? " is-done" : "")
+                + (row.day === archiveDay ? " is-open" : "");
+
+            var number = document.createElement("span");
+            number.className = "daily-archive-number";
+            number.textContent = "#" + row.roundNumber;
+
+            var date = document.createElement("span");
+            date.className = "daily-archive-date";
+            var d = new Date(row.day + "T00:00:00Z");
+            date.textContent = String(d.getUTCDate()).padStart(2, "0") + "/"
+                + String(d.getUTCMonth() + 1).padStart(2, "0");
+
+            var state = document.createElement("span");
+            state.className = "daily-archive-state";
+            // Three states, and they have to stay distinct: a finished day shows its score, a
+            // half-played one says where it stopped, an untouched one invites.
+            state.textContent = row.completed
+                ? row.correct + "/" + row.totalGuesses
+                : row.guessesMade > 0
+                    ? "dở " + row.guessesMade + "/" + row.totalGuesses
+                    : "chưa chơi";
+
+            button.appendChild(number);
+            button.appendChild(date);
+            button.appendChild(state);
+            button.addEventListener("click", function () { openDay(row.day); });
+            el.archive.appendChild(button);
+        });
+    }
+
+    async function openDay(day) {
+        archiveDay = day;
+        await load();
+        renderArchive(lastArchive);
+    }
+
+    function renderReplayBanner() {
+        el.replay.classList.toggle("hidden", !archiveDay);
+        if (archiveDay && state) {
+            el.replayLabel.textContent = "Đang chơi lại #" + state.roundNumber;
+        }
+    }
+
     async function load() {
         stopTimer();
         try {
-            var res = await window.CandleAuth.authFetch("/api/daily/round");
+            var res = await window.CandleAuth.authFetch(roundUrl());
             var payload = await res.json();
             if (!res.ok) throw new Error(payload.message || ("Máy chủ trả về " + res.status));
 
             state = payload;
             candles = payload.candles.slice();
             results = payload.answers.map(function (a) { return a.correct; });
+            hints = payload.hints;
             token = payload.roundToken;
 
             el.number.textContent = "#" + payload.roundNumber;
             renderStreak(payload.streak);
+            renderReplayBanner();
 
             if (payload.completed) {
                 // Drawing the answer candles is the payoff — the chart finishes in front of
                 // them instead of staying frozen where they left off.
+                // The chart resolves in front of them; the hints go, since there is nothing
+                // left to guess and a chart still marked up reads as unfinished.
                 candles = candles.concat(payload.resolvedCandles);
+                hints = null;
                 drawChart();
                 renderDots();
-                    showDone();
+                renderHint();
+                showDone();
                 return;
             }
 
             el.done.classList.add("hidden");
             drawChart();
             renderDots();
+            renderHint();
             el.status.textContent = payload.guessesMade > 0
                 ? "Tiếp tục từ nến thứ " + (payload.guessesMade + 1) + "."
                 : "Nến tiếp theo sẽ đi lên hay xuống?";
@@ -238,6 +355,12 @@
     el.short.addEventListener("click", function () { submit("SHORT"); });
     el.share.addEventListener("click", copyShare);
 
+    el.back.addEventListener("click", async function () {
+        archiveDay = null;
+        await load();
+        renderArchive(lastArchive);
+    });
+
     /* The clock is deliberately not paused when the tab is hidden or switched away from.
        Pausing it here would not pause the server, which measures from when it minted the token
        — a player who left and came back would find every answer refused, with no way forward.
@@ -245,5 +368,12 @@
        go at: park the round, go and look the period up, come back and answer. Same rule the
        game tab already holds to for the same reason. */
 
-    window.__initDailyView = load;
+    /* Opening the tab always lands on today, never on whichever day was last replayed: the
+       daily is the thing this tab is for, and a player returning to find yesterday on screen
+       would think they had already played. */
+    window.__initDailyView = function () {
+        archiveDay = null;
+        loadArchive();
+        return load();
+    };
 })();

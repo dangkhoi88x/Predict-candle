@@ -8,6 +8,7 @@ import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.List;
 
+import com.example.candles.domain.Achievement;
 import com.example.candles.domain.PlayStreak;
 import com.example.candles.domain.PlayerScore;
 import com.example.candles.dto.request.LegacyStatsRequest;
@@ -82,6 +83,23 @@ public class StatsService {
         PlayStreak streak = PlayStreak.of(
                 livePredictionRepository.distinctPlayDaysDesc(userId), today);
 
+        /* Badges are judged on what the server watched happen, never on the carried-over tally.
+           Those four numbers are client-supplied and only checked for plausibility, so counting
+           them would make posting a large believable number the fastest way to a wall of
+           trophies — the same reason the leaderboard refuses to read them. */
+        PlayStreak dailyStreak = PlayStreak.of(
+                guessResultRepository.distinctDailyDaysDesc(userId), today);
+        List<StatsResponse.Badge> achievements = Achievement.evaluate(new Achievement.Snapshot(
+                        recorded.total(),
+                        recorded.bestStreak(),
+                        recorded.score(),
+                        streak.best(),
+                        dailyStreak.best(),
+                        dailyStreak.daysPlayed())).stream()
+                .map(a -> new StatsResponse.Badge(a.id(), a.name(), a.description(),
+                        a.progress(), a.target(), a.earned()))
+                .toList();
+
         List<StatsResponse.RecentGuess> recent = guessResultRepository
                 .findRecent(userId, PageRequest.of(0, RECENT_LIMIT)).stream()
                 .map(g -> new StatsResponse.RecentGuess(
@@ -108,6 +126,7 @@ public class StatsService {
                         recorded.bestStreak(), recorded.currentStreak(), recorded.score()),
                 new StatsResponse.DayStreak(streak.current(), streak.best(),
                         streak.daysPlayed(), streak.playedToday()),
+                achievements,
                 user.hasImportedLegacyStats(),
                 byAsset,
                 recent);

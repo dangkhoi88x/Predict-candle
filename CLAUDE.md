@@ -49,13 +49,13 @@ packages where a layer name would lie about the contents.
 
 | package | holds |
 |---|---|
-| `controller/` | the 19 `@RestController`s |
-| `service/` | the 22 `@Service`s, plus `RateLimiter` and `CandleSyncScheduler` |
+| `controller/` | the 20 `@RestController`s |
+| `service/` | the 23 `@Service`s, plus `RateLimiter` and `CandleSyncScheduler` |
 | `repository/` | the 6 Spring Data interfaces |
-| `entity/` | the 6 `@Entity` classes and the 5 persisted enums |
+| `entity/` | the 6 `@Entity` classes and the 5 persisted enums (`GuessMode` is PRACTICE / DAILY / ARCHIVE) |
 | `dto/request/` | the 5 records a client sends in: `GuessRequest`, `WalletVerifyRequest`, `BlogPostRequest`, `ContentItemRequest`, `LegacyStatsRequest` |
 | `dto/response/` | the 17 records the server sends out, including the pieces nested inside them (`CandleDto`, `BlogPostDto`, `PlayerSummary`) |
-| `domain/` | internal value records that never leave the server: `RoundToken`, `RoundSelection`, `AuthSession`, `PlayerScore`, `PlayStreak`, `DailySeed`, `DailyRound`, `StoredMedia` |
+| `domain/` | internal value records that never leave the server: `RoundToken`, `RoundSelection`, `AuthSession`, `PlayerScore`, `PlayStreak`, `DailySeed`, `DailyRound`, `HintLevel`, `Achievement`, `StoredMedia` |
 | `security/` | `JwtService`, the filter, `WalletSignatureVerifier`, `AdminAccess`, `AdminWallets`, `AdminRoleReconciler` |
 | `client/` | Binance and Yahoo, their DTOs, and `Timeframes` |
 | `pattern/` | the two pattern libraries and their matchers — algorithm, not a layer |
@@ -321,40 +321,109 @@ second line when an admin has renamed the account and the two have diverged — 
 color, both chosen by hashing `walletShort` rather than the display name, so a renamed account
 keeps the same avatar it always had.
 
-### Daily round selection
+### Daily archive
 
-`RoundSelectionService.selectDailyRound(day)` picks the one chart everybody gets on a UTC day,
-from the date alone — same asset, same window, on every server and every reload, with nothing
-stored. Same reasoning as `LiveRound.at`: a midnight job that generates the day's round has to
-run exactly once on exactly one instance, and leaves the site with no round at all if it misses.
+Past daily rounds are replayable — `GET /api/daily/archive`, `GET /api/daily/archive/{day}`,
+`POST /api/daily/archive/{day}/guess`. One attempt per archived day, from the same unique
+constraint the daily uses; the window is the last 60 days (`MAX_ARCHIVE_DAYS`), the list defaults
+to 14.
 
-Seeding the draw is the easy half of that and **not** the half that breaks. Three things had to
-give way, and only the first is obvious:
+**A replay is recorded as `ARCHIVE`, never `DAILY`, and that separation is the feature rather
+than bookkeeping.** `distinctDailyDaysDesc` counts days holding a DAILY row, so if a replay were
+written as DAILY it would stamp *today* as "played the daily" without today's chart ever being
+opened — a streak could then be held indefinitely by working through the archive, which is the
+same as not having a streak, and every badge and share card resting on it would mean nothing.
+`DailyArchiveFlowTest.archivePlayDoesNotKeepTheDailyStreakAlive` pins exactly that, and it does
+fail if the mode filter is removed from the streak query.
 
-- `ThreadLocalRandom` becomes `new Random(seed)`. `DailySeed` runs the epoch day through
-  splitmix64 first — `java.util.Random` draws visibly related first numbers from adjacent
-  seeds, and every day this compares against is adjacent, so unmixed seeds would put
-  consecutive days in neighbouring windows of the same asset.
-- **The draw's range must not move.** `startIndex` is an offset from the oldest candle, so the
-  hourly sync shifts nothing already indexed — but it does widen `count(*)`, and the same seed
-  against a range one wider draws a different number. A round picked at 10:00 and the "same"
-  round at 11:00 were different charts. `countByAssetAndTimeframeAndOpenTimeLessThan(midnight)`
-  holds the range still for the day. `DailyRoundSelectionTest.anHourlySyncDoesNotMoveTodaysChart`
-  is the only test that catches this, and it does fail without the frozen count — everything
-  else passes either way, which is what makes this worth writing down.
-- **The repeat cache is bypassed.** `recentlyServed` is per-instance and expiring; honouring it
-  would let a server that already served today's chart hand out a different one. Practice must
-  not repeat, daily must.
+Today is **not** archivable (400). Otherwise the archive would be a second door to the same
+round, writing rows the streak cannot see.
 
-The asset comes from `findAllByOrderByPositionAscSymbolAsc` — **disabled pairs included**, so a
-pair switched off at lunchtime cannot change the chart out from under someone mid-day. Adding a
-pair does move which asset future days land on; the list is an input, and a longer list is a
-different input.
+The day travels in the path, not in the token — the token carries only a chart — so
+`checkIsArchived` checks the pair against each other. Without it a token minted for one archived
+day could be spent on another.
 
-There is deliberately no endpoint yet. Selection is the half that fails silently, so it lands
-and gets reviewed on its own; the daily *mode* — one attempt a day, its own streak, the share
-card, archive — is separate work on top of this.
+A replay returns a null `streak` and a null `nextRoundAt`: it moves neither, and claiming either
+would be a lie the client would draw. Opening the tab always lands on today, never on whichever
+day was last replayed.
 
+Replays do count toward score, the leaderboard and badges, the same as practice — they are real
+calls on real charts, and capped at one attempt per day they are less grindable than practice
+already is.
+
+One rare edge, deliberately left alone: two different days can pick the same (asset, startIndex)
+by coincidence, and the unique constraint would then treat them as one archived round. With tens
+of thousands of windows per asset this is remote, and pinning it would mean carrying the day on
+`guess_results` for no other reason.
+
+### Achievements
+
+Nine badges on the profile, from `Achievement` — a pure enum where each entry is a name, a
+threshold and which number it reads off a `Snapshot`. Sent inside `/api/stats/me`, since
+`StatsService` already computes almost every input; the daily streak is the one extra query.
+
+**Nothing is stored, and that was a deliberate choice against the obvious design.** A badge is
+not a row written when a player crosses a line, it is a question asked of their history — the
+same shape as `PlayStreak` and the daily's attempt state. What that buys:
+
+- Badges cannot drift from what a player actually did: no write path to forget, no award that
+  fires twice, and deleting an account's results takes its trophies with them.
+- A badge added later is awarded retroactively to everyone who already qualified, instead of
+  needing a backfill migration per badge.
+- Thresholds can be tuned. With a table, lowering one leaves already-qualified players unbadged
+  until they play again; raising one leaves badges standing on accounts that no longer qualify.
+
+What it gives up is real and worth knowing before extending this: **there is no *when***. The
+profile cannot say "earned on March 3rd", and the server cannot tell that a badge is new this
+request. If that is ever needed, add a table of first-earned timestamps *beside* `Achievement`,
+never instead of it — the rule stays in the enum.
+
+Badges read `recorded` totals only, never the `legacy_*` carry-over — same reason the
+leaderboard refuses them: those numbers are client-supplied, so counting them would make posting
+a large believable number the fastest route to a wall of trophies.
+
+`Achievement.Progress` is a `domain/` record and does not leave the server; `StatsResponse.Badge`
+is the copy that does. Unearned badges are returned too, with progress — a badge nobody can see
+themselves approaching is not a goal, and goals in reach are the thing that still works when a
+streak breaks. The profile sorts earned first, then unearned by how close they are.
+
+### Progressive hints
+
+The chart gives ground as a player misses on it: 1 miss unlocks volume, 2 the 5-candle moving
+average, 3 the name of a candlestick pattern in what is already on screen (`HintLevel`). Both
+games get it — practice and daily share `RoundPlayService`.
+
+Keyed to **misses, not guess number**. A player reading the chart correctly is handed nothing;
+one who is lost gets more each time. Missing on purpose to unlock a hint is possible and costs
+the guess, the streak and the point — the same trade Songless makes with its skip button, not a
+loophole.
+
+`misses` rides in the signed round token, because the server keeps no session and a count the
+client could edit would be a difficulty dial the client owns. The daily resumes from the
+recorded rows instead: a player who closed the tab has no token left, so the guesses are the
+only thing that survived.
+
+**No hint may reach past the last revealed candle** — `RoundHintService` reads a window ending
+there, so a hint is always a second look at what is on screen rather than a peek at the answer.
+`ProgressiveHintFlowTest` pins that with a fixture that alternates direction, which is what lets
+it choose to be right or wrong on demand and drive the miss count exactly rather than climbing
+the ladder by luck.
+
+Two frontend traps, both hit while building this:
+
+- **Set `chart.hints` before the reveal animation, not after.** The animation is what redraws
+  `app.js`'s chart, so assigning afterwards left every hint a guess late — named in the text,
+  invisible on the chart until the next candle. The hint series are sized for the chart
+  *including* the candle about to appear, and both renderers ignore entries past the candles
+  they have.
+- **The volume strip comes out of the price plot**, in both `app.js` and `candle-chart.js`. The
+  viewBox is fixed by the caller, so candles make room rather than the chart growing; the strip
+  is only reserved once volume is actually unlocked, leaving an unhinted chart exactly as it was.
+
+Volume scales to the tallest bar in its own strip — it shares no units with the price axis
+beside it. The average draws in `--accent`, not up/down colours: it is a smoothing of closes
+already on screen, so it reports no verdict. Its leading entries are null rather than zero,
+which is what stops the line diving to the bottom of the chart.
 
 ### Daily challenge
 
@@ -400,7 +469,6 @@ The daily streak (`distinctDailyDaysDesc` folded through `PlayStreak`) counts on
 challenge itself was played, so it can break while the profile's day streak holds — turning up
 to practice is not doing today's chart.
 
-
 ### Retention baseline
 
 `GET /api/admin/retention` (`AdminRetentionService`, cached 60s, `&fresh=true` skips it) exists
@@ -432,6 +500,39 @@ Three things here are easy to get wrong, and all three are pinned by `AdminReten
 player once per active day on purpose, so the figure does not grow just because the window is
 long. The response carries counts and never rates; the pane divides, once, in `renderRetention`.
 
+### Daily round selection
+
+`RoundSelectionService.selectDailyRound(day)` picks the one chart everybody gets on a UTC day,
+from the date alone — same asset, same window, on every server and every reload, with nothing
+stored. Same reasoning as `LiveRound.at`: a midnight job that generates the day's round has to
+run exactly once on exactly one instance, and leaves the site with no round at all if it misses.
+
+Seeding the draw is the easy half of that and **not** the half that breaks. Three things had to
+give way, and only the first is obvious:
+
+- `ThreadLocalRandom` becomes `new Random(seed)`. `DailySeed` runs the epoch day through
+  splitmix64 first — `java.util.Random` draws visibly related first numbers from adjacent
+  seeds, and every day this compares against is adjacent, so unmixed seeds would put
+  consecutive days in neighbouring windows of the same asset.
+- **The draw's range must not move.** `startIndex` is an offset from the oldest candle, so the
+  hourly sync shifts nothing already indexed — but it does widen `count(*)`, and the same seed
+  against a range one wider draws a different number. A round picked at 10:00 and the "same"
+  round at 11:00 were different charts. `countByAssetAndTimeframeAndOpenTimeLessThan(midnight)`
+  holds the range still for the day. `DailyRoundSelectionTest.anHourlySyncDoesNotMoveTodaysChart`
+  is the only test that catches this, and it does fail without the frozen count — everything
+  else passes either way, which is what makes this worth writing down.
+- **The repeat cache is bypassed.** `recentlyServed` is per-instance and expiring; honouring it
+  would let a server that already served today's chart hand out a different one. Practice must
+  not repeat, daily must.
+
+The asset comes from `findAllByOrderByPositionAscSymbolAsc` — **disabled pairs included**, so a
+pair switched off at lunchtime cannot change the chart out from under someone mid-day. Adding a
+pair does move which asset future days land on; the list is an input, and a longer list is a
+different input.
+
+There is deliberately no endpoint yet. Selection is the half that fails silently, so it lands
+and gets reviewed on its own; the daily *mode* — one attempt a day, its own streak, the share
+card, archive — is separate work on top of this.
 
 ### Two streaks, and they are not the same number
 
@@ -452,7 +553,6 @@ The current run counts back from **today or yesterday**. Without that grace ever
 site would read zero from midnight UTC until its owner next opened the game; it breaks only
 once a whole day has gone by unplayed. Imported `legacy_*` figures never feed it — four totals
 with no dates on them cannot say which days were played.
-
 
 ### Leaderboard
 

@@ -11,6 +11,7 @@ import com.example.candles.dto.request.GuessRequest;
 import com.example.candles.dto.response.CandleDto;
 import com.example.candles.dto.response.DatedCandleDto;
 import com.example.candles.dto.response.GuessResponse;
+import com.example.candles.dto.response.RoundHints;
 import com.example.candles.entity.Asset;
 import com.example.candles.entity.Candle;
 import com.example.candles.entity.Direction;
@@ -41,6 +42,7 @@ public class RoundPlayService {
     private final GuessResultService guessResultService;
     private final RoundPatternScanner patternScanner;
     private final RoundTimingPolicy timingPolicy;
+    private final RoundHintService hintService;
 
     public RoundPlayService(RoundSelectionService roundSelectionService,
                             RoundTokenService roundTokenService,
@@ -48,7 +50,8 @@ public class RoundPlayService {
                             CandlesProperties properties,
                             GuessResultService guessResultService,
                             RoundPatternScanner patternScanner,
-                            RoundTimingPolicy timingPolicy) {
+                            RoundTimingPolicy timingPolicy,
+                            RoundHintService hintService) {
         this.roundSelectionService = roundSelectionService;
         this.roundTokenService = roundTokenService;
         this.assetRepository = assetRepository;
@@ -56,6 +59,7 @@ public class RoundPlayService {
         this.guessResultService = guessResultService;
         this.patternScanner = patternScanner;
         this.timingPolicy = timingPolicy;
+        this.hintService = hintService;
     }
 
     /**
@@ -91,8 +95,16 @@ public class RoundPlayService {
 
         int totalGuesses = properties.round().guessesPerChart();
         boolean sessionComplete = token.guessNumber() >= totalGuesses;
+
+        // A guess the countdown ate counts as a miss: the player did not read the chart, which
+        // is the thing the hints are there to help with.
+        int misses = token.misses() + (guess == actualDirection ? 0 : 1);
         String nextToken = sessionComplete ? null : roundTokenService.generate(new RoundToken(
-                token.assetId(), token.timeframe(), token.startIndex(), token.guessNumber() + 1, mode));
+                token.assetId(), token.timeframe(), token.startIndex(), token.guessNumber() + 1,
+                mode, misses));
+        RoundHints nextHints = sessionComplete ? RoundHints.NONE : hintService.hintsFor(
+                token.assetId(), token.timeframe(), token.startIndex(),
+                token.guessNumber() + 1, misses);
 
         List<Candle> revealed = sessionComplete
                 ? roundSelectionService.revealCandlesAfter(asset, token.timeframe(), token.startIndex(), totalGuesses)
@@ -142,7 +154,8 @@ public class RoundPlayService {
                 nextToken,
                 revealed.stream().map(CandleDto::from).toList(),
                 identity,
-                context
+                context,
+                nextHints
         );
     }
 }

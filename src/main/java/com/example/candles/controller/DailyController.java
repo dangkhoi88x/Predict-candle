@@ -5,10 +5,15 @@ import jakarta.validation.Valid;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.time.LocalDate;
+import java.util.List;
 
 import com.example.candles.config.CandlesProperties;
 import com.example.candles.dto.request.GuessRequest;
@@ -50,6 +55,37 @@ public class DailyController {
     public DailyRoundResponse round(HttpServletRequest request) {
         rateLimiter.check("daily-round", properties.round().rateLimit().roundsPerMinute(), request);
         return dailyRoundService.round(currentUserId());
+    }
+
+    /**
+     * The recent past and how the caller did on each. Public like the round itself; a signed-out
+     * visitor gets the list with nothing played on it.
+     */
+    @GetMapping("/archive")
+    public List<DailyRoundService.ArchiveEntry> archive(
+            @RequestParam(defaultValue = "14") int days, HttpServletRequest request) {
+        rateLimiter.check("daily-archive", properties.round().rateLimit().roundsPerMinute(), request);
+        return dailyRoundService.archive(currentUserId(), days);
+    }
+
+    @GetMapping("/archive/{day}")
+    public DailyRoundResponse archiveRound(@PathVariable LocalDate day, HttpServletRequest request) {
+        rateLimiter.check("daily-round", properties.round().rateLimit().roundsPerMinute(), request);
+        return dailyRoundService.archiveRound(currentUserId(), day);
+    }
+
+    /**
+     * The day travels in the path rather than the token, so it has to be checked back against
+     * the token's chart — {@code checkIsArchived} is what makes the pair agree.
+     */
+    @PostMapping("/archive/{day}/guess")
+    public GuessResponse archiveGuess(@PathVariable LocalDate day,
+                                      @Valid @RequestBody GuessRequest body,
+                                      HttpServletRequest request) {
+        rateLimiter.check("daily-guess", properties.round().rateLimit().guessesPerMinute(), request);
+
+        return roundPlayService.play(body, GuessMode.ARCHIVE,
+                token -> dailyRoundService.checkIsArchived(token, day));
     }
 
     @PostMapping("/guess")

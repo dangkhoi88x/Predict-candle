@@ -18,6 +18,7 @@
         dayStreak: document.getElementById("profile-day-streak"),
         streakNote: document.getElementById("profile-streak-note"),
         legacyNote: document.getElementById("profile-legacy-note"),
+        badges: document.getElementById("profile-badges"),
         byAsset: document.getElementById("profile-by-asset"),
         recent: document.getElementById("profile-recent"),
     };
@@ -33,6 +34,57 @@
         var hours = Math.round(mins / 60);
         if (hours < 24) return hours + " giờ trước";
         return Math.round(hours / 24) + " ngày trước";
+    }
+
+    /* Earned badges first, then the ones still in reach. Ordering by state rather than by the
+       catalogue's own order is what makes the section read as "what you have, and what is
+       next" instead of a checklist with the wins scattered through it. */
+    function renderBadges(rows) {
+        el.badges.innerHTML = "";
+        if (!rows || !rows.length) return;
+
+        var ordered = rows.slice().sort(function (a, b) {
+            if (a.earned !== b.earned) return a.earned ? -1 : 1;
+            // Among the unearned, closest to done first — the next goal should be the one at
+            // the front, not whichever happens to be cheapest to describe.
+            return (b.progress / b.target) - (a.progress / a.target);
+        });
+
+        ordered.forEach(function (badge) {
+            var card = document.createElement("div");
+            card.className = "profile-badge" + (badge.earned ? " is-earned" : "");
+
+            var name = document.createElement("span");
+            name.className = "profile-badge-name";
+            name.textContent = badge.name;
+
+            var desc = document.createElement("span");
+            desc.className = "profile-badge-desc";
+            desc.textContent = badge.description;
+
+            card.appendChild(name);
+            card.appendChild(desc);
+
+            /* An earned badge shows no bar: a full bar beside a finished thing is noise, and
+               the point of the bar is the distance still to go. */
+            if (!badge.earned) {
+                var count = document.createElement("span");
+                count.className = "profile-badge-count";
+                count.textContent = badge.progress + " / " + badge.target;
+
+                var track = document.createElement("span");
+                track.className = "profile-badge-track";
+                var fill = document.createElement("span");
+                fill.className = "profile-badge-fill";
+                fill.style.width = (badge.target === 0 ? 0 : (badge.progress / badge.target) * 100) + "%";
+                track.appendChild(fill);
+
+                card.appendChild(count);
+                card.appendChild(track);
+            }
+
+            el.badges.appendChild(card);
+        });
     }
 
     function renderByAsset(rows) {
@@ -149,6 +201,7 @@
                 + "có tài khoản. " + data.recorded.total + " lượt được máy chủ ghi lại.";
         }
 
+        renderBadges(data.achievements);
         renderByAsset(data.byAsset);
         renderRecent(data.recent);
     }

@@ -9,5 +9,11 @@ package com.example.candles.entity;
  */
 public enum GuessMode {
     PRACTICE,
-    DAILY
+    DAILY,
+    /**
+     * A past daily round, replayed. Deliberately not {@code DAILY}: the streak query counts
+     * days with a DAILY row, so replaying an old chart must not be able to stand in for
+     * turning up today.
+     */
+    ARCHIVE
 }
