@@ -70,6 +70,7 @@
         marketOhlc: document.getElementById("market-ohlc"),
         marketCard: document.querySelector(".market-card"),
         soundToggle: document.getElementById("sound-toggle"),
+        gameStreak: document.getElementById("game-streak"),
     };
 
     // ---------- sound + haptic feedback ----------
@@ -630,6 +631,32 @@
             total: data.total,
         };
         renderStats();
+        renderDayStreak(data.dayStreak);
+    }
+
+    /* Days in a row the player has shown up — the habit number, kept out of the scoreboard on
+       purpose. That grid already has a "Streak" (correct calls in a row), and two different
+       numbers under the same word in one grid is how a scoreboard stops being read.
+
+       Hidden signed out and at zero alike: nothing is recorded for anonymous play, so a streak
+       there would be a promise that vanishes the moment they sign in, and a player with no run
+       going has nothing to protect.
+
+       This is refreshed after every recorded guess, so the day's first round ticks it up in
+       front of the player — which is the whole reason it is on this tab and not only the
+       profile. */
+    function renderDayStreak(dayStreak) {
+        var running = dayStreak && dayStreak.current > 0;
+        el.gameStreak.classList.toggle("hidden", !running);
+        if (!running) return;
+
+        el.gameStreak.textContent = "🔥 " + dayStreak.current;
+        // Alive but unplayed today is the one state worth drawing differently: it is the only
+        // moment when playing a round changes the number rather than just maintaining it.
+        el.gameStreak.classList.toggle("is-at-risk", !dayStreak.playedToday);
+        el.gameStreak.title = dayStreak.playedToday
+            ? "Chuỗi " + dayStreak.current + " ngày · đã chơi hôm nay"
+            : "Chuỗi " + dayStreak.current + " ngày · chơi một ván hôm nay để giữ";
     }
 
     /* Runs once per sign-in. The import endpoint takes the browser's tally the first time and
@@ -683,9 +710,11 @@
         if (event.detail.user) {
             adoptAccountStats();
         } else {
-            // Back to this browser's own tally, which was never overwritten.
+            // Back to this browser's own tally, which was never overwritten. The day streak
+            // goes with the account: the local tally has no dates in it to rebuild one from.
             state.stats = loadStats();
             renderStats();
+            renderDayStreak(null);
         }
     });
 

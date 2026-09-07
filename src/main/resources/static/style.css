@@ -705,6 +705,11 @@ h1, h2, h3 {
     justify-content: space-between;
     gap: 10px;
     margin-bottom: 16px;
+    /* Wraps so the streak chip cannot take width off the asset picker on a phone. The picker
+       scrolls horizontally when it has to, and it was already doing so at 375px — this just
+       stops a second control making the squeeze worse. Everything fits one row on a desktop,
+       so nothing moves there. */
+    flex-wrap: wrap;
 }
 
 .sound-toggle {
@@ -4815,4 +4820,27 @@ body:not(.is-admin) .adm-search {
     border: 1px dashed var(--accent);
     border-radius: 10px;
     font-size: 13px;
+}
+
+/* Day-streak chip in the game toolbar. Pushed to the right so it reads as part of the
+   toolbar's controls rather than as a third item competing with the asset picker. */
+.game-streak {
+    margin-left: auto;
+    padding: 5px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--panel);
+    font-size: 13px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+/* Alive but unplayed today — the only state where playing changes the number instead of
+   maintaining it, so it is the only one drawn differently. Dashed rather than red: a streak
+   in reach is not an error. */
+.game-streak.is-at-risk {
+    border-style: dashed;
+    border-color: var(--warn);
+    color: var(--warn);
 }
