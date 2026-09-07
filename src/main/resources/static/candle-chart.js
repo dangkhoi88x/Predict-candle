@@ -141,8 +141,14 @@ window.CandleChart = (function () {
             svg.appendChild(label);
         });
 
+        /* No time axis when the candles carry no time. The daily challenge is the caller that
+           needs this: sending dates with a round the player is still guessing would hand them
+           the period to go and look up, so its candles arrive without one. Drawing the axis
+           anyway turned every missing date into "01/01 08h", which is worse than no axis —
+           it is a wrong one. */
         var labelStep = Math.max(1, Math.round(n / 4));
         candles.forEach(function (c, i) {
+            if (c.time == null) return;
             if (i % labelStep !== 0 && i !== n - 1) return;
             var t = svgEl("text", {
                 x: cx(i), y: h - 4, "text-anchor": "middle",

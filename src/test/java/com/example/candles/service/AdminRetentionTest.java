@@ -17,6 +17,7 @@ import java.util.UUID;
 import com.example.candles.dto.response.AdminRetention;
 import com.example.candles.entity.Asset;
 import com.example.candles.entity.Direction;
+import com.example.candles.entity.GuessMode;
 import com.example.candles.entity.GuessResult;
 import com.example.candles.entity.Role;
 import com.example.candles.entity.User;
@@ -64,7 +65,7 @@ class AdminRetentionTest {
     private void playedDaysAgo(User user, int startIndex, int daysAgo) {
         Asset asset = assets.findAll().getFirst();
         GuessResult saved = guessResults.saveAndFlush(
-                new GuessResult(user, asset, "1h", startIndex, 1, Direction.LONG, Direction.LONG));
+                new GuessResult(user, asset, "1h", startIndex, 1, Direction.LONG, Direction.LONG, GuessMode.PRACTICE));
         entityManager.createNativeQuery("update guess_results set created_at = :at where id = :id")
                 // Midday, so a few hours either way cannot tip a row into the wrong UTC date.
                 .setParameter("at", LocalDate.now(ZoneOffset.UTC).minusDays(daysAgo)

@@ -49,13 +49,13 @@ packages where a layer name would lie about the contents.
 
 | package | holds |
 |---|---|
-| `controller/` | the 18 `@RestController`s |
-| `service/` | the 19 `@Service`s, plus `RateLimiter` and `CandleSyncScheduler` |
+| `controller/` | the 19 `@RestController`s |
+| `service/` | the 22 `@Service`s, plus `RateLimiter` and `CandleSyncScheduler` |
 | `repository/` | the 6 Spring Data interfaces |
-| `entity/` | the 6 `@Entity` classes and the 4 persisted enums |
+| `entity/` | the 6 `@Entity` classes and the 5 persisted enums |
 | `dto/request/` | the 5 records a client sends in: `GuessRequest`, `WalletVerifyRequest`, `BlogPostRequest`, `ContentItemRequest`, `LegacyStatsRequest` |
 | `dto/response/` | the 17 records the server sends out, including the pieces nested inside them (`CandleDto`, `BlogPostDto`, `PlayerSummary`) |
-| `domain/` | internal value records that never leave the server: `RoundToken`, `RoundSelection`, `AuthSession`, `PlayerScore`, `StoredMedia` |
+| `domain/` | internal value records that never leave the server: `RoundToken`, `RoundSelection`, `AuthSession`, `PlayerScore`, `PlayStreak`, `DailySeed`, `DailyRound`, `StoredMedia` |
 | `security/` | `JwtService`, the filter, `WalletSignatureVerifier`, `AdminAccess`, `AdminWallets`, `AdminRoleReconciler` |
 | `client/` | Binance and Yahoo, their DTOs, and `Timeframes` |
 | `pattern/` | the two pattern libraries and their matchers — algorithm, not a layer |
@@ -320,6 +320,86 @@ second line when an admin has renamed the account and the two have diverged — 
 "0xef00…4d45" pairing rekto.fun's own roster shows. The avatar is an emoji plus a background
 color, both chosen by hashing `walletShort` rather than the display name, so a renamed account
 keeps the same avatar it always had.
+
+### Daily round selection
+
+`RoundSelectionService.selectDailyRound(day)` picks the one chart everybody gets on a UTC day,
+from the date alone — same asset, same window, on every server and every reload, with nothing
+stored. Same reasoning as `LiveRound.at`: a midnight job that generates the day's round has to
+run exactly once on exactly one instance, and leaves the site with no round at all if it misses.
+
+Seeding the draw is the easy half of that and **not** the half that breaks. Three things had to
+give way, and only the first is obvious:
+
+- `ThreadLocalRandom` becomes `new Random(seed)`. `DailySeed` runs the epoch day through
+  splitmix64 first — `java.util.Random` draws visibly related first numbers from adjacent
+  seeds, and every day this compares against is adjacent, so unmixed seeds would put
+  consecutive days in neighbouring windows of the same asset.
+- **The draw's range must not move.** `startIndex` is an offset from the oldest candle, so the
+  hourly sync shifts nothing already indexed — but it does widen `count(*)`, and the same seed
+  against a range one wider draws a different number. A round picked at 10:00 and the "same"
+  round at 11:00 were different charts. `countByAssetAndTimeframeAndOpenTimeLessThan(midnight)`
+  holds the range still for the day. `DailyRoundSelectionTest.anHourlySyncDoesNotMoveTodaysChart`
+  is the only test that catches this, and it does fail without the frozen count — everything
+  else passes either way, which is what makes this worth writing down.
+- **The repeat cache is bypassed.** `recentlyServed` is per-instance and expiring; honouring it
+  would let a server that already served today's chart hand out a different one. Practice must
+  not repeat, daily must.
+
+The asset comes from `findAllByOrderByPositionAscSymbolAsc` — **disabled pairs included**, so a
+pair switched off at lunchtime cannot change the chart out from under someone mid-day. Adding a
+pair does move which asset future days land on; the list is an input, and a longer list is a
+different input.
+
+There is deliberately no endpoint yet. Selection is the half that fails silently, so it lands
+and gets reviewed on its own; the daily *mode* — one attempt a day, its own streak, the share
+card, archive — is separate work on top of this.
+
+
+### Daily challenge
+
+One chart a day, the same one for everybody, one attempt. `GET /api/daily/round` and
+`POST /api/daily/guess`, both public like `/api/practice`.
+
+**Nothing stores an attempt.** The chart comes from the date (`selectDailyRound`) and the
+attempt *is* the recorded guesses: `findRoundGuesses` for today's coordinates rebuilds where a
+player got to, so a reload, a second tab or another device all resume the same round, and the
+one-attempt rule is the `guess_results` unique constraint rather than a flag anything could
+forget to set. That is why V14 put `mode` **inside** that constraint — without it a player who
+happened to draw today's window in practice would find their daily already answered.
+
+`mode` is also on the round token, and that part is a security boundary, not a label. Without
+it a player could take the daily token, spend it on `/api/practice/guess` to read the answer for
+free — a practice row is not a daily attempt — then play the daily already knowing it.
+`RoundPlayService` refuses a token whose mode is not the endpoint's, and the daily additionally
+refuses a token for a day that has since rolled over.
+
+Practice and daily share `RoundPlayService`: they differ in where the chart comes from and what
+may be played, not in what happens when a guess arrives. Two copies of that would eventually
+score the same guess two ways.
+
+**The countdown is not optional and is not pausable.** The server refuses an answered guess past
+`seconds + grace` measured from when it minted the token, so a daily tab without a visible clock
+would silently burn the day's only attempt. It keeps running when the tab is hidden or switched
+away from, for the reason the game tab already gives: a pausable clock on a chart you get one go
+at is an invitation to park the round and go look the period up.
+
+Two other things follow from anonymous play being allowed. Signed out, **the client must not
+re-read the round after finishing** — nothing was recorded, so the server would hand today's
+chart back as though it had never been played and wipe the result off the screen, taking the
+share card with it. And the daily's candles carry **no timestamps**, like practice: a date is
+the answer. `CandleChart` skips its time axis when candles have no time, which it previously
+drew as "01/01 08h".
+
+The share text is the round number, the score and the same coloured squares that are on screen —
+no asset, no dates. A result you cannot post without spoiling the puzzle is one nobody posts.
+`DailyRound.FIRST_DAY` is the origin of the numbering; moving it renumbers every round anyone
+has ever shared.
+
+The daily streak (`distinctDailyDaysDesc` folded through `PlayStreak`) counts only days the
+challenge itself was played, so it can break while the profile's day streak holds — turning up
+to practice is not doing today's chart.
+
 
 ### Retention baseline
 

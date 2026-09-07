@@ -4,6 +4,7 @@
     var tabs = Array.prototype.slice.call(document.querySelectorAll(".nav-tab"));
     var views = {
         game: document.getElementById("view-game"),
+        daily: document.getElementById("view-daily"),
         live: document.getElementById("view-live"),
         heatmap: document.getElementById("view-heatmap"),
         patterns: document.getElementById("view-patterns"),
@@ -25,6 +26,10 @@
     /* The profile reloads every time it is opened, not just the first time — a round played
        on the game tab moves the numbers it shows. */
     var onEveryShow = {
+        /* Re-read on every reveal rather than once: signing in mid-visit turns an anonymous
+           attempt into an account with a streak and a recorded result, and the tab has to be
+           able to catch up with that. */
+        daily: function () { window.__initDailyView && window.__initDailyView(); },
         profile: function () { window.__initProfileView && window.__initProfileView(); },
         /* Rebuilt on every reveal, not just the first: ranks move while you play, and a board
            showing where you stood when the page loaded is the one thing it must not do. The

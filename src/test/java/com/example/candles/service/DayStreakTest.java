@@ -14,6 +14,7 @@ import java.util.UUID;
 import com.example.candles.dto.response.StatsResponse;
 import com.example.candles.entity.Asset;
 import com.example.candles.entity.Direction;
+import com.example.candles.entity.GuessMode;
 import com.example.candles.entity.GuessResult;
 import com.example.candles.entity.User;
 import com.example.candles.repository.AssetRepository;
@@ -49,7 +50,7 @@ class DayStreakTest {
     private void guessedDaysAgo(User user, int startIndex, int daysAgo) {
         Asset asset = assets.findAll().getFirst();
         GuessResult saved = guessResults.saveAndFlush(
-                new GuessResult(user, asset, "1h", startIndex, 1, Direction.LONG, Direction.LONG));
+                new GuessResult(user, asset, "1h", startIndex, 1, Direction.LONG, Direction.LONG, GuessMode.PRACTICE));
         entityManager.createNativeQuery("update guess_results set created_at = :at where id = :id")
                 .setParameter("at", Instant.now().minus(daysAgo, ChronoUnit.DAYS))
                 .setParameter("id", saved.getId())

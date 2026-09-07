@@ -27,6 +27,22 @@ public interface CandleRepository extends JpaRepository<Candle, Long> {
 
     long countByAssetAndTimeframe(Asset asset, String timeframe);
 
+    /**
+     * The same count, but as of an instant — how much history existed before a given moment.
+     *
+     * A daily round draws its window out of this rather than out of the live count, which grows
+     * every time the hourly sync lands. Seeding the draw is not enough on its own: the same seed
+     * against a range that got one wider picks a different number, so a round chosen at 10:00
+     * and the "same" round chosen at 11:00 would be different charts. Counting only what closed
+     * before the day began holds the range still for the whole day, and grows it by exactly a
+     * day's candles at midnight.
+     *
+     * This works because {@link #findWindow} offsets from the oldest candle: freshly synced
+     * candles land at the end and shift nothing, so an index means the same chart tomorrow as
+     * it does today.
+     */
+    long countByAssetAndTimeframeAndOpenTimeLessThan(Asset asset, String timeframe, Instant openTime);
+
     @Query(value = """
             SELECT * FROM candles c
             WHERE c.asset_id = :assetId AND c.timeframe = :timeframe

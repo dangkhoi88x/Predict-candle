@@ -13,6 +13,7 @@ import java.util.UUID;
 import com.example.candles.dto.response.AdminStats;
 import com.example.candles.entity.Asset;
 import com.example.candles.entity.Direction;
+import com.example.candles.entity.GuessMode;
 import com.example.candles.entity.GuessResult;
 import com.example.candles.entity.Role;
 import com.example.candles.entity.User;
@@ -75,10 +76,10 @@ class AdminStatsTest {
         User player = save(Role.USER);
         Asset asset = assetRepository.findAll().getFirst();
         guessResults.saveAll(List.of(
-                new GuessResult(player, asset, "1h", 11, 1, Direction.LONG, Direction.LONG),
+                new GuessResult(player, asset, "1h", 11, 1, Direction.LONG, Direction.LONG, GuessMode.PRACTICE),
                 // Timed out: no direction. It still counts against accuracy, the way
                 // PlayerScore counts it against the player.
-                new GuessResult(player, asset, "1h", 12, 1, null, Direction.LONG)));
+                new GuessResult(player, asset, "1h", 12, 1, null, Direction.LONG, GuessMode.PRACTICE)));
         guessResults.flush();
 
         AdminStats stats = statsService.stats("month");
@@ -131,11 +132,11 @@ class AdminStatsTest {
         User player = save(Role.USER);
         Asset asset = assetRepository.findAll().getFirst();
         guessResults.saveAll(List.of(
-                new GuessResult(player, asset, "1h", 1, 1, Direction.LONG, Direction.LONG),
-                new GuessResult(player, asset, "1h", 2, 1, Direction.LONG, Direction.SHORT),
-                new GuessResult(player, asset, "1h", 3, 1, Direction.SHORT, Direction.SHORT),
+                new GuessResult(player, asset, "1h", 1, 1, Direction.LONG, Direction.LONG, GuessMode.PRACTICE),
+                new GuessResult(player, asset, "1h", 2, 1, Direction.LONG, Direction.SHORT, GuessMode.PRACTICE),
+                new GuessResult(player, asset, "1h", 3, 1, Direction.SHORT, Direction.SHORT, GuessMode.PRACTICE),
                 // Ran out of time: no direction was given, so it counts as neither side.
-                new GuessResult(player, asset, "1h", 4, 1, null, Direction.LONG)));
+                new GuessResult(player, asset, "1h", 4, 1, null, Direction.LONG, GuessMode.PRACTICE)));
         guessResults.flush();
 
         AdminStats.Bucket today = statsService.stats("week").buckets().getLast();

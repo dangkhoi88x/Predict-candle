@@ -5,8 +5,10 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 
+import com.example.candles.entity.GuessMode;
 import com.example.candles.entity.GuessResult;
 
 public interface GuessResultRepository extends JpaRepository<GuessResult, Long> {
@@ -18,16 +20,57 @@ public interface GuessResultRepository extends JpaRepository<GuessResult, Long> 
     @Query("""
             select count(g) > 0 from GuessResult g
             where g.user.id = :userId
+              and g.mode = :mode
               and g.asset.id = :assetId
               and g.timeframe = :timeframe
               and g.startIndex = :startIndex
               and g.guessNumber = :guessNumber
             """)
     boolean alreadyRecorded(@Param("userId") Long userId,
+                            @Param("mode") GuessMode mode,
                             @Param("assetId") Long assetId,
                             @Param("timeframe") String timeframe,
                             @Param("startIndex") int startIndex,
                             @Param("guessNumber") int guessNumber);
+
+    /**
+     * One player's guesses on one chart in one mode, in the order they were asked — how the
+     * daily challenge rebuilds a session the player already finished.
+     *
+     * There is no "daily attempt" row anywhere; a day's chart is fixed, so these guesses are
+     * the attempt. Reading them back is what lets a returning player see their own result
+     * instead of being handed the chart again.
+     */
+    @Query("""
+            select g from GuessResult g
+            where g.user.id = :userId
+              and g.mode = :mode
+              and g.asset.id = :assetId
+              and g.timeframe = :timeframe
+              and g.startIndex = :startIndex
+            order by g.guessNumber
+            """)
+    List<GuessResult> findRoundGuesses(@Param("userId") Long userId,
+                                       @Param("mode") GuessMode mode,
+                                       @Param("assetId") Long assetId,
+                                       @Param("timeframe") String timeframe,
+                                       @Param("startIndex") int startIndex);
+
+    /**
+     * The distinct UTC days this player played the daily challenge on, newest first — folded by
+     * {@link com.example.candles.domain.PlayStreak} into the streak the daily tab shows.
+     *
+     * Deliberately not the same number as the profile's day streak, which counts any play at
+     * all. Turning up to practice does not keep a daily streak alive: this one is the promise
+     * that you did today's chart, and it has to be able to break while the other holds.
+     */
+    @Query(value = """
+            select distinct cast(g.created_at at time zone 'UTC' as date) as day
+            from guess_results g
+            where g.user_id = :userId and g.mode = 'DAILY'
+            order by day desc
+            """, nativeQuery = true)
+    List<LocalDate> distinctDailyDaysDesc(@Param("userId") Long userId);
 
     /**
      * Just the flags, in play order. Streak length cannot be reached with count/sum, and

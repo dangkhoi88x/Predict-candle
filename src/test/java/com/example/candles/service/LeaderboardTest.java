@@ -14,6 +14,7 @@ import java.util.UUID;
 import com.example.candles.dto.response.Leaderboard;
 import com.example.candles.entity.Asset;
 import com.example.candles.entity.Direction;
+import com.example.candles.entity.GuessMode;
 import com.example.candles.entity.GuessResult;
 import com.example.candles.entity.Role;
 import com.example.candles.entity.User;
@@ -52,10 +53,10 @@ class LeaderboardTest {
         List<GuessResult> batch = new ArrayList<>();
         int index = 0;
         for (int i = 0; i < correct; i++) {
-            batch.add(new GuessResult(user, asset, "1h", index++, 1, Direction.LONG, Direction.LONG));
+            batch.add(new GuessResult(user, asset, "1h", index++, 1, Direction.LONG, Direction.LONG, GuessMode.PRACTICE));
         }
         for (int i = 0; i < wrong; i++) {
-            batch.add(new GuessResult(user, asset, "1h", index++, 1, Direction.LONG, Direction.SHORT));
+            batch.add(new GuessResult(user, asset, "1h", index++, 1, Direction.LONG, Direction.SHORT, GuessMode.PRACTICE));
         }
         guessResults.saveAll(batch);
         guessResults.flush();

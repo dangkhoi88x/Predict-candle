@@ -5,10 +5,15 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.math.MathContext;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 
 import com.example.candles.config.CandlesProperties;
+import com.example.candles.domain.DailySeed;
 import com.example.candles.domain.RoundSelection;
 import com.example.candles.entity.Asset;
 import com.example.candles.entity.Candle;
@@ -16,10 +21,14 @@ import com.example.candles.repository.AssetRepository;
 import com.example.candles.repository.CandleRepository;
 
 /**
- * Picks a random chart for practice mode: properties.round().visibleCandles() candles the
- * player sees, followed by up to properties.round().guessesPerChart() answer candles that get
- * revealed one at a time as the player keeps guessing. Avoids repeats and "dead" (near-flat)
- * charts where the outcome is just noise.
+ * Picks a chart to play: properties.round().visibleCandles() candles the player sees, followed
+ * by up to properties.round().guessesPerChart() answer candles that get revealed one at a time
+ * as the player keeps guessing. Skips "dead" (near-flat) charts where the outcome is just noise.
+ *
+ * Two ways in, and the difference between them is where the randomness comes from.
+ * {@link #selectRound} is practice: a fresh draw each time, avoiding charts served recently.
+ * {@link #selectDailyRound} is the shared daily chart: the same draw for everyone, derived
+ * from the date, repeats very much intended.
  */
 @Service
 public class RoundSelectionService {
@@ -53,23 +62,90 @@ public class RoundSelectionService {
 
     public RoundSelection selectRound(String assetSymbol) {
         Asset asset = resolveAsset(assetSymbol);
+        long total = candleRepository.countByAssetAndTimeframe(asset, properties.timeframe());
+        return pickWindow(asset, maxStartIndex(asset, total), ThreadLocalRandom.current(), true);
+    }
+
+    /**
+     * The one chart everybody gets on a given UTC day — the same asset and the same window for
+     * every player, every server and every reload, worked out from the date alone.
+     *
+     * Two things have to give way for that, and both are the point of this method existing
+     * rather than a seed being passed to {@link #selectRound}:
+     *
+     * The repeat cache is ignored. It is per-instance and it expires, so honouring it would let
+     * one server that had already served today's chart quietly hand out a different one — the
+     * exact disagreement this is supposed to rule out. A daily round is meant to repeat.
+     *
+     * The window is drawn from the history that existed at midnight, not from all of it. See
+     * {@link CandleRepository#countByAssetAndTimeframeAndOpenTimeLessThan}: a seeded draw
+     * against a range the hourly sync keeps widening is not deterministic at all.
+     *
+     * The asset is chosen by position and includes disabled pairs, so today's chart cannot
+     * change under a player because an admin turned a pair off at lunchtime. Adding a pair does
+     * shift which asset future days land on — the list is the input, and a longer list is a
+     * different input.
+     */
+    public RoundSelection selectDailyRound(LocalDate day) {
+        Random random = new Random(DailySeed.forDay(day).value());
+
+        List<Asset> assets = assetRepository.findAllByOrderByPositionAscSymbolAsc();
+        if (assets.isEmpty()) {
+            throw new IllegalStateException("No assets configured for a daily round");
+        }
+
+        /*
+         * The seed names where to start looking, not what to settle for. A pair that has just
+         * been added has no history behind it until the backfill catches up, and a daily round
+         * that lands on one would be the whole site's only chart for the day — broken for
+         * everybody, until midnight. Walking on from the seeded position keeps the choice
+         * deterministic while making it survive a pair that cannot be played yet.
+         */
+        Instant midnight = day.atStartOfDay(ZoneOffset.UTC).toInstant();
+        int first = random.nextInt(assets.size());
+        for (int step = 0; step < assets.size(); step++) {
+            Asset asset = assets.get((first + step) % assets.size());
+            long total = candleRepository.countByAssetAndTimeframeAndOpenTimeLessThan(
+                    asset, properties.timeframe(), midnight);
+            if (hasEnoughHistory(total)) {
+                return pickWindow(asset, maxStartIndex(asset, total), random, false);
+            }
+        }
+        throw new IllegalStateException("No asset has enough candle history for a daily round");
+    }
+
+    private int sessionSpan() {
+        return properties.round().visibleCandles() + properties.round().guessesPerChart()
+                + properties.round().revealCandlesAfterComplete();
+    }
+
+    private boolean hasEnoughHistory(long totalCandles) {
+        return totalCandles >= sessionSpan();
+    }
+
+    private int maxStartIndex(Asset asset, long totalCandles) {
+        int maxStartIndex = (int) totalCandles - sessionSpan();
+        if (maxStartIndex < 0) {
+            throw new IllegalStateException("Not enough candle history for " + asset.getSymbol());
+        }
+        return maxStartIndex;
+    }
+
+    /**
+     * Draws windows until one is worth playing. {@code avoidRepeats} is what separates a
+     * practice round, which must not serve the same chart twice in a row, from a daily one,
+     * which must serve the same chart to everyone.
+     */
+    private RoundSelection pickWindow(Asset asset, int maxStartIndex, Random random, boolean avoidRepeats) {
         String timeframe = properties.timeframe();
         int visibleCandles = properties.round().visibleCandles();
-        int sessionSpan = visibleCandles + properties.round().guessesPerChart()
-                + properties.round().revealCandlesAfterComplete();
-
-        long total = candleRepository.countByAssetAndTimeframe(asset, timeframe);
-        int maxStartIndex = (int) total - sessionSpan;
-        if (maxStartIndex < 0) {
-            throw new IllegalStateException("Not enough candle history for " + assetSymbol);
-        }
 
         List<Candle> fallback = null;
         int fallbackStart = -1;
         for (int attempt = 0; attempt < properties.round().maxAttempts(); attempt++) {
-            int startIndex = ThreadLocalRandom.current().nextInt(0, maxStartIndex + 1);
+            int startIndex = random.nextInt(0, maxStartIndex + 1);
             String cacheKey = asset.getId() + ":" + startIndex;
-            if (recentlyServed.getIfPresent(cacheKey) != null) {
+            if (avoidRepeats && recentlyServed.getIfPresent(cacheKey) != null) {
                 continue;
             }
 
@@ -101,13 +177,15 @@ public class RoundSelectionService {
                 fallbackStart = startIndex;
             }
             if (isLiveEnough(window)) {
-                recentlyServed.put(cacheKey, Boolean.TRUE);
+                if (avoidRepeats) {
+                    recentlyServed.put(cacheKey, Boolean.TRUE);
+                }
                 return new RoundSelection(asset, timeframe, startIndex, window);
             }
         }
 
         if (fallback == null) {
-            throw new IllegalStateException("Could not find a valid round for " + assetSymbol);
+            throw new IllegalStateException("Could not find a valid round for " + asset.getSymbol());
         }
         return new RoundSelection(asset, timeframe, fallbackStart, fallback);
     }
@@ -119,6 +197,15 @@ public class RoundSelectionService {
     public Candle answerCandleAt(Asset asset, String timeframe, int startIndex, int guessNumber) {
         return candleAt(asset, timeframe,
                 startIndex + properties.round().visibleCandles() + (guessNumber - 1));
+    }
+
+    /**
+     * Every answer candle of a round in one read, rather than {@link #answerCandleAt} once per
+     * guess — used to redraw a session that is already over, where all of them are known.
+     */
+    public List<Candle> answerCandles(Asset asset, String timeframe, int startIndex, int guesses) {
+        return candleRepository.findWindow(asset.getId(), timeframe,
+                startIndex + properties.round().visibleCandles(), guesses);
     }
 
     /**

@@ -21,6 +21,7 @@ import com.example.candles.entity.Asset;
 import com.example.candles.entity.AssetType;
 import com.example.candles.entity.Candle;
 import com.example.candles.entity.Direction;
+import com.example.candles.entity.GuessMode;
 import com.example.candles.entity.GuessResult;
 import com.example.candles.entity.LivePrediction;
 import com.example.candles.entity.User;
@@ -71,7 +72,7 @@ class LiveRoundScoringTest {
 
     private void practiceGuess(User user, boolean correct) {
         guessResults.saveAndFlush(new GuessResult(user, asset, "1h", nextStartIndex++, 1,
-                Direction.LONG, correct ? Direction.LONG : Direction.SHORT));
+                Direction.LONG, correct ? Direction.LONG : Direction.SHORT, GuessMode.PRACTICE));
     }
 
     /** A settled live call: the candle for {@code openTime} exists, so the round has an outcome. */

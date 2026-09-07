@@ -38,6 +38,7 @@
         <span class="brand">🕯️ Candle Guess</span>
         <div class="nav-tabs" role="tablist" aria-label="Khu vực của ứng dụng">
             <button class="nav-tab active" role="tab" id="tab-game" aria-controls="view-game" aria-selected="true" data-view="game">Đoán Nến</button>
+            <button class="nav-tab" role="tab" id="tab-daily" aria-controls="view-daily" aria-selected="false" data-view="daily">Thử Thách Hôm Nay</button>
             <button class="nav-tab" role="tab" id="tab-live" aria-controls="view-live" aria-selected="false" data-view="live">Dự Đoán Trực Tiếp</button>
             <button class="nav-tab" role="tab" id="tab-heatmap" aria-controls="view-heatmap" aria-selected="false" data-view="heatmap">Market Heatmap</button>
             <button class="nav-tab" role="tab" id="tab-patterns" aria-controls="view-patterns" aria-selected="false" data-view="patterns">Mẫu Nến</button>
@@ -175,6 +176,57 @@
     <button id="next-chart" class="next-btn hidden">🔄 Biểu đồ mới</button>
 
     <p id="status" class="status"></p>
+</main>
+
+<main id="view-daily" class="view app hidden" role="tabpanel" aria-labelledby="tab-daily">
+    <div class="view-head">
+        <h2>Thử Thách Hôm Nay</h2>
+        <span class="daily-number" id="daily-number"></span>
+    </div>
+
+    <p class="daily-intro">Cùng một biểu đồ cho tất cả mọi người, mỗi ngày một lần.</p>
+
+    <div class="daily-streak hidden" id="daily-streak">
+        <span class="daily-streak-value rolling" id="daily-streak-current">0</span>
+        <span class="daily-streak-label">ngày liên tiếp</span>
+        <span class="daily-streak-best" id="daily-streak-best"></span>
+    </div>
+
+    <div class="daily-board">
+        <div class="daily-chart-wrap">
+            <svg id="daily-chart" class="daily-chart" viewBox="0 0 720 300" preserveAspectRatio="none"
+                 role="img" aria-label="Biểu đồ nến của thử thách hôm nay"></svg>
+        </div>
+
+        <p class="daily-status" id="daily-status">Đang tải…</p>
+
+        <!-- The dots are the whole result at a glance, and the same shape the share card
+             copies out — so what a player sees is what their friends will see. -->
+        <div class="daily-dots" id="daily-dots" aria-label="Kết quả từng lượt"></div>
+
+        <!-- The same shot clock practice runs on, because the server enforces it either way:
+             an answered guess arriving after the limit is refused, and on a once-a-day round
+             that would burn the attempt. -->
+        <div id="daily-timer" class="guess-timer hidden">
+            <div class="guess-timer-track"><div class="guess-timer-fill" id="daily-timer-fill"></div></div>
+            <span class="guess-timer-value" id="daily-timer-value"></span>
+        </div>
+
+        <div class="daily-actions hidden" id="daily-actions">
+            <button class="guess-btn long" type="button" id="daily-long">LONG</button>
+            <button class="guess-btn short" type="button" id="daily-short">SHORT</button>
+        </div>
+
+        <div class="daily-done hidden" id="daily-done">
+            <p class="daily-done-line" id="daily-done-line"></p>
+            <p class="daily-next" id="daily-next"></p>
+            <button class="ghost-btn" type="button" id="daily-share">Sao chép kết quả</button>
+            <!-- Shown only when the clipboard refuses. A share button that can fail silently is a
+                 share button that does not work, so the text has to become reachable by hand. -->
+            <textarea class="daily-share-text hidden" id="daily-share-text" readonly rows="3"
+                      aria-label="Kết quả để chia sẻ"></textarea>
+        </div>
+    </div>
 </main>
 
 <main id="view-live" class="view app hidden" role="tabpanel" aria-labelledby="tab-live">
@@ -447,6 +499,7 @@
 <script src="content.js"></script>
 <script src="auth.js"></script>
 <script src="candle-chart.js"></script>
+<script src="daily.js"></script>
 <script src="live.js"></script>
 <script src="ticker.js"></script>
 <script src="nav.js"></script>
