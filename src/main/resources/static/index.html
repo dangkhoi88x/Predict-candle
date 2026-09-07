@@ -72,6 +72,11 @@
             <button class="pill-option" data-asset="BNBUSDT">BNB/USDT</button>
             <button class="pill-option" data-asset="SOLUSDT">SOL/USDT</button>
         </div>
+        <!-- Days in a row the player has shown up at all — not the daily challenge's own
+             streak on the next tab, and not the correct-in-a-row streak in the board below.
+             Signed-in only: nothing is recorded for anonymous play, so a streak here would be
+             a promise the server never made. -->
+        <span id="game-streak" class="game-streak hidden" aria-live="polite"></span>
         <button id="sound-toggle" class="ghost-btn sound-toggle" type="button" aria-label="Bật/tắt âm thanh và rung">🔊</button>
     </div>
 
@@ -192,7 +197,7 @@
 
     <div class="daily-streak hidden" id="daily-streak">
         <span class="daily-streak-value rolling" id="daily-streak-current">0</span>
-        <span class="daily-streak-label">ngày liên tiếp</span>
+        <span class="daily-streak-label">ngày thử thách liên tiếp</span>
         <span class="daily-streak-best" id="daily-streak-best"></span>
     </div>
 

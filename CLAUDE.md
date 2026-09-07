@@ -554,6 +554,21 @@ site would read zero from midnight UTC until its owner next opened the game; it 
 once a whole day has gone by unplayed. Imported `legacy_*` figures never feed it — four totals
 with no dates on them cannot say which days were played.
 
+**Three surfaces draw a days-in-a-row number, and two of them are different numbers.** The
+game tab's chip and the profile tile both show `PlayStreak` over *any* play; the daily tab
+shows it over DAILY days only, so it can break while the other holds. They are labelled apart
+for that reason — "ngày liên tiếp" for the general one, "ngày thử thách liên tiếp" on the daily
+tab. Reusing one label for both is the mistake to avoid: adjacent tabs disagreeing about a
+number under identical wording reads as a bug, not as two facts.
+
+The game-tab chip is deliberately **not** a fifth scoreboard tile. That grid already has a
+"Streak" — correct calls in a row — and two different numbers under the same word in one grid
+is how a scoreboard stops being read. It is hidden when signed out and at zero alike: nothing
+is recorded for anonymous play, so a streak there would be a promise that vanishes on sign-in,
+and a player with no run going has nothing to protect. `refreshAccountStats` runs after every
+recorded guess, so the day's first round ticks it up in front of the player — which is the
+reason it is on that tab and not only the profile.
+
 ### Leaderboard
 
 `GET /api/leaderboard` is public — anonymous callers get the board without the `me` row, and
