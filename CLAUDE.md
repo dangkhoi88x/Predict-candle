@@ -357,6 +357,22 @@ of equity — a number that quietly drops a holding is worse than a gap.
 from it: that one answers "the candle covering this round" and validates its cache against the
 round's open time, while this answers "the price right now" with no round in the picture.
 
+The terminal is a tab of its own (`demo-trade.js`). It computes nothing — every figure comes
+from `/api/demo/portfolio`, because a client doing its own arithmetic would eventually disagree
+with the server about how much money someone has. Signed out it shows a prompt rather than an
+error: a 401 is the expected answer to "show me a portfolio" from someone who has none, and the
+tab stays visible so the feature is discoverable.
+
+**`DemoTrade` rounds to the column's scale in its constructor, and that is load-bearing.**
+`numeric(30, 10)` truncates, so a response built in the same transaction as the insert reported
+a longer number than the row would hold, while every later read returned the stored one. A
+client that echoed the longer number back — which is exactly what "sell all" does — was told it
+was selling more than it held. Quantity rounds DOWN specifically: rounding up would release an
+amount that is not there. `theReportedQuantityIsExactlyWhatCanBeSoldBack` pins it, and it took
+three attempts to write a version that actually fails without the fix — a pinned round price
+divides too cleanly, and reading the quantity back through `portfolio()` after a flush reads the
+database rather than the response the browser keeps.
+
 **Still open:** resets and any future ranking are in tension — a resettable balance plus a
 leaderboard means retrying until a lucky run. Either ranking is seasonal and a reset forfeits
 it, or resets stop. `resets` is counted on the account so whatever decides this has the number.

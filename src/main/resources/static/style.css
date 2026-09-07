@@ -4890,3 +4890,161 @@ body:not(.is-admin) .adm-search {
     color: var(--down);
     text-decoration: line-through;
 }
+
+/* ---- Demo trading terminal ---- */
+
+.trade-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(260px, 1fr);
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+@media (max-width: 720px) {
+    .trade-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+.trade-markets {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.trade-market {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-areas: "name price" "held price";
+    gap: 0 10px;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--panel);
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: border-color var(--duration-fast) var(--ease-out);
+}
+
+.trade-market:hover {
+    border-color: var(--accent);
+}
+
+.trade-market.is-selected {
+    border-color: var(--accent);
+    background: var(--panel-2);
+}
+
+.trade-market-name {
+    grid-area: name;
+    font-weight: 700;
+    font-size: 14px;
+}
+
+.trade-market-price {
+    grid-area: price;
+    align-self: center;
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+}
+
+.trade-market-held {
+    grid-area: held;
+    font-size: 12px;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.trade-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 14px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--panel);
+    align-self: start;
+}
+
+.trade-sides {
+    width: 100%;
+}
+
+.trade-field {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    font-size: 12.5px;
+    color: var(--muted);
+}
+
+.trade-field input {
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    font: inherit;
+    font-family: var(--mono);
+    font-size: 16px;
+    font-variant-numeric: tabular-nums;
+}
+
+.trade-quick {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+}
+
+.trade-quick-btn {
+    padding: 7px 6px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--panel-2);
+    color: var(--muted);
+    font: inherit;
+    font-size: 12.5px;
+    cursor: pointer;
+}
+
+.trade-quick-btn:hover:not(:disabled) {
+    border-color: var(--accent);
+    color: var(--text);
+}
+
+.trade-quick-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+/* Profit and loss carry the same colours the charts use, so green and red mean one thing
+   across the whole app rather than one thing per surface. */
+.is-up {
+    color: var(--up);
+}
+
+.is-down {
+    color: var(--down);
+}
+
+.trade-position {
+    grid-template-columns: 1fr auto auto;
+}
+
+.trade-position-qty,
+.trade-position-cost {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.trade-position-pnl {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 700;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}

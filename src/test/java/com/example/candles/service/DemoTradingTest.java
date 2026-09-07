@@ -44,6 +44,7 @@ class DemoTradingTest {
     @Autowired private AssetRepository assets;
     @Autowired private CandlesProperties properties;
     @Autowired private LivePriceService livePrices;
+    @Autowired private jakarta.persistence.EntityManager entityManager;
 
     @MockitoBean private PriceDataProvider priceDataProvider;
 
@@ -179,6 +180,40 @@ class DemoTradingTest {
         assertThat(after.positions()).isEmpty();
         assertThat(d(after.realisedPnl())).isZero();
         assertThat(after.resets()).isEqualTo(1);
+    }
+
+    /**
+     * "Sell all" — the most common action there is, and it was broken.
+     *
+     * The quantity column is numeric(30, 10). A response built in the same transaction as the
+     * insert used to report the unrounded value, so a client that echoed it back was told it
+     * was selling more than it held, while every later read returned the shorter stored number.
+     * Rounding to the column's scale on the way in is what makes the reported quantity the
+     * quantity.
+     */
+    @Test
+    void theReportedQuantityIsExactlyWhatCanBeSoldBack() {
+        Long user = player();
+        // A price that does not divide cleanly, which is every real price. At a round 100 the
+        // quotient is short enough that this passes whether or not anything is rounded.
+        priceIs(79_768.54);
+
+        // The number the *trade call* hands back is the one the browser keeps and echoes into
+        // "sell all", and it is built before the insert has been flushed. Reading it from a
+        // later portfolio() would come from the database and hide the whole bug.
+        BigDecimal reported = trading.trade(user, symbol, "BUY", BigDecimal.valueOf(333.33), null)
+                .positions().getFirst().quantity();
+        assertThat(reported.scale()).isLessThanOrEqualTo(10);
+
+        // And it has to survive a round trip through the column unchanged.
+        entityManager.flush();
+        entityManager.clear();
+        assertThat(trading.portfolio(user).positions().getFirst().quantity())
+                .isEqualByComparingTo(reported);
+
+        // Selling exactly what was reported must be accepted, to the last digit.
+        DemoPortfolioResponse after = trading.trade(user, symbol, "SELL", null, reported);
+        assertThat(after.positions()).isEmpty();
     }
 
     @Test

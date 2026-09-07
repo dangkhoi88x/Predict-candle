@@ -40,6 +40,7 @@
             <button class="nav-tab active" role="tab" id="tab-game" aria-controls="view-game" aria-selected="true" data-view="game">Đoán Nến</button>
             <button class="nav-tab" role="tab" id="tab-daily" aria-controls="view-daily" aria-selected="false" data-view="daily">Thử Thách Hôm Nay</button>
             <button class="nav-tab" role="tab" id="tab-live" aria-controls="view-live" aria-selected="false" data-view="live">Dự Đoán Trực Tiếp</button>
+            <button class="nav-tab" role="tab" id="tab-trade" aria-controls="view-trade" aria-selected="false" data-view="trade">Giao Dịch</button>
             <button class="nav-tab" role="tab" id="tab-heatmap" aria-controls="view-heatmap" aria-selected="false" data-view="heatmap">Market Heatmap</button>
             <button class="nav-tab" role="tab" id="tab-patterns" aria-controls="view-patterns" aria-selected="false" data-view="patterns">Mẫu Nến</button>
             <button class="nav-tab" role="tab" id="tab-technical" aria-controls="view-technical" aria-selected="false" data-view="technical">Mẫu Hình Kỹ Thuật</button>
@@ -261,6 +262,59 @@
 
     <h3 class="profile-section">Chơi lại ngày trước</h3>
     <div id="daily-archive" class="daily-archive"></div>
+</main>
+
+<main id="view-trade" class="view app hidden" role="tabpanel" aria-labelledby="tab-trade">
+    <div class="view-head">
+        <h2>Giao Dịch</h2>
+        <span class="daily-number" id="trade-note"></span>
+    </div>
+
+    <p class="daily-intro">Tiền demo, giá thật. Không đòn bẩy — không bao giờ mất nhiều hơn số đang có.</p>
+
+    <!-- The whole surface needs an account: a portfolio nobody owns cannot be held to a
+         balance. The tab stays visible signed out so the feature is discoverable. -->
+    <p class="view-notice hidden" id="trade-signin">Kết nối ví để nhận $10.000 tiền demo và bắt đầu giao dịch.</p>
+
+    <div id="trade-body" class="hidden">
+        <div class="scoreboard scoreboard-profile">
+            <div class="stat"><span class="stat-label">Tổng tài sản</span><span class="stat-value rolling" id="trade-equity">–</span></div>
+            <div class="stat"><span class="stat-label">Tiền mặt</span><span class="stat-value rolling" id="trade-cash">–</span></div>
+            <div class="stat"><span class="stat-label">Lãi/lỗ đã chốt</span><span class="stat-value rolling" id="trade-realised">–</span></div>
+            <div class="stat"><span class="stat-label">Đang mở</span><span class="stat-value rolling" id="trade-unrealised">–</span></div>
+            <div class="stat"><span class="stat-label">Tổng lời</span><span class="stat-value rolling" id="trade-return">–</span></div>
+        </div>
+
+        <div class="trade-layout">
+            <div class="trade-markets" id="trade-markets"></div>
+
+            <div class="trade-panel">
+                <div class="pill trade-sides" id="trade-sides">
+                    <button class="pill-option active" type="button" data-side="BUY">Mua</button>
+                    <button class="pill-option" type="button" data-side="SELL">Bán</button>
+                </div>
+
+                <label class="trade-field">
+                    <span id="trade-input-label">Số tiền (USD)</span>
+                    <input id="trade-amount" type="number" min="0" step="any" inputmode="decimal" placeholder="0"/>
+                </label>
+
+                <div class="trade-quick" id="trade-quick"></div>
+
+                <button class="guess-btn long" type="button" id="trade-submit">Mua</button>
+                <p class="daily-status" id="trade-status"></p>
+            </div>
+        </div>
+
+        <h3 class="profile-section">Đang giữ</h3>
+        <div id="trade-positions" class="profile-assets"></div>
+
+        <h3 class="profile-section">Lệnh gần đây</h3>
+        <div id="trade-fills" class="profile-recent"></div>
+
+        <p class="profile-note" id="trade-reset-note"></p>
+        <button class="ghost-btn" type="button" id="trade-reset">Chơi lại từ đầu</button>
+    </div>
 </main>
 
 <main id="view-live" class="view app hidden" role="tabpanel" aria-labelledby="tab-live">
@@ -538,6 +592,7 @@
 <script src="candle-chart.js"></script>
 <script src="daily.js"></script>
 <script src="pattern-quiz.js"></script>
+<script src="demo-trade.js"></script>
 <script src="live.js"></script>
 <script src="ticker.js"></script>
 <script src="nav.js"></script>
