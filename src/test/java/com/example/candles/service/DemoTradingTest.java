@@ -216,6 +216,42 @@ class DemoTradingTest {
         assertThat(after.positions()).isEmpty();
     }
 
+    private static long span(com.example.candles.dto.response.DemoChartResponse chart) {
+        var candles = chart.candles();
+        return candles.getLast().time().getEpochSecond() - candles.getFirst().time().getEpochSecond();
+    }
+
+    /**
+     * Longer timeframes are folded from the stored hourly candles, so the thing worth checking
+     * against the real store is that they line up with the clock and thin out as they should —
+     * a 1d chart of the same window has to have far fewer bars than a 1h one, and every bar has
+     * to start on its own period boundary.
+     */
+    @Test
+    void longerTimeframesAreFoldedFromTheStoredHoursAndAlignToTheClock() {
+        var hourly = trading.chart(symbol, "1h", 120);
+        var fourHour = trading.chart(symbol, "4h", 120);
+        var daily = trading.chart(symbol, "1d", 120);
+
+        assertThat(hourly.timeframe()).isEqualTo("1h");
+        assertThat(fourHour.timeframe()).isEqualTo("4h");
+
+        // The same number of bars covering more time, not fewer bars over the same window —
+        // asking for 120 candles gets 120 candles whatever the timeframe.
+        assertThat(span(daily)).isGreaterThan(span(fourHour));
+        assertThat(span(fourHour)).isGreaterThan(span(hourly));
+
+        fourHour.candles().forEach(c ->
+                assertThat(c.time().getEpochSecond() % 14_400).as("4h bar starts on a 4h boundary").isZero());
+        daily.candles().forEach(c ->
+                assertThat(c.time().getEpochSecond() % 86_400).as("1d bar starts at UTC midnight").isZero());
+    }
+
+    @Test
+    void anUnknownTimeframeFallsBackToTheStoredOneRatherThanFailing() {
+        assertThat(trading.chart(symbol, "7s", 60).timeframe()).isEqualTo(properties.timeframe());
+    }
+
     @Test
     void aTradeWithNoPriceAvailableIsRefusedRatherThanGuessed() {
         Long user = player();

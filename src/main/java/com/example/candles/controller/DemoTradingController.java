@@ -46,11 +46,14 @@ public class DemoTradingController {
     }
 
     @GetMapping("/chart")
+    /** An unknown {@code tf} falls back to the stored timeframe rather than failing: it names a
+     *  view of the same history, and there is no wrong answer to give. */
     public DemoChartResponse chart(@RequestParam String asset,
+                                   @RequestParam(defaultValue = "1h") String tf,
                                    @RequestParam(defaultValue = "120") int limit,
                                    HttpServletRequest request) {
         rateLimiter.check("demo-chart", properties.round().rateLimit().roundsPerMinute(), request);
-        return trading.chart(asset, limit);
+        return trading.chart(asset, tf, limit);
     }
 
     @PostMapping("/trade")

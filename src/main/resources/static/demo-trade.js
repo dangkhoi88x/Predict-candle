@@ -26,6 +26,7 @@
         statVolume: document.getElementById("trade-stat-volume"),
         statHeld: document.getElementById("trade-stat-held"),
         chart: document.getElementById("trade-chart"),
+        timeframes: document.getElementById("trade-timeframes"),
         preview: document.getElementById("trade-preview"),
         positionCard: document.getElementById("trade-position-card"),
         sides: document.getElementById("trade-sides"),
@@ -44,8 +45,10 @@
     var selected = null;
     var busy = false;
     var filter = "";
-    /* Keyed by symbol so switching back to a market already looked at draws instantly instead
-       of blanking the chart while a request goes out. Hourly candles make it safe to keep. */
+    var timeframe = "1h";
+    /* Keyed by symbol *and* timeframe, so switching back to something already looked at draws
+       instantly instead of blanking the chart while a request goes out. One key per view is what
+       stops a 4h chart being served the 1h candles that happen to be cached for that symbol. */
     var chartCache = {};
 
     /* Money is shown to the cent and quantities to as much precision as they need. A holding of
@@ -169,8 +172,12 @@
         el.statHeld.textContent = holding > 0 ? qty(holding) : "—";
     }
 
+    function chartKey() {
+        return selected + "@" + timeframe;
+    }
+
     function drawChart() {
-        var candles = chartCache[selected];
+        var candles = chartCache[chartKey()];
         if (!candles || !candles.length) {
             window.CandleChart.draw(el.chart, []);
             return;
@@ -185,15 +192,17 @@
 
     /* Fetched per market and kept, because hourly candles do not move between two clicks and a
        chart that blanks every time you glance at another pair is worse than a slightly old one. */
-    async function loadChart(symbol) {
-        if (chartCache[symbol]) return;
+    async function loadChart(symbol, tf) {
+        var key = symbol + "@" + tf;
+        if (chartCache[key]) return;
         try {
             var res = await window.CandleAuth.authFetch(
-                "/api/demo/chart?asset=" + encodeURIComponent(symbol) + "&limit=120");
+                "/api/demo/chart?asset=" + encodeURIComponent(symbol)
+                + "&tf=" + encodeURIComponent(tf) + "&limit=120");
             if (!res.ok) return;
             var payload = await res.json();
-            chartCache[symbol] = payload.candles;
-            if (symbol === selected) drawChart();
+            chartCache[key] = payload.candles;
+            if (key === chartKey()) drawChart();
         } catch (e) {
             // The chart is context, not the trade. Losing it must not stop anyone trading.
         }
@@ -204,7 +213,7 @@
         el.amount.value = "";
         el.status.textContent = "";
         render();
-        loadChart(symbol);
+        loadChart(symbol, timeframe);
     }
 
     /* Quick amounts are the whole reason this is usable on a phone. Buying offers fractions of
@@ -467,6 +476,17 @@
         render();
     });
 
+    el.timeframes.addEventListener("click", function (event) {
+        var option = event.target.closest(".pill-option");
+        if (!option || option.classList.contains("active")) return;
+        Array.prototype.forEach.call(el.timeframes.querySelectorAll(".pill-option"), function (b) {
+            b.classList.toggle("active", b === option);
+        });
+        timeframe = option.dataset.tf;
+        drawChart();
+        loadChart(selected, timeframe);
+    });
+
     el.submit.addEventListener("click", submit);
     // The preview follows the keystrokes; nothing else needs redrawing on every one.
     el.amount.addEventListener("input", renderPreview);
@@ -497,7 +517,7 @@
             el.body.classList.remove("hidden");
             if (!selected && state.markets.length) selected = state.markets[0].symbol;
             render();
-            loadChart(selected);
+            loadChart(selected, timeframe);
         } catch (e) {
             el.signIn.textContent = "Không tải được danh mục: " + e.message;
             el.signIn.classList.remove("hidden");

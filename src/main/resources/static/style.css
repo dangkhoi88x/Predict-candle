@@ -5268,3 +5268,10 @@ body:not(.is-admin) .adm-search {
     text-align: right;
     font-variant-numeric: tabular-nums;
 }
+
+/* Inside the chart card, above the drawing and on the left — where Prism puts them, and where
+   they read as a control on the chart rather than another figure in the headline above it. */
+.trade-timeframes {
+    margin: 0 0 8px;
+    width: fit-content;
+}

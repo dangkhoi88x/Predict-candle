@@ -389,6 +389,25 @@ animates a strip of digits and needs the `.rolling` class to clip it; these valu
 symbols and separators, and without the class every digit of the strip renders — which is
 exactly what happened.
 
+**4h and 1d charts are folded from the stored hourly candles**, not synced separately —
+`CandleAggregator`, driven by `GET /api/demo/chart?tf=`. Only one timeframe is ever stored, so
+there is nothing new to keep in step with the hourly sync.
+
+Buckets come from `Timeframes.currentPeriodStart`, which counts periods from the epoch the way
+exchanges do. **Chunking the list into groups of four instead would be simpler and wrong**: the
+grouping would depend on how many candles happened to be fetched, so one 4h bar would cover
+01:00–05:00 for one request and 02:00–06:00 for the next, and every bar would shift each time the
+sync landed. `thesameHoursGiveTheSameBarsHoweverManyWereFetched` pins that.
+
+The oldest bar of a window is dropped when it would be a partial period — the window started
+mid-bucket, and drawing it would show a short candle that never existed. The *newest* partial bar
+is kept, because that is the period still forming. The chart cache is keyed by symbol **and**
+timeframe, or a 4h view gets served whatever happens to be cached for that symbol.
+
+Asking for 120 bars returns 120 bars at any timeframe — a longer timeframe covers more time
+rather than showing fewer candles, which is what the test asserts (the first version asserted
+falling bar counts and failed for the right reason).
+
 **Binance reports volume in the base asset.** 24h turnover is `Σ(volume × close)` per candle;
 showing the raw figure with a `$` in front of it is off by the price of the asset, which on BTC
 is four orders of magnitude ($10.2K rather than $815M).

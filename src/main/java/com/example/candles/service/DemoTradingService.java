@@ -11,7 +11,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.example.candles.config.CandlesProperties;
+import com.example.candles.client.Timeframes;
+import com.example.candles.domain.CandleAggregator;
 import com.example.candles.domain.DemoPortfolio;
+import com.example.candles.dto.response.DatedCandleDto;
+import com.example.candles.dto.response.DemoChartResponse;
 import com.example.candles.dto.response.DemoPortfolioResponse;
 import com.example.candles.entity.Asset;
 import com.example.candles.entity.DemoAccount;
@@ -44,6 +48,9 @@ import com.example.candles.repository.DemoTradeRepository;
  */
 @Service
 public class DemoTradingService {
+
+    /** What the chart offers. Anything longer than the stored timeframe is folded from it. */
+    private static final java.util.Set<String> CHART_TIMEFRAMES = java.util.Set.of("1h", "4h", "1d");
 
     private static final MathContext MC = MathContext.DECIMAL64;
     private static final BigDecimal BPS = BigDecimal.valueOf(10_000);
@@ -148,21 +155,49 @@ public class DemoTradingService {
     }
 
     /**
-     * Recent settled candles for one market. Read from the stored history rather than the feed:
-     * the chart is a picture of what has happened, and the one candle still forming is already
-     * on screen as the live price above it.
+     * Recent settled candles for one market, at one of the timeframes the chart offers.
+     *
+     * Only the configured timeframe is stored, so anything longer is folded out of it by
+     * {@link CandleAggregator} rather than synced and kept separately. That means reading
+     * {@code limit * factor} stored candles and rolling them up — cheap at these sizes, and it
+     * leaves nothing new to keep in step with the hourly sync.
+     *
+     * Read from stored history rather than the feed: the chart is a picture of what has
+     * happened, and the candle still forming is already on screen as the live price above it.
      */
     @Transactional(readOnly = true)
-    public com.example.candles.dto.response.DemoChartResponse chart(String assetSymbol, int limit) {
+    public DemoChartResponse chart(String assetSymbol, String timeframe, int limit) {
         Asset asset = tradable(assetSymbol);
-        String timeframe = properties.timeframe();
-        int span = Math.clamp(limit, 20, 500);
-        long total = candles.countByAssetAndTimeframe(asset, timeframe);
-        int from = (int) Math.max(0, total - span);
+        String stored = properties.timeframe();
+        String target = CHART_TIMEFRAMES.contains(timeframe) ? timeframe : stored;
+        int span = Math.clamp(limit, 20, 400);
 
-        return new com.example.candles.dto.response.DemoChartResponse(asset.getSymbol(), timeframe,
-                candles.findWindow(asset.getId(), timeframe, from, span).stream()
-                        .map(com.example.candles.dto.response.DatedCandleDto::from).toList());
+        // How many stored candles one target bar is worth. A target shorter than what is stored
+        // cannot be built at all, so it falls back to the stored timeframe rather than inventing
+        // detail that was never recorded.
+        long factor = Math.max(1,
+                Timeframes.parse(target).toMillis() / Timeframes.parse(stored).toMillis());
+        int needed = (int) Math.min(span * factor + factor, 20_000);
+
+        long total = candles.countByAssetAndTimeframe(asset, stored);
+        int from = (int) Math.max(0, total - needed);
+        List<CandleAggregator.Bar> source = candles.findWindow(asset.getId(), stored, from, needed)
+                .stream()
+                .map(c -> new CandleAggregator.Bar(c.getOpenTime(), c.getOpen(), c.getHigh(),
+                        c.getLow(), c.getClose(), c.getVolume()))
+                .toList();
+
+        List<CandleAggregator.Bar> rolled = CandleAggregator.rollUp(source, target);
+        // The oldest bar of the window is usually a partial period — the window started
+        // mid-bucket — so it is dropped rather than drawn as a short candle that never existed.
+        if (rolled.size() > span) {
+            rolled = rolled.subList(rolled.size() - span, rolled.size());
+        }
+
+        return new DemoChartResponse(asset.getSymbol(), target,
+                rolled.stream()
+                        .map(b -> new DatedCandleDto(b.time(), b.open(), b.high(), b.low(), b.close()))
+                        .toList());
     }
 
     private DemoAccount account(Long userId) {
