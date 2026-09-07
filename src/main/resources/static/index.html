@@ -421,13 +421,17 @@
         <span id="profile-wallet" class="profile-wallet"></span>
     </div>
 
-    <div class="scoreboard">
+    <div class="scoreboard scoreboard-profile">
         <div class="stat"><span class="stat-label">Điểm</span><span class="stat-value rolling" id="profile-score">0</span></div>
         <div class="stat"><span class="stat-label">Lượt đoán</span><span class="stat-value rolling" id="profile-total">0</span></div>
         <div class="stat"><span class="stat-label">Tỉ lệ đúng</span><span class="stat-value rolling" id="profile-accuracy">–</span></div>
         <div class="stat"><span class="stat-label">Chuỗi dài nhất</span><span class="stat-value rolling" id="profile-best">0</span></div>
+        <!-- Days in a row, not correct guesses in a row: a different number from the tile
+             beside it, which is why the label says days and not "chuỗi". -->
+        <div class="stat"><span class="stat-label">Ngày liên tiếp</span><span class="stat-value rolling" id="profile-day-streak">0</span></div>
     </div>
 
+    <p id="profile-streak-note" class="profile-note hidden"></p>
     <p id="profile-legacy-note" class="profile-note hidden"></p>
 
     <h3 class="profile-section">Theo từng cặp</h3>

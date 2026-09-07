@@ -20,12 +20,22 @@ public record StatsResponse(
         int currentStreak,
         long score,
         Recorded recorded,
+        DayStreak dayStreak,
         boolean legacyImported,
         List<AssetTally> byAsset,
         List<RecentGuess> recent
 ) {
     /** Verified totals: guesses this server saw and scored itself. */
     public record Recorded(long total, long correct, int bestStreak, int currentStreak, long score) {
+    }
+
+    /**
+     * Days shown up, not calls got right — {@code bestStreak} above is the other streak, and
+     * naming this one anything shorter would put two different "streak" numbers on the same
+     * screen with nothing to tell them apart. Never folds in imported figures: the carried-over
+     * tally is four totals with no dates on it, so it cannot say which days were played.
+     */
+    public record DayStreak(int current, int best, long daysPlayed, boolean playedToday) {
     }
 
     public record AssetTally(String symbol, long total, long correct) {
