@@ -29,7 +29,11 @@
         /* Re-read on every reveal rather than once: signing in mid-visit turns an anonymous
            attempt into an account with a streak and a recorded result, and the tab has to be
            able to catch up with that. */
-        daily: function () { window.__initDailyView && window.__initDailyView(); },
+        daily: function () {
+            window.__initDailyView && window.__initDailyView();
+            // Its own module on the same tab: separate data, separate record, separate failure.
+            window.__initPatternQuizView && window.__initPatternQuizView();
+        },
         profile: function () { window.__initProfileView && window.__initProfileView(); },
         /* Rebuilt on every reveal, not just the first: ranks move while you play, and a board
            showing where you stood when the page loaded is the one thing it must not do. The

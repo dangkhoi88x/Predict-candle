@@ -4844,3 +4844,49 @@ body:not(.is-admin) .adm-search {
     border-color: var(--warn);
     color: var(--warn);
 }
+
+/* ---- Pattern quiz ---- */
+
+.quiz-board {
+    margin-bottom: 8px;
+}
+
+.quiz-choices {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 8px;
+    margin: 12px 0;
+}
+
+.quiz-choice {
+    padding: 11px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--panel-2);
+    color: inherit;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    transition: border-color var(--duration-fast) var(--ease-out);
+}
+
+.quiz-choice:hover:not(:disabled) {
+    border-color: var(--accent);
+}
+
+.quiz-choice:disabled {
+    cursor: default;
+}
+
+/* The right answer and the one that was picked are different marks: a wrong pick has to be
+   shown beside the truth, or there is nothing to learn from having been wrong. */
+.quiz-choice.is-correct {
+    border-color: var(--up);
+    color: var(--up);
+}
+
+.quiz-choice.is-wrong {
+    border-color: var(--down);
+    color: var(--down);
+    text-decoration: line-through;
+}
