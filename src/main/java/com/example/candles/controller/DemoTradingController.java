@@ -8,10 +8,12 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.candles.config.CandlesProperties;
 import com.example.candles.dto.request.DemoTradeRequest;
+import com.example.candles.dto.response.DemoChartResponse;
 import com.example.candles.dto.response.DemoPortfolioResponse;
 import com.example.candles.service.DemoTradingService;
 import com.example.candles.service.RateLimiter;
@@ -41,6 +43,14 @@ public class DemoTradingController {
     public DemoPortfolioResponse portfolio(HttpServletRequest request) {
         rateLimiter.check("demo-portfolio", properties.round().rateLimit().roundsPerMinute(), request);
         return trading.portfolio(currentUserId());
+    }
+
+    @GetMapping("/chart")
+    public DemoChartResponse chart(@RequestParam String asset,
+                                   @RequestParam(defaultValue = "120") int limit,
+                                   HttpServletRequest request) {
+        rateLimiter.check("demo-chart", properties.round().rateLimit().roundsPerMinute(), request);
+        return trading.chart(asset, limit);
     }
 
     @PostMapping("/trade")

@@ -264,31 +264,89 @@
     <div id="daily-archive" class="daily-archive"></div>
 </main>
 
-<main id="view-trade" class="view app hidden" role="tabpanel" aria-labelledby="tab-trade">
-    <div class="view-head">
-        <h2>Giao Dịch</h2>
-        <span class="daily-number" id="trade-note"></span>
-    </div>
-
-    <p class="daily-intro">Tiền demo, giá thật. Không đòn bẩy — không bao giờ mất nhiều hơn số đang có.</p>
-
+<main id="view-trade" class="view app app-wide hidden" role="tabpanel" aria-labelledby="tab-trade">
     <!-- The whole surface needs an account: a portfolio nobody owns cannot be held to a
          balance. The tab stays visible signed out so the feature is discoverable. -->
-    <p class="view-notice hidden" id="trade-signin">Kết nối ví để nhận $10.000 tiền demo và bắt đầu giao dịch.</p>
+    <p class="view-notice hidden" id="trade-signin">Kết nối ví để nhận tiền demo và bắt đầu giao dịch.</p>
 
     <div id="trade-body" class="hidden">
-        <div class="scoreboard scoreboard-profile">
-            <div class="stat"><span class="stat-label">Tổng tài sản</span><span class="stat-value rolling" id="trade-equity">–</span></div>
-            <div class="stat"><span class="stat-label">Tiền mặt</span><span class="stat-value rolling" id="trade-cash">–</span></div>
-            <div class="stat"><span class="stat-label">Lãi/lỗ đã chốt</span><span class="stat-value rolling" id="trade-realised">–</span></div>
-            <div class="stat"><span class="stat-label">Đang mở</span><span class="stat-value rolling" id="trade-unrealised">–</span></div>
-            <div class="stat"><span class="stat-label">Tổng lời</span><span class="stat-value rolling" id="trade-return">–</span></div>
+        <!-- Account figures first: on a terminal the question "how am I doing" outranks any
+             single market, and it is the one thing that is true across all of them. -->
+        <div class="trade-account" id="trade-account">
+            <div class="trade-account-fig">
+                <span class="trade-account-label">Tổng tài sản</span>
+                <b class="trade-account-value" id="trade-equity">–</b>
+            </div>
+            <div class="trade-account-fig">
+                <span class="trade-account-label">Tiền mặt</span>
+                <b class="trade-account-value" id="trade-cash">–</b>
+            </div>
+            <div class="trade-account-fig">
+                <span class="trade-account-label">Đã chốt</span>
+                <b class="trade-account-value" id="trade-realised">–</b>
+            </div>
+            <div class="trade-account-fig">
+                <span class="trade-account-label">Đang mở</span>
+                <b class="trade-account-value" id="trade-unrealised">–</b>
+            </div>
+            <div class="trade-account-fig">
+                <span class="trade-account-label">Tổng lời</span>
+                <b class="trade-account-value" id="trade-return">–</b>
+            </div>
+            <div class="trade-account-actions">
+                <span class="trade-demo-badge">Tiền demo</span>
+                <button class="ghost-btn" type="button" id="trade-reset">Chơi lại</button>
+            </div>
         </div>
 
-        <div class="trade-layout">
-            <div class="trade-markets" id="trade-markets"></div>
+        <div class="trade-terminal">
+            <!-- Left: every market, its price and the day's move. -->
+            <aside class="trade-list">
+                <input id="trade-search" class="trade-search" type="search" placeholder="Tìm cặp…"
+                       aria-label="Tìm cặp giao dịch"/>
+                <div class="trade-list-head">
+                    <span>Thị trường</span>
+                    <span>Giá / 24h</span>
+                </div>
+                <div id="trade-markets" class="trade-markets"></div>
+            </aside>
 
-            <div class="trade-panel">
+            <!-- Centre: the selected market's numbers and its chart. -->
+            <section class="trade-chart-col">
+                <div class="trade-headline">
+                    <div class="trade-headline-pair">
+                        <b id="trade-pair">—</b>
+                        <span class="trade-headline-name" id="trade-pair-name"></span>
+                    </div>
+                    <div class="trade-headline-stats">
+                        <div class="trade-stat">
+                            <span class="trade-stat-label">Giá</span>
+                            <b class="trade-stat-value" id="trade-stat-price">—</b>
+                        </div>
+                        <div class="trade-stat">
+                            <span class="trade-stat-label">24h</span>
+                            <b class="trade-stat-value" id="trade-stat-change">—</b>
+                        </div>
+                        <div class="trade-stat">
+                            <span class="trade-stat-label">KL 24h</span>
+                            <b class="trade-stat-value" id="trade-stat-volume">—</b>
+                        </div>
+                        <div class="trade-stat">
+                            <span class="trade-stat-label">Đang giữ</span>
+                            <b class="trade-stat-value" id="trade-stat-held">—</b>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="trade-chart-card">
+                    <svg id="trade-chart" class="trade-chart" viewBox="0 0 900 420"
+                         preserveAspectRatio="none" role="img"
+                         aria-label="Biểu đồ giá của cặp đang chọn"></svg>
+                </div>
+            </section>
+
+            <!-- Right: the order ticket. -->
+            <aside class="trade-panel">
                 <div class="pill trade-sides" id="trade-sides">
                     <button class="pill-option active" type="button" data-side="BUY">Mua</button>
                     <button class="pill-option" type="button" data-side="SELL">Bán</button>
@@ -301,9 +359,13 @@
 
                 <div class="trade-quick" id="trade-quick"></div>
 
+                <div class="trade-preview" id="trade-preview"></div>
+
                 <button class="guess-btn long" type="button" id="trade-submit">Mua</button>
-                <p class="daily-status" id="trade-status"></p>
-            </div>
+                <p class="trade-status" id="trade-status"></p>
+
+                <div class="trade-position-card" id="trade-position-card"></div>
+            </aside>
         </div>
 
         <h3 class="profile-section">Đang giữ</h3>
@@ -311,9 +373,6 @@
 
         <h3 class="profile-section">Lệnh gần đây</h3>
         <div id="trade-fills" class="profile-recent"></div>
-
-        <p class="profile-note" id="trade-reset-note"></p>
-        <button class="ghost-btn" type="button" id="trade-reset">Chơi lại từ đầu</button>
     </div>
 </main>
 

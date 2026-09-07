@@ -373,9 +373,25 @@ three attempts to write a version that actually fails without the fix — a pinn
 divides too cleanly, and reading the quantity back through `portfolio()` after a flush reads the
 database rather than the response the browser keeps.
 
-**Still open:** resets and any future ranking are in tension — a resettable balance plus a
-leaderboard means retrying until a lucky run. Either ranking is seasonal and a reset forfeits
-it, or resets stop. `resets` is counted on the account so whatever decides this has the number.
+**Demo P&L is deliberately not ranked, and that is settled rather than pending.** A resettable
+balance plus a leaderboard means retrying until a lucky run, and the alternatives — seasons, or
+forbidding resets — both cost more than the board is worth. `resets` is still counted on the
+account in case that is ever revisited.
+
+The terminal is the one view that is not a reading column: `.app` caps at 760px, which is right
+for a chart with two buttons under it and far too narrow for a market list, a chart and an order
+ticket side by side — at 760 the middle track collapsed to about 120px. `.app-wide` gives the
+trade tab the same 1180px the nav already uses. Below 1100px the chart takes a full row of its
+own and the other two drop under it, rather than squeezing the one thing that needs width.
+
+Account figures are written as plain text, **not** through `CandleRolling`. That odometer
+animates a strip of digits and needs the `.rolling` class to clip it; these values carry currency
+symbols and separators, and without the class every digit of the strip renders — which is
+exactly what happened.
+
+**Binance reports volume in the base asset.** 24h turnover is `Σ(volume × close)` per candle;
+showing the raw figure with a `$` in front of it is off by the price of the asset, which on BTC
+is four orders of magnitude ($10.2K rather than $815M).
 
 ### Pattern-of-the-day quiz
 

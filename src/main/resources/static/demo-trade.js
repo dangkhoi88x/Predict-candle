@@ -10,7 +10,6 @@
     "use strict";
 
     var el = {
-        note: document.getElementById("trade-note"),
         signIn: document.getElementById("trade-signin"),
         body: document.getElementById("trade-body"),
         equity: document.getElementById("trade-equity"),
@@ -18,7 +17,17 @@
         realised: document.getElementById("trade-realised"),
         unrealised: document.getElementById("trade-unrealised"),
         ret: document.getElementById("trade-return"),
+        search: document.getElementById("trade-search"),
         markets: document.getElementById("trade-markets"),
+        pair: document.getElementById("trade-pair"),
+        pairName: document.getElementById("trade-pair-name"),
+        statPrice: document.getElementById("trade-stat-price"),
+        statChange: document.getElementById("trade-stat-change"),
+        statVolume: document.getElementById("trade-stat-volume"),
+        statHeld: document.getElementById("trade-stat-held"),
+        chart: document.getElementById("trade-chart"),
+        preview: document.getElementById("trade-preview"),
+        positionCard: document.getElementById("trade-position-card"),
         sides: document.getElementById("trade-sides"),
         inputLabel: document.getElementById("trade-input-label"),
         amount: document.getElementById("trade-amount"),
@@ -27,7 +36,6 @@
         status: document.getElementById("trade-status"),
         positions: document.getElementById("trade-positions"),
         fills: document.getElementById("trade-fills"),
-        resetNote: document.getElementById("trade-reset-note"),
         reset: document.getElementById("trade-reset"),
     };
 
@@ -35,6 +43,10 @@
     var side = "BUY";
     var selected = null;
     var busy = false;
+    var filter = "";
+    /* Keyed by symbol so switching back to a market already looked at draws instantly instead
+       of blanking the chart while a request goes out. Hourly candles make it safe to keep. */
+    var chartCache = {};
 
     /* Money is shown to the cent and quantities to as much precision as they need. A holding of
        0.0003 BTC rounded to two places would read as nothing at all. */
@@ -49,8 +61,32 @@
         return Number(v).toLocaleString("en-US", { maximumFractionDigits: 8 });
     }
 
+    /* Volume is read as a size, not a figure to reconcile — "54.0M" is the useful precision. */
+    function compact(v) {
+        if (v == null) return "—";
+        var n = Number(v);
+        if (n >= 1e9) return "$" + (n / 1e9).toFixed(1) + "B";
+        if (n >= 1e6) return "$" + (n / 1e6).toFixed(1) + "M";
+        if (n >= 1e3) return "$" + (n / 1e3).toFixed(1) + "K";
+        return usd(n);
+    }
+
+    function pct(v) {
+        if (v == null) return "—";
+        var n = Number(v);
+        return (n >= 0 ? "+" : "") + n.toFixed(2) + "%";
+    }
+
+    function tone(node, value) {
+        node.classList.toggle("is-up", value > 0);
+        node.classList.toggle("is-down", value < 0);
+    }
+
+    /* Written as text rather than through CandleRolling. The odometer animates a strip of
+       digits and needs the .rolling class to clip it; these values carry currency symbols and
+       separators and change on every poll, so a plain write is both correct and calmer. */
     function signed(node, value) {
-        window.CandleRolling.update(node, usd(value));
+        node.textContent = (value > 0 ? "+" : "") + usd(value);
         node.classList.toggle("is-up", value > 0);
         node.classList.toggle("is-down", value < 0);
     }
@@ -67,7 +103,18 @@
 
     function renderMarkets() {
         el.markets.innerHTML = "";
-        state.markets.forEach(function (market) {
+        var needle = filter.trim().toUpperCase();
+        var shown = state.markets.filter(function (m) {
+            return !needle || m.symbol.indexOf(needle) >= 0
+                || (m.name || "").toUpperCase().indexOf(needle) >= 0;
+        });
+
+        if (!shown.length) {
+            el.markets.innerHTML = '<p class="profile-empty">Không có cặp nào khớp.</p>';
+            return;
+        }
+
+        shown.forEach(function (market) {
             var row = document.createElement("button");
             row.type = "button";
             row.className = "trade-market" + (market.symbol === selected ? " is-selected" : "");
@@ -76,26 +123,88 @@
             name.className = "trade-market-name";
             name.textContent = market.symbol;
 
+            var sub = document.createElement("span");
+            sub.className = "trade-market-sub";
+            var holding = heldOf(market.symbol);
+            // The holding is the one thing about a market that is personal, so it replaces the
+            // generic subtitle when there is one — it is what the player is looking for.
+            sub.textContent = holding > 0 ? "giữ " + qty(holding) : (market.name || "");
+
             var price = document.createElement("span");
             price.className = "trade-market-price";
-            // A market with no price is shown and disabled rather than hidden: it exists, the
-            // feed is just quiet, and removing the row would look like it was delisted.
+            // A market with no price is shown and dimmed rather than hidden: it exists, the
+            // feed is just quiet, and removing the row would look like a delisting.
             price.textContent = market.price == null ? "—" : usd(Number(market.price));
 
-            var holding = heldOf(market.symbol);
-            var held = document.createElement("span");
-            held.className = "trade-market-held";
-            held.textContent = holding > 0 ? "giữ " + qty(holding) : "";
+            var change = document.createElement("span");
+            change.className = "trade-market-change";
+            change.textContent = pct(market.change24h);
+            if (market.change24h != null) tone(change, Number(market.change24h));
 
             row.appendChild(name);
             row.appendChild(price);
-            row.appendChild(held);
-            row.addEventListener("click", function () {
-                selected = market.symbol;
-                render();
-            });
+            row.appendChild(sub);
+            row.appendChild(change);
+            row.addEventListener("click", function () { select(market.symbol); });
             el.markets.appendChild(row);
         });
+    }
+
+    function marketOf(symbol) {
+        return (state.markets || []).filter(function (m) { return m.symbol === symbol; })[0];
+    }
+
+    function renderHeadline() {
+        var market = marketOf(selected);
+        if (!market) return;
+
+        el.pair.textContent = market.symbol;
+        el.pairName.textContent = market.name || "";
+        el.statPrice.textContent = market.price == null ? "—" : usd(Number(market.price));
+        el.statChange.textContent = pct(market.change24h);
+        if (market.change24h != null) tone(el.statChange, Number(market.change24h));
+        el.statVolume.textContent = compact(market.volume24h);
+
+        var holding = heldOf(selected);
+        el.statHeld.textContent = holding > 0 ? qty(holding) : "—";
+    }
+
+    function drawChart() {
+        var candles = chartCache[selected];
+        if (!candles || !candles.length) {
+            window.CandleChart.draw(el.chart, []);
+            return;
+        }
+        var market = marketOf(selected);
+        window.CandleChart.draw(el.chart, candles.map(function (c) {
+            return { time: c.time, open: +c.open, high: +c.high, low: +c.low, close: +c.close };
+        }), market && market.price != null
+            ? { referencePrice: Number(market.price) }
+            : {});
+    }
+
+    /* Fetched per market and kept, because hourly candles do not move between two clicks and a
+       chart that blanks every time you glance at another pair is worse than a slightly old one. */
+    async function loadChart(symbol) {
+        if (chartCache[symbol]) return;
+        try {
+            var res = await window.CandleAuth.authFetch(
+                "/api/demo/chart?asset=" + encodeURIComponent(symbol) + "&limit=120");
+            if (!res.ok) return;
+            var payload = await res.json();
+            chartCache[symbol] = payload.candles;
+            if (symbol === selected) drawChart();
+        } catch (e) {
+            // The chart is context, not the trade. Losing it must not stop anyone trading.
+        }
+    }
+
+    function select(symbol) {
+        selected = symbol;
+        el.amount.value = "";
+        el.status.textContent = "";
+        render();
+        loadChart(symbol);
     }
 
     /* Quick amounts are the whole reason this is usable on a phone. Buying offers fractions of
@@ -121,6 +230,68 @@
             });
             el.quick.appendChild(button);
         });
+    }
+
+    /* What the order will actually do, before it is sent. A market order with a fee is not
+       self-evident from the amount typed in — the difference between "spend $500" and "receive
+       0.0063 BTC after $0.50 of fee" is the whole thing a player is agreeing to. */
+    function renderPreview() {
+        var amount = Number(el.amount.value);
+        var price = priceOf(selected);
+        if (!(amount > 0) || price == null) {
+            el.preview.textContent = "";
+            el.preview.classList.add("hidden");
+            return;
+        }
+        el.preview.classList.remove("hidden");
+
+        var feeRate = state.feeBps / 10000;
+        if (side === "BUY") {
+            el.preview.innerHTML = "";
+            el.preview.appendChild(previewRow("Nhận về", qty(amount / price) + " " + selected));
+            el.preview.appendChild(previewRow("Phí", usd(amount * feeRate)));
+            el.preview.appendChild(previewRow("Tổng trừ", usd(amount * (1 + feeRate))));
+        } else {
+            var gross = amount * price;
+            el.preview.innerHTML = "";
+            el.preview.appendChild(previewRow("Bán", qty(amount) + " " + selected));
+            el.preview.appendChild(previewRow("Phí", usd(gross * feeRate)));
+            el.preview.appendChild(previewRow("Nhận về", usd(gross * (1 - feeRate))));
+        }
+    }
+
+    function previewRow(label, value) {
+        var row = document.createElement("div");
+        row.className = "trade-preview-row";
+        var l = document.createElement("span");
+        l.textContent = label;
+        var v = document.createElement("span");
+        v.textContent = value;
+        row.appendChild(l);
+        row.appendChild(v);
+        return row;
+    }
+
+    /* The open position in the selected market, beside the ticket rather than only in the table
+       below — deciding whether to add or trim is a question about this market, asked here. */
+    function renderPositionCard() {
+        var position = (state.positions || []).filter(function (p) {
+            return p.symbol === selected;
+        })[0];
+
+        el.positionCard.innerHTML = "";
+        el.positionCard.classList.toggle("hidden", !position);
+        if (!position) return;
+
+        el.positionCard.appendChild(previewRow("Đang giữ", qty(position.quantity)));
+        el.positionCard.appendChild(previewRow("Giá vốn", usd(Number(position.averageCost))));
+        el.positionCard.appendChild(previewRow("Giá trị",
+            position.value == null ? "—" : usd(Number(position.value))));
+
+        var pnl = previewRow("Lãi/lỗ", position.unrealisedPnl == null ? "—"
+            : (Number(position.unrealisedPnl) >= 0 ? "+" : "") + usd(Number(position.unrealisedPnl)));
+        if (position.unrealisedPnl != null) tone(pnl.lastChild, Number(position.unrealisedPnl));
+        el.positionCard.appendChild(pnl);
     }
 
     function renderPositions() {
@@ -209,33 +380,40 @@
     function render() {
         if (!selected && state.markets.length) selected = state.markets[0].symbol;
 
-        window.CandleRolling.update(el.equity, usd(state.equity));
-        window.CandleRolling.update(el.cash, usd(state.cash));
+        el.equity.textContent = usd(state.equity);
+        el.cash.textContent = usd(state.cash);
         signed(el.realised, Number(state.realisedPnl));
         signed(el.unrealised, Number(state.unrealisedPnl));
 
         var start = Number(state.startingBalance);
-        var pct = start === 0 ? 0 : ((Number(state.equity) - start) / start) * 100;
-        window.CandleRolling.update(el.ret, (pct >= 0 ? "+" : "") + pct.toFixed(2) + "%");
-        el.ret.classList.toggle("is-up", pct > 0);
-        el.ret.classList.toggle("is-down", pct < 0);
+        // Named `ret`, not `pct` — pct() is the formatter and shadowing it here would silently
+        // break every percentage on the page below this line.
+        var ret = start === 0 ? 0 : ((Number(state.equity) - start) / start) * 100;
+        el.ret.textContent = (ret >= 0 ? "+" : "") + ret.toFixed(2) + "%";
+        tone(el.ret, ret);
 
-        el.note.textContent = "phí " + (state.feeBps / 100).toFixed(2) + "% mỗi lệnh";
         el.inputLabel.textContent = side === "BUY" ? "Số tiền (USD)" : "Số lượng " + selected;
         el.submit.textContent = side === "BUY" ? "Mua " + selected : "Bán " + selected;
         el.submit.className = "guess-btn " + (side === "BUY" ? "long" : "short");
-        el.submit.disabled = busy || priceOf(selected) == null;
+        // Selling nothing is refused by the server anyway; refusing it here says why without
+        // spending a round trip to be told.
+        var nothingToSell = side === "SELL" && heldOf(selected) <= 0;
+        el.submit.disabled = busy || priceOf(selected) == null || nothingToSell;
+        if (nothingToSell) el.status.textContent = "Chưa giữ " + selected + " nào để bán.";
 
-        el.resetNote.textContent = state.resets > 0
-            ? "Đã chơi lại " + state.resets + " lần. Reset xoá sạch danh mục và trả về $"
+        el.reset.title = state.resets > 0
+            ? "Đã chơi lại " + state.resets + " lần. Reset trả về $"
               + Number(state.startingBalance).toLocaleString("en-US") + "."
-            : "Reset xoá sạch danh mục và trả về $"
-              + Number(state.startingBalance).toLocaleString("en-US") + ".";
+            : "Reset trả về $" + Number(state.startingBalance).toLocaleString("en-US") + ".";
 
         renderMarkets();
+        renderHeadline();
         renderQuick();
+        renderPreview();
+        renderPositionCard();
         renderPositions();
         renderFills();
+        drawChart();
     }
 
     async function post(path, body) {
@@ -257,7 +435,9 @@
             el.status.textContent = e.message;
         } finally {
             busy = false;
-            if (state) el.submit.disabled = priceOf(selected) == null;
+            // Re-derived rather than just re-enabled: the trade may have closed the position
+            // that made selling possible in the first place.
+            if (state) render();
         }
     }
 
@@ -288,6 +468,12 @@
     });
 
     el.submit.addEventListener("click", submit);
+    // The preview follows the keystrokes; nothing else needs redrawing on every one.
+    el.amount.addEventListener("input", renderPreview);
+    el.search.addEventListener("input", function () {
+        filter = el.search.value;
+        renderMarkets();
+    });
     el.amount.addEventListener("keydown", function (event) {
         if (event.key === "Enter") submit();
     });
@@ -309,7 +495,9 @@
             state = payload;
             el.signIn.classList.add("hidden");
             el.body.classList.remove("hidden");
+            if (!selected && state.markets.length) selected = state.markets[0].symbol;
             render();
+            loadChart(selected);
         } catch (e) {
             el.signIn.textContent = "Không tải được danh mục: " + e.message;
             el.signIn.classList.remove("hidden");

@@ -37,8 +37,15 @@ public record DemoPortfolioResponse(
                            BigDecimal price, BigDecimal value, BigDecimal unrealisedPnl) {
     }
 
-    /** A tradable market and its live price, so the terminal needs no second call to quote. */
-    public record Market(String symbol, String name, BigDecimal price) {
+    /**
+     * A tradable market as the list draws it: live price, and the day's move and turnover.
+     *
+     * The price is this second's; the change and volume are properties of a day of settled
+     * history and come from stored candles. Deriving the change from the live price instead
+     * would make it jump every couple of seconds, which is not what "24h change" means.
+     */
+    public record Market(String symbol, String name, BigDecimal price,
+                         BigDecimal change24h, BigDecimal volume24h) {
     }
 
     public record Fill(String symbol, String side, BigDecimal quantity, BigDecimal price,

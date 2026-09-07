@@ -52,22 +52,28 @@ public class DemoTradingService {
     private static final BigDecimal MIN_TRADE_USD = BigDecimal.ONE;
 
     private final AssetRepository assets;
+    private final com.example.candles.repository.CandleRepository candles;
     private final DemoAccountRepository accounts;
     private final DemoTradeRepository trades;
     private final LivePriceService prices;
+    private final MarketStatsService marketStats;
     private final CandlesProperties properties;
     private final Clock clock;
 
     public DemoTradingService(AssetRepository assets,
+                              com.example.candles.repository.CandleRepository candles,
                               DemoAccountRepository accounts,
                               DemoTradeRepository trades,
                               LivePriceService prices,
+                              MarketStatsService marketStats,
                               CandlesProperties properties,
                               Clock clock) {
         this.assets = assets;
+        this.candles = candles;
         this.accounts = accounts;
         this.trades = trades;
         this.prices = prices;
+        this.marketStats = marketStats;
         this.properties = properties;
         this.clock = clock;
     }
@@ -141,6 +147,24 @@ public class DemoTradingService {
         return new DemoTrade(userId, asset, TradeSide.SELL, quantity, price, fee, clock.instant());
     }
 
+    /**
+     * Recent settled candles for one market. Read from the stored history rather than the feed:
+     * the chart is a picture of what has happened, and the one candle still forming is already
+     * on screen as the live price above it.
+     */
+    @Transactional(readOnly = true)
+    public com.example.candles.dto.response.DemoChartResponse chart(String assetSymbol, int limit) {
+        Asset asset = tradable(assetSymbol);
+        String timeframe = properties.timeframe();
+        int span = Math.clamp(limit, 20, 500);
+        long total = candles.countByAssetAndTimeframe(asset, timeframe);
+        int from = (int) Math.max(0, total - span);
+
+        return new com.example.candles.dto.response.DemoChartResponse(asset.getSymbol(), timeframe,
+                candles.findWindow(asset.getId(), timeframe, from, span).stream()
+                        .map(com.example.candles.dto.response.DatedCandleDto::from).toList());
+    }
+
     private DemoAccount account(Long userId) {
         return accounts.findById(userId)
                 .orElseGet(() -> accounts.save(new DemoAccount(userId, clock.instant())));
@@ -177,7 +201,11 @@ public class DemoTradingService {
         List<Asset> tradable = assets.findByEnabledTrueOrderByPositionAscSymbolAsc();
 
         List<DemoPortfolioResponse.Market> markets = tradable.stream()
-                .map(a -> new DemoPortfolioResponse.Market(a.getSymbol(), a.getName(), prices.price(a)))
+                .map(a -> {
+                    MarketStatsService.Stats stats = marketStats.stats(a);
+                    return new DemoPortfolioResponse.Market(a.getSymbol(), a.getName(),
+                            prices.price(a), stats.changePct(), stats.volume());
+                })
                 .toList();
 
         List<DemoPortfolioResponse.Position> positions = new ArrayList<>();
