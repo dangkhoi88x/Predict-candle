@@ -26,6 +26,9 @@
         statVolume: document.getElementById("trade-stat-volume"),
         statHeld: document.getElementById("trade-stat-held"),
         chart: document.getElementById("trade-chart"),
+        indicators: document.getElementById("trade-indicators"),
+        rsiPane: document.getElementById("trade-rsi-pane"),
+        rsi: document.getElementById("trade-rsi"),
         timeframes: document.getElementById("trade-timeframes"),
         panBack: document.getElementById("trade-pan-back"),
         panForward: document.getElementById("trade-pan-forward"),
@@ -60,6 +63,15 @@
        edge, which is where every load and every market or timeframe switch puts it — someone
        opening a chart wants the price now, not wherever they last dragged to. */
     var panOffset = 0;
+    var showMa = false;
+    var showRsi = false;
+
+    /* Periods are fixed rather than configurable. Two averages and one oscillator is what a
+       chart this size can show without becoming a settings panel, and 20/50/14 are the ones
+       every other terminal defaults to — a reading is only useful if it means the same thing
+       here as everywhere else. */
+    var MA_PERIODS = [20, 50];
+    var RSI_PERIOD = 14;
     /* Keyed by symbol *and* timeframe, so switching back to something already looked at draws
        instantly instead of blanking the chart while a request goes out. One key per view is what
        stops a 4h chart being served the 1h candles that happen to be cached for that symbol. */
@@ -190,6 +202,46 @@
         return selected + "@" + timeframe;
     }
 
+    /* Both indicators are computed over the whole fetched series and sliced with the candles,
+       never over the visible window alone. A moving average is a property of a candle within
+       the series, not of the view: computing per-window would leave the left edge blank and,
+       worse, change the value shown for the same candle as soon as anyone panned. */
+    function movingAverage(closes, period) {
+        var out = new Array(closes.length).fill(null);
+        var sum = 0;
+        for (var i = 0; i < closes.length; i++) {
+            sum += closes[i];
+            if (i >= period) sum -= closes[i - period];
+            if (i >= period - 1) out[i] = sum / period;
+        }
+        return out;
+    }
+
+    /* Wilder's RSI — the smoothing every charting tool uses, not a plain average of the last
+       fourteen changes, which drifts away from what other terminals show for the same candles. */
+    function relativeStrength(closes, period) {
+        var out = new Array(closes.length).fill(null);
+        if (closes.length <= period) return out;
+
+        var gain = 0, loss = 0;
+        for (var i = 1; i <= period; i++) {
+            var d = closes[i] - closes[i - 1];
+            if (d >= 0) gain += d; else loss -= d;
+        }
+        gain /= period;
+        loss /= period;
+        // No down move in the window means no ratio to take; the reading is pinned at 100.
+        out[period] = loss === 0 ? 100 : 100 - 100 / (1 + gain / loss);
+
+        for (var j = period + 1; j < closes.length; j++) {
+            var change = closes[j] - closes[j - 1];
+            gain = (gain * (period - 1) + Math.max(change, 0)) / period;
+            loss = (loss * (period - 1) + Math.max(-change, 0)) / period;
+            out[j] = loss === 0 ? 100 : 100 - 100 / (1 + gain / loss);
+        }
+        return out;
+    }
+
     function visibleCount() {
         var loaded = (chartCache[chartKey()] || []).length;
         return Math.min(ZOOM_STEPS[zoomStep], loaded);
@@ -232,8 +284,25 @@
 
         var count = visibleCount();
         var end = candles.length - panOffset;
-        var slice = candles.slice(Math.max(0, end - count), end);
+        var from = Math.max(0, end - count);
+        var slice = candles.slice(from, end);
         var atLiveEdge = panOffset === 0;
+
+        // Computed over everything, then cut to the same window as the candles.
+        var closes = candles.map(function (c) { return +c.close; });
+        var overlays = showMa ? MA_PERIODS.map(function (period, i) {
+            return {
+                values: movingAverage(closes, period).slice(from, end),
+                color: i === 0 ? "var(--accent)" : "var(--warn)",
+            };
+        }) : [];
+
+        el.rsiPane.classList.toggle("hidden", !showRsi);
+        if (showRsi) {
+            window.CandleChart.drawIndicator(el.rsi,
+                relativeStrength(closes, RSI_PERIOD).slice(from, end),
+                { min: 0, max: 100, guides: [30, 70] });
+        }
 
         var market = marketOf(selected);
         /* The live price line is only drawn while the newest candle is on screen. CandleChart
@@ -242,9 +311,11 @@
            none of them ever traded at. */
         window.CandleChart.draw(el.chart, slice.map(function (c) {
             return { time: c.time, open: +c.open, high: +c.high, low: +c.low, close: +c.close };
-        }), atLiveEdge && market && market.price != null
-            ? { referencePrice: Number(market.price) }
-            : {});
+        }), {
+            lines: overlays,
+            referencePrice: atLiveEdge && market && market.price != null
+                ? Number(market.price) : null,
+        });
     }
 
     /* Fetched per market and kept, because hourly candles do not move between two clicks and a
@@ -553,6 +624,18 @@
     function pan(direction) {
         if (setPan(panOffset + direction * Math.max(1, Math.round(visibleCount() / 4)))) drawChart();
     }
+
+    el.indicators.addEventListener("click", function (event) {
+        var option = event.target.closest(".pill-option");
+        if (!option) return;
+        // Toggles rather than a single choice: an average and an oscillator answer different
+        // questions and are read together, so the pill here is not exclusive the way the
+        // timeframe one is.
+        option.classList.toggle("active");
+        if (option.dataset.ind === "ma") showMa = option.classList.contains("active");
+        else showRsi = option.classList.contains("active");
+        drawChart();
+    });
 
     el.zoomIn.addEventListener("click", function () { zoom(-1); });
     el.zoomOut.addEventListener("click", function () { zoom(1); });

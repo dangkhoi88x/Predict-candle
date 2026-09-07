@@ -416,6 +416,25 @@ every candle into a band at one edge to make room for a price none of them ever 
 survives a timeframe switch and pan does not: zoom is how much to look at, pan is where you were
 looking, and reopening the tab should show now.
 
+**MA(20/50) and RSI(14) are computed in the browser**, unlike the practice game's hint average
+which the server computes. The difference is not inconsistency: there the average is *gated* — a
+hint the player has not unlocked — so it cannot be sent early. Here the candles are already in
+the client, there is nothing to withhold, and the readings have to be recomputed on every pan
+and zoom anyway.
+
+**Both are computed over the whole fetched series and then sliced with the candles**, never over
+the visible window alone. An average is a property of a candle within its series, not of the
+view: per-window would leave the left edge blank and, worse, change the value shown for the same
+candle the moment anyone panned. The test for it is that the line has a point for every visible
+candle and starts at the left edge rather than twenty bars in.
+
+RSI uses Wilder's smoothing rather than a plain average of the last fourteen changes, which
+drifts away from what every other terminal shows for the same candles. It gets its own pane:
+an oscillator bounded 0-100 shares no units with a candle, and overlaying it either flattens the
+candles or leaves a meaningless squiggle across them. `CandleChart.draw` takes `lines` — a list
+of overlays — rather than the single `movingAverage` it used to; the daily tab's hint is one
+entry in that list.
+
 Intraday candles are deliberately **not stored**. A minute of history is sixty times the rows an
 hour is, for a chart nobody looks at twice, and it would need its own sync, backfill and gap
 handling. The client does not cache them either — keeping a minute chart across a tab switch

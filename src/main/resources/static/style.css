@@ -5337,3 +5337,30 @@ body:not(.is-admin) .adm-search {
 .trade-chart.is-dragging {
     cursor: grabbing;
 }
+
+/* Toggles, not a single choice: an average and an oscillator answer different questions and are
+   read together, so unlike the timeframe pill more than one can be lit at once. */
+.trade-indicators {
+    width: fit-content;
+}
+
+.trade-rsi {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--border);
+}
+
+.trade-rsi-label {
+    display: block;
+    margin-bottom: 2px;
+    font-size: 10.5px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+
+.trade-rsi-chart {
+    width: 100%;
+    height: auto;
+    display: block;
+}

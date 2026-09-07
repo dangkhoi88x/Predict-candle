@@ -58,7 +58,7 @@
     function drawChart() {
         window.CandleChart.draw(el.chart, candles.map(toChartCandle), {
             volumes: hints && hints.volumes,
-            movingAverage: hints && hints.movingAverage,
+            lines: hints && hints.movingAverage ? [{ values: hints.movingAverage }] : [],
         });
     }
 

@@ -351,6 +351,10 @@
                              chart redraws to fit whatever it is given, so fewer bars is more
                              detail. Slices data already fetched, so neither button costs a
                              request. -->
+                        <div class="pill trade-indicators" id="trade-indicators">
+                            <button class="pill-option" type="button" data-ind="ma">MA</button>
+                            <button class="pill-option" type="button" data-ind="rsi">RSI</button>
+                        </div>
                         <div class="trade-zoom">
                             <!-- Pan and zoom both slice data already fetched, so none of these
                                  four buttons costs a request. -->
@@ -368,6 +372,15 @@
                     <svg id="trade-chart" class="trade-chart" viewBox="0 0 900 420"
                          preserveAspectRatio="none" role="img"
                          aria-label="Biểu đồ giá của cặp đang chọn"></svg>
+                    <!-- Its own pane: an oscillator bounded 0-100 shares no units with a candle,
+                         and overlaying it either flattens the candles or leaves a meaningless
+                         squiggle across them. -->
+                    <div class="trade-rsi hidden" id="trade-rsi-pane">
+                        <span class="trade-rsi-label">RSI 14</span>
+                        <svg id="trade-rsi" class="trade-rsi-chart" viewBox="0 0 900 90"
+                             preserveAspectRatio="none" role="img"
+                             aria-label="Chỉ báo RSI 14 của cặp đang chọn"></svg>
+                    </div>
                 </div>
             </section>
 
