@@ -49,13 +49,13 @@ packages where a layer name would lie about the contents.
 
 | package | holds |
 |---|---|
-| `controller/` | the 21 `@RestController`s |
-| `service/` | the 24 `@Service`s, plus `RateLimiter` and `CandleSyncScheduler` |
-| `repository/` | the 7 Spring Data interfaces |
-| `entity/` | the 7 `@Entity` classes and the 5 persisted enums (`GuessMode` is PRACTICE / DAILY / ARCHIVE) |
+| `controller/` | the 22 `@RestController`s |
+| `service/` | the 26 `@Service`s, plus `RateLimiter` and `CandleSyncScheduler` |
+| `repository/` | the 9 Spring Data interfaces |
+| `entity/` | the 9 `@Entity` classes and the 6 persisted enums (`GuessMode` is PRACTICE / DAILY / ARCHIVE) |
 | `dto/request/` | the 5 records a client sends in: `GuessRequest`, `WalletVerifyRequest`, `BlogPostRequest`, `ContentItemRequest`, `LegacyStatsRequest` |
 | `dto/response/` | the 17 records the server sends out, including the pieces nested inside them (`CandleDto`, `BlogPostDto`, `PlayerSummary`) |
-| `domain/` | internal value records that never leave the server: `RoundToken`, `RoundSelection`, `AuthSession`, `PlayerScore`, `PlayStreak`, `DailySeed`, `DailyRound`, `HintLevel`, `Achievement`, `PatternQuizPick`, `StoredMedia` |
+| `domain/` | internal value records that never leave the server: `RoundToken`, `RoundSelection`, `AuthSession`, `PlayerScore`, `PlayStreak`, `DailySeed`, `DailyRound`, `HintLevel`, `Achievement`, `PatternQuizPick`, `DemoPortfolio`, `StoredMedia` |
 | `security/` | `JwtService`, the filter, `WalletSignatureVerifier`, `AdminAccess`, `AdminWallets`, `AdminRoleReconciler` |
 | `client/` | Binance and Yahoo, their DTOs, and `Timeframes` |
 | `pattern/` | the two pattern libraries and their matchers — algorithm, not a layer |
@@ -320,6 +320,46 @@ second line when an admin has renamed the account and the two have diverged — 
 "0xef00…4d45" pairing rekto.fun's own roster shows. The avatar is an emoji plus a background
 color, both chosen by hashing `walletShort` rather than the display name, so a renamed account
 keeps the same avatar it always had.
+
+### Demo trading
+
+Paper trading on live prices: play money, real quotes, **no leverage and therefore no
+liquidation**. `/api/demo/portfolio`, `/api/demo/trade`, `/api/demo/reset`, all behind
+`.authenticated()` — a portfolio that belongs to nobody cannot be held to a balance.
+
+**There is no balance column anywhere.** Cash, holdings, cost basis and realised P&L are folded
+by `DemoPortfolio` out of an immutable trade log, the same shape as `PlayStreak` and the badges.
+A stored balance is a second source of truth, and every way it drifts — a partial update, a
+retried request, a crash between two writes — looks to the player like money appearing or
+vanishing for no trade.
+
+`demo_accounts` holds no money either. It exists to be **the row a trade locks**: because the
+balance is derived there is no column to update atomically, so nothing would otherwise stop two
+concurrent buys from both reading the same cash, both finding it enough, and both inserting.
+`openedAt` is the other reason — a reset moves that mark and the fold stops reading before it,
+so rewinding deletes nothing.
+
+**The client never supplies a price.** Every fill is priced from `LivePriceService` inside the
+transaction that records it. Same rule the round token enforces for guesses: any figure the
+client supplies is a figure the client can choose. A buy says how much cash to spend and a sell
+says how much to release, because that is how each side is actually decided.
+
+`feeBps` is not decoration — with no cost per trade a player can round-trip as often as the
+price ticks and let variance do the rest, and the portfolio ends up measuring how often somebody
+traded rather than how well. `aRoundTripAtAnUnchangedPriceLosesTheFees` pins that.
+
+Two profit numbers, and confusing them is a visible bug: `realisedPnl` is cash that has come
+back from closed trades, `unrealisedPnl` is what open positions are worth on paper this second.
+A position whose price the feed cannot supply reports null value rather than zero, and stays out
+of equity — a number that quietly drops a holding is worse than a gap.
+
+`LivePriceService` is separate from `LiveRoundService`'s own price read rather than extracted
+from it: that one answers "the candle covering this round" and validates its cache against the
+round's open time, while this answers "the price right now" with no round in the picture.
+
+**Still open:** resets and any future ranking are in tension — a resettable balance plus a
+leaderboard means retrying until a lucky run. Either ranking is seasonal and a reset forfeits
+it, or resets stop. `resets` is counted on the account so whatever decides this has the number.
 
 ### Pattern-of-the-day quiz
 

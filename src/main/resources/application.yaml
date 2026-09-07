@@ -125,6 +125,13 @@ candles:
       # script walking the history.
       rounds-per-minute: 40
       guesses-per-minute: 120
+  demo:
+    # Play money handed to a new account, and again on every reset. Round enough to read at a
+    # glance and big enough that one bad trade is not the end of the run.
+    starting-balance: 10000
+    # Charged on both sides of a round trip. Without it there is no cost to churning, and a
+    # portfolio ends up measuring how often someone traded rather than how well.
+    fee-bps: 10
   live:
     # Picks close this long before the candle does. Rekto uses 30 minutes of a four-hour
     # candle; this is the same eighth of an hourly one. Shrinking it towards zero turns the

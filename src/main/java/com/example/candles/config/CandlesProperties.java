@@ -14,8 +14,20 @@ public record CandlesProperties(
         Backfill backfill,
         Round round,
         Live live,
+        Demo demo,
         Jwt jwt
 ) {
+
+    /**
+     * Paper trading on live prices.
+     *
+     * {@code feeBps} is not decoration. With no fee a player can round-trip a position as often
+     * as the price ticks and let variance do the rest, which makes a portfolio number that
+     * measures patience rather than judgement. A small cost per trade is what makes holding a
+     * decision.
+     */
+    public record Demo(BigDecimal startingBalance, int feeBps) {
+    }
 
     /**
      * The live round: one shared call on the real candle that is open right now.
