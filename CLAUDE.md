@@ -398,6 +398,13 @@ under a "1m" label, which is a chart that lies rather than one that is missing;
 `timeframesShorterThanTheStoredOneComeFromTheExchangeRatherThanBeingInvented` fails with
 `expected 60 but was 3600` if that guard is removed.
 
+**Zoom is how many candles are on screen, not a scale factor** — the renderer fits whatever it
+is given, so fewer bars is more detail and "zoom in" walks the count *down*. The chart fetches
+the widest step once and every zoom press slices that array, so neither button costs a request.
+Stepped rather than a free number because a linear step does nothing at the wide end. The
+zoom level survives a timeframe switch, since it is a display preference rather than a property
+of the market.
+
 Intraday candles are deliberately **not stored**. A minute of history is sixty times the rows an
 hour is, for a chart nobody looks at twice, and it would need its own sync, backfill and gap
 handling. The client does not cache them either — keeping a minute chart across a tab switch

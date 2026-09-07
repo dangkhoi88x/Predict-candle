@@ -27,6 +27,9 @@
         statHeld: document.getElementById("trade-stat-held"),
         chart: document.getElementById("trade-chart"),
         timeframes: document.getElementById("trade-timeframes"),
+        zoomIn: document.getElementById("trade-zoom-in"),
+        zoomOut: document.getElementById("trade-zoom-out"),
+        zoomCount: document.getElementById("trade-zoom-count"),
         preview: document.getElementById("trade-preview"),
         positionCard: document.getElementById("trade-position-card"),
         sides: document.getElementById("trade-sides"),
@@ -46,6 +49,11 @@
     var busy = false;
     var filter = "";
     var timeframe = "1h";
+    /* How many candles are on screen. The chart scales to whatever it is given, so fewer bars
+       is more detail — "zoom in" walks this down, not up. Steps rather than a free number so
+       each press is a visible change; a linear step would do nothing at the wide end. */
+    var ZOOM_STEPS = [40, 60, 90, 120, 180, 260, 400];
+    var zoomStep = 3;
     /* Keyed by symbol *and* timeframe, so switching back to something already looked at draws
        instantly instead of blanking the chart while a request goes out. One key per view is what
        stops a 4h chart being served the 1h candles that happen to be cached for that symbol. */
@@ -176,12 +184,25 @@
         return selected + "@" + timeframe;
     }
 
+    function renderZoom() {
+        var loaded = (chartCache[chartKey()] || []).length;
+        el.zoomIn.disabled = zoomStep <= 0;
+        // Nothing to widen to once every candle fetched is already on screen.
+        el.zoomOut.disabled = zoomStep >= ZOOM_STEPS.length - 1
+            || ZOOM_STEPS[zoomStep] >= loaded;
+        el.zoomCount.textContent = loaded ? Math.min(ZOOM_STEPS[zoomStep], loaded) + " nến" : "";
+    }
+
     function drawChart() {
         var candles = chartCache[chartKey()];
+        renderZoom();
         if (!candles || !candles.length) {
             window.CandleChart.draw(el.chart, []);
             return;
         }
+        // The most recent slice: zooming out reveals older candles, it never scrolls forward
+        // past the newest one, which is the edge a trader is actually looking at.
+        candles = candles.slice(-ZOOM_STEPS[zoomStep]);
         var market = marketOf(selected);
         window.CandleChart.draw(el.chart, candles.map(function (c) {
             return { time: c.time, open: +c.open, high: +c.high, low: +c.low, close: +c.close };
@@ -205,7 +226,7 @@
         try {
             var res = await window.CandleAuth.authFetch(
                 "/api/demo/chart?asset=" + encodeURIComponent(symbol)
-                + "&tf=" + encodeURIComponent(tf) + "&limit=120");
+                + "&tf=" + encodeURIComponent(tf) + "&limit=" + ZOOM_STEPS[ZOOM_STEPS.length - 1]);
             if (!res.ok) return;
             var payload = await res.json();
             chartCache[key] = payload.candles;
@@ -482,6 +503,17 @@
         el.status.textContent = "";
         render();
     });
+
+    function zoom(delta) {
+        var next = Math.min(Math.max(zoomStep + delta, 0), ZOOM_STEPS.length - 1);
+        if (next === zoomStep) return;
+        zoomStep = next;
+        // Purely a redraw: the candles are already here, so neither button hits the network.
+        drawChart();
+    }
+
+    el.zoomIn.addEventListener("click", function () { zoom(-1); });
+    el.zoomOut.addEventListener("click", function () { zoom(1); });
 
     el.timeframes.addEventListener("click", function (event) {
         var option = event.target.closest(".pill-option");

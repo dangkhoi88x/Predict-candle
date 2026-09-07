@@ -339,12 +339,25 @@
                 </div>
 
                 <div class="trade-chart-card">
-                    <div class="pill trade-timeframes" id="trade-timeframes">
-                        <button class="pill-option" type="button" data-tf="1m">1M</button>
-                        <button class="pill-option" type="button" data-tf="15m">15M</button>
-                        <button class="pill-option active" type="button" data-tf="1h">1H</button>
-                        <button class="pill-option" type="button" data-tf="4h">4H</button>
-                        <button class="pill-option" type="button" data-tf="1d">1D</button>
+                    <div class="trade-chart-toolbar">
+                        <div class="pill trade-timeframes" id="trade-timeframes">
+                            <button class="pill-option" type="button" data-tf="1m">1M</button>
+                            <button class="pill-option" type="button" data-tf="15m">15M</button>
+                            <button class="pill-option active" type="button" data-tf="1h">1H</button>
+                            <button class="pill-option" type="button" data-tf="4h">4H</button>
+                            <button class="pill-option" type="button" data-tf="1d">1D</button>
+                        </div>
+                        <!-- Zoom is how many candles are on screen, not a scale factor: the
+                             chart redraws to fit whatever it is given, so fewer bars is more
+                             detail. Slices data already fetched, so neither button costs a
+                             request. -->
+                        <div class="trade-zoom">
+                            <button class="trade-zoom-btn" type="button" id="trade-zoom-out"
+                                    aria-label="Thu nhỏ, xem nhiều nến hơn" title="Xem nhiều nến hơn">−</button>
+                            <span class="trade-zoom-count" id="trade-zoom-count"></span>
+                            <button class="trade-zoom-btn" type="button" id="trade-zoom-in"
+                                    aria-label="Phóng to, xem ít nến hơn" title="Xem ít nến hơn">+</button>
+                        </div>
                     </div>
                     <svg id="trade-chart" class="trade-chart" viewBox="0 0 900 420"
                          preserveAspectRatio="none" role="img"
