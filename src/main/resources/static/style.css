@@ -148,8 +148,10 @@
     /* Selection tints. A picked thing is the accent at low alpha with accent-coloured text —
        one rule at every scale, rather than a different treatment per control. Derived from
        --accent so they follow the theme with no second set of values to maintain. */
-    --tint-accent: color-mix(in oklab, var(--accent) 12%, transparent);
+    --tint-accent-weak: color-mix(in oklab, var(--accent) 12%, transparent);
     --tint-accent-strong: color-mix(in oklab, var(--accent) 18%, transparent);
+    /* The neutral counterpart of these is --overlay-soft above, which already is exactly an ink
+       tint that flips per theme. Naming it a second time would be two spellings of one value. */
     --shadow: rgba(0, 0, 0, 0.4);
     --sans: "Inter Variable", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
     --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
@@ -5062,7 +5064,7 @@ body:not(.is-admin) .adm-search {
 }
 
 .trade-market.is-selected {
-    background: var(--tint-accent);
+    background: var(--tint-accent-weak);
 }
 
 /* Only the name takes the accent. The price and the day's move are data, and tinting numbers
@@ -5341,10 +5343,12 @@ body:not(.is-admin) .adm-search {
     min-height: 1em;
 }
 
-/* The pills inside this tab pick things rather than navigate, so they follow the tab's own
-   selection language. Scoped deliberately: `.pill` appears in nearly fifty places across both
-   pages, and the nav's sliding indicator depends on the shared rule staying as it is. */
-#view-trade .pill-option.active {
+/* The pills inside the terminal pick things rather than navigate, so they follow the tab's own
+   selection language. Scoped to the frame, not to `#view-trade`: `.pill` appears in nearly fifty
+   places across both pages and the nav's sliding indicator is positioned from the shared rule,
+   so the narrowest scope that covers every pill in here is the right one — and if this tab ever
+   grows a pill outside the terminal, that pill should look like the rest of the app. */
+.trade-terminal .pill-option.active {
     background: var(--tint-accent-strong);
     color: var(--accent);
 }
