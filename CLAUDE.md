@@ -405,6 +405,17 @@ Stepped rather than a free number because a linear step does nothing at the wide
 zoom level survives a timeframe switch, since it is a display preference rather than a property
 of the market.
 
+Panning moves the same slice back through the fetched array — buttons, dragging the chart, and
+a horizontal wheel, none of which touch the network. The wheel only claims a gesture that is
+more sideways than vertical, so scrolling the page over the chart still scrolls the page, and
+`touch-action: pan-y` keeps that true on a phone.
+
+**The live price line is drawn only while the newest candle is on screen.** `CandleChart` widens
+its price scale to fit that line, so leaving it on a chart panned back three months would squash
+every candle into a band at one edge to make room for a price none of them ever traded at. Zoom
+survives a timeframe switch and pan does not: zoom is how much to look at, pan is where you were
+looking, and reopening the tab should show now.
+
 Intraday candles are deliberately **not stored**. A minute of history is sixty times the rows an
 hour is, for a chart nobody looks at twice, and it would need its own sync, backfill and gap
 handling. The client does not cache them either — keeping a minute chart across a tab switch

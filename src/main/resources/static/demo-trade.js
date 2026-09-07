@@ -27,6 +27,8 @@
         statHeld: document.getElementById("trade-stat-held"),
         chart: document.getElementById("trade-chart"),
         timeframes: document.getElementById("trade-timeframes"),
+        panBack: document.getElementById("trade-pan-back"),
+        panForward: document.getElementById("trade-pan-forward"),
         zoomIn: document.getElementById("trade-zoom-in"),
         zoomOut: document.getElementById("trade-zoom-out"),
         zoomCount: document.getElementById("trade-zoom-count"),
@@ -54,6 +56,10 @@
        each press is a visible change; a linear step would do nothing at the wide end. */
     var ZOOM_STEPS = [40, 60, 90, 120, 180, 260, 400];
     var zoomStep = 3;
+    /* How many candles back from the newest the right edge of the view sits. 0 is the live
+       edge, which is where every load and every market or timeframe switch puts it — someone
+       opening a chart wants the price now, not wherever they last dragged to. */
+    var panOffset = 0;
     /* Keyed by symbol *and* timeframe, so switching back to something already looked at draws
        instantly instead of blanking the chart while a request goes out. One key per view is what
        stops a 4h chart being served the 1h candles that happen to be cached for that symbol. */
@@ -184,29 +190,59 @@
         return selected + "@" + timeframe;
     }
 
+    function visibleCount() {
+        var loaded = (chartCache[chartKey()] || []).length;
+        return Math.min(ZOOM_STEPS[zoomStep], loaded);
+    }
+
+    /** How far back the view can go before it runs out of candles. */
+    function maxPan() {
+        var loaded = (chartCache[chartKey()] || []).length;
+        return Math.max(0, loaded - visibleCount());
+    }
+
+    function setPan(next) {
+        var clamped = Math.min(Math.max(Math.round(next), 0), maxPan());
+        if (clamped === panOffset) return false;
+        panOffset = clamped;
+        return true;
+    }
+
     function renderZoom() {
         var loaded = (chartCache[chartKey()] || []).length;
         el.zoomIn.disabled = zoomStep <= 0;
         // Nothing to widen to once every candle fetched is already on screen.
         el.zoomOut.disabled = zoomStep >= ZOOM_STEPS.length - 1
             || ZOOM_STEPS[zoomStep] >= loaded;
-        el.zoomCount.textContent = loaded ? Math.min(ZOOM_STEPS[zoomStep], loaded) + " nến" : "";
+        el.panBack.disabled = panOffset >= maxPan();
+        // Disabled at the live edge, which is also how the chart says it is showing "now".
+        el.panForward.disabled = panOffset <= 0;
+        el.zoomCount.textContent = loaded ? visibleCount() + " nến" : "";
     }
 
     function drawChart() {
         var candles = chartCache[chartKey()];
+        // Zooming out can leave the view hanging past the oldest candle; pull it back in first.
+        setPan(panOffset);
         renderZoom();
         if (!candles || !candles.length) {
             window.CandleChart.draw(el.chart, []);
             return;
         }
-        // The most recent slice: zooming out reveals older candles, it never scrolls forward
-        // past the newest one, which is the edge a trader is actually looking at.
-        candles = candles.slice(-ZOOM_STEPS[zoomStep]);
+
+        var count = visibleCount();
+        var end = candles.length - panOffset;
+        var slice = candles.slice(Math.max(0, end - count), end);
+        var atLiveEdge = panOffset === 0;
+
         var market = marketOf(selected);
-        window.CandleChart.draw(el.chart, candles.map(function (c) {
+        /* The live price line is only drawn while the newest candle is on screen. CandleChart
+           widens its price scale to fit that line, so leaving it on a chart panned back three
+           months would squash every candle into a band at one edge to make room for a price
+           none of them ever traded at. */
+        window.CandleChart.draw(el.chart, slice.map(function (c) {
             return { time: c.time, open: +c.open, high: +c.high, low: +c.low, close: +c.close };
-        }), market && market.price != null
+        }), atLiveEdge && market && market.price != null
             ? { referencePrice: Number(market.price) }
             : {});
     }
@@ -238,6 +274,7 @@
 
     function select(symbol) {
         selected = symbol;
+        panOffset = 0;
         el.amount.value = "";
         el.status.textContent = "";
         render();
@@ -508,12 +545,58 @@
         var next = Math.min(Math.max(zoomStep + delta, 0), ZOOM_STEPS.length - 1);
         if (next === zoomStep) return;
         zoomStep = next;
-        // Purely a redraw: the candles are already here, so neither button hits the network.
+        // Purely a redraw: the candles are already here, so no button here hits the network.
         drawChart();
+    }
+
+    /** A quarter of the window per press — enough to see it move, small enough to keep your place. */
+    function pan(direction) {
+        if (setPan(panOffset + direction * Math.max(1, Math.round(visibleCount() / 4)))) drawChart();
     }
 
     el.zoomIn.addEventListener("click", function () { zoom(-1); });
     el.zoomOut.addEventListener("click", function () { zoom(1); });
+    el.panBack.addEventListener("click", function () { pan(1); });
+    el.panForward.addEventListener("click", function () { pan(-1); });
+
+    /* Dragging the chart itself. The content follows the pointer — pulling right reveals older
+       candles — which is the direction every chart tool uses and the opposite of moving a
+       scrollbar. Distance is converted through the chart's own width so one drag covers the
+       same ground whatever the screen size or zoom level. */
+    var drag = null;
+
+    el.chart.addEventListener("pointerdown", function (event) {
+        if (!chartCache[chartKey()]) return;
+        drag = { x: event.clientX, from: panOffset, width: el.chart.getBoundingClientRect().width };
+        el.chart.setPointerCapture(event.pointerId);
+        el.chart.classList.add("is-dragging");
+    });
+
+    el.chart.addEventListener("pointermove", function (event) {
+        if (!drag || !drag.width) return;
+        var candlesPerPixel = visibleCount() / drag.width;
+        if (setPan(drag.from + (event.clientX - drag.x) * candlesPerPixel)) drawChart();
+    });
+
+    function endDrag(event) {
+        if (!drag) return;
+        drag = null;
+        el.chart.classList.remove("is-dragging");
+        if (event && el.chart.hasPointerCapture(event.pointerId)) {
+            el.chart.releasePointerCapture(event.pointerId);
+        }
+    }
+
+    el.chart.addEventListener("pointerup", endDrag);
+    el.chart.addEventListener("pointercancel", endDrag);
+
+    /* Horizontal wheel and trackpad swipes. Only claimed when the gesture is more sideways than
+       vertical, so scrolling the page over the chart still scrolls the page. */
+    el.chart.addEventListener("wheel", function (event) {
+        if (Math.abs(event.deltaX) <= Math.abs(event.deltaY)) return;
+        event.preventDefault();
+        if (setPan(panOffset - event.deltaX * (visibleCount() / 600))) drawChart();
+    }, { passive: false });
 
     el.timeframes.addEventListener("click", function (event) {
         var option = event.target.closest(".pill-option");
@@ -522,6 +605,7 @@
             b.classList.toggle("active", b === option);
         });
         timeframe = option.dataset.tf;
+        panOffset = 0;
         drawChart();
         loadChart(selected, timeframe);
     });
@@ -554,6 +638,9 @@
             state = payload;
             el.signIn.classList.add("hidden");
             el.body.classList.remove("hidden");
+            // Back to the live edge. Zoom is how much to look at and survives; pan is where you
+            // were looking, and reopening the tab should show now rather than last week.
+            panOffset = 0;
             if (!selected && state.markets.length) selected = state.markets[0].symbol;
             render();
             loadChart(selected, timeframe);

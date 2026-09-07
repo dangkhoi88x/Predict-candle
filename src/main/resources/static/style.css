@@ -5326,3 +5326,14 @@ body:not(.is-admin) .adm-search {
     opacity: 0.35;
     cursor: not-allowed;
 }
+
+/* The chart is draggable, so it says so. touch-action keeps vertical page scrolling working on
+   a phone while the horizontal gesture is captured for panning. */
+.trade-chart {
+    cursor: grab;
+    touch-action: pan-y;
+}
+
+.trade-chart.is-dragging {
+    cursor: grabbing;
+}
