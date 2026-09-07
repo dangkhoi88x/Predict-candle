@@ -49,13 +49,13 @@ packages where a layer name would lie about the contents.
 
 | package | holds |
 |---|---|
-| `controller/` | the 21 `@RestController`s |
-| `service/` | the 24 `@Service`s, plus `RateLimiter` and `CandleSyncScheduler` |
-| `repository/` | the 7 Spring Data interfaces |
-| `entity/` | the 7 `@Entity` classes and the 5 persisted enums (`GuessMode` is PRACTICE / DAILY / ARCHIVE) |
+| `controller/` | the 22 `@RestController`s |
+| `service/` | the 26 `@Service`s, plus `RateLimiter` and `CandleSyncScheduler` |
+| `repository/` | the 9 Spring Data interfaces |
+| `entity/` | the 9 `@Entity` classes and the 6 persisted enums (`GuessMode` is PRACTICE / DAILY / ARCHIVE) |
 | `dto/request/` | the 5 records a client sends in: `GuessRequest`, `WalletVerifyRequest`, `BlogPostRequest`, `ContentItemRequest`, `LegacyStatsRequest` |
 | `dto/response/` | the 17 records the server sends out, including the pieces nested inside them (`CandleDto`, `BlogPostDto`, `PlayerSummary`) |
-| `domain/` | internal value records that never leave the server: `RoundToken`, `RoundSelection`, `AuthSession`, `PlayerScore`, `PlayStreak`, `DailySeed`, `DailyRound`, `HintLevel`, `Achievement`, `PatternQuizPick`, `StoredMedia` |
+| `domain/` | internal value records that never leave the server: `RoundToken`, `RoundSelection`, `AuthSession`, `PlayerScore`, `PlayStreak`, `DailySeed`, `DailyRound`, `HintLevel`, `Achievement`, `PatternQuizPick`, `DemoPortfolio`, `StoredMedia` |
 | `security/` | `JwtService`, the filter, `WalletSignatureVerifier`, `AdminAccess`, `AdminWallets`, `AdminRoleReconciler` |
 | `client/` | Binance and Yahoo, their DTOs, and `Timeframes` |
 | `pattern/` | the two pattern libraries and their matchers — algorithm, not a layer |
@@ -320,6 +320,148 @@ second line when an admin has renamed the account and the two have diverged — 
 "0xef00…4d45" pairing rekto.fun's own roster shows. The avatar is an emoji plus a background
 color, both chosen by hashing `walletShort` rather than the display name, so a renamed account
 keeps the same avatar it always had.
+
+### Demo trading
+
+Paper trading on live prices: play money, real quotes, **no leverage and therefore no
+liquidation**. `/api/demo/portfolio`, `/api/demo/trade`, `/api/demo/reset`, all behind
+`.authenticated()` — a portfolio that belongs to nobody cannot be held to a balance.
+
+**There is no balance column anywhere.** Cash, holdings, cost basis and realised P&L are folded
+by `DemoPortfolio` out of an immutable trade log, the same shape as `PlayStreak` and the badges.
+A stored balance is a second source of truth, and every way it drifts — a partial update, a
+retried request, a crash between two writes — looks to the player like money appearing or
+vanishing for no trade.
+
+`demo_accounts` holds no money either. It exists to be **the row a trade locks**: because the
+balance is derived there is no column to update atomically, so nothing would otherwise stop two
+concurrent buys from both reading the same cash, both finding it enough, and both inserting.
+`openedAt` is the other reason — a reset moves that mark and the fold stops reading before it,
+so rewinding deletes nothing.
+
+**The client never supplies a price.** Every fill is priced from `LivePriceService` inside the
+transaction that records it. Same rule the round token enforces for guesses: any figure the
+client supplies is a figure the client can choose. A buy says how much cash to spend and a sell
+says how much to release, because that is how each side is actually decided.
+
+`feeBps` is not decoration — with no cost per trade a player can round-trip as often as the
+price ticks and let variance do the rest, and the portfolio ends up measuring how often somebody
+traded rather than how well. `aRoundTripAtAnUnchangedPriceLosesTheFees` pins that.
+
+Two profit numbers, and confusing them is a visible bug: `realisedPnl` is cash that has come
+back from closed trades, `unrealisedPnl` is what open positions are worth on paper this second.
+A position whose price the feed cannot supply reports null value rather than zero, and stays out
+of equity — a number that quietly drops a holding is worse than a gap.
+
+`LivePriceService` is separate from `LiveRoundService`'s own price read rather than extracted
+from it: that one answers "the candle covering this round" and validates its cache against the
+round's open time, while this answers "the price right now" with no round in the picture.
+
+The terminal is a tab of its own (`demo-trade.js`). It computes nothing — every figure comes
+from `/api/demo/portfolio`, because a client doing its own arithmetic would eventually disagree
+with the server about how much money someone has. Signed out it shows a prompt rather than an
+error: a 401 is the expected answer to "show me a portfolio" from someone who has none, and the
+tab stays visible so the feature is discoverable.
+
+**`DemoTrade` rounds to the column's scale in its constructor, and that is load-bearing.**
+`numeric(30, 10)` truncates, so a response built in the same transaction as the insert reported
+a longer number than the row would hold, while every later read returned the stored one. A
+client that echoed the longer number back — which is exactly what "sell all" does — was told it
+was selling more than it held. Quantity rounds DOWN specifically: rounding up would release an
+amount that is not there. `theReportedQuantityIsExactlyWhatCanBeSoldBack` pins it, and it took
+three attempts to write a version that actually fails without the fix — a pinned round price
+divides too cleanly, and reading the quantity back through `portfolio()` after a flush reads the
+database rather than the response the browser keeps.
+
+**Demo P&L is deliberately not ranked, and that is settled rather than pending.** A resettable
+balance plus a leaderboard means retrying until a lucky run, and the alternatives — seasons, or
+forbidding resets — both cost more than the board is worth. `resets` is still counted on the
+account in case that is ever revisited.
+
+The terminal is the one view that is not a reading column: `.app` caps at 760px, which is right
+for a chart with two buttons under it and far too narrow for a market list, a chart and an order
+ticket side by side — at 760 the middle track collapsed to about 120px. `.app-wide` gives the
+trade tab the same 1180px the nav already uses. Below 1100px the chart takes a full row of its
+own and the other two drop under it, rather than squeezing the one thing that needs width.
+
+Account figures are written as plain text, **not** through `CandleRolling`. That odometer
+animates a strip of digits and needs the `.rolling` class to clip it; these values carry currency
+symbols and separators, and without the class every digit of the strip renders — which is
+exactly what happened.
+
+**The chart's five timeframes come from two different places, and the split is not an
+optimisation.** 4h and 1d are folded out of the stored hourly candles. 1m and 15m cannot be —
+those minutes were never recorded, and an hourly candle cannot be taken apart into the sixty
+that made it — so `IntradayCandleService` fetches them from the exchange and caches them for
+twenty seconds. Falling back to stored candles for a short timeframe would draw hourly bars
+under a "1m" label, which is a chart that lies rather than one that is missing;
+`timeframesShorterThanTheStoredOneComeFromTheExchangeRatherThanBeingInvented` fails with
+`expected 60 but was 3600` if that guard is removed.
+
+**Zoom is how many candles are on screen, not a scale factor** — the renderer fits whatever it
+is given, so fewer bars is more detail and "zoom in" walks the count *down*. The chart fetches
+the widest step once and every zoom press slices that array, so neither button costs a request.
+Stepped rather than a free number because a linear step does nothing at the wide end. The
+zoom level survives a timeframe switch, since it is a display preference rather than a property
+of the market.
+
+Panning moves the same slice back through the fetched array — buttons, dragging the chart, and
+a horizontal wheel, none of which touch the network. The wheel only claims a gesture that is
+more sideways than vertical, so scrolling the page over the chart still scrolls the page, and
+`touch-action: pan-y` keeps that true on a phone.
+
+**The live price line is drawn only while the newest candle is on screen.** `CandleChart` widens
+its price scale to fit that line, so leaving it on a chart panned back three months would squash
+every candle into a band at one edge to make room for a price none of them ever traded at. Zoom
+survives a timeframe switch and pan does not: zoom is how much to look at, pan is where you were
+looking, and reopening the tab should show now.
+
+**MA(20/50) and RSI(14) are computed in the browser**, unlike the practice game's hint average
+which the server computes. The difference is not inconsistency: there the average is *gated* — a
+hint the player has not unlocked — so it cannot be sent early. Here the candles are already in
+the client, there is nothing to withhold, and the readings have to be recomputed on every pan
+and zoom anyway.
+
+**Both are computed over the whole fetched series and then sliced with the candles**, never over
+the visible window alone. An average is a property of a candle within its series, not of the
+view: per-window would leave the left edge blank and, worse, change the value shown for the same
+candle the moment anyone panned. The test for it is that the line has a point for every visible
+candle and starts at the left edge rather than twenty bars in.
+
+RSI uses Wilder's smoothing rather than a plain average of the last fourteen changes, which
+drifts away from what every other terminal shows for the same candles. It gets its own pane:
+an oscillator bounded 0-100 shares no units with a candle, and overlaying it either flattens the
+candles or leaves a meaningless squiggle across them. `CandleChart.draw` takes `lines` — a list
+of overlays — rather than the single `movingAverage` it used to; the daily tab's hint is one
+entry in that list.
+
+Intraday candles are deliberately **not stored**. A minute of history is sixty times the rows an
+hour is, for a chart nobody looks at twice, and it would need its own sync, backfill and gap
+handling. The client does not cache them either — keeping a minute chart across a tab switch
+shows a picture that is quietly minutes old.
+
+**4h and 1d charts are folded from the stored hourly candles**, not synced separately —
+`CandleAggregator`, driven by `GET /api/demo/chart?tf=`. Only one timeframe is ever stored, so
+there is nothing new to keep in step with the hourly sync.
+
+Buckets come from `Timeframes.currentPeriodStart`, which counts periods from the epoch the way
+exchanges do. **Chunking the list into groups of four instead would be simpler and wrong**: the
+grouping would depend on how many candles happened to be fetched, so one 4h bar would cover
+01:00–05:00 for one request and 02:00–06:00 for the next, and every bar would shift each time the
+sync landed. `thesameHoursGiveTheSameBarsHoweverManyWereFetched` pins that.
+
+The oldest bar of a window is dropped when it would be a partial period — the window started
+mid-bucket, and drawing it would show a short candle that never existed. The *newest* partial bar
+is kept, because that is the period still forming. The chart cache is keyed by symbol **and**
+timeframe, or a 4h view gets served whatever happens to be cached for that symbol.
+
+Asking for 120 bars returns 120 bars at any timeframe — a longer timeframe covers more time
+rather than showing fewer candles, which is what the test asserts (the first version asserted
+falling bar counts and failed for the right reason).
+
+**Binance reports volume in the base asset.** 24h turnover is `Σ(volume × close)` per candle;
+showing the raw figure with a `$` in front of it is off by the price of the asset, which on BTC
+is four orders of magnitude ($10.2K rather than $815M).
 
 ### Pattern-of-the-day quiz
 

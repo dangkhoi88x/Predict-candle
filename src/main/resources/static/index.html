@@ -40,6 +40,7 @@
             <button class="nav-tab active" role="tab" id="tab-game" aria-controls="view-game" aria-selected="true" data-view="game">Đoán Nến</button>
             <button class="nav-tab" role="tab" id="tab-daily" aria-controls="view-daily" aria-selected="false" data-view="daily">Thử Thách Hôm Nay</button>
             <button class="nav-tab" role="tab" id="tab-live" aria-controls="view-live" aria-selected="false" data-view="live">Dự Đoán Trực Tiếp</button>
+            <button class="nav-tab" role="tab" id="tab-trade" aria-controls="view-trade" aria-selected="false" data-view="trade">Giao Dịch</button>
             <button class="nav-tab" role="tab" id="tab-heatmap" aria-controls="view-heatmap" aria-selected="false" data-view="heatmap">Market Heatmap</button>
             <button class="nav-tab" role="tab" id="tab-patterns" aria-controls="view-patterns" aria-selected="false" data-view="patterns">Mẫu Nến</button>
             <button class="nav-tab" role="tab" id="tab-technical" aria-controls="view-technical" aria-selected="false" data-view="technical">Mẫu Hình Kỹ Thuật</button>
@@ -261,6 +262,157 @@
 
     <h3 class="profile-section">Chơi lại ngày trước</h3>
     <div id="daily-archive" class="daily-archive"></div>
+</main>
+
+<main id="view-trade" class="view app app-wide hidden" role="tabpanel" aria-labelledby="tab-trade">
+    <!-- The whole surface needs an account: a portfolio nobody owns cannot be held to a
+         balance. The tab stays visible signed out so the feature is discoverable. -->
+    <p class="view-notice hidden" id="trade-signin">Kết nối ví để nhận tiền demo và bắt đầu giao dịch.</p>
+
+    <div id="trade-body" class="hidden">
+        <!-- Account figures first: on a terminal the question "how am I doing" outranks any
+             single market, and it is the one thing that is true across all of them. -->
+        <div class="trade-account" id="trade-account">
+            <div class="trade-account-fig">
+                <span class="trade-account-label">Tổng tài sản</span>
+                <b class="trade-account-value" id="trade-equity">–</b>
+            </div>
+            <div class="trade-account-fig">
+                <span class="trade-account-label">Tiền mặt</span>
+                <b class="trade-account-value" id="trade-cash">–</b>
+            </div>
+            <div class="trade-account-fig">
+                <span class="trade-account-label">Đã chốt</span>
+                <b class="trade-account-value" id="trade-realised">–</b>
+            </div>
+            <div class="trade-account-fig">
+                <span class="trade-account-label">Đang mở</span>
+                <b class="trade-account-value" id="trade-unrealised">–</b>
+            </div>
+            <div class="trade-account-fig">
+                <span class="trade-account-label">Tổng lời</span>
+                <b class="trade-account-value" id="trade-return">–</b>
+            </div>
+            <div class="trade-account-actions">
+                <span class="trade-demo-badge">Tiền demo</span>
+                <button class="ghost-btn" type="button" id="trade-reset">Chơi lại</button>
+            </div>
+        </div>
+
+        <div class="trade-terminal">
+            <!-- Left: every market, its price and the day's move. -->
+            <aside class="trade-list">
+                <input id="trade-search" class="trade-search" type="search" placeholder="Tìm cặp…"
+                       aria-label="Tìm cặp giao dịch"/>
+                <div class="trade-list-head">
+                    <span>Thị trường</span>
+                    <span>Giá / 24h</span>
+                </div>
+                <div id="trade-markets" class="trade-markets"></div>
+            </aside>
+
+            <!-- Centre: the selected market's numbers and its chart. -->
+            <section class="trade-chart-col">
+                <div class="trade-headline">
+                    <div class="trade-headline-pair">
+                        <b id="trade-pair">—</b>
+                        <span class="trade-headline-name" id="trade-pair-name"></span>
+                    </div>
+                    <div class="trade-headline-stats">
+                        <div class="trade-stat">
+                            <span class="trade-stat-label">Giá</span>
+                            <b class="trade-stat-value" id="trade-stat-price">—</b>
+                        </div>
+                        <div class="trade-stat">
+                            <span class="trade-stat-label">24h</span>
+                            <b class="trade-stat-value" id="trade-stat-change">—</b>
+                        </div>
+                        <div class="trade-stat">
+                            <span class="trade-stat-label">KL 24h</span>
+                            <b class="trade-stat-value" id="trade-stat-volume">—</b>
+                        </div>
+                        <div class="trade-stat">
+                            <span class="trade-stat-label">Đang giữ</span>
+                            <b class="trade-stat-value" id="trade-stat-held">—</b>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="trade-chart-card">
+                    <div class="trade-chart-toolbar">
+                        <div class="pill trade-timeframes" id="trade-timeframes">
+                            <button class="pill-option" type="button" data-tf="1m">1M</button>
+                            <button class="pill-option" type="button" data-tf="15m">15M</button>
+                            <button class="pill-option active" type="button" data-tf="1h">1H</button>
+                            <button class="pill-option" type="button" data-tf="4h">4H</button>
+                            <button class="pill-option" type="button" data-tf="1d">1D</button>
+                        </div>
+                        <!-- Zoom is how many candles are on screen, not a scale factor: the
+                             chart redraws to fit whatever it is given, so fewer bars is more
+                             detail. Slices data already fetched, so neither button costs a
+                             request. -->
+                        <div class="pill trade-indicators" id="trade-indicators">
+                            <button class="pill-option" type="button" data-ind="ma">MA</button>
+                            <button class="pill-option" type="button" data-ind="rsi">RSI</button>
+                        </div>
+                        <div class="trade-zoom">
+                            <!-- Pan and zoom both slice data already fetched, so none of these
+                                 four buttons costs a request. -->
+                            <button class="trade-zoom-btn" type="button" id="trade-pan-back"
+                                    aria-label="Xem về quá khứ" title="Xem về quá khứ">‹</button>
+                            <button class="trade-zoom-btn" type="button" id="trade-pan-forward"
+                                    aria-label="Xem về hiện tại" title="Xem về hiện tại">›</button>
+                            <button class="trade-zoom-btn" type="button" id="trade-zoom-out"
+                                    aria-label="Thu nhỏ, xem nhiều nến hơn" title="Xem nhiều nến hơn">−</button>
+                            <span class="trade-zoom-count" id="trade-zoom-count"></span>
+                            <button class="trade-zoom-btn" type="button" id="trade-zoom-in"
+                                    aria-label="Phóng to, xem ít nến hơn" title="Xem ít nến hơn">+</button>
+                        </div>
+                    </div>
+                    <svg id="trade-chart" class="trade-chart" viewBox="0 0 900 420"
+                         preserveAspectRatio="none" role="img"
+                         aria-label="Biểu đồ giá của cặp đang chọn"></svg>
+                    <!-- Its own pane: an oscillator bounded 0-100 shares no units with a candle,
+                         and overlaying it either flattens the candles or leaves a meaningless
+                         squiggle across them. -->
+                    <div class="trade-rsi hidden" id="trade-rsi-pane">
+                        <span class="trade-rsi-label">RSI 14</span>
+                        <svg id="trade-rsi" class="trade-rsi-chart" viewBox="0 0 900 90"
+                             preserveAspectRatio="none" role="img"
+                             aria-label="Chỉ báo RSI 14 của cặp đang chọn"></svg>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Right: the order ticket. -->
+            <aside class="trade-panel">
+                <div class="pill trade-sides" id="trade-sides">
+                    <button class="pill-option active" type="button" data-side="BUY">Mua</button>
+                    <button class="pill-option" type="button" data-side="SELL">Bán</button>
+                </div>
+
+                <label class="trade-field">
+                    <span id="trade-input-label">Số tiền (USD)</span>
+                    <input id="trade-amount" type="number" min="0" step="any" inputmode="decimal" placeholder="0"/>
+                </label>
+
+                <div class="trade-quick" id="trade-quick"></div>
+
+                <div class="trade-preview" id="trade-preview"></div>
+
+                <button class="guess-btn long" type="button" id="trade-submit">Mua</button>
+                <p class="trade-status" id="trade-status"></p>
+
+                <div class="trade-position-card" id="trade-position-card"></div>
+            </aside>
+        </div>
+
+        <h3 class="profile-section">Đang giữ</h3>
+        <div id="trade-positions" class="profile-assets"></div>
+
+        <h3 class="profile-section">Lệnh gần đây</h3>
+        <div id="trade-fills" class="profile-recent"></div>
+    </div>
 </main>
 
 <main id="view-live" class="view app hidden" role="tabpanel" aria-labelledby="tab-live">
@@ -538,6 +690,7 @@
 <script src="candle-chart.js"></script>
 <script src="daily.js"></script>
 <script src="pattern-quiz.js"></script>
+<script src="demo-trade.js"></script>
 <script src="live.js"></script>
 <script src="ticker.js"></script>
 <script src="nav.js"></script>

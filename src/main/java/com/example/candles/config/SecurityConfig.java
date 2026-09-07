@@ -41,6 +41,9 @@ public class SecurityConfig {
                         .requestMatchers("/api/media/**").hasRole("ADMIN")
                         // Personal totals — nothing meaningful to serve anonymously.
                         .requestMatchers("/api/stats/**").authenticated()
+                        // A paper portfolio that belongs to nobody cannot be held to a balance,
+                        // so unlike the rest of the game there is no anonymous path here.
+                        .requestMatchers("/api/demo/**").authenticated()
                         // The round and its history are public, like /api/practice and
                         // /api/leaderboard; calling a direction is a per-account record and
                         // needs a wallet, the same reasoning as /api/stats/**.

@@ -6,6 +6,7 @@
         game: document.getElementById("view-game"),
         daily: document.getElementById("view-daily"),
         live: document.getElementById("view-live"),
+        trade: document.getElementById("view-trade"),
         heatmap: document.getElementById("view-heatmap"),
         patterns: document.getElementById("view-patterns"),
         technical: document.getElementById("view-technical"),
@@ -34,6 +35,9 @@
             // Its own module on the same tab: separate data, separate record, separate failure.
             window.__initPatternQuizView && window.__initPatternQuizView();
         },
+        /* Prices move and a trade made on this tab changes every number on it, so it re-reads
+           on every reveal rather than once. */
+        trade: function () { window.__initTradeView && window.__initTradeView(); },
         profile: function () { window.__initProfileView && window.__initProfileView(); },
         /* Rebuilt on every reveal, not just the first: ranks move while you play, and a board
            showing where you stood when the page loaded is the one thing it must not do. The

@@ -178,22 +178,26 @@ window.CandleChart = (function () {
             svg.appendChild(label);
         });
 
-        /* The average is a smoothing of closes already on screen, so it is drawn in the neutral
-           accent rather than up/down colours — it is a reading aid, not a verdict. Leading
-           nulls (no full period behind them yet) start the line late instead of at zero. */
-        if (options.movingAverage) {
+        /* Overlay lines in price space — moving averages, and anything else shaped like them.
+           Drawn in neutral colours rather than up/down ones: a line across a chart reports a
+           reading, not a verdict, and green would read as a signal it is not making.
+
+           Nulls are gaps, not zeroes. A moving average has no value until it has a full period
+           behind it, and joining through those would drag the line to the bottom of the chart. */
+        (options.lines || []).forEach(function (line) {
+            if (!line || !line.values) return;
             var points = [];
-            options.movingAverage.forEach(function (v, i) {
+            line.values.forEach(function (v, i) {
                 if (v == null || i >= n) return;
                 points.push(cx(i).toFixed(1) + "," + py(+v).toFixed(1));
             });
-            if (points.length > 1) {
-                svg.appendChild(svgEl("polyline", {
-                    points: points.join(" "), fill: "none", stroke: accent,
-                    "stroke-width": "1.6", "stroke-linejoin": "round", "stroke-opacity": "0.85",
-                }));
-            }
-        }
+            if (points.length < 2) return;
+            svg.appendChild(svgEl("polyline", {
+                points: points.join(" "), fill: "none", stroke: line.color || accent,
+                "stroke-width": line.width || "1.6", "stroke-linejoin": "round",
+                "stroke-opacity": line.opacity || "0.85",
+            }));
+        });
 
         /* No time axis when the candles carry no time. The daily challenge is the caller that
            needs this: sending dates with a round the player is still guessing would hand them
@@ -213,5 +217,65 @@ window.CandleChart = (function () {
         });
     }
 
-    return { draw: draw };
+    /**
+     * A single line on its own scale, for a reading that is not a price — RSI is the first.
+     *
+     * Deliberately not squeezed into the price chart: an oscillator bounded 0-100 shares no
+     * units with a candle, and overlaying it either flattens the candles or leaves the line as a
+     * meaningless squiggle across them. It gets its own pane and its own axis.
+     */
+    function drawIndicator(svg, values, options) {
+        options = options || {};
+        while (svg.firstChild) svg.removeChild(svg.firstChild);
+        var n = values.length;
+        if (!n) return;
+
+        var view = svg.viewBox.baseVal;
+        var w = view && view.width ? view.width : 300;
+        var h = view && view.height ? view.height : 80;
+        var pad = { top: 6, right: 52, bottom: 6, left: 4 };
+        var plotX0 = pad.left, plotX1 = w - pad.right;
+        var plotY0 = pad.top, plotY1 = h - pad.bottom;
+        var step = (plotX1 - plotX0) / n;
+
+        var lo = options.min != null ? options.min : 0;
+        var hi = options.max != null ? options.max : 100;
+        var span = (hi - lo) || 1;
+
+        function cx(i) { return plotX0 + step * (i + 0.5); }
+        function py(v) { return plotY1 - ((v - lo) / span) * (plotY1 - plotY0); }
+
+        var muted = getComputedStyle(svg).getPropertyValue("--muted").trim() || "#888";
+        var accent = getComputedStyle(svg).getPropertyValue("--accent").trim() || "#4f8cff";
+
+        // The levels the reading is actually judged against, labelled, so the line means
+        // something without a legend somewhere else on the page.
+        (options.guides || []).forEach(function (level) {
+            var y = py(level);
+            svg.appendChild(svgEl("line", {
+                x1: plotX0, x2: plotX1, y1: y, y2: y, stroke: muted,
+                "stroke-width": "1", "stroke-dasharray": "3 4", "stroke-opacity": "0.45",
+            }));
+            var label = svgEl("text", {
+                x: plotX1 + 6, y: y, "dominant-baseline": "middle",
+                "font-size": "9.5", fill: muted, "font-family": "var(--mono)",
+            });
+            label.textContent = String(level);
+            svg.appendChild(label);
+        });
+
+        var points = [];
+        values.forEach(function (v, i) {
+            if (v == null) return;
+            points.push(cx(i).toFixed(1) + "," + py(+v).toFixed(1));
+        });
+        if (points.length > 1) {
+            svg.appendChild(svgEl("polyline", {
+                points: points.join(" "), fill: "none", stroke: accent,
+                "stroke-width": "1.6", "stroke-linejoin": "round",
+            }));
+        }
+    }
+
+    return { draw: draw, drawIndicator: drawIndicator };
 })();
