@@ -139,7 +139,7 @@
         });
 
         if (!shown.length) {
-            el.markets.innerHTML = '<p class="profile-empty">Không có cặp nào khớp.</p>';
+            el.markets.innerHTML = '<p class="trade-empty">Không có cặp nào khớp.</p>';
             return;
         }
 
@@ -442,15 +442,15 @@
     function renderPositions() {
         el.positions.innerHTML = "";
         if (!state.positions.length) {
-            el.positions.innerHTML = '<p class="profile-empty">Chưa giữ gì. Chọn một cặp và mua thử.</p>';
+            el.positions.innerHTML = '<p class="trade-empty">Chưa giữ gì. Chọn một cặp và mua thử.</p>';
             return;
         }
         state.positions.forEach(function (position) {
             var card = document.createElement("div");
-            card.className = "profile-asset trade-position";
+            card.className = "trade-position";
 
             var name = document.createElement("span");
-            name.className = "profile-asset-name";
+            name.className = "trade-position-symbol";
             name.textContent = position.symbol;
 
             var amount = document.createElement("span");
@@ -458,7 +458,7 @@
             amount.textContent = qty(position.quantity);
 
             var value = document.createElement("span");
-            value.className = "profile-asset-count";
+            value.className = "trade-position-value";
             value.textContent = position.value == null ? "—" : usd(Number(position.value));
 
             var pnl = document.createElement("span");
@@ -488,29 +488,29 @@
     function renderFills() {
         el.fills.innerHTML = "";
         if (!state.recent.length) {
-            el.fills.innerHTML = '<p class="profile-empty">Lịch sử sẽ xuất hiện sau lệnh đầu tiên.</p>';
+            el.fills.innerHTML = '<p class="trade-empty">Lịch sử sẽ xuất hiện sau lệnh đầu tiên.</p>';
             return;
         }
         state.recent.forEach(function (fill) {
             var item = document.createElement("div");
             var buy = fill.side === "BUY";
-            item.className = "profile-guess " + (buy ? "is-correct" : "is-wrong");
+            item.className = "trade-fill " + (buy ? "is-buy" : "is-sell");
 
             var mark = document.createElement("span");
-            mark.className = "profile-guess-mark";
+            mark.className = "trade-fill-mark";
             mark.textContent = buy ? "▲" : "▼";
 
             var symbol = document.createElement("span");
-            symbol.className = "profile-guess-symbol";
+            symbol.className = "trade-fill-symbol";
             symbol.textContent = fill.symbol;
 
             var detail = document.createElement("span");
-            detail.className = "profile-guess-call";
+            detail.className = "trade-fill-detail";
             detail.textContent = (buy ? "mua " : "bán ") + qty(fill.quantity)
                 + " @ " + usd(Number(fill.price));
 
             var when = document.createElement("span");
-            when.className = "profile-guess-when";
+            when.className = "trade-fill-when";
             when.textContent = new Date(fill.at).toLocaleString("vi-VN",
                 { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit" });
 
