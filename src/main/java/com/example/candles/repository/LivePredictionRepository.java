@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -113,6 +114,83 @@ public interface LivePredictionRepository extends JpaRepository<LivePrediction, 
             + "select user_id, created_at, correct from (" + SETTLED_LIVE_FLAGS + ") live"
             + ") combined order by user_id, created_at", nativeQuery = true)
     List<Object[]> combinedResultFlagsByUserInPlayOrder();
+
+    /**
+     * The distinct UTC days this player called anything on, newest first — practice and live
+     * together, which is what {@link com.example.candles.domain.PlayStreak} folds into a
+     * day streak.
+     *
+     * A live call counts on the day it was placed whether or not its candle has closed since,
+     * so this deliberately does not reuse {@link #SETTLED_LIVE_FLAGS}: turning up and calling a
+     * round is the thing a day streak measures, and an open round is not a day the player
+     * failed to show up for.
+     */
+    @Query(value = """
+            select distinct cast(d.created_at at time zone 'UTC' as date) as day
+            from (
+                select created_at from guess_results where user_id = :userId
+                union all
+                select created_at from live_predictions where user_id = :userId
+            ) d
+            order by day desc
+            """, nativeQuery = true)
+    List<LocalDate> distinctPlayDaysDesc(@Param("userId") Long userId);
+
+    /**
+     * Every call anyone has made, practice and live in one stream, with no settlement join —
+     * retention asks who turned up, not who was right.
+     *
+     * Admin accounts are dropped here rather than filtered afterwards, for the same reason
+     * {@code LeaderboardService} drops them: the seeded admin plays far more than any real
+     * player while the app is being tested, and a retention figure that is mostly one developer
+     * coming back to their own test account measures nothing.
+     */
+    String ALL_PLAYS = """
+            select p.user_id, p.created_at
+            from (select user_id, created_at from guess_results
+                  union all
+                  select user_id, created_at from live_predictions) p
+            join users u on u.id = p.user_id and u.role <> 'ADMIN'
+            """;
+
+    /**
+     * Cohort retention, as rows of [cohortDay, newPlayers, returnedNextDay, returnedWithinWeek].
+     *
+     * A cohort is everyone whose *first* recorded call landed on that UTC day — first play, not
+     * sign-up: an account created and never played has not been retained or lost, it has not
+     * started. "Returned" is a different day with a call on it, so the cohort day itself never
+     * counts as a return.
+     *
+     * The two return columns answer two different questions and the caller must not treat them
+     * as one: {@code returnedNextDay} is the strict next day, {@code returnedWithinWeek} is any
+     * of the seven days after. At this app's volume the strict figure is mostly noise, which is
+     * why the looser one is here beside it rather than instead of it.
+     */
+    @Query(value = "with plays as ("
+            + "  select user_id, cast(created_at at time zone 'UTC' as date) as day"
+            + "  from (" + ALL_PLAYS + ") q group by 1, 2"
+            + "), cohorts as ("
+            + "  select user_id, min(day) as cohort_day from plays group by user_id"
+            + ") "
+            + "select c.cohort_day, count(distinct c.user_id),"
+            + "       count(distinct c.user_id) filter (where p.day = c.cohort_day + 1),"
+            + "       count(distinct c.user_id) filter (where p.day > c.cohort_day and p.day <= c.cohort_day + 7)"
+            + " from cohorts c left join plays p on p.user_id = c.user_id"
+            + " where c.cohort_day >= :since"
+            + " group by c.cohort_day order by c.cohort_day", nativeQuery = true)
+    List<Object[]> retentionCohorts(@Param("since") LocalDate since);
+
+    /**
+     * Rows of [day, plays, activePlayers] in UTC — the denominator and numerator of "calls per
+     * active player per day", which is the other half of whether a change made people play more
+     * or merely made more people show up once.
+     */
+    @Query(value = "select cast(p.created_at at time zone 'UTC' as date) as day,"
+            + " count(*), count(distinct p.user_id)"
+            + " from (" + ALL_PLAYS + ") p"
+            + " where p.created_at >= :since"
+            + " group by day order by day", nativeQuery = true)
+    List<Object[]> dailyActivitySince(@Param("since") Instant since);
 
     /**
      * [calls, settled, correctSettled] since an instant — every live call is counted the moment

@@ -321,6 +321,59 @@ second line when an admin has renamed the account and the two have diverged — 
 color, both chosen by hashing `walletShort` rather than the display name, so a renamed account
 keeps the same avatar it always had.
 
+### Retention baseline
+
+`GET /api/admin/retention` (`AdminRetentionService`, cached 60s, `&fresh=true` skips it) exists
+to be read **twice** — once before the daily challenge ships and once after. A number only
+looked at afterwards cannot say whether the change did anything.
+
+Derived from the timestamps already on `guess_results` and `live_predictions`, like
+`PlayStreak`: an events table recording that someone played would be a second copy of data the
+app already has, free to drift from it. A cohort is everyone whose *first* recorded call landed
+on a UTC day — first play, not sign-up, because an account that never played has not been lost,
+it has not started.
+
+Three things here are easy to get wrong, and all three are pinned by `AdminRetentionTest`:
+
+- **Immature cohorts stay out of the denominators.** A cohort that first played yesterday
+  cannot have returned within seven days yet. Counted as a cohort that failed to return, every
+  new player would push the rate down — the measurement would report losing people exactly when
+  the site gained them. Each window has its own denominator (`nextDayEligible`,
+  `withinWeekEligible`), both usually smaller than `newPlayers`, and the pane says so in words.
+- **Admin accounts are excluded in the SQL**, same reason the leaderboard excludes them: the
+  seeded admin plays constantly during development and would read as a player who returns every
+  single day.
+- **Two return windows, not one.** `returnedNextDay` is the strict next day; `returnedWithinWeek`
+  is any of the seven after. At this volume the strict figure is mostly noise, which is why the
+  looser one sits beside it rather than replacing it. "D7" on its own is ambiguous enough that
+  neither field is named that.
+
+`plays / activePlayerDays` is calls per player per day they played — the denominator counts a
+player once per active day on purpose, so the figure does not grow just because the window is
+long. The response carries counts and never rates; the pane divides, once, in `renderRetention`.
+
+
+### Two streaks, and they are not the same number
+
+`PlayerScore.currentStreak` is **consecutive correct calls** — it resets on a miss and it is
+what `score` pays a bonus on. `PlayStreak` is **consecutive UTC days with at least one call on
+them** — a miss does not touch it, because playing badly is still showing up. `StatsResponse`
+carries the second as `dayStreak` rather than a shorter name for exactly this reason: the
+profile draws both, side by side, and a label saying only "streak" would be wrong on one of
+them.
+
+Neither is stored. `PlayStreak` folds the distinct days out of `guess_results` and
+`live_predictions` timestamps (`distinctPlayDaysDesc`, a union across both — a live call counts
+the day it was placed, settled or not), so it cannot drift out of step with the history it
+describes and deleting a player takes it with them. A day boundary is UTC, like every other one
+here, and `StatsService` reads today through the injected `Clock` so a test can pin it.
+
+The current run counts back from **today or yesterday**. Without that grace every streak on the
+site would read zero from midnight UTC until its owner next opened the game; it breaks only
+once a whole day has gone by unplayed. Imported `legacy_*` figures never feed it — four totals
+with no dates on them cannot say which days were played.
+
+
 ### Leaderboard
 
 `GET /api/leaderboard` is public — anonymous callers get the board without the `me` row, and

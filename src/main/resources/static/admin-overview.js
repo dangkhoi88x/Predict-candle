@@ -39,6 +39,14 @@
         playersSpan: document.getElementById("ov-players-span"),
         playersBars: document.getElementById("ov-players-bars"),
         playersAxis: document.getElementById("ov-players-axis"),
+        retSpan: document.getElementById("ov-retention-span"),
+        retD1: document.getElementById("ov-retention-d1"),
+        retD1Base: document.getElementById("ov-retention-d1-base"),
+        retD7: document.getElementById("ov-retention-d7"),
+        retD7Base: document.getElementById("ov-retention-d7-base"),
+        retIntensity: document.getElementById("ov-retention-intensity"),
+        retIntensityBase: document.getElementById("ov-retention-intensity-base"),
+        retFoot: document.getElementById("ov-retention-foot"),
         status: document.getElementById("admin-status"),
     };
     if (!el.section) return;
@@ -395,6 +403,57 @@
 
     /* ---- loading ---- */
 
+    /* Rates are divided out here and nowhere else. The endpoint deliberately sends counts:
+       two places rounding the same ratio is how a dashboard starts disagreeing with itself,
+       and this one exists to be compared against its own past readings. */
+    function renderRetention(data) {
+        var s = data.summary;
+
+        function rate(returned, eligible) {
+            return eligible === 0 ? "–" : Math.round((returned / eligible) * 100) + "%";
+        }
+
+        function base(returned, eligible, unit) {
+            return eligible === 0 ? "chưa đủ dữ liệu" : returned + "/" + eligible + " " + unit;
+        }
+
+        el.retD1.textContent = rate(s.returnedNextDay, s.nextDayEligible);
+        el.retD1Base.textContent = base(s.returnedNextDay, s.nextDayEligible, "người mới");
+        el.retD7.textContent = rate(s.returnedWithinWeek, s.withinWeekEligible);
+        el.retD7Base.textContent = base(s.returnedWithinWeek, s.withinWeekEligible, "người mới");
+
+        el.retIntensity.textContent = s.activePlayerDays === 0
+            ? "–" : (s.plays / s.activePlayerDays).toFixed(1);
+        el.retIntensityBase.textContent = s.activePlayerDays === 0
+            ? "chưa có lượt chơi"
+            : s.plays + " lượt · " + s.activePlayerDays + " ngày-người";
+
+        el.retSpan.textContent = data.from + " → " + data.to;
+
+        /* Say why the two denominators are smaller than the headcount. Without this the pane
+           looks like it is losing players every time it gains one — a cohort that joined
+           yesterday has not failed to come back, it has not had the chance. */
+        var pending = s.newPlayers - s.withinWeekEligible;
+        el.retFoot.textContent = pending > 0
+            ? s.newPlayers + " người chơi mới trong kỳ. " + pending
+              + " người mới quá gần đây để tính được mốc 7 ngày, nên chưa nằm trong mẫu số."
+            : s.newPlayers + " người chơi mới trong kỳ. Tài khoản admin không được tính.";
+    }
+
+    async function loadRetention(fresh) {
+        try {
+            var res = await window.CandleAuth.authFetch(
+                "/api/admin/retention" + (fresh ? "?fresh=true" : ""));
+            var payload = await res.json();
+            if (!res.ok) throw new Error(payload.message || ("Máy chủ trả về " + res.status));
+            renderRetention(payload);
+        } catch (e) {
+            // Its own call and its own failure: the charts above are still worth reading when
+            // this one does not answer.
+            el.retFoot.textContent = "Không đọc được số liệu quay lại: " + e.message;
+        }
+    }
+
     async function loadStats(fresh) {
         try {
             var res = await window.CandleAuth.authFetch("/api/admin/stats?range=" + range
@@ -428,6 +487,7 @@
         var opsRefresh = document.getElementById("ops-refresh");
         if (opsRefresh) opsRefresh.click();
         loadStats(true);
+        loadRetention(true);
     });
 
     el.newPost.addEventListener("click", function () {
@@ -452,6 +512,7 @@
             renderHeader();
             renderKpis();
             loadStats();
+            loadRetention();
         }
     });
 })();

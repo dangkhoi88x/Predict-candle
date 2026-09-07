@@ -3,8 +3,12 @@ package com.example.candles.service;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.time.Clock;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.List;
 
+import com.example.candles.domain.PlayStreak;
 import com.example.candles.domain.PlayerScore;
 import com.example.candles.dto.request.LegacyStatsRequest;
 import com.example.candles.dto.response.StatsResponse;
@@ -32,15 +36,18 @@ public class StatsService {
     private final LivePredictionRepository livePredictionRepository;
     private final UserRepository userRepository;
     private final AuthService authService;
+    private final Clock clock;
 
     public StatsService(GuessResultRepository guessResultRepository,
                         LivePredictionRepository livePredictionRepository,
                         UserRepository userRepository,
-                        AuthService authService) {
+                        AuthService authService,
+                        Clock clock) {
         this.guessResultRepository = guessResultRepository;
         this.livePredictionRepository = livePredictionRepository;
         this.userRepository = userRepository;
         this.authService = authService;
+        this.clock = clock;
     }
 
     @Transactional(readOnly = true)
@@ -68,6 +75,13 @@ public class StatsService {
         // consecutive — so the longer of the two is the honest answer.
         int bestStreak = Math.max(recorded.bestStreak(), user.getLegacyBestStreak());
 
+        /* Through the injected clock so a test can pin "today" instead of waiting for one to
+           pass, and read once rather than per streak: two reads either side of midnight would
+           judge the day streak and the daily streak against different todays. */
+        LocalDate today = LocalDate.now(clock.withZone(ZoneOffset.UTC));
+        PlayStreak streak = PlayStreak.of(
+                livePredictionRepository.distinctPlayDaysDesc(userId), today);
+
         List<StatsResponse.RecentGuess> recent = guessResultRepository
                 .findRecent(userId, PageRequest.of(0, RECENT_LIMIT)).stream()
                 .map(g -> new StatsResponse.RecentGuess(
@@ -92,6 +106,8 @@ public class StatsService {
                 recorded.score() + user.getLegacyScore(),
                 new StatsResponse.Recorded(recorded.total(), recorded.correct(),
                         recorded.bestStreak(), recorded.currentStreak(), recorded.score()),
+                new StatsResponse.DayStreak(streak.current(), streak.best(),
+                        streak.daysPlayed(), streak.playedToday()),
                 user.hasImportedLegacyStats(),
                 byAsset,
                 recent);

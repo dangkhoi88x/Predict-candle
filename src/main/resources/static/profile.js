@@ -15,6 +15,8 @@
         total: document.getElementById("profile-total"),
         accuracy: document.getElementById("profile-accuracy"),
         best: document.getElementById("profile-best"),
+        dayStreak: document.getElementById("profile-day-streak"),
+        streakNote: document.getElementById("profile-streak-note"),
         legacyNote: document.getElementById("profile-legacy-note"),
         byAsset: document.getElementById("profile-by-asset"),
         recent: document.getElementById("profile-recent"),
@@ -111,6 +113,21 @@
         });
     }
 
+    /* The streak the player can still act on today. A run that is alive but unplayed is the
+       only state worth a line of its own — it is the one moment where opening the game changes
+       the number, and saying so is the whole point of counting days. */
+    function renderDayStreak(streak) {
+        window.CandleRolling.update(el.dayStreak, streak.current);
+        el.dayStreak.title = "Dài nhất " + streak.best + " ngày · đã chơi " + streak.daysPlayed + " ngày";
+
+        var atRisk = streak.current > 0 && !streak.playedToday;
+        el.streakNote.classList.toggle("hidden", !atRisk);
+        if (atRisk) {
+            el.streakNote.textContent =
+                "Chuỗi " + streak.current + " ngày của bạn vẫn đang mở. Chơi một ván hôm nay để giữ nó.";
+        }
+    }
+
     function render(data) {
         var user = window.CandleAuth.getUser();
         el.wallet.textContent = user ? user.displayName : "";
@@ -119,6 +136,8 @@
         window.CandleRolling.update(el.total, data.total);
         window.CandleRolling.update(el.accuracy, pct(data.correct, data.total));
         window.CandleRolling.update(el.best, data.bestStreak);
+
+        renderDayStreak(data.dayStreak);
 
         /* Say plainly which part of the total the server watched happen. Without this the
            carried-over figures look like they were all earned on this account. */

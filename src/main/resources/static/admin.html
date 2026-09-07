@@ -327,6 +327,34 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- The baseline to compare against after the daily challenge ships. Three
+                         numbers on purpose: /api/admin/retention carries the per-cohort and
+                         per-day detail for anyone who wants to go further than a glance. -->
+                    <div class="adm-tray">
+                        <div class="adm-tray-head">
+                            <span class="adm-kicker">Người chơi quay lại</span>
+                            <span class="adm-kicker-note" id="ov-retention-span">—</span>
+                        </div>
+                        <div class="adm-card adm-retention">
+                            <div class="adm-retention-figure">
+                                <b class="adm-mini-value" id="ov-retention-d1">—</b>
+                                <span class="adm-mini-note">quay lại ngày hôm sau</span>
+                                <span class="adm-retention-base" id="ov-retention-d1-base">—</span>
+                            </div>
+                            <div class="adm-retention-figure">
+                                <b class="adm-mini-value" id="ov-retention-d7">—</b>
+                                <span class="adm-mini-note">quay lại trong 7 ngày</span>
+                                <span class="adm-retention-base" id="ov-retention-d7-base">—</span>
+                            </div>
+                            <div class="adm-retention-figure">
+                                <b class="adm-mini-value" id="ov-retention-intensity">—</b>
+                                <span class="adm-mini-note">lượt / người / ngày chơi</span>
+                                <span class="adm-retention-base" id="ov-retention-intensity-base">—</span>
+                            </div>
+                        </div>
+                        <p class="adm-retention-foot" id="ov-retention-foot"></p>
+                    </div>
                 </section>
 
                 <section id="admin-ops" data-pane="ops" class="hidden">
