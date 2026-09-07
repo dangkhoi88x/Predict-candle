@@ -4559,3 +4559,125 @@ body:not(.is-admin) .adm-search {
     font: 600 11px var(--mono);
     color: var(--muted);
 }
+
+/* ---- Daily challenge ---- */
+
+.daily-number {
+    font-family: var(--mono);
+    font-size: 14px;
+    color: var(--muted);
+}
+
+.daily-intro {
+    margin: 0 0 14px;
+    color: var(--muted);
+    font-size: 14px;
+}
+
+.daily-streak {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.daily-streak-value {
+    font-size: 26px;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+}
+
+.daily-streak-label {
+    font-size: 14px;
+    color: var(--muted);
+}
+
+.daily-streak-best {
+    margin-left: auto;
+    font-size: 13px;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.daily-board {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px;
+}
+
+.daily-chart {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+.daily-status {
+    margin: 12px 0;
+    font-size: 14px;
+    color: var(--muted);
+}
+
+/* One dot per guess of the chart, filled in as the round goes — the same shape the share
+   card copies out, so what a player sees is what their friends will see. */
+.daily-dots {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 14px;
+}
+
+.daily-dot {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 700;
+    color: #06110f;
+}
+
+.daily-dot.is-correct {
+    background: var(--up);
+    border-color: transparent;
+}
+
+.daily-dot.is-wrong {
+    background: var(--down);
+    border-color: transparent;
+}
+
+.daily-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.daily-done-line {
+    margin: 0 0 6px;
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.daily-next {
+    margin: 0 0 12px;
+    font-size: 13px;
+    color: var(--muted);
+}
+
+.daily-share-text {
+    display: block;
+    width: 100%;
+    margin-top: 10px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 13px;
+    resize: vertical;
+}
+

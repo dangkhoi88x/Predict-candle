@@ -11,6 +11,7 @@ import java.util.UUID;
 import com.example.candles.dto.response.StatsResponse;
 import com.example.candles.entity.Asset;
 import com.example.candles.entity.Direction;
+import com.example.candles.entity.GuessMode;
 import com.example.candles.entity.GuessResult;
 import com.example.candles.entity.Role;
 import com.example.candles.entity.User;
@@ -50,9 +51,9 @@ class TimedOutGuessTest {
                 new User("0x" + UUID.randomUUID().toString().replace("-", ""), "T"));
         Asset asset = assets.findAll().getFirst();
         guessResults.saveAll(java.util.List.of(
-                new GuessResult(user, asset, "1h", 1, 1, Direction.LONG, Direction.LONG),
+                new GuessResult(user, asset, "1h", 1, 1, Direction.LONG, Direction.LONG, GuessMode.PRACTICE),
                 // No direction: the clock ran out before an answer.
-                new GuessResult(user, asset, "1h", 2, 1, null, Direction.SHORT)));
+                new GuessResult(user, asset, "1h", 2, 1, null, Direction.SHORT, GuessMode.PRACTICE)));
         guessResults.flush();
         return user;
     }

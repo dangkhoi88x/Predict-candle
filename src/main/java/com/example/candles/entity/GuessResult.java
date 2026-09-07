@@ -21,14 +21,18 @@ import java.time.Instant;
  * The unique constraint is the point of the (startIndex, guessNumber) columns rather than an
  * audit detail. A roundToken stays valid for its whole TTL and nothing stops a client from
  * POSTing the same one twice, so without a constraint a player could replay a correct guess
- * as many times as they liked. Together those five columns name exactly one guess in one
- * chart, so a replay collides instead of counting again.
+ * as many times as they liked. Together those columns name exactly one guess in one chart, so
+ * a replay collides instead of counting again.
+ *
+ * {@code mode} sits in that constraint too, and that is also what holds the daily challenge to
+ * one attempt: today's chart is the same chart all day, so a player's rows for it are already
+ * unique. Nothing stores "has played today" — these guesses are the record of it.
  */
 @Entity
 @Table(
         name = "guess_results",
         uniqueConstraints = @UniqueConstraint(
-                columnNames = {"user_id", "asset_id", "timeframe", "start_index", "guess_number"}),
+                columnNames = {"user_id", "mode", "asset_id", "timeframe", "start_index", "guess_number"}),
         /*
          * Every stats read is "this player's results, oldest first". The unique constraint
          * above starts with user_id so it can filter, but not order, leaving the database to
@@ -76,16 +80,21 @@ public class GuessResult {
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 16)
+    private GuessMode mode;
+
     protected GuessResult() {
     }
 
     public GuessResult(User user, Asset asset, String timeframe, int startIndex, int guessNumber,
-                       Direction guessedDirection, Direction actualDirection) {
+                       Direction guessedDirection, Direction actualDirection, GuessMode mode) {
         this.user = user;
         this.asset = asset;
         this.timeframe = timeframe;
         this.startIndex = startIndex;
         this.guessNumber = guessNumber;
+        this.mode = mode;
         this.guessedDirection = guessedDirection;
         this.actualDirection = actualDirection;
         this.correct = guessedDirection != null && guessedDirection == actualDirection;
@@ -126,6 +135,10 @@ public class GuessResult {
 
     public boolean isCorrect() {
         return correct;
+    }
+
+    public GuessMode getMode() {
+        return mode;
     }
 
     public Instant getCreatedAt() {

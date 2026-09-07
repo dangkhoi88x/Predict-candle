@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 import com.example.candles.entity.Asset;
 import com.example.candles.entity.Direction;
+import com.example.candles.entity.GuessMode;
 import com.example.candles.entity.GuessResult;
 import com.example.candles.repository.GuessResultRepository;
 import com.example.candles.repository.UserRepository;
@@ -36,19 +37,19 @@ public class GuessResultService {
 
     /** {@code guessed} is null when the player ran out of time — recorded as an unanswered guess. */
     public void record(Asset asset, String timeframe, int startIndex, int guessNumber,
-                       Direction guessed, Direction actual) {
+                       Direction guessed, Direction actual, GuessMode mode) {
         Long userId = currentUserId();
         if (userId == null) {
-            return; // anonymous practice — nothing to attach the result to
+            return; // anonymous play — nothing to attach the result to
         }
-        if (guessResultRepository.alreadyRecorded(userId, asset.getId(), timeframe, startIndex, guessNumber)) {
+        if (guessResultRepository.alreadyRecorded(userId, mode, asset.getId(), timeframe, startIndex, guessNumber)) {
             return; // same roundToken replayed within its TTL
         }
 
         userRepository.findById(userId).ifPresent(user -> {
             try {
                 guessResultRepository.save(new GuessResult(
-                        user, asset, timeframe, startIndex, guessNumber, guessed, actual));
+                        user, asset, timeframe, startIndex, guessNumber, guessed, actual, mode));
             } catch (DataIntegrityViolationException e) {
                 // Two requests for the same guess raced past the check above; the unique
                 // constraint settled it, which is exactly what it is there for.
