@@ -26,6 +26,7 @@
         statVolume: document.getElementById("trade-stat-volume"),
         statHeld: document.getElementById("trade-stat-held"),
         chart: document.getElementById("trade-chart"),
+        ohlc: document.getElementById("trade-ohlc"),
         indicators: document.getElementById("trade-indicators"),
         rsiPane: document.getElementById("trade-rsi-pane"),
         rsi: document.getElementById("trade-rsi"),
@@ -43,6 +44,7 @@
         quick: document.getElementById("trade-quick"),
         submit: document.getElementById("trade-submit"),
         status: document.getElementById("trade-status"),
+        toast: document.getElementById("trade-toast"),
         positions: document.getElementById("trade-positions"),
         fills: document.getElementById("trade-fills"),
         reset: document.getElementById("trade-reset"),
@@ -77,6 +79,14 @@
        stops a 4h chart being served the 1h candles that happen to be cached for that symbol. */
     var chartCache = {};
 
+    /* What the last draw put on screen: the two frames the crosshair needs, the slice it was
+       drawn from, and where the pointer was. Every one of these has to survive a redraw —
+       CandleChart.draw() empties the svg, so a pan, a zoom or a price poll wipes the crosshair
+       and it has to be put back rather than waiting for the next mouse move. */
+    var view = { frame: null, rsiFrame: null, candles: [], rsi: [] };
+    var pointer = null;
+    var pointerFrame = null;
+
     /* Money is shown to the cent and quantities to as much precision as they need. A holding of
        0.0003 BTC rounded to two places would read as nothing at all. */
     function usd(v) {
@@ -98,6 +108,16 @@
         if (n >= 1e6) return "$" + (n / 1e6).toFixed(1) + "M";
         if (n >= 1e3) return "$" + (n / 1e3).toFixed(1) + "K";
         return usd(n);
+    }
+
+    /* A price level on the chart, with no currency symbol: four of them sit in one row and the
+       quote asset is already named above it. Sub-dollar pairs keep their digits — there the
+       fraction is the whole number. */
+    function level(v) {
+        if (v == null) return "–";
+        return Number(v).toLocaleString("en-US", {
+            minimumFractionDigits: 2, maximumFractionDigits: v >= 1 ? 2 : 8,
+        });
     }
 
     function pct(v) {
@@ -279,6 +299,8 @@
         renderZoom();
         if (!candles || !candles.length) {
             window.CandleChart.draw(el.chart, []);
+            view = { frame: null, rsiFrame: null, candles: [], rsi: [] };
+            renderOhlc(null);
             return;
         }
 
@@ -298,24 +320,102 @@
         }) : [];
 
         el.rsiPane.classList.toggle("hidden", !showRsi);
-        if (showRsi) {
-            window.CandleChart.drawIndicator(el.rsi,
-                relativeStrength(closes, RSI_PERIOD).slice(from, end),
-                { min: 0, max: 100, guides: [30, 70] });
-        }
+        var rsi = showRsi ? relativeStrength(closes, RSI_PERIOD).slice(from, end) : [];
+        var rsiFrame = showRsi
+            ? window.CandleChart.drawIndicator(el.rsi, rsi,
+                { min: 0, max: 100, guides: [30, 70] })
+            : null;
 
         var market = marketOf(selected);
         /* The live price line is only drawn while the newest candle is on screen. CandleChart
            widens its price scale to fit that line, so leaving it on a chart panned back three
            months would squash every candle into a band at one edge to make room for a price
            none of them ever traded at. */
-        window.CandleChart.draw(el.chart, slice.map(function (c) {
+        var drawn = slice.map(function (c) {
             return { time: c.time, open: +c.open, high: +c.high, low: +c.low, close: +c.close };
-        }), {
+        });
+        var frame = window.CandleChart.draw(el.chart, drawn, {
             lines: overlays,
             referencePrice: atLiveEdge && market && market.price != null
                 ? Number(market.price) : null,
         });
+
+        view = { frame: frame, rsiFrame: rsiFrame, candles: drawn, rsi: rsi };
+        // The svg was just emptied, so the crosshair is gone whether the pointer moved or not.
+        paintCrosshair();
+    }
+
+    /* The candle the readout is describing: the one under the pointer, or the newest on screen
+       when the pointer is elsewhere. A terminal that blanks this row the moment you look away
+       from the chart makes you go back to the chart to read the price you just saw. */
+    function readoutIndex() {
+        if (!view.frame) return null;
+        if (pointer && !drag) return view.frame.indexAt(pointer.x);
+        return view.candles.length - 1;
+    }
+
+    function paintCrosshair() {
+        var index = readoutIndex();
+        renderOhlc(index);
+        if (!view.frame) return;
+
+        /* Nothing to track while the chart is being dragged: the pointer is moving the picture
+           rather than measuring it, and a readout racing across candles that are themselves
+           sliding is noise. The row above keeps showing the newest candle instead. */
+        if (!pointer || drag) {
+            window.CandleChart.clearCrosshair(el.chart);
+            window.CandleChart.clearCrosshair(el.rsi);
+            return;
+        }
+
+        var candle = view.candles[index];
+        window.CandleChart.crosshair(el.chart, view.frame, pointer,
+            { time: candle ? candle.time : null });
+        if (view.rsiFrame) {
+            window.CandleChart.crosshair(el.rsi, view.rsiFrame, pointer,
+                { index: index, verticalOnly: true });
+        }
+    }
+
+    function renderOhlc(index) {
+        var candle = index == null ? null : view.candles[index];
+        el.ohlc.innerHTML = "";
+        if (!candle) return;
+
+        /* Measured against the previous candle's *close*, which is the move the candle actually
+           made — open-to-close would report the body and call it the move. It gets its own
+           colour for the same reason: a green candle that closed below the one before it is
+           down, and taking the body's colour here would say the opposite. */
+        var prev = index > 0 ? view.candles[index - 1] : null;
+        var change = prev && prev.close ? ((candle.close - prev.close) / prev.close) * 100 : null;
+        var body = candle.close >= candle.open ? 1 : -1;
+
+        [["O", level(candle.open), body], ["C", level(candle.close), body],
+         ["H", level(candle.high), body], ["L", level(candle.low), body],
+        ].forEach(function (field) {
+            el.ohlc.appendChild(readoutField(field[0], field[1], field[2]));
+        });
+        if (change != null) {
+            el.ohlc.appendChild(readoutField("", pct(change), change >= 0 ? 1 : -1));
+        }
+        /* No volume here, deliberately: /api/demo/chart sends DatedCandleDto, which carries no
+           volume, and that record is also the game's round context and the live popup's. Widening
+           it is a backend change with its own blast radius, not the tail end of a crosshair. */
+        if (view.rsi.length && view.rsi[index] != null) {
+            // RSI carries no direction of its own — 70 is not "green", it is a reading.
+            el.ohlc.appendChild(readoutField("RSI", view.rsi[index].toFixed(1), 0));
+        }
+    }
+
+    function readoutField(label, value, tone) {
+        var span = document.createElement("span");
+        span.textContent = label;
+        var b = document.createElement("b");
+        if (tone > 0) b.className = "is-up";
+        if (tone < 0) b.className = "is-down";
+        b.textContent = value;
+        span.appendChild(b);
+        return span;
     }
 
     /* Fetched per market and kept, because hourly candles do not move between two clicks and a
@@ -347,7 +447,7 @@
         selected = symbol;
         panOffset = 0;
         el.amount.value = "";
-        el.status.textContent = "";
+        setStatus("", false);
         render();
         loadChart(symbol, timeframe);
     }
@@ -544,7 +644,11 @@
         // spending a round trip to be told.
         var nothingToSell = side === "SELL" && heldOf(selected) <= 0;
         el.submit.disabled = busy || priceOf(selected) == null || nothingToSell;
-        if (nothingToSell) el.status.textContent = "Chưa giữ " + selected + " nào để bán.";
+        /* Not an error: it explains why the button is disabled. It used to be written in the
+           same red as a rejected trade, which was merely odd until a successful sell-all started
+           announcing itself at the same moment — a green "Đã bán" beside a red line saying you
+           hold nothing reads as one of the two being wrong. */
+        if (nothingToSell) setStatus("Chưa giữ " + selected + " nào để bán.", false);
 
         el.reset.title = state.resets > 0
             ? "Đã chơi lại " + state.resets + " lần. Reset trả về $"
@@ -561,9 +665,19 @@
         drawChart();
     }
 
+    /* Two kinds of message share this line: something the server refused, and something the
+       form is explaining about its own state. Only the first is red. */
+    function setStatus(text, isError) {
+        el.status.textContent = text;
+        el.status.classList.toggle("is-error", !!isError);
+    }
+
+    /** Returns the account the server sent back, or null when the call failed. */
     async function post(path, body) {
         busy = true;
         if (state) el.submit.disabled = true;
+        // Whatever is on screen described the last action; this one supersedes it.
+        hideToast();
         try {
             var res = await window.CandleAuth.authFetch(path, {
                 method: "POST",
@@ -574,10 +688,12 @@
             if (!res.ok) throw new Error(payload.message || ("Máy chủ trả về " + res.status));
             state = payload;
             el.amount.value = "";
-            el.status.textContent = "";
+            setStatus("", false);
             render();
+            return payload;
         } catch (e) {
-            el.status.textContent = e.message;
+            setStatus(e.message, true);
+            return null;
         } finally {
             busy = false;
             // Re-derived rather than just re-enabled: the trade may have closed the position
@@ -586,18 +702,67 @@
         }
     }
 
-    function submit() {
+    async function submit() {
         var amount = Number(el.amount.value);
         if (!(amount > 0)) {
-            el.status.textContent = side === "BUY"
-                ? "Nhập số tiền muốn mua." : "Nhập số lượng muốn bán.";
+            setStatus(side === "BUY" ? "Nhập số tiền muốn mua." : "Nhập số lượng muốn bán.", true);
             return;
         }
         // The server prices the fill and re-checks affordability; this only stops the obvious
         // mistakes before a round trip.
-        return post("/api/demo/trade", side === "BUY"
+        var payload = await post("/api/demo/trade", side === "BUY"
             ? { asset: selected, side: "BUY", amountUsd: amount }
             : { asset: selected, side: "SELL", quantity: amount });
+
+        /* Announced from the server's own newest row, never from what was typed: a buy is
+           ordered in dollars and fills in coins, a sell is priced while the request is in
+           flight, and the fee is the server's to state. Reading it back is also the only
+           version that survives the rounding the column does — the same trap the sell-all bug
+           came out of. `recent` is newest first. */
+        if (payload && payload.recent.length) announceFill(payload.recent[0]);
+    }
+
+    /* Long enough to read a two-line confirmation and glance at the numbers it changed, short
+       enough that it is gone before the next decision. Not a motion duration — it survives
+       prefers-reduced-motion, which collapses the entrance but should not take the message away
+       any faster. */
+    var TOAST_MS = 5000;
+    var toastTimer = null;
+
+    function announceFill(fill) {
+        var buy = fill.side === "BUY";
+        el.toast.innerHTML = "";
+        el.toast.classList.remove("hidden", "is-buy", "is-sell", "is-in");
+        el.toast.classList.add(buy ? "is-buy" : "is-sell");
+
+        var head = document.createElement("span");
+        head.className = "trade-toast-head";
+        head.textContent = (buy ? "Đã mua " : "Đã bán ") + fill.symbol;
+
+        var detail = document.createElement("span");
+        detail.className = "trade-toast-detail";
+        detail.textContent = qty(fill.quantity) + " @ " + usd(Number(fill.price))
+            + " · phí " + usd(Number(fill.fee));
+
+        el.toast.appendChild(head);
+        el.toast.appendChild(detail);
+
+        // Reading offsetWidth between removing and adding the class is what makes the entrance
+        // replay for a second fill while the first toast is still on screen.
+        void el.toast.offsetWidth;
+        el.toast.classList.add("is-in");
+
+        // The row that just landed, so the toast and the history agree on which trade this was.
+        var first = el.fills.firstElementChild;
+        if (first && first.classList.contains("trade-fill")) first.classList.add("is-new");
+
+        window.clearTimeout(toastTimer);
+        toastTimer = window.setTimeout(hideToast, TOAST_MS);
+    }
+
+    function hideToast() {
+        window.clearTimeout(toastTimer);
+        el.toast.classList.add("hidden");
     }
 
     el.sides.addEventListener("click", function (event) {
@@ -608,7 +773,7 @@
         });
         side = option.dataset.side;
         el.amount.value = "";
-        el.status.textContent = "";
+        setStatus("", false);
         render();
     });
 
@@ -668,10 +833,49 @@
         if (event && el.chart.hasPointerCapture(event.pointerId)) {
             el.chart.releasePointerCapture(event.pointerId);
         }
+        // The pointer is measuring again rather than moving the chart, and it may not move for a
+        // while — bring the crosshair back now instead of on the next mouse event.
+        schedulePaint();
     }
 
     el.chart.addEventListener("pointerup", endDrag);
     el.chart.addEventListener("pointercancel", endDrag);
+
+    /* Screen pixels to the chart's own units. The svg is drawn with preserveAspectRatio="none",
+       so it stretches by a different factor on each axis and one ratio cannot convert both —
+       getScreenCTM carries the real matrix, whatever the window has been resized to. */
+    function toChartPoint(event) {
+        var ctm = el.chart.getScreenCTM();
+        if (!ctm) return null;
+        var p = el.chart.createSVGPoint();
+        p.x = event.clientX;
+        p.y = event.clientY;
+        var local = p.matrixTransform(ctm.inverse());
+        return { x: local.x, y: local.y };
+    }
+
+    /* One repaint per frame. A mouse reports faster than the screen refreshes, and a chart that
+       redraws per event is doing work nobody can see. */
+    function schedulePaint() {
+        if (pointerFrame) return;
+        pointerFrame = requestAnimationFrame(function () {
+            pointerFrame = null;
+            paintCrosshair();
+        });
+    }
+
+    el.chart.addEventListener("pointermove", function (event) {
+        // A finger has no hover: there is no "pointing without touching" to report, and the
+        // touch that would drive it is already spoken for by the drag.
+        if (event.pointerType === "touch") return;
+        pointer = toChartPoint(event);
+        schedulePaint();
+    });
+
+    el.chart.addEventListener("pointerleave", function () {
+        pointer = null;
+        schedulePaint();
+    });
 
     /* Horizontal wheel and trackpad swipes. Only claimed when the gesture is more sideways than
        vertical, so scrolling the page over the chart still scrolls the page. */
