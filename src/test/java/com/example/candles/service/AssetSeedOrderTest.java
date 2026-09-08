@@ -10,7 +10,9 @@ import com.example.candles.config.CandlesProperties;
 import com.example.candles.entity.Asset;
 import com.example.candles.repository.AssetRepository;
 import com.example.candles.repository.CandleRepository;
+import com.example.candles.repository.DemoTradeRepository;
 import com.example.candles.repository.GuessResultRepository;
+import com.example.candles.repository.LivePredictionRepository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -35,11 +37,18 @@ class AssetSeedOrderTest {
     @Autowired private AssetRepository assets;
     @Autowired private CandleRepository candles;
     @Autowired private GuessResultRepository guessResults;
+    @Autowired private LivePredictionRepository livePredictions;
+    @Autowired private DemoTradeRepository demoTrades;
     @Autowired private CandlesProperties properties;
 
     @Test
     void aFirstRunSeedsThePairsInConfiguredOrderRatherThanAlphabetically() {
-        // Children first: candles and results both point at the rows being cleared.
+        // Children first: everything that points at an asset has to go before the assets do.
+        // This list is the one thing here that ages — a new table with an asset_id needs a line,
+        // and the failure it causes otherwise depends on whether an earlier test in the same run
+        // happened to leave a row behind, so it does not reproduce when the class runs alone.
+        demoTrades.deleteAllInBatch();
+        livePredictions.deleteAllInBatch();
         guessResults.deleteAllInBatch();
         candles.deleteAllInBatch();
         assets.deleteAllInBatch();

@@ -784,6 +784,27 @@ no drawing code knows which theme is active (SVG presentation attributes take `v
   faster); switch it off explicitly in that block, as `.ticker-track` and `.skeleton::after` do.
 - `.rolling` (odometer digits), `.skeleton`, `.pill` are the shared primitives.
 - Numbers get `font-variant-numeric: tabular-nums`.
+- Selection and hover are **tints, not new colours**: `--tint-accent` / `--tint-accent-strong`
+  are `color-mix(in oklab, var(--accent) 12%/18%, transparent)`, so one rule works in both
+  themes and over whatever ground it lands on. `--overlay-soft` is the neutral equivalent.
+
+**The trade terminal is one frame, and its pill rule is scoped on purpose.** `.trade-terminal`
+is a single bordered grid with `overflow: hidden` and no gap — the columns are separated by
+`border-left`, not by cards with their own shadows, which is what keeps a three-column
+terminal from reading as three unrelated panels. Radii are 4/6/8, controls are borderless
+and tint on hover, and every micro-label (`.trade-account-label`, `.trade-stat-label`,
+`.trade-list-head`, `.trade-rsi-label`) shares one style.
+
+The active-timeframe rule is written as `#view-trade .pill-option.active`. `.pill` appears 47
+times across the app and the nav's sliding indicator is positioned from the shared rule, so
+restyling `.pill-option.active` globally moves the nav underline. Scope anything that only
+means something inside the terminal.
+
+Same reason the trade tab no longer borrows `profile-*` classes: it has its own
+`.trade-positions` / `.trade-fills` / `.trade-section` / `.trade-empty`. Sharing them meant
+every profile tweak had to be checked against a page it was not written for. On a selected
+market row only the **name** takes the accent — the price and the day's move are data, and
+tinting them both costs legibility and fights the up/down colour they are read by.
 
 ### Patterns and heatmap
 
