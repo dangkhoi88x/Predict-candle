@@ -361,6 +361,7 @@ h1, h2, h3 {
     font: 600 12px var(--mono);
     font-variant-numeric: tabular-nums;
     color: var(--warn);
+    white-space: nowrap;
 }
 
 .live-banner-cta {
@@ -472,6 +473,17 @@ h1, h2, h3 {
 
 .tabbar {
     display: none;
+}
+
+/* Below this the topbar cannot hold brand, banner and wallet on one line — the banner broke
+   mid-sentence and shoved the wallet button onto a row of its own. It takes a full row instead,
+   which is a layout rather than an accident. */
+@media (max-width: 720px) {
+    .live-banner {
+        order: 3;
+        flex-basis: 100%;
+        justify-content: center;
+    }
 }
 
 @media (max-width: 900px) {
