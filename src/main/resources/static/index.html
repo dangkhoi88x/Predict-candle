@@ -29,27 +29,22 @@
     </script>
 </head>
 <body>
+<div class="shell-page">
 <div class="ticker hidden" id="ticker" aria-label="Giá các đồng coin vốn hóa lớn">
     <div class="ticker-track" id="ticker-track"></div>
 </div>
 
-<nav class="top-nav">
-    <div class="top-nav-inner">
-        <span class="brand">🕯️ Candle Guess</span>
-        <div class="nav-tabs" role="tablist" aria-label="Khu vực của ứng dụng">
-            <button class="nav-tab active" role="tab" id="tab-game" aria-controls="view-game" aria-selected="true" data-view="game">Đoán Nến</button>
-            <button class="nav-tab" role="tab" id="tab-daily" aria-controls="view-daily" aria-selected="false" data-view="daily">Thử Thách Hôm Nay</button>
-            <button class="nav-tab" role="tab" id="tab-live" aria-controls="view-live" aria-selected="false" data-view="live">Dự Đoán Trực Tiếp</button>
-            <button class="nav-tab" role="tab" id="tab-trade" aria-controls="view-trade" aria-selected="false" data-view="trade">Giao Dịch</button>
-            <button class="nav-tab" role="tab" id="tab-heatmap" aria-controls="view-heatmap" aria-selected="false" data-view="heatmap">Market Heatmap</button>
-            <button class="nav-tab" role="tab" id="tab-patterns" aria-controls="view-patterns" aria-selected="false" data-view="patterns">Mẫu Nến</button>
-            <button class="nav-tab" role="tab" id="tab-technical" aria-controls="view-technical" aria-selected="false" data-view="technical">Mẫu Hình Kỹ Thuật</button>
-            <button class="nav-tab" role="tab" id="tab-psychology" aria-controls="view-psychology" aria-selected="false" data-view="psychology">Tâm Lý Giao Dịch</button>
-            <button class="nav-tab" role="tab" id="tab-blog" aria-controls="view-blog" aria-selected="false" data-view="blog">Blog / Kiến Thức</button>
-            <!-- Shown only while signed in; nav.js toggles it on the session event. -->
-            <button class="nav-tab" role="tab" id="tab-leaderboard" aria-controls="view-leaderboard" aria-selected="false" data-view="leaderboard">Bảng Xếp Hạng</button>
-            <button class="nav-tab hidden" role="tab" id="tab-profile" aria-controls="view-profile" aria-selected="false" data-view="profile">Hồ Sơ</button>
-        </div>
+<div class="shell">
+<header class="topbar">
+    <span class="brand">🕯️ Candle Guess</span>
+    <!-- Hidden until live.js knows there is a round to point at: a banner counting down to
+         nothing is worse than no banner. -->
+    <button id="live-banner" class="live-banner hidden" type="button" data-nav-view="live">
+        <span class="live-banner-dot" aria-hidden="true"></span>
+        <span class="live-banner-text" id="live-banner-text"></span>
+        <span class="live-banner-cta">Vào đặt →</span>
+    </button>
+    <div class="topbar-right">
         <div class="auth-area" id="auth-area">
             <span id="auth-error-msg" class="auth-error-msg hidden"></span>
             <button id="theme-toggle" class="theme-toggle" type="button"
@@ -63,7 +58,76 @@
             </div>
         </div>
     </div>
-</nav>
+</header>
+
+<div class="shell-body">
+    <!-- The rail is the one list of views. On a phone it turns into a bottom sheet the
+         "Thêm" key of .tabbar opens, so the same buttons serve both layouts and neither
+         has its own copy of the menu to fall out of step. -->
+    <div class="rail-backdrop" id="rail-backdrop" hidden></div>
+    <aside class="rail" id="rail">
+        <nav class="rail-nav" role="tablist" aria-orientation="vertical" aria-label="Khu vực của ứng dụng">
+            <div class="rail-group" role="presentation">
+                <span class="rail-group-title">Chơi</span>
+                <button class="rail-item active" role="tab" id="tab-game" aria-controls="view-game" aria-selected="true" data-view="game">
+                    <span class="rail-icon" aria-hidden="true">🕯</span>
+                    <span class="rail-label">Đoán Nến</span>
+                </button>
+                <button class="rail-item" role="tab" id="tab-daily" aria-controls="view-daily" aria-selected="false" data-view="daily">
+                    <span class="rail-icon" aria-hidden="true">📅</span>
+                    <span class="rail-label">Thử Thách</span>
+                    <span class="rail-tag is-new">MỚI</span>
+                </button>
+                <button class="rail-item" role="tab" id="tab-live" aria-controls="view-live" aria-selected="false" data-view="live">
+                    <span class="rail-icon" aria-hidden="true">⚡</span>
+                    <span class="rail-label">Trực Tiếp</span>
+                    <span class="rail-tag is-live hidden" id="rail-tag-live"></span>
+                </button>
+                <button class="rail-item" role="tab" id="tab-trade" aria-controls="view-trade" aria-selected="false" data-view="trade">
+                    <span class="rail-icon" aria-hidden="true">💼</span>
+                    <span class="rail-label">Giao Dịch Demo</span>
+                </button>
+            </div>
+            <div class="rail-group" role="presentation">
+                <span class="rail-group-title">Học</span>
+                <button class="rail-item" role="tab" id="tab-patterns" aria-controls="view-patterns" aria-selected="false" data-view="patterns">
+                    <span class="rail-icon" aria-hidden="true">📈</span>
+                    <span class="rail-label">Mẫu Nến</span>
+                </button>
+                <button class="rail-item" role="tab" id="tab-technical" aria-controls="view-technical" aria-selected="false" data-view="technical">
+                    <span class="rail-icon" aria-hidden="true">📐</span>
+                    <span class="rail-label">Mẫu Hình Kỹ Thuật</span>
+                </button>
+                <button class="rail-item" role="tab" id="tab-psychology" aria-controls="view-psychology" aria-selected="false" data-view="psychology">
+                    <span class="rail-icon" aria-hidden="true">🧠</span>
+                    <span class="rail-label">Tâm Lý</span>
+                </button>
+                <button class="rail-item" role="tab" id="tab-blog" aria-controls="view-blog" aria-selected="false" data-view="blog">
+                    <span class="rail-icon" aria-hidden="true">📰</span>
+                    <span class="rail-label">Blog / Kiến Thức</span>
+                </button>
+            </div>
+            <div class="rail-group" role="presentation">
+                <span class="rail-group-title">Bạn &amp; cộng đồng</span>
+                <button class="rail-item" role="tab" id="tab-leaderboard" aria-controls="view-leaderboard" aria-selected="false" data-view="leaderboard">
+                    <span class="rail-icon" aria-hidden="true">🏆</span>
+                    <span class="rail-label">Bảng Xếp Hạng</span>
+                    <span class="rail-tag hidden" id="rail-tag-rank"></span>
+                </button>
+                <button class="rail-item" role="tab" id="tab-heatmap" aria-controls="view-heatmap" aria-selected="false" data-view="heatmap">
+                    <span class="rail-icon" aria-hidden="true">🗺</span>
+                    <span class="rail-label">Market Heatmap</span>
+                </button>
+                <!-- Shown only while signed in; nav.js toggles it on the session event. -->
+                <button class="rail-item hidden" role="tab" id="tab-profile" aria-controls="view-profile" aria-selected="false" data-view="profile">
+                    <span class="rail-icon" aria-hidden="true">👤</span>
+                    <span class="rail-label">Hồ Sơ</span>
+                </button>
+            </div>
+        </nav>
+    </aside>
+
+    <div class="shell-main">
 
 <main id="view-game" class="view app" role="tabpanel" aria-labelledby="tab-game">
     <div class="game-toolbar">
@@ -691,6 +755,31 @@
     <div id="profile-recent" class="profile-recent"></div>
 </main>
 
+    </div><!-- /.shell-main -->
+</div><!-- /.shell-body -->
+</div><!-- /.shell -->
+
+<!-- The phone's copy of the rail's first four keys; "Thêm" opens the rail itself as a sheet
+     rather than repeating the other seven here. -->
+<nav class="tabbar" aria-label="Điều hướng nhanh">
+    <button class="tabbar-item active" type="button" data-view="game">
+        <span class="tabbar-icon" aria-hidden="true">🕯</span><span>Chơi</span>
+    </button>
+    <button class="tabbar-item" type="button" data-view="daily">
+        <span class="tabbar-icon" aria-hidden="true">📅</span><span>Hôm nay</span>
+    </button>
+    <button class="tabbar-item" type="button" data-view="live">
+        <span class="tabbar-icon" aria-hidden="true">⚡</span><span>Live</span>
+    </button>
+    <button class="tabbar-item" type="button" data-view="leaderboard">
+        <span class="tabbar-icon" aria-hidden="true">🏆</span><span>Hạng</span>
+    </button>
+    <button class="tabbar-item" type="button" id="tabbar-more" aria-controls="rail" aria-expanded="false">
+        <span class="tabbar-icon" aria-hidden="true">☰</span><span>Thêm</span>
+    </button>
+</nav>
+</div><!-- /.shell-page -->
+
 <script src="theme.js"></script>
 <script src="pill.js"></script>
 <script src="rolling.js"></script>
@@ -703,6 +792,7 @@
 <script src="live.js"></script>
 <script src="ticker.js"></script>
 <script src="nav.js"></script>
+<script src="live-banner.js"></script>
 <script src="app.js"></script>
 <script src="treemap.js"></script>
 <script src="heatmap.js"></script>
