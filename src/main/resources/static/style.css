@@ -4367,8 +4367,12 @@ body:not(.is-admin) .adm-search {
     height: 110px;
 }
 
+/* min(…, 100%) rather than a bare minimum: a bare one is a floor the track holds even when
+   the container is narrower than it, so on a 375px phone these 360px cards came out wider
+   than the column they sit in. That used to give the page a sideways scrollbar; inside the
+   shell — which clips, that being what rounds its corners — it cuts the card off instead. */
 .technical-grid {
-    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(360px, 100%), 1fr));
 }
 
 .technical-chart .pattern-chart-svg {
@@ -4423,7 +4427,7 @@ body:not(.is-admin) .adm-search {
 
 .blog-list {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr));
     gap: 14px;
     align-items: start;
 }
