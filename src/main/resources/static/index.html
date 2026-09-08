@@ -763,33 +763,63 @@
     <div id="leaderboard-body"></div>
 </main>
 
-<main id="view-profile" class="view app hidden" role="tabpanel" aria-labelledby="tab-profile">
+<main id="view-profile" class="view app app-profile hidden" role="tabpanel" aria-labelledby="tab-profile">
     <div class="view-head">
         <h2>Hồ Sơ</h2>
         <span id="profile-wallet" class="profile-wallet"></span>
     </div>
 
-    <div class="scoreboard scoreboard-profile">
-        <div class="stat"><span class="stat-label">Điểm</span><span class="stat-value rolling" id="profile-score">0</span></div>
-        <div class="stat"><span class="stat-label">Lượt đoán</span><span class="stat-value rolling" id="profile-total">0</span></div>
-        <div class="stat"><span class="stat-label">Tỉ lệ đúng</span><span class="stat-value rolling" id="profile-accuracy">–</span></div>
-        <div class="stat"><span class="stat-label">Chuỗi dài nhất</span><span class="stat-value rolling" id="profile-best">0</span></div>
-        <!-- Days in a row, not correct guesses in a row: a different number from the tile
-             beside it, which is why the label says days and not "chuỗi". -->
-        <div class="stat"><span class="stat-label">Ngày liên tiếp</span><span class="stat-value rolling" id="profile-day-streak">0</span></div>
+    <!-- Two columns: the record on the left, what it earned on the right. One column meant
+         the badges sat below a list of every recent guess, which is the wrong way round —
+         the trophies are the part worth looking at twice. -->
+    <div class="profile-grid">
+        <div class="profile-col">
+            <div class="scoreboard scoreboard-profile">
+                <div class="stat"><span class="stat-label">Điểm</span><span class="stat-value rolling" id="profile-score">0</span></div>
+                <div class="stat"><span class="stat-label">Lượt đoán</span><span class="stat-value rolling" id="profile-total">0</span></div>
+                <div class="stat"><span class="stat-label">Tỉ lệ đúng</span><span class="stat-value rolling" id="profile-accuracy">–</span></div>
+                <div class="stat"><span class="stat-label">Chuỗi dài nhất</span><span class="stat-value rolling" id="profile-best">0</span></div>
+                <!-- Days in a row, not correct guesses in a row: a different number from the
+                     tile beside it, which is why the label says days and not "chuỗi". Drawn in
+                     the accent because it is the only figure here that can be lost by not
+                     playing — the rest cannot go down. -->
+                <div class="stat is-accent">
+                    <span class="stat-label">Ngày liên tiếp</span>
+                    <span class="stat-row">
+                        <span class="stat-value rolling" id="profile-day-streak">0</span>
+                        <span class="stat-flame" aria-hidden="true">🔥</span>
+                    </span>
+                </div>
+            </div>
+
+            <p id="profile-streak-note" class="profile-note hidden"></p>
+            <p id="profile-legacy-note" class="profile-note hidden"></p>
+
+            <h3 class="profile-section">Theo từng cặp</h3>
+            <div id="profile-by-asset" class="profile-assets"></div>
+
+            <h3 class="profile-section">Gần đây</h3>
+            <div id="profile-recent" class="profile-recent"></div>
+        </div>
+
+        <div class="profile-col">
+            <h3 class="profile-section">Huy hiệu</h3>
+            <div id="profile-badges" class="profile-badges"></div>
+
+            <!-- Standing, not a round: score, accuracy, day streak and the last five calls.
+                 No asset and no dates, the same rule the daily's card follows — except here
+                 there is no puzzle to spoil, only a player's own record to post. -->
+            <section class="profile-share hidden" id="profile-share-card">
+                <span class="side-eyebrow">Chia sẻ</span>
+                <div class="profile-share-squares" id="profile-share-squares" aria-hidden="true"></div>
+                <p class="profile-share-line" id="profile-share-line"></p>
+                <button class="ghost-btn" type="button" id="profile-share">Sao chép kết quả</button>
+                <!-- Shown only when the clipboard refuses, the same fallback the daily uses. -->
+                <textarea class="daily-share-text hidden" id="profile-share-text" readonly rows="4"
+                          aria-label="Kết quả để chia sẻ"></textarea>
+            </section>
+        </div>
     </div>
-
-    <p id="profile-streak-note" class="profile-note hidden"></p>
-    <p id="profile-legacy-note" class="profile-note hidden"></p>
-
-    <h3 class="profile-section">Huy hiệu</h3>
-    <div id="profile-badges" class="profile-badges"></div>
-
-    <h3 class="profile-section">Theo từng cặp</h3>
-    <div id="profile-by-asset" class="profile-assets"></div>
-
-    <h3 class="profile-section">Gần đây</h3>
-    <div id="profile-recent" class="profile-recent"></div>
 </main>
 
     </div><!-- /.shell-main -->
