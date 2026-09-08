@@ -187,7 +187,7 @@ public class DemoTradingService {
             return new DemoChartResponse(asset.getSymbol(), target,
                     intraday.recent(asset.getSymbol(), target, span).stream()
                             .map(c -> new DatedCandleDto(c.openTime(), c.open(), c.high(),
-                                    c.low(), c.close()))
+                                    c.low(), c.close(), c.volume()))
                             .toList());
         }
 
@@ -213,7 +213,8 @@ public class DemoTradingService {
 
         return new DemoChartResponse(asset.getSymbol(), target,
                 rolled.stream()
-                        .map(b -> new DatedCandleDto(b.time(), b.open(), b.high(), b.low(), b.close()))
+                        .map(b -> new DatedCandleDto(b.time(), b.open(), b.high(), b.low(),
+                                b.close(), b.volume()))
                         .toList());
     }
 

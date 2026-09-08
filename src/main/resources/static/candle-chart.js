@@ -226,6 +226,11 @@ window.CandleChart = (function () {
         return {
             n: n, step: step,
             plotX0: plotX0, plotX1: plotX1, plotY0: plotY0, plotY1: plotY1,
+            /* Where the drawing actually ends, which is below plotY1 whenever volume took its
+               strip. The crosshair reads this rather than plotY1: a vertical line that stopped
+               at the price plot's floor would leave the volume bars hanging under a line that
+               visibly does not reach them. */
+            bottom: volumes ? volY1 : plotY1,
             lo: lo, hi: hi,
             cx: cx, py: py,
             /* Which candle a horizontal position falls on, clamped rather than null past either
@@ -308,7 +313,7 @@ window.CandleChart = (function () {
         part("v").setAttribute("x1", vx);
         part("v").setAttribute("x2", vx);
         part("v").setAttribute("y1", frame.plotY0);
-        part("v").setAttribute("y2", frame.plotY1);
+        part("v").setAttribute("y2", frame.bottom != null ? frame.bottom : frame.plotY1);
 
         var showLevel = !options.verticalOnly;
         part("h").setAttribute("visibility", showLevel ? "visible" : "hidden");
@@ -327,7 +332,7 @@ window.CandleChart = (function () {
         // same reason: an invented date is worse than an absent one.
         tag(part("time-bg"), part("time"),
             showLevel && options.time != null ? formatDayHour(options.time) : "",
-            vx, frame.plotY1 + 9, "center");
+            vx, (frame.bottom != null ? frame.bottom : frame.plotY1) + 9, "center");
 
         return index;
     }

@@ -225,4 +225,45 @@ class ProgressiveHintFlowTest {
             return;
         }
     }
+
+    /**
+     * The gate that lets {@code DatedCandleDto} carry volume at all.
+     *
+     * Volume is a hint, released only after a miss and only for the candles already on screen.
+     * The end-of-session context chart is sent as {@code DatedCandleDto}, which carries volume
+     * for every candle in the window — including the ones the player was being asked to call.
+     * That is fine precisely because the round is over by then, and this test is what says so:
+     * no response while the round is still running may carry a context at all.
+     *
+     * Send the context one guess early and the volume hint is free, and the whole ladder in the
+     * tests above stops meaning anything.
+     */
+    @Test
+    void theContextChartArrivesOnlyOnceTheRoundIsOverBecauseItCarriesVolume() throws Exception {
+        Session session = new Session(seedAlternatingPair());
+        assertThat(session.last.path("context").isNull())
+                .as("no context on the opening guess").isTrue();
+
+        while (session.playable()) {
+            session.play(false);
+            if (session.last.path("sessionComplete").asBoolean()) break;
+            assertThat(session.last.path("context").isNull())
+                    .as("no context while guess %d of %d is still to come",
+                            session.last.path("guessNumber").asInt(),
+                            session.last.path("totalGuesses").asInt())
+                    .isTrue();
+        }
+
+        JsonNode context = session.last.path("context");
+        assertThat(context.isNull()).as("the finished round does send its context").isFalse();
+
+        // And it is the volume-carrying shape: every candle in it has the field, or the terminal
+        // that reads the same record draws a chart with no volume strip.
+        JsonNode candles = context.path("candles");
+        assertThat(candles.size()).isGreaterThan(0);
+        for (JsonNode candle : candles) {
+            assertThat(candle.path("volume").isNumber())
+                    .as("volume on every context candle").isTrue();
+        }
+    }
 }

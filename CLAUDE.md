@@ -486,9 +486,26 @@ Four things about it are less obvious than they look:
 
 The readout row falls back to the newest candle whenever the pointer is off the chart, rather
 than blanking: a terminal that clears the price the moment you look away sends you back to the
-chart to read what you just saw. It carries no volume, because `DatedCandleDto` has none — and
-that record is also the game's round context and the live popup's, so widening it is a backend
-change with its own blast radius rather than the tail end of a crosshair.
+chart to read what you just saw. Its `KL` figure is `volume × close`, in dollars, because
+**Binance counts volume in the base asset** — the same conversion the 24h turnover already does,
+and the same four-orders-of-magnitude error if it is skipped.
+
+**Volume reaches the chart through `DatedCandleDto`, and the reason that is safe is a gate in a
+different feature.** Volume is a *hint* in the game, released only after a miss (`HintLevel`).
+The end-of-round context chart is sent as `DatedCandleDto`, so every candle in it now carries
+volume — including the ones the player was asked to call. That is fine only because
+`RoundPlayService` builds the context when `sessionComplete` and never before, and
+`ProgressiveHintFlowTest.theContextChartArrivesOnlyOnceTheRoundIsOverBecauseItCarriesVolume` is
+what holds that shut: send the context one guess early and the volume hint is free, and the whole
+ladder stops meaning anything. **`CandleDto`, the record sent during play, must never gain a
+volume field** — that is the hint's own door, and `RoundHintService` is the only thing allowed to
+open it.
+
+Nothing was added to the database for this: `candles.volume` is `numeric(24, 8) NOT NULL`,
+`CandleAggregator` already summed it, and the exchange already reported it. The whole feature was
+two `.map()` calls in `DemoTradingService.chart()` that had been dropping the field — which is
+why both of its tests assert through `chart()` rather than against the aggregator. A unit test of
+the fold cannot see the line that loses what the fold produced.
 
 Intraday candles are deliberately **not stored**. A minute of history is sixty times the rows an
 hour is, for a chart nobody looks at twice, and it would need its own sync, backfill and gap

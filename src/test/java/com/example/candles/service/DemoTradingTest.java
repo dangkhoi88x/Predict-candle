@@ -250,6 +250,78 @@ class DemoTradingTest {
     }
 
     /**
+     * Volume survives the fold, and it is a sum rather than a sample.
+     *
+     * Asserted through {@code chart()} rather than against {@link com.example.candles.domain
+     * .CandleAggregator} directly, because the aggregator was already adding volumes correctly
+     * while the service dropped the field on its way into the DTO — a unit test of the fold
+     * cannot see the {@code .map()} that loses it.
+     */
+    @Test
+    void aFoldedBarsVolumeIsTheSumOfTheHoursThatMadeIt() {
+        // A wide hourly window so a 4h bar can be found that sits entirely inside it; the 4h
+        // chart covers four times the time for the same number of bars.
+        var hourly = trading.chart(symbol, "1h", 400);
+        var fourHour = trading.chart(symbol, "4h", 120);
+        assertThat(hourly.candles()).isNotEmpty();
+
+        Instant firstHour = hourly.candles().getFirst().time();
+        Instant lastHour = hourly.candles().getLast().time();
+
+        int checked = 0;
+        for (var bar : fourHour.candles()) {
+            Instant end = bar.time().plusSeconds(14_400);
+            // Only bars whose four hours are all present in the hourly window can be summed.
+            if (bar.time().isBefore(firstHour) || end.isAfter(lastHour.plusSeconds(3_600))) continue;
+
+            BigDecimal sum = hourly.candles().stream()
+                    .filter(c -> !c.time().isBefore(bar.time()) && c.time().isBefore(end))
+                    .map(c -> c.volume())
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            assertThat(bar.volume())
+                    .as("4h bar at %s is the sum of its hours", bar.time())
+                    .isEqualByComparingTo(sum);
+            // A bar of four real hours cannot be zero, which is what a dropped field would
+            // reduce this assertion to comparing against.
+            assertThat(sum).isGreaterThan(BigDecimal.ZERO);
+            checked++;
+        }
+        assertThat(checked).as("some 4h bar had all four of its hours to compare against")
+                .isGreaterThan(0);
+    }
+
+    /**
+     * The other half of the chart. Intraday candles never touch the aggregator — they come
+     * straight from the exchange — so they lose volume by a different line of code and need
+     * their own guard.
+     */
+    @Test
+    void intradayCandlesKeepTheVolumeTheExchangeReported() {
+        intradayCandles.evict();
+        var minuteCandles = new java.util.ArrayList<CandleData>();
+        Instant base = Instant.parse("2026-03-15T00:00:00Z");
+        for (int i = 0; i < 200; i++) {
+            minuteCandles.add(new CandleData(base.plusSeconds(i * 60L), BigDecimal.valueOf(100),
+                    BigDecimal.valueOf(101), BigDecimal.valueOf(99), BigDecimal.valueOf(100),
+                    // Distinct per candle: a series that is right by accident cannot pass this.
+                    BigDecimal.valueOf(7 + i)));
+        }
+        when(priceDataProvider.fetchCandles(anyString(), eq("1m"), any(), any()))
+                .thenReturn(minuteCandles);
+
+        var chart = trading.chart(symbol, "1m", 120);
+
+        assertThat(chart.candles()).hasSize(120);
+        // The last 120 of the 200 fetched, so the volumes have to line up with that tail.
+        for (int i = 0; i < chart.candles().size(); i++) {
+            assertThat(chart.candles().get(i).volume())
+                    .as("volume of intraday candle %d", i)
+                    .isEqualByComparingTo(minuteCandles.get(80 + i).volume());
+        }
+    }
+
+    /**
      * The property that separates the two halves of the chart. 4h and 1d are folded out of the
      * stored hourly candles; 1m and 15m cannot be, because those minutes were never recorded and
      * an hourly candle cannot be taken apart into them. Falling back to stored candles would

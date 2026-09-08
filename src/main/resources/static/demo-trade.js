@@ -332,9 +332,16 @@
            months would squash every candle into a band at one edge to make room for a price
            none of them ever traded at. */
         var drawn = slice.map(function (c) {
-            return { time: c.time, open: +c.open, high: +c.high, low: +c.low, close: +c.close };
+            return {
+                time: c.time, open: +c.open, high: +c.high, low: +c.low, close: +c.close,
+                volume: c.volume != null ? +c.volume : null,
+            };
         });
+        /* Sliced with the candles, like the averages — a bar belongs to its candle, and the
+           strip scales to the tallest bar *on screen*, which is what makes a quiet stretch
+           readable instead of flat against a spike three months back. */
         var frame = window.CandleChart.draw(el.chart, drawn, {
+            volumes: drawn.map(function (c) { return c.volume; }),
             lines: overlays,
             referencePrice: atLiveEdge && market && market.price != null
                 ? Number(market.price) : null,
@@ -398,9 +405,13 @@
         if (change != null) {
             el.ohlc.appendChild(readoutField("", pct(change), change >= 0 ? 1 : -1));
         }
-        /* No volume here, deliberately: /api/demo/chart sends DatedCandleDto, which carries no
-           volume, and that record is also the game's round context and the live popup's. Widening
-           it is a backend change with its own blast radius, not the tail end of a crosshair. */
+        /* Reported in dollars, like the "KL 24h" figure above it. Binance counts volume in the
+           base asset, so the raw number under a $ sign is out by the price of the coin — four
+           orders of magnitude on BTC. Volume has no direction of its own: a big bar is not a
+           bullish one. */
+        if (candle.volume != null) {
+            el.ohlc.appendChild(readoutField("KL", compact(candle.volume * candle.close), 0));
+        }
         if (view.rsi.length && view.rsi[index] != null) {
             // RSI carries no direction of its own — 70 is not "green", it is a reading.
             el.ohlc.appendChild(readoutField("RSI", view.rsi[index].toFixed(1), 0));
