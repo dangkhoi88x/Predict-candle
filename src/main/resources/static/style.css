@@ -984,6 +984,17 @@ h1, h2, h3 {
     flex-wrap: wrap;
 }
 
+/* The right end of the toolbar: how far through the chart, and the sound key. Grouped so
+   the row stays two things — picker, then status — however many of these are on screen at
+   the time. The streak chip and the counter both come and go. */
+.game-toolbar-end {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
 .sound-toggle {
     font-size: 15px;
     padding: 7px 10px;
@@ -1026,6 +1037,266 @@ h1, h2, h3 {
     font-weight: 700;
     margin-top: 2px;
     font-variant-numeric: tabular-nums;
+}
+
+/* ---- the play tab's two columns -----------------------------------------------------
+   The chart on the left, and on the right the four things a player looks at between
+   rounds: how the session is going, whether today's challenge is still unplayed, which
+   badge is nearest, and who is ahead. All four used to be somewhere else — the scoreboard
+   above the chart, the rest on tabs nobody opens mid-session — which is why the answer to
+   "why am I still here" was always one click away from the thing being played.
+
+   The right column is 300px and does not stretch: it holds labelled figures, and a stat
+   card that grows with the window only puts more space between a number and its label. */
+
+.app.app-play {
+    max-width: 1180px;
+}
+
+.play-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 300px;
+    gap: 16px;
+    align-items: start;
+}
+
+.play-main {
+    min-width: 0;
+}
+
+.play-side {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* Below 1100px the column has nowhere to go but under the chart, where it reads as a
+   footer to the round rather than as a panel beside it. */
+@media (max-width: 1100px) {
+    .play-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+.side-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+}
+
+.side-card.hidden {
+    display: none;
+}
+
+/* The one card that is an offer rather than a readout, so it is the one card drawn in the
+   accent — on the darker ground, which is what keeps a bordered card from reading as a
+   button the whole way across. */
+.side-card.is-accent {
+    background: var(--panel-2);
+    border-color: var(--accent);
+    gap: 8px;
+}
+
+.side-eyebrow {
+    font: 600 10.5px var(--mono);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted-2);
+}
+
+.side-eyebrow.is-accent {
+    color: var(--accent);
+}
+
+.side-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 8px;
+}
+
+.side-link {
+    background: none;
+    border: none;
+    padding: 0;
+    font-family: inherit;
+    font-size: 11.5px;
+    color: var(--accent);
+    cursor: pointer;
+}
+
+.side-link:hover {
+    text-decoration: underline;
+}
+
+.side-title {
+    font-size: 15px;
+}
+
+.side-text {
+    margin: 0;
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: var(--muted);
+}
+
+.side-cta {
+    margin-top: 2px;
+    padding: 10px;
+    border: none;
+    border-radius: 10px;
+    background: var(--accent);
+    color: var(--bg);
+    font-family: inherit;
+    font-weight: 700;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.side-cta:hover {
+    filter: brightness(1.12);
+}
+
+.side-foot {
+    margin-top: 6px;
+    font-size: 11.5px;
+    color: var(--muted-2);
+}
+
+/* In the sidebar the scoreboard is a 2x2 of bare figures rather than four bordered tiles:
+   the card is already the border, and tiles inside a card is a frame inside a frame. */
+.play-side .scoreboard {
+    grid-template-columns: 1fr 1fr;
+    margin: 10px 0 0;
+}
+
+.play-side .stat {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    padding: 0;
+    text-align: left;
+}
+
+.play-side .stat-value {
+    font: 700 22px var(--mono);
+    font-variant-numeric: tabular-nums;
+}
+
+.side-dots {
+    display: flex;
+    gap: 5px;
+    margin-top: 12px;
+}
+
+.side-dot {
+    flex: 1;
+    height: 6px;
+    border-radius: 999px;
+    background: var(--overlay-strong);
+}
+
+.side-dot.is-correct { background: var(--up); }
+.side-dot.is-wrong { background: var(--down); }
+
+.side-badges {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 10px;
+}
+
+.side-badge-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 8px;
+}
+
+.side-badge-name {
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.side-badge-count {
+    font: 600 11px var(--mono);
+    font-variant-numeric: tabular-nums;
+    color: var(--muted);
+}
+
+.side-bar {
+    display: block;
+    height: 5px;
+    margin-top: 5px;
+    border-radius: 999px;
+    background: var(--border);
+    overflow: hidden;
+}
+
+.side-bar-fill {
+    display: block;
+    height: 100%;
+    border-radius: 999px;
+    background: var(--accent);
+}
+
+.side-rank {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-top: 8px;
+}
+
+.side-rank-row {
+    display: grid;
+    grid-template-columns: 20px 22px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 6px;
+    border-radius: 8px;
+    font-size: 12.5px;
+}
+
+.side-rank-row.is-me {
+    background: var(--tint-accent-weak);
+    font-weight: 700;
+}
+
+.side-rank-pos {
+    font: 600 11px var(--mono);
+    color: var(--muted-2);
+}
+
+/* Emoji on a tinted disc, picked by hashing the name — the same trick the live roster uses,
+   and for the same reason: a board of identical grey circles is a board nobody scans. */
+.side-rank-avatar {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    line-height: 1;
+}
+
+.side-rank-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.side-rank-score {
+    font: 600 12px var(--mono);
+    font-variant-numeric: tabular-nums;
+    color: var(--muted);
+}
+
+.side-rank-row.is-me .side-rank-score {
+    color: var(--text);
 }
 
 .result-banner {
@@ -1262,12 +1533,12 @@ h1, h2, h3 {
     color: #200608;
 }
 
+/* Sits in the toolbar row, pushed to the far end so it lands beside the sound toggle and
+   leaves the asset picker the whole left. */
 .guess-progress {
-    text-align: center;
     color: var(--muted);
     font: 500 12px var(--mono);
     letter-spacing: 0.03em;
-    margin-bottom: 10px;
     font-variant-numeric: tabular-nums;
 }
 

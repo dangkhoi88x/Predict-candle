@@ -632,6 +632,16 @@
         };
         renderStats();
         renderDayStreak(data.dayStreak);
+        publishStats(data);
+    }
+
+    /* /api/stats/me answers several questions at once — totals, badges, recent calls — and
+       this tab is already asking it after every recorded guess. Anything else that needs one
+       of those answers listens rather than asking again: two callers reading the same figure
+       out of two responses can only end up disagreeing about it, and the second request buys
+       nothing. Null means signed out, which is a state the listeners have to draw too. */
+    function publishStats(data) {
+        document.dispatchEvent(new CustomEvent("candles:stats", { detail: data }));
     }
 
     /* Days in a row the player has shown up — the habit number, kept out of the scoreboard on
@@ -715,6 +725,7 @@
             state.stats = loadStats();
             renderStats();
             renderDayStreak(null);
+            publishStats(null);
         }
     });
 
@@ -1276,6 +1287,11 @@
         }
         saveStats();
         renderStats();
+        /* Signed out there is no recorded history to read back, so this is the only thing that
+           can fill the sidebar's strip of recent calls. Signed in it lands first and the
+           refresh below confirms it, which is the right order: the dot appears with the reveal
+           rather than a round-trip later. */
+        document.dispatchEvent(new CustomEvent("candles:guess", { detail: { correct: correct } }));
 
         /* Signed in, the guess was recorded server-side and the authoritative totals have
            moved. The local numbers above stay maintained regardless so that signing out

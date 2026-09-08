@@ -129,7 +129,9 @@
 
     <div class="shell-main">
 
-<main id="view-game" class="view app" role="tabpanel" aria-labelledby="tab-game">
+<main id="view-game" class="view app app-play" role="tabpanel" aria-labelledby="tab-game">
+<div class="play-grid">
+<div class="play-main">
     <div class="game-toolbar">
         <div class="pill" id="asset-pill">
             <button class="pill-option active" data-asset="BTCUSDT">BTC/USDT</button>
@@ -141,26 +143,10 @@
              streak on the next tab, and not the correct-in-a-row streak in the board below.
              Signed-in only: nothing is recorded for anonymous play, so a streak here would be
              a promise the server never made. -->
-        <span id="game-streak" class="game-streak hidden" aria-live="polite"></span>
-        <button id="sound-toggle" class="ghost-btn sound-toggle" type="button" aria-label="Bật/tắt âm thanh và rung">🔊</button>
-    </div>
-
-    <div class="scoreboard">
-        <div class="stat">
-            <span class="stat-label">Điểm</span>
-            <span class="stat-value rolling" id="score">0</span>
-        </div>
-        <div class="stat">
-            <span class="stat-label">Streak</span>
-            <span class="stat-value rolling" id="streak">0</span>
-        </div>
-        <div class="stat">
-            <span class="stat-label">Best streak</span>
-            <span class="stat-value rolling" id="best-streak">0</span>
-        </div>
-        <div class="stat">
-            <span class="stat-label">Tỉ lệ đúng</span>
-            <span class="stat-value rolling" id="accuracy">–</span>
+        <div class="game-toolbar-end">
+            <span id="game-streak" class="game-streak hidden" aria-live="polite"></span>
+            <span id="guess-progress" class="guess-progress hidden"></span>
+            <button id="sound-toggle" class="ghost-btn sound-toggle" type="button" aria-label="Bật/tắt âm thanh và rung">🔊</button>
         </div>
     </div>
 
@@ -231,8 +217,6 @@
         </ul>
     </section>
 
-    <div id="guess-progress" class="guess-progress hidden"></div>
-
     <!-- Names whatever the chart just gained. An indicator appearing unannounced reads as a
          glitch rather than as the game giving ground after a miss. -->
     <p id="game-hint" class="daily-hint hidden"></p>
@@ -250,6 +234,59 @@
     <button id="next-chart" class="next-btn hidden">🔄 Biểu đồ mới</button>
 
     <p id="status" class="status"></p>
+</div><!-- /.play-main -->
+
+<aside class="play-side">
+    <!-- The scoreboard, out of the chart's way. It answers "how am I doing", which is a
+         question about the session rather than about the candle on screen. -->
+    <section class="side-card">
+        <span class="side-eyebrow">Phiên này</span>
+        <div class="scoreboard">
+            <div class="stat">
+                <span class="stat-label">Điểm</span>
+                <span class="stat-value rolling" id="score">0</span>
+            </div>
+            <div class="stat">
+                <span class="stat-label">Streak</span>
+                <span class="stat-value rolling" id="streak">0</span>
+            </div>
+            <div class="stat">
+                <span class="stat-label">Best streak</span>
+                <span class="stat-value rolling" id="best-streak">0</span>
+            </div>
+            <div class="stat">
+                <span class="stat-label">Tỉ lệ đúng</span>
+                <span class="stat-value rolling" id="accuracy">–</span>
+            </div>
+        </div>
+        <!-- Ten calls, oldest on the left. Seeded from the server's recorded history when
+             signed in and appended to as the session goes, so the strip means the same thing
+             either way rather than being a feature only an account has. -->
+        <div class="side-dots" id="side-dots" aria-hidden="true"></div>
+        <span class="side-foot" id="side-dots-label">Chưa có lượt nào</span>
+    </section>
+
+    <section class="side-card is-accent" id="side-daily">
+        <span class="side-eyebrow is-accent">Thử thách hôm nay</span>
+        <b class="side-title" id="side-daily-title">Đang tải…</b>
+        <p class="side-text">Một biểu đồ, năm lượt, giống nhau cho mọi người.</p>
+        <button class="side-cta" type="button" data-nav-view="daily">Chơi ngay</button>
+    </section>
+
+    <section class="side-card hidden" id="side-badges">
+        <span class="side-eyebrow">Huy hiệu gần đạt</span>
+        <div class="side-badges" id="side-badges-list"></div>
+    </section>
+
+    <section class="side-card hidden" id="side-rank">
+        <div class="side-head">
+            <span class="side-eyebrow">Top người chơi</span>
+            <button class="side-link" type="button" data-nav-view="leaderboard">Xem tất cả</button>
+        </div>
+        <div class="side-rank" id="side-rank-list"></div>
+    </section>
+</aside>
+</div><!-- /.play-grid -->
 </main>
 
 <main id="view-daily" class="view app hidden" role="tabpanel" aria-labelledby="tab-daily">
@@ -794,6 +831,7 @@
 <script src="nav.js"></script>
 <script src="live-banner.js"></script>
 <script src="app.js"></script>
+<script src="play-sidebar.js"></script>
 <script src="treemap.js"></script>
 <script src="heatmap.js"></script>
 <script src="heatmap-sp500.js"></script>
