@@ -75,6 +75,34 @@
         '<text x="264" y="132" text-anchor="middle" font-family="var(--mono)" font-size="10" font-weight="700" fill="var(--down)">BOS</text>' +
         "</svg>";
 
+    /* Reading time is counted here rather than stored, because it is a property of the text
+       and the text is what an admin edits — a stored figure would go stale the first time
+       somebody fixed a paragraph. 200 words a minute is the usual estimate and is rounded
+       up, so nothing ever reads "0 phút đọc".
+
+       Walks the ProseMirror document generically: every node's `text` counts, whatever kind
+       of node holds it. That is deliberately different from blog-render.js, which needs a
+       branch per node type because it draws them; counting words needs no such thing. */
+    function readingMinutes(content) {
+        var words = 0;
+        (function walk(node) {
+            if (!node || typeof node !== "object") return;
+            if (typeof node.text === "string") words += node.text.split(/\s+/).filter(Boolean).length;
+            var kids = node.content || (Array.isArray(node) ? node : null);
+            if (Array.isArray(kids)) kids.forEach(walk);
+        })(content);
+        return Math.max(1, Math.ceil(words / 200));
+    }
+
+    function metaLine(post) {
+        var parts = [readingMinutes(post.content) + " phút đọc"];
+        if (post.publishedAt) {
+            var d = new Date(post.publishedAt);
+            if (!isNaN(d)) parts.push(d.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" }));
+        }
+        return parts.join(" · ");
+    }
+
     function buildPost(post) {
         var article = document.createElement("div");
         article.className = "blog-post";
@@ -95,15 +123,29 @@
         summary.className = "blog-post-summary";
         summary.type = "button";
 
+        /* The first tag doubles as the kicker. Every post carries at least one and it is
+           already the shortest true description of what the piece is about — inventing a
+           second field for the same job would leave two things to keep in step. */
+        if (post.tags.length) {
+            var kicker = document.createElement("span");
+            kicker.className = "blog-post-kicker";
+            kicker.textContent = post.tags[0];
+            summary.appendChild(kicker);
+        }
+
         var title = document.createElement("h3");
         title.className = "blog-post-title";
         title.textContent = post.title;
+        summary.appendChild(title);
+
+        var meta = document.createElement("span");
+        meta.className = "blog-post-meta";
+        meta.textContent = metaLine(post);
+        summary.appendChild(meta);
 
         var hint = document.createElement("span");
         hint.className = "blog-post-hint";
         hint.textContent = "Bấm để xem chi tiết ▾";
-
-        summary.appendChild(title);
         summary.appendChild(hint);
 
         var detail = document.createElement("div");
@@ -187,6 +229,7 @@
             sourceUrl: post.sourceUrl,
             content: post.body || [],
             imageCredit: post.imageCredit,
+            publishedAt: post.createdAt,
         };
     }
 

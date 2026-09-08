@@ -279,6 +279,13 @@ h1, h2, h3 {
     max-width: 1180px;
 }
 
+/* Between the reading column and the wide one: prose and a list of headlines both stop being
+   comfortable somewhere past 900px, but 760 wastes a desktop when the card carries a picture
+   beside the text. */
+.app.app-read {
+    max-width: 900px;
+}
+
 /* ---- app shell ---------------------------------------------------------------------
    Topbar across the top, a grouped navigation rail down the left, views in what is left.
    This replaced a single row of eleven tabs: eleven peers in one strip say nothing about
@@ -4502,31 +4509,71 @@ body:not(.is-admin) .adm-search {
    the container is narrower than it, so on a 375px phone these 360px cards came out wider
    than the column they sit in. That used to give the page a sideways scrollbar; inside the
    shell — which clips, that being what rounds its corners — it cuts the card off instead. */
+/* 520 rather than 360: the card now carries a 300px chart, so a 360px track left about
+   sixty pixels for the description. One card per row on a laptop, two on a wide screen. */
 .technical-grid {
-    grid-template-columns: repeat(auto-fill, minmax(min(360px, 100%), 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(520px, 100%), 1fr));
+}
+
+/* Chart beside the description rather than above it. These shapes are read left to right —
+   a head and shoulders is a sentence about what price did — and a 360px card with a 160px
+   picture stacked on three lines of prose is twice as tall as it needs to be. */
+.technical-grid .pattern-card {
+    display: grid;
+    grid-template-columns: 300px minmax(0, 1fr);
+    align-items: stretch;
+}
+
+.technical-chart {
+    border-bottom: none;
+    border-right: 1px solid var(--border);
+    display: flex;
+    align-items: center;
 }
 
 .technical-chart .pattern-chart-svg {
-    height: 160px;
+    height: 140px;
+}
+
+/* Capped in characters, not pixels: at one card per row the body would otherwise run the
+   whole width the chart leaves it, and a 90-character line is a line people lose their
+   place in. */
+.technical-grid .pattern-body > .pattern-summary {
+    max-width: 60ch;
+}
+
+@media (max-width: 760px) {
+    .technical-grid .pattern-card {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .technical-chart {
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+    }
 }
 
 .psych-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(380px, 100%), 1fr));
     gap: 14px;
 }
 
+/* The number beside the principle, not above it: it is an index into a list, and a line of
+   its own gives a label three characters long the same weight as the idea under it. */
 .psych-card {
     background: var(--panel);
     border: 1px solid var(--border);
     border-radius: 14px;
     padding: 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: baseline;
+    gap: 6px 12px;
 }
 
 .psych-card-number {
+    grid-row: 1 / span 2;
     font: 700 12px var(--mono);
     color: var(--accent);
 }
@@ -4556,9 +4603,12 @@ body:not(.is-admin) .adm-search {
     color: var(--accent);
 }
 
+/* One column of wide cards rather than a grid of narrow ones. A blog index is a list of
+   headlines being scanned in order, and a two-across grid asks the reader to scan in two
+   directions to do that; the cover moves beside the title instead of above it, which is
+   also what stops a row of covers taking the top half of the screen. */
 .blog-list {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr));
     gap: 14px;
     align-items: start;
 }
@@ -4568,17 +4618,14 @@ body:not(.is-admin) .adm-search {
     border: 1px solid var(--border);
     border-radius: 14px;
     overflow: hidden;
-    display: flex;
-    flex-direction: column;
-}
-
-.blog-post.expanded {
-    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: 220px minmax(0, 1fr);
+    align-items: stretch;
 }
 
 .blog-post-cover {
     background: var(--panel-2);
-    border-bottom: 1px solid var(--border);
+    border-right: 1px solid var(--border);
     line-height: 0;
 }
 
@@ -4586,7 +4633,8 @@ body:not(.is-admin) .adm-search {
 .blog-post-cover img {
     display: block;
     width: 100%;
-    height: 140px;
+    height: 100%;
+    min-height: 128px;
     object-fit: cover;
 }
 
@@ -4594,36 +4642,70 @@ body:not(.is-admin) .adm-search {
     all: unset;
     box-sizing: border-box;
     cursor: pointer;
-    padding: 14px;
+    padding: 16px;
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
+    flex-direction: column;
+    gap: 6px;
+    justify-content: center;
 }
 
 .blog-post-summary:hover .blog-post-title {
     color: var(--accent);
 }
 
+.blog-post-kicker {
+    font: 600 10.5px var(--mono);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+}
+
 .blog-post-title {
     margin: 0;
-    font-size: 15.5px;
+    font-size: 17px;
     font-weight: 700;
+    line-height: 1.35;
     color: var(--text);
 }
 
-.blog-post-hint {
-    flex-shrink: 0;
+.blog-post-meta {
+    font: 500 11.5px var(--mono);
+    font-variant-numeric: tabular-nums;
     color: var(--muted);
-    font-size: 11.5px;
-    white-space: nowrap;
 }
 
+.blog-post-hint {
+    color: var(--muted-2);
+    font-size: 11.5px;
+}
+
+/* The body spans both tracks: it is the article, and a column of prose 220px narrower than
+   the card it sits in for no reason but the cover above it is a worse read. */
 .blog-post-detail {
-    padding: 0 14px 16px;
+    grid-column: 1 / -1;
+    border-top: 1px solid var(--border);
+    padding: 14px 16px 16px;
     display: flex;
     flex-direction: column;
     gap: 10px;
+}
+
+/* On a phone the cover goes back above the text — 220px of the 340 available is most of the
+   row, and what is left cannot hold a headline. */
+@media (max-width: 640px) {
+    .blog-post {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .blog-post-cover {
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .blog-post-cover svg,
+    .blog-post-cover img {
+        height: 140px;
+    }
 }
 
 .blog-post-detail.hidden {
