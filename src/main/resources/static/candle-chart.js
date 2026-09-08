@@ -49,12 +49,19 @@ window.CandleChart = (function () {
      * the line and the win/loss color are two different things and callers without a result to
      * report (there are none yet, but the module doesn't assume there won't be) get the neutral
      * one rather than a color that implies an outcome that isn't there.
+     *
+     * Returns the {@code frame} it drew in — the plot rectangle, the candle step, and the
+     * conversions both ways between data and coordinates — or null when there was nothing to
+     * draw. That is what lets a caller put something over the chart (the crosshair is the first)
+     * without recomputing the geometry. Padding here is not a constant: it moves when volume
+     * takes its strip out of the plot, and a second copy of that arithmetic somewhere else would
+     * be wrong the first time this one changes.
      */
     function draw(svg, candles, options) {
         options = options || {};
         while (svg.firstChild) svg.removeChild(svg.firstChild);
         var n = candles.length;
-        if (!n) return;
+        if (!n) return null;
 
         var view = svg.viewBox.baseVal;
         var w = view && view.width ? view.width : 300;
@@ -215,6 +222,139 @@ window.CandleChart = (function () {
             t.textContent = formatDayHour(c.time);
             svg.appendChild(t);
         });
+
+        return {
+            n: n, step: step,
+            plotX0: plotX0, plotX1: plotX1, plotY0: plotY0, plotY1: plotY1,
+            lo: lo, hi: hi,
+            cx: cx, py: py,
+            /* Which candle a horizontal position falls on, clamped rather than null past either
+               end: a pointer a few pixels into the padding is still pointing at the edge candle,
+               and blanking the readout there reads as the chart flickering. */
+            indexAt: function (x) {
+                var i = Math.floor((x - plotX0) / step);
+                return Math.max(0, Math.min(n - 1, i));
+            },
+            priceAt: function (y) {
+                return lo + ((plotY1 - y) / (plotY1 - plotY0)) * span;
+            },
+        };
+    }
+
+    var CROSSHAIR = "chart-crosshair";
+
+    /**
+     * Tracks the pointer across a chart already drawn by {@link draw}: a vertical line on the
+     * candle under it, a horizontal line at the level it is at, and a tag for each.
+     *
+     * {@code point} is in the SVG's own viewBox units, not screen pixels — converting is the
+     * caller's job because only the caller knows which element the event came from, and these
+     * charts are drawn with `preserveAspectRatio="none"`, so x and y are scaled by *different*
+     * factors and `getScreenCTM().inverse()` is the only conversion that survives a resize.
+     *
+     * The vertical line snaps to a candle; the horizontal one follows the pointer freely. That
+     * asymmetry is the point: between two candles there is no data to report, but between two
+     * candles' prices there is a perfectly real level someone is measuring against.
+     *
+     * The nodes are built once and then only have their attributes rewritten. A pointer moves
+     * faster than the screen refreshes, and rebuilding this on every move would put a few
+     * hundred DOM insertions between the mouse and the picture.
+     *
+     * Returns the index of the candle under the pointer, so the caller can name it.
+     */
+    function crosshair(svg, frame, point, options) {
+        if (!frame) return null;
+        options = options || {};
+
+        var g = svg.querySelector("." + CROSSHAIR);
+        if (!g) {
+            g = svgEl("g", { class: CROSSHAIR, "pointer-events": "none" });
+            g.appendChild(svgEl("line", {
+                "data-part": "v", stroke: "var(--muted)", "stroke-width": "1",
+                "stroke-dasharray": "2 3", "stroke-opacity": "0.9",
+            }));
+            g.appendChild(svgEl("line", {
+                "data-part": "h", stroke: "var(--muted)", "stroke-width": "1",
+                "stroke-dasharray": "2 3", "stroke-opacity": "0.9",
+            }));
+            g.appendChild(svgEl("rect", { "data-part": "price-bg", rx: 2.5, fill: "var(--text)" }));
+            g.appendChild(svgEl("text", {
+                "data-part": "price", "text-anchor": "middle", "dominant-baseline": "middle",
+                "font-size": "8.5", "font-weight": "700", fill: "var(--bg)",
+                "font-family": "var(--mono)",
+            }));
+            g.appendChild(svgEl("rect", { "data-part": "time-bg", rx: 2.5, fill: "var(--text)" }));
+            g.appendChild(svgEl("text", {
+                "data-part": "time", "text-anchor": "middle", "dominant-baseline": "middle",
+                "font-size": "8.5", "font-weight": "700", fill: "var(--bg)",
+                "font-family": "var(--mono)",
+            }));
+        }
+        // Appended (or moved back) last on every call: draw() empties the svg, and anything the
+        // caller redraws underneath would otherwise end up painted over the crosshair.
+        svg.appendChild(g);
+
+        function part(name) { return g.querySelector('[data-part="' + name + '"]'); }
+
+        /* A second pane below the chart (RSI) is *told* which candle rather than asked to work
+           it out from an x belonging to a different frame. The two panes do share plotX0 and
+           step today, so deriving it would happen to work — which is exactly the kind of
+           coincidence that breaks silently the day one of them gets different padding. */
+        var index = options.index != null
+            ? Math.max(0, Math.min(frame.n - 1, options.index))
+            : frame.indexAt(point.x);
+        var vx = frame.cx(index);
+
+        part("v").setAttribute("x1", vx);
+        part("v").setAttribute("x2", vx);
+        part("v").setAttribute("y1", frame.plotY0);
+        part("v").setAttribute("y2", frame.plotY1);
+
+        var showLevel = !options.verticalOnly;
+        part("h").setAttribute("visibility", showLevel ? "visible" : "hidden");
+        if (showLevel) {
+            var hy = Math.max(frame.plotY0, Math.min(frame.plotY1, point.y));
+            part("h").setAttribute("x1", frame.plotX0);
+            part("h").setAttribute("x2", frame.plotX1);
+            part("h").setAttribute("y1", hy);
+            part("h").setAttribute("y2", hy);
+        }
+
+        tag(part("price-bg"), part("price"),
+            showLevel ? formatTagPrice(frame.priceAt(hy)) : "",
+            frame.plotX1 + 2, showLevel ? hy : 0, "right");
+        // No time tag when the candles carry no time — same rule the axis follows, and for the
+        // same reason: an invented date is worse than an absent one.
+        tag(part("time-bg"), part("time"),
+            showLevel && options.time != null ? formatDayHour(options.time) : "",
+            vx, frame.plotY1 + 9, "center");
+
+        return index;
+    }
+
+    /** Positions one of the crosshair's two labels, or hides it when there is nothing to say. */
+    function tag(bg, text, content, x, y, align) {
+        var visible = content !== "";
+        bg.setAttribute("visibility", visible ? "visible" : "hidden");
+        text.setAttribute("visibility", visible ? "visible" : "hidden");
+        if (!visible) return;
+
+        var h = 13;
+        var w = Math.max(26, content.length * 5.6 + 8);
+        var x0 = align === "center" ? x - w / 2 : x;
+        bg.setAttribute("x", x0);
+        bg.setAttribute("y", y - h / 2);
+        bg.setAttribute("width", w);
+        bg.setAttribute("height", h);
+        text.setAttribute("x", x0 + w / 2);
+        text.setAttribute("y", y);
+        text.textContent = content;
+    }
+
+    /** Takes the crosshair off a chart — on pointerleave, and whenever it should not be shown. */
+    function clearCrosshair(svg) {
+        var g = svg.querySelector("." + CROSSHAIR);
+        if (g) g.remove();
     }
 
     /**
@@ -228,7 +368,7 @@ window.CandleChart = (function () {
         options = options || {};
         while (svg.firstChild) svg.removeChild(svg.firstChild);
         var n = values.length;
-        if (!n) return;
+        if (!n) return null;
 
         var view = svg.viewBox.baseVal;
         var w = view && view.width ? view.width : 300;
@@ -275,7 +415,24 @@ window.CandleChart = (function () {
                 "stroke-width": "1.6", "stroke-linejoin": "round",
             }));
         }
+
+        // Same shape draw() returns, so the crosshair can run the pointer's candle down through
+        // this pane as well without knowing which of the two it is drawing into.
+        return {
+            n: n, step: step,
+            plotX0: plotX0, plotX1: plotX1, plotY0: plotY0, plotY1: plotY1,
+            cx: cx, py: py,
+            indexAt: function (x) {
+                var i = Math.floor((x - plotX0) / step);
+                return Math.max(0, Math.min(n - 1, i));
+            },
+        };
     }
 
-    return { draw: draw, drawIndicator: drawIndicator };
+    return {
+        draw: draw,
+        drawIndicator: drawIndicator,
+        crosshair: crosshair,
+        clearCrosshair: clearCrosshair,
+    };
 })();

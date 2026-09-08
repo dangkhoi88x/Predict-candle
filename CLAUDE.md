@@ -435,6 +435,38 @@ candles or leaves a meaningless squiggle across them. `CandleChart.draw` takes `
 of overlays — rather than the single `movingAverage` it used to; the daily tab's hint is one
 entry in that list.
 
+**The crosshair is a layer over a chart already drawn, never a redraw.** `CandleChart.draw`
+empties its svg and rebuilds every node, so following the pointer by redrawing would put a few
+hundred DOM insertions between the mouse and the picture. Instead `draw` now **returns the frame
+it drew in** — the plot rectangle, the candle step, and `cx`/`py`/`indexAt`/`priceAt` — and
+`crosshair(svg, frame, point)` builds its handful of nodes once and only rewrites their
+attributes after that. `drawIndicator` returns the same shape, which is how the RSI pane gets the
+same vertical line. Callers that ignore the return value (the daily tab, the pattern quiz, the
+live popup) are unaffected; an empty chart returns null rather than undefined so "nothing drawn"
+is a value rather than an absence.
+
+Four things about it are less obvious than they look:
+
+- **The charts are drawn with `preserveAspectRatio="none"`, so x and y stretch by different
+  factors** and no single ratio converts a screen point into chart units. `getScreenCTM()`'s
+  inverse is the conversion that survives a window resize; a `rect.width / viewBox.width` scale
+  applied to both axes is right until someone drags the window.
+- **Every redraw wipes it**, so `drawChart` puts it back from the remembered pointer position
+  rather than waiting for the next mouse move — otherwise a pan, a zoom or a price poll leaves a
+  chart with no crosshair under a stationary cursor.
+- **The vertical line snaps to a candle, the horizontal one follows the pointer.** Between two
+  candles there is no data to report; between two prices there is a perfectly real level someone
+  is measuring against.
+- **Nothing tracks while the chart is being dragged, and nothing tracks a finger.** During a drag
+  the pointer is moving the picture rather than measuring it, and a touch has no hover state to
+  report — the gesture is already spoken for by the pan.
+
+The readout row falls back to the newest candle whenever the pointer is off the chart, rather
+than blanking: a terminal that clears the price the moment you look away sends you back to the
+chart to read what you just saw. It carries no volume, because `DatedCandleDto` has none — and
+that record is also the game's round context and the live popup's, so widening it is a backend
+change with its own blast radius rather than the tail end of a crosshair.
+
 Intraday candles are deliberately **not stored**. A minute of history is sixty times the rows an
 hour is, for a chart nobody looks at twice, and it would need its own sync, backfill and gap
 handling. The client does not cache them either — keeping a minute chart across a tab switch

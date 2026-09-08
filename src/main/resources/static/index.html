@@ -369,6 +369,10 @@
                                     aria-label="Phóng to, xem ít nến hơn" title="Xem ít nến hơn">+</button>
                         </div>
                     </div>
+                    <!-- Reads the candle under the pointer, and the newest one when there is no
+                         pointer on the chart — so the row always has something in it and the
+                         card never changes height as the mouse comes and goes. -->
+                    <div class="trade-ohlc" id="trade-ohlc" aria-live="off"></div>
                     <svg id="trade-chart" class="trade-chart" viewBox="0 0 900 420"
                          preserveAspectRatio="none" role="img"
                          aria-label="Biểu đồ giá của cặp đang chọn"></svg>
