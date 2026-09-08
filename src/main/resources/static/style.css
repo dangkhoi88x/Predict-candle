@@ -5473,15 +5473,40 @@ body:not(.is-admin) .adm-search {
     gap: 8px;
 }
 
+/* A control, because tapping a holding takes you to that pair's chart. The button reset is the
+   market row's, but the framing stays a card: this list sits in the page rather than inside the
+   terminal, and borderless rows there would have nothing to sit on. */
 .trade-position {
     display: grid;
     grid-template-columns: 1fr auto auto;
     align-items: baseline;
     gap: 4px 10px;
+    width: 100%;
     padding: 10px 12px;
     border: 1px solid var(--border);
     border-radius: 6px;
     background: var(--panel);
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: background var(--duration-fast) var(--ease-out),
+                border-color var(--duration-fast) var(--ease-out);
+}
+
+.trade-position:hover {
+    background: var(--overlay-soft);
+}
+
+/* Same selection language as the market list: the row tints, and only the symbol takes the
+   accent — the quantity, value and P&L are data, and the P&L already owns up/down colour. */
+.trade-position.is-selected {
+    background: var(--tint-accent-weak);
+    border-color: color-mix(in oklab, var(--accent) 35%, var(--border));
+}
+
+.trade-position.is-selected .trade-position-symbol {
+    color: var(--accent);
 }
 
 .trade-position-symbol {

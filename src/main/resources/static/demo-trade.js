@@ -557,8 +557,14 @@
             return;
         }
         state.positions.forEach(function (position) {
-            var card = document.createElement("div");
-            card.className = "trade-position";
+            /* A button, not a div: this row is the shortest route back to the chart of
+               something you already own, and the market list above already treats picking a
+               pair as a control. Same element, same keyboard reach, same selected tint. */
+            var card = document.createElement("button");
+            card.type = "button";
+            card.className = "trade-position"
+                + (position.symbol === selected ? " is-selected" : "");
+            card.title = "Xem biểu đồ " + position.symbol;
 
             var name = document.createElement("span");
             name.className = "trade-position-symbol";
@@ -592,8 +598,24 @@
             card.appendChild(value);
             card.appendChild(pnl);
             card.appendChild(cost);
+            card.addEventListener("click", function () { selectFromList(position.symbol); });
             el.positions.appendChild(card);
         });
+    }
+
+    /* Picking from a list that sits *below* the terminal. On a phone — and on any window short
+       enough — the chart that just changed is off screen above, so the tap looks like it did
+       nothing. Scrolled into view only when it actually is out of sight: yanking the page on a
+       desktop where the chart was already visible is its own kind of wrong. */
+    function selectFromList(symbol) {
+        select(symbol);
+        var box = el.chart.getBoundingClientRect();
+        var hidden = box.top < 0 || box.bottom > (window.innerHeight || 0);
+        if (!hidden) return;
+        /* Smooth scrolling is motion the stylesheet's duration tokens cannot reach, so the
+           preference has to be read here rather than left to CSS. */
+        var still = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        el.chart.scrollIntoView({ block: "center", behavior: still ? "auto" : "smooth" });
     }
 
     function renderFills() {

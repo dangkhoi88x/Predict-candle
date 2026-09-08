@@ -451,6 +451,14 @@ animation on an element that never left. The row that landed flashes in the neut
 rather than the side's colour — the row's own mark already says buy or sell, and the flash is
 answering "which of these is the one I just did".
 
+**A holding is a control, not a readout.** The rows under "Đang giữ" are `<button>`s that select
+that pair — the shortest route from "I own this" to its chart, and the same selection language as
+the market list (row tints, only the symbol takes the accent). That list sits *below* the
+terminal, so picking from it scrolls the chart into view **only when the chart is actually off
+screen**: yanking the page on a desktop where it was already visible is its own kind of wrong.
+Smooth scrolling is motion no duration token can reach, so `prefers-reduced-motion` is read in
+the handler rather than left to CSS.
+
 **The status line under the ticket carries two kinds of message and only one is red.** "Chưa giữ
 X nào để bán" explains a disabled button; "not enough cash" is the server refusing. Both were red
 until a successful sell-all started announcing itself beside a red line saying the account holds
