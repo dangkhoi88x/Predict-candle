@@ -5365,11 +5365,68 @@ body:not(.is-admin) .adm-search {
     font-variant-numeric: tabular-nums;
 }
 
+/* Two kinds of message share this line, and only one of them is a refusal: "nothing held to
+   sell" explains a disabled button, while "not enough cash" is the server saying no. Red for
+   both made a successful sell-all announce itself beside a red line about holding nothing. */
 .trade-status {
     margin: 0;
     font-size: 12.5px;
-    color: var(--down);
+    color: var(--muted);
     min-height: 1em;
+}
+
+.trade-status.is-error {
+    color: var(--down);
+}
+
+/* A fill is worth saying out loud once, where the eye already is — the account block updates
+   silently above the fold and the history row is below it, so a trade could otherwise complete
+   with nothing on screen visibly changing. Fixed rather than in the flow: it must not push the
+   order ticket around at the moment somebody is clicking in it. */
+.trade-toast {
+    position: fixed;
+    right: 16px;
+    bottom: 16px;
+    z-index: 40;
+    width: min(300px, calc(100vw - 32px));
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 8px;
+    background: var(--panel);
+    box-shadow: 0 10px 30px var(--shadow);
+    font-size: 12.5px;
+}
+
+/* The entrance lives on a class the script takes off and puts back, because a second fill while
+   the first toast is still up has to replay it — an animation on the element itself only runs
+   when the element appears, and this one does not disappear in between. */
+.trade-toast.is-in {
+    animation: trade-toast-in var(--duration-enter) var(--ease-out);
+}
+
+.trade-toast.is-buy { border-left-color: var(--up); }
+.trade-toast.is-sell { border-left-color: var(--down); }
+
+.trade-toast-head {
+    font-weight: 700;
+}
+
+.trade-toast.is-buy .trade-toast-head { color: var(--up); }
+.trade-toast.is-sell .trade-toast-head { color: var(--down); }
+
+.trade-toast-detail {
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+    color: var(--muted);
+}
+
+@keyframes trade-toast-in {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: none; }
 }
 
 /* The pills inside the terminal pick things rather than navigate, so they follow the tab's own
@@ -5468,6 +5525,18 @@ body:not(.is-admin) .adm-search {
     border: 1px solid var(--border);
     background: var(--panel);
     font-size: 12.5px;
+}
+
+/* The row that just arrived, lit for as long as it takes to find it. The tint is the neutral
+   accent rather than the side's colour: the row's own mark already says buy or sell, and this is
+   answering a different question — "which of these is the one I just did". */
+.trade-fill.is-new {
+    animation: trade-fill-land var(--duration-roll) var(--ease-out);
+}
+
+@keyframes trade-fill-land {
+    from { background: var(--tint-accent-strong); border-color: var(--accent); }
+    to   { background: var(--panel); border-color: var(--border); }
 }
 
 /* A buy and a sell are directions, not verdicts — they take the up/down colours rather than the

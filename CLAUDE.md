@@ -435,6 +435,29 @@ candles or leaves a meaningless squiggle across them. `CandleChart.draw` takes `
 of overlays — rather than the single `movingAverage` it used to; the daily tab's hint is one
 entry in that list.
 
+**A fill announces itself from the server's own row, never from what was typed.** `POST
+/api/demo/trade` returns the whole account, `recent` newest first, so `recent[0]` *is* the trade
+that just happened — quantity, price and fee as the server recorded them. Echoing back the form's
+numbers would be wrong in three ways at once: a buy is ordered in dollars and fills in coins, a
+sell is priced while the request is in flight, and `DemoTrade` rounds to the column's scale on
+the way in. That last one is the sell-all bug, which is exactly what happens when the client
+believes its own arithmetic about a trade.
+
+The toast is `position: fixed` so it cannot push the order ticket around at the moment somebody
+is clicking in it, and it lives inside `#view-trade`, which is what makes leaving the tab take it
+with them. Its entrance is on a class the script removes and re-adds (reading `offsetWidth`
+between the two), because a second fill while the first toast is still up has to replay an
+animation on an element that never left. The row that landed flashes in the neutral accent
+rather than the side's colour — the row's own mark already says buy or sell, and the flash is
+answering "which of these is the one I just did".
+
+**The status line under the ticket carries two kinds of message and only one is red.** "Chưa giữ
+X nào để bán" explains a disabled button; "not enough cash" is the server refusing. Both were red
+until a successful sell-all started announcing itself beside a red line saying the account holds
+nothing — two statements that read as one of them being a bug. `setStatus(text, isError)` is the
+only way that line is written now, including when it is cleared, so a hint can never inherit the
+`is-error` class from a refusal before it.
+
 **The crosshair is a layer over a chart already drawn, never a redraw.** `CandleChart.draw`
 empties its svg and rebuilds every node, so following the pointer by redrawing would put a few
 hundred DOM insertions between the mouse and the picture. Instead `draw` now **returns the frame

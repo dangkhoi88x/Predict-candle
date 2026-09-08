@@ -417,6 +417,11 @@
         <h3 class="trade-section">Lệnh gần đây</h3>
         <div id="trade-fills" class="trade-fills"></div>
     </div>
+
+    <!-- What actually filled, read back off the server's own record of the trade rather than
+         off what was typed into the form — the price is the server's to state. role="status"
+         so a screen reader hears the fill without the focus moving to it. -->
+    <div class="trade-toast hidden" id="trade-toast" role="status" aria-live="polite"></div>
 </main>
 
 <main id="view-live" class="view app hidden" role="tabpanel" aria-labelledby="tab-live">

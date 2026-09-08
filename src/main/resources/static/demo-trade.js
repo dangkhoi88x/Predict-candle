@@ -44,6 +44,7 @@
         quick: document.getElementById("trade-quick"),
         submit: document.getElementById("trade-submit"),
         status: document.getElementById("trade-status"),
+        toast: document.getElementById("trade-toast"),
         positions: document.getElementById("trade-positions"),
         fills: document.getElementById("trade-fills"),
         reset: document.getElementById("trade-reset"),
@@ -446,7 +447,7 @@
         selected = symbol;
         panOffset = 0;
         el.amount.value = "";
-        el.status.textContent = "";
+        setStatus("", false);
         render();
         loadChart(symbol, timeframe);
     }
@@ -643,7 +644,11 @@
         // spending a round trip to be told.
         var nothingToSell = side === "SELL" && heldOf(selected) <= 0;
         el.submit.disabled = busy || priceOf(selected) == null || nothingToSell;
-        if (nothingToSell) el.status.textContent = "Chưa giữ " + selected + " nào để bán.";
+        /* Not an error: it explains why the button is disabled. It used to be written in the
+           same red as a rejected trade, which was merely odd until a successful sell-all started
+           announcing itself at the same moment — a green "Đã bán" beside a red line saying you
+           hold nothing reads as one of the two being wrong. */
+        if (nothingToSell) setStatus("Chưa giữ " + selected + " nào để bán.", false);
 
         el.reset.title = state.resets > 0
             ? "Đã chơi lại " + state.resets + " lần. Reset trả về $"
@@ -660,9 +665,19 @@
         drawChart();
     }
 
+    /* Two kinds of message share this line: something the server refused, and something the
+       form is explaining about its own state. Only the first is red. */
+    function setStatus(text, isError) {
+        el.status.textContent = text;
+        el.status.classList.toggle("is-error", !!isError);
+    }
+
+    /** Returns the account the server sent back, or null when the call failed. */
     async function post(path, body) {
         busy = true;
         if (state) el.submit.disabled = true;
+        // Whatever is on screen described the last action; this one supersedes it.
+        hideToast();
         try {
             var res = await window.CandleAuth.authFetch(path, {
                 method: "POST",
@@ -673,10 +688,12 @@
             if (!res.ok) throw new Error(payload.message || ("Máy chủ trả về " + res.status));
             state = payload;
             el.amount.value = "";
-            el.status.textContent = "";
+            setStatus("", false);
             render();
+            return payload;
         } catch (e) {
-            el.status.textContent = e.message;
+            setStatus(e.message, true);
+            return null;
         } finally {
             busy = false;
             // Re-derived rather than just re-enabled: the trade may have closed the position
@@ -685,18 +702,67 @@
         }
     }
 
-    function submit() {
+    async function submit() {
         var amount = Number(el.amount.value);
         if (!(amount > 0)) {
-            el.status.textContent = side === "BUY"
-                ? "Nhập số tiền muốn mua." : "Nhập số lượng muốn bán.";
+            setStatus(side === "BUY" ? "Nhập số tiền muốn mua." : "Nhập số lượng muốn bán.", true);
             return;
         }
         // The server prices the fill and re-checks affordability; this only stops the obvious
         // mistakes before a round trip.
-        return post("/api/demo/trade", side === "BUY"
+        var payload = await post("/api/demo/trade", side === "BUY"
             ? { asset: selected, side: "BUY", amountUsd: amount }
             : { asset: selected, side: "SELL", quantity: amount });
+
+        /* Announced from the server's own newest row, never from what was typed: a buy is
+           ordered in dollars and fills in coins, a sell is priced while the request is in
+           flight, and the fee is the server's to state. Reading it back is also the only
+           version that survives the rounding the column does — the same trap the sell-all bug
+           came out of. `recent` is newest first. */
+        if (payload && payload.recent.length) announceFill(payload.recent[0]);
+    }
+
+    /* Long enough to read a two-line confirmation and glance at the numbers it changed, short
+       enough that it is gone before the next decision. Not a motion duration — it survives
+       prefers-reduced-motion, which collapses the entrance but should not take the message away
+       any faster. */
+    var TOAST_MS = 5000;
+    var toastTimer = null;
+
+    function announceFill(fill) {
+        var buy = fill.side === "BUY";
+        el.toast.innerHTML = "";
+        el.toast.classList.remove("hidden", "is-buy", "is-sell", "is-in");
+        el.toast.classList.add(buy ? "is-buy" : "is-sell");
+
+        var head = document.createElement("span");
+        head.className = "trade-toast-head";
+        head.textContent = (buy ? "Đã mua " : "Đã bán ") + fill.symbol;
+
+        var detail = document.createElement("span");
+        detail.className = "trade-toast-detail";
+        detail.textContent = qty(fill.quantity) + " @ " + usd(Number(fill.price))
+            + " · phí " + usd(Number(fill.fee));
+
+        el.toast.appendChild(head);
+        el.toast.appendChild(detail);
+
+        // Reading offsetWidth between removing and adding the class is what makes the entrance
+        // replay for a second fill while the first toast is still on screen.
+        void el.toast.offsetWidth;
+        el.toast.classList.add("is-in");
+
+        // The row that just landed, so the toast and the history agree on which trade this was.
+        var first = el.fills.firstElementChild;
+        if (first && first.classList.contains("trade-fill")) first.classList.add("is-new");
+
+        window.clearTimeout(toastTimer);
+        toastTimer = window.setTimeout(hideToast, TOAST_MS);
+    }
+
+    function hideToast() {
+        window.clearTimeout(toastTimer);
+        el.toast.classList.add("hidden");
     }
 
     el.sides.addEventListener("click", function (event) {
@@ -707,7 +773,7 @@
         });
         side = option.dataset.side;
         el.amount.value = "";
-        el.status.textContent = "";
+        setStatus("", false);
         render();
     });
 
