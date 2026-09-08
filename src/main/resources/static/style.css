@@ -483,6 +483,13 @@ h1, h2, h3 {
         order: 3;
         flex-basis: 100%;
         justify-content: center;
+        min-width: 0;
+    }
+
+    /* The whole pill is the button, so the arrow is the first thing that can go — it is what
+       pushed the countdown off the right edge of a 320px screen. */
+    .live-banner-cta {
+        display: none;
     }
 }
 
