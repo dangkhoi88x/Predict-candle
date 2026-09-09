@@ -432,21 +432,78 @@ h1, h2, h3 {
 .rail-nav {
     display: flex;
     flex-direction: column;
-    gap: 22px;
+    gap: 16px;
 }
 
 .rail-group {
     display: flex;
     flex-direction: column;
+    gap: 4px;
+}
+
+/* The group heading is the disclosure. It stays quiet — muted, mono, the same size the
+   heading always was — because a rail with three controls competing with eleven is not
+   less busy than a rail with eleven. */
+.rail-group-toggle {
+    display: flex;
+    align-items: center;
     gap: 6px;
+    width: 100%;
+    padding: 4px 8px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--muted-2);
+    font-family: inherit;
+    cursor: pointer;
+    transition: color var(--duration-fast) var(--ease-out),
+                background var(--duration-fast) var(--ease-out);
+}
+
+.rail-group-toggle:hover {
+    background: var(--overlay-soft);
+    color: var(--text-2);
 }
 
 .rail-group-title {
     font: 600 10.5px var(--mono);
     letter-spacing: 0.12em;
     text-transform: uppercase;
-    color: var(--muted-2);
-    padding: 0 8px;
+}
+
+.rail-group-chevron {
+    width: 13px;
+    height: 13px;
+    margin-left: auto;
+    transition: transform var(--duration-fast) var(--ease-out);
+}
+
+.rail-group[data-open="false"] .rail-group-chevron {
+    transform: rotate(-90deg);
+}
+
+/* A closed group must not swallow a signal. The rank tag and the live countdown live on
+   items inside these, so when one of them is showing and its group is shut, the heading
+   carries a dot in its place — nav.js watches the tags for it. */
+.rail-group-flag {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--accent);
+}
+
+.rail-group-flag.hidden {
+    display: none;
+}
+
+.rail-group-items {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.rail-group[data-open="false"] .rail-group-items {
+    display: none;
 }
 
 .rail-item {

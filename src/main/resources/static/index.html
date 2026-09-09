@@ -106,6 +106,9 @@
         <circle cx="12" cy="8.2" r="3.6"/>
         <path d="M4.8 20c0-3.8 3.2-6.2 7.2-6.2s7.2 2.4 7.2 6.2"/>
     </symbol>
+    <symbol id="i-caret" viewBox="0 0 24 24">
+        <path d="M6.5 9.5 12 15l5.5-5.5"/>
+    </symbol>
     <symbol id="i-menu" viewBox="0 0 24 24">
         <path d="M4 7h16M4 12h16M4 17h16"/>
     </symbol>
@@ -200,63 +203,91 @@
          has its own copy of the menu to fall out of step. -->
     <div class="rail-backdrop" id="rail-backdrop" hidden></div>
     <aside class="rail" id="rail">
+        <!-- Three disclosure groups rather than eleven rows always on. Grouping alone did not
+             make the rail short: the eleven are still eleven, and four of them are reference
+             pages somebody opens twice a year sitting at the same weight as the game. Học
+             starts shut for that reason; the state is remembered per group, and nav.js opens
+             whichever group holds the view being activated, so a deep link into the blog can
+             never leave the tablist with its selected tab inside a closed group.
+
+             The toggles are buttons inside a role="tablist", which the pattern does not
+             describe. The alternative was hiding a real control from the accessibility tree
+             to keep the role tidy, which is the worse of the two. -->
         <nav class="rail-nav" role="tablist" aria-orientation="vertical" aria-label="Khu vực của ứng dụng">
-            <div class="rail-group" role="presentation">
-                <span class="rail-group-title">Chơi</span>
-                <button class="rail-item active" role="tab" id="tab-game" aria-controls="view-game" aria-selected="true" data-view="game">
-                    <svg class="icon rail-icon" aria-hidden="true" focusable="false"><use href="#i-candles"/></svg>
-                    <span class="rail-label">Đoán Nến</span>
+            <div class="rail-group" role="presentation" data-open="true">
+                <button class="rail-group-toggle" type="button" aria-expanded="true" aria-controls="rail-group-play">
+                    <span class="rail-group-title">Chơi</span>
+                    <span class="rail-group-flag hidden" aria-hidden="true"></span>
+                    <svg class="icon rail-group-chevron" aria-hidden="true" focusable="false"><use href="#i-caret"/></svg>
                 </button>
-                <button class="rail-item" role="tab" id="tab-daily" aria-controls="view-daily" aria-selected="false" data-view="daily">
-                    <svg class="icon rail-icon" aria-hidden="true" focusable="false"><use href="#i-calendar-check"/></svg>
-                    <span class="rail-label">Thử Thách</span>
-                    <span class="rail-tag is-new">MỚI</span>
-                </button>
-                <button class="rail-item" role="tab" id="tab-live" aria-controls="view-live" aria-selected="false" data-view="live">
-                    <svg class="icon rail-icon" aria-hidden="true" focusable="false"><use href="#i-bolt"/></svg>
-                    <span class="rail-label">Trực Tiếp</span>
-                    <span class="rail-tag is-live hidden" id="rail-tag-live"></span>
-                </button>
-                <button class="rail-item" role="tab" id="tab-trade" aria-controls="view-trade" aria-selected="false" data-view="trade">
-                    <svg class="icon rail-icon" aria-hidden="true" focusable="false"><use href="#i-briefcase"/></svg>
-                    <span class="rail-label">Giao Dịch Demo</span>
-                </button>
+                <div class="rail-group-items" id="rail-group-play">
+                    <button class="rail-item active" role="tab" id="tab-game" aria-controls="view-game" aria-selected="true" data-view="game">
+                        <svg class="icon rail-icon" aria-hidden="true" focusable="false"><use href="#i-candles"/></svg>
+                        <span class="rail-label">Đoán Nến</span>
+                    </button>
+                    <button class="rail-item" role="tab" id="tab-daily" aria-controls="view-daily" aria-selected="false" data-view="daily">
+                        <svg class="icon rail-icon" aria-hidden="true" focusable="false"><use href="#i-calendar-check"/></svg>
+                        <span class="rail-label">Thử Thách</span>
+                        <span class="rail-tag is-new">MỚI</span>
+                    </button>
+                    <button class="rail-item" role="tab" id="tab-live" aria-controls="view-live" aria-selected="false" data-view="live">
+                        <svg class="icon rail-icon" aria-hidden="true" focusable="false"><use href="#i-bolt"/></svg>
+                        <span class="rail-label">Trực Tiếp</span>
+                        <span class="rail-tag is-live hidden" id="rail-tag-live"></span>
+                    </button>
+                    <button class="rail-item" role="tab" id="tab-trade" aria-controls="view-trade" aria-selected="false" data-view="trade">
+                        <svg class="icon rail-icon" aria-hidden="true" focusable="false"><use href="#i-briefcase"/></svg>
+                        <span class="rail-label">Giao Dịch Demo</span>
+                    </button>
+                </div>
             </div>
-            <div class="rail-group" role="presentation">
-                <span class="rail-group-title">Học</span>
-                <button class="rail-item" role="tab" id="tab-patterns" aria-controls="view-patterns" aria-selected="false" data-view="patterns">
-                    <svg class="icon rail-icon" aria-hidden="true" focusable="false"><use href="#i-book"/></svg>
-                    <span class="rail-label">Mẫu Nến</span>
+            <div class="rail-group" role="presentation" data-open="false">
+                <button class="rail-group-toggle" type="button" aria-expanded="false" aria-controls="rail-group-learn">
+                    <span class="rail-group-title">Học</span>
+                    <span class="rail-group-flag hidden" aria-hidden="true"></span>
+                    <svg class="icon rail-group-chevron" aria-hidden="true" focusable="false"><use href="#i-caret"/></svg>
                 </button>
-                <button class="rail-item" role="tab" id="tab-technical" aria-controls="view-technical" aria-selected="false" data-view="technical">
-                    <svg class="icon rail-icon" aria-hidden="true" focusable="false"><use href="#i-wedge"/></svg>
-                    <span class="rail-label">Mẫu Hình Kỹ Thuật</span>
-                </button>
-                <button class="rail-item" role="tab" id="tab-psychology" aria-controls="view-psychology" aria-selected="false" data-view="psychology">
-                    <svg class="icon rail-icon" aria-hidden="true" focusable="false"><use href="#i-mind"/></svg>
-                    <span class="rail-label">Tâm Lý</span>
-                </button>
-                <button class="rail-item" role="tab" id="tab-blog" aria-controls="view-blog" aria-selected="false" data-view="blog">
-                    <svg class="icon rail-icon" aria-hidden="true" focusable="false"><use href="#i-news"/></svg>
-                    <span class="rail-label">Blog / Kiến Thức</span>
-                </button>
+                <div class="rail-group-items" id="rail-group-learn">
+                    <button class="rail-item" role="tab" id="tab-patterns" aria-controls="view-patterns" aria-selected="false" data-view="patterns">
+                        <svg class="icon rail-icon" aria-hidden="true" focusable="false"><use href="#i-book"/></svg>
+                        <span class="rail-label">Mẫu Nến</span>
+                    </button>
+                    <button class="rail-item" role="tab" id="tab-technical" aria-controls="view-technical" aria-selected="false" data-view="technical">
+                        <svg class="icon rail-icon" aria-hidden="true" focusable="false"><use href="#i-wedge"/></svg>
+                        <span class="rail-label">Mẫu Hình Kỹ Thuật</span>
+                    </button>
+                    <button class="rail-item" role="tab" id="tab-psychology" aria-controls="view-psychology" aria-selected="false" data-view="psychology">
+                        <svg class="icon rail-icon" aria-hidden="true" focusable="false"><use href="#i-mind"/></svg>
+                        <span class="rail-label">Tâm Lý</span>
+                    </button>
+                    <button class="rail-item" role="tab" id="tab-blog" aria-controls="view-blog" aria-selected="false" data-view="blog">
+                        <svg class="icon rail-icon" aria-hidden="true" focusable="false"><use href="#i-news"/></svg>
+                        <span class="rail-label">Blog / Kiến Thức</span>
+                    </button>
+                </div>
             </div>
-            <div class="rail-group" role="presentation">
-                <span class="rail-group-title">Bạn &amp; cộng đồng</span>
-                <button class="rail-item" role="tab" id="tab-leaderboard" aria-controls="view-leaderboard" aria-selected="false" data-view="leaderboard">
-                    <svg class="icon rail-icon" aria-hidden="true" focusable="false"><use href="#i-trophy"/></svg>
-                    <span class="rail-label">Bảng Xếp Hạng</span>
-                    <span class="rail-tag hidden" id="rail-tag-rank"></span>
+            <div class="rail-group" role="presentation" data-open="true">
+                <button class="rail-group-toggle" type="button" aria-expanded="true" aria-controls="rail-group-you">
+                    <span class="rail-group-title">Bạn &amp; cộng đồng</span>
+                    <span class="rail-group-flag hidden" aria-hidden="true"></span>
+                    <svg class="icon rail-group-chevron" aria-hidden="true" focusable="false"><use href="#i-caret"/></svg>
                 </button>
-                <button class="rail-item" role="tab" id="tab-heatmap" aria-controls="view-heatmap" aria-selected="false" data-view="heatmap">
-                    <svg class="icon rail-icon" aria-hidden="true" focusable="false"><use href="#i-treemap"/></svg>
-                    <span class="rail-label">Market Heatmap</span>
-                </button>
-                <!-- Shown only while signed in; nav.js toggles it on the session event. -->
-                <button class="rail-item hidden" role="tab" id="tab-profile" aria-controls="view-profile" aria-selected="false" data-view="profile">
-                    <svg class="icon rail-icon" aria-hidden="true" focusable="false"><use href="#i-user"/></svg>
-                    <span class="rail-label">Hồ Sơ</span>
-                </button>
+                <div class="rail-group-items" id="rail-group-you">
+                    <button class="rail-item" role="tab" id="tab-leaderboard" aria-controls="view-leaderboard" aria-selected="false" data-view="leaderboard">
+                        <svg class="icon rail-icon" aria-hidden="true" focusable="false"><use href="#i-trophy"/></svg>
+                        <span class="rail-label">Bảng Xếp Hạng</span>
+                        <span class="rail-tag hidden" id="rail-tag-rank"></span>
+                    </button>
+                    <button class="rail-item" role="tab" id="tab-heatmap" aria-controls="view-heatmap" aria-selected="false" data-view="heatmap">
+                        <svg class="icon rail-icon" aria-hidden="true" focusable="false"><use href="#i-treemap"/></svg>
+                        <span class="rail-label">Market Heatmap</span>
+                    </button>
+                    <!-- Shown only while signed in; nav.js toggles it on the session event. -->
+                    <button class="rail-item hidden" role="tab" id="tab-profile" aria-controls="view-profile" aria-selected="false" data-view="profile">
+                        <svg class="icon rail-icon" aria-hidden="true" focusable="false"><use href="#i-user"/></svg>
+                        <span class="rail-label">Hồ Sơ</span>
+                    </button>
+                </div>
             </div>
         </nav>
     </aside>
