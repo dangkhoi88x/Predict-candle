@@ -88,7 +88,15 @@
 
     function render() {
         if (!toggleEl) return;
-        toggleEl.textContent = muted ? "🔇" : "🔊";
+        /* Two marks the button already holds, one of them hidden — the same shape theme.js
+           uses, and for the same reason: writing textContent here would erase the markup on
+           the first press and leave the control blank for the rest of the visit. */
+        var on = toggleEl.querySelector('[data-sound-icon="on"]');
+        var off = toggleEl.querySelector('[data-sound-icon="off"]');
+        if (on && off) {
+            on.classList.toggle("hidden", muted);
+            off.classList.toggle("hidden", !muted);
+        }
         toggleEl.setAttribute("aria-pressed", muted ? "true" : "false");
     }
 
