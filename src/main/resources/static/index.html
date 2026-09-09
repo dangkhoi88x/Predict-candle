@@ -371,8 +371,16 @@
 
 <main id="view-trade" class="view app app-wide hidden" role="tabpanel" aria-labelledby="tab-trade">
     <!-- The whole surface needs an account: a portfolio nobody owns cannot be held to a
-         balance. The tab stays visible signed out so the feature is discoverable. -->
-    <p class="view-notice hidden" id="trade-signin">Kết nối ví để nhận tiền demo và bắt đầu giao dịch.</p>
+         balance. The tab stays visible signed out so the feature is discoverable — which is
+         why this is an invitation with a way to accept it, rather than a line of grey text
+         alone in the width a three-column terminal needs. -->
+    <div class="trade-gate hidden" id="trade-signin">
+        <span class="trade-gate-icon" aria-hidden="true">💼</span>
+        <b class="trade-gate-title">Giao dịch demo</b>
+        <p class="trade-gate-text">Tiền ảo, giá thật, không đòn bẩy. Kết nối ví để nhận vốn
+            demo và bắt đầu đặt lệnh.</p>
+        <button class="side-cta" type="button" id="trade-gate-connect">Kết nối ví</button>
+    </div>
 
     <div id="trade-body" class="hidden">
         <!-- Account figures first: on a terminal the question "how am I doing" outranks any
@@ -769,7 +777,7 @@
     <p class="heatmap-caption">Tóm tắt bằng lời riêng từ các bài chia sẻ đáng đọc trên X — không phải lời khuyên đầu tư, xem nguồn gốc ở mỗi bài.</p>
 </main>
 
-<main id="view-leaderboard" class="view app hidden" role="tabpanel" aria-labelledby="tab-leaderboard">
+<main id="view-leaderboard" class="view app app-read hidden" role="tabpanel" aria-labelledby="tab-leaderboard">
     <div class="view-head">
         <h2>Bảng Xếp Hạng</h2>
         <span id="leaderboard-note" class="profile-wallet"></span>

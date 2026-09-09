@@ -279,9 +279,13 @@ h1, h2, h3 {
     max-width: 1180px;
 }
 
-/* Between the reading column and the wide one: prose and a list of headlines both stop being
-   comfortable somewhere past 900px, but 760 wastes a desktop when the card carries a picture
-   beside the text. */
+/* Between the reading column and the wide one: prose, a list of headlines and a table of
+   ranked players all stop being comfortable somewhere past 900px, but 760 wastes a desktop
+   when the row carries a picture or five figures beside the name.
+
+   The board is capped for a reason of its own: its four figure columns are fixed widths, so
+   every pixel past this goes to the name column and pushes the score further from the player
+   it belongs to. */
 .app.app-read {
     max-width: 900px;
 }
@@ -6293,6 +6297,48 @@ body:not(.is-admin) .adm-search {
     text-transform: uppercase;
     letter-spacing: 0.06em;
     font-weight: 600;
+}
+
+/* The signed-out state of a tab that is otherwise a three-column terminal. A bare line of
+   text centred in that much width reads as a view that failed to load rather than one asking
+   for an account, so it is a card of its own — sized to what it says, not to the tab. */
+.trade-gate {
+    max-width: 420px;
+    margin: 48px auto;
+    padding: 28px 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    text-align: center;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+}
+
+.trade-gate.hidden {
+    display: none;
+}
+
+.trade-gate-icon {
+    font-size: 28px;
+    line-height: 1;
+}
+
+.trade-gate-title {
+    font-size: 17px;
+}
+
+.trade-gate-text {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--muted);
+}
+
+.trade-gate .side-cta {
+    margin-top: 4px;
+    padding: 10px 20px;
 }
 
 .trade-empty {

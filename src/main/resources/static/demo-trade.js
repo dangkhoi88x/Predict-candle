@@ -971,5 +971,11 @@
         }
     }
 
+    /* The card's own way in. Delegating to the topbar's button rather than duplicating the
+       connect flow keeps one path to a wallet — this is a shortcut to it, not a second one. */
+    document.getElementById("trade-gate-connect").addEventListener("click", function () {
+        document.getElementById("auth-login-btn").click();
+    });
+
     window.__initTradeView = load;
 })();
