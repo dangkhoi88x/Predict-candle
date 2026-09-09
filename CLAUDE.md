@@ -143,6 +143,35 @@ Below 900px the rail becomes a sheet that `.tabbar`'s "Thêm" key slides up. **T
 only list of views on the page** — the bottom bar repeats four of them and defers to the rail
 for the rest, so there is no second menu to keep in step.
 
+**Each of the three groups is a disclosure, and Học ships closed.** Grouping alone did not make
+the rail short — eleven rows are eleven rows, and the two pattern libraries, psychology and the
+blog are reference pages sitting at the same weight as the game. Closed by default the rail
+opens at eight rows, all of them things a player does. The state is remembered per group in
+`candles-rail-groups`; a group missing from storage keeps whatever the markup shipped, so a new
+group needs no migration.
+
+Three consequences, and only the first is obvious:
+
+- `activate()` opens the group holding its target **before** the selection moves. Deep links
+  reach the blog and both libraries from inside the views, so a target inside a closed group is
+  the ordinary path, not an edge case.
+- The arrow-key ring is what is on screen, so it skips a closed group the way it already skipped
+  the signed-out profile tab.
+- Closing the group you are standing in is allowed, which leaves the selected tab unrendered and
+  the roving tabindex with nowhere to put its `0`. `syncTabStop()` hands the stop to the first
+  tab still on screen in that one case — a tablist with no way in is worse than one whose stop
+  is not the selected tab.
+
+**A closed group must not swallow a signal.** The live countdown and the caller's rank are drawn
+on items inside these, so a shut group carries a dot in their place — and the view on screen
+counts as a signal too, since the dot is then the only thing saying where you are. `nav.js`
+watches the tags for it with a `MutationObserver`, the same idiom `CandlePill` uses, so neither
+`live-banner.js` nor `play-sidebar.js` has to learn the rail exists.
+
+The group toggles are buttons inside a `role="tablist"`, which the pattern does not describe.
+The alternative was hiding a real control from the accessibility tree to keep the role tidy,
+which is the worse of the two.
+
 **Activation is keyed on the view name, never on the element pressed.** Three sets of controls
 point at the same views: the rail, the bottom bar, and deep links inside the views themselves.
 `window.CandleNav.go(view)` is how code moves between them, mirroring `CandleAdminNav.go`, and
@@ -157,6 +186,31 @@ how much of it there is.
 floor the track holds even when its container is narrower, and the shell clips (that being what
 rounds its corners), so an overflowing card is cut off rather than scrolled to. Two grids
 already shipped this bug.
+
+**Every mark on the page comes from the `<symbol>` sprite at the top of `index.html`, and none
+of them is an emoji.** Emoji are drawn by the operating system, so the same rail was a Noto
+glyph on Android, an Apple one on a Mac and a Segoe one on Windows — and beside a candlestick
+chart the column read as a toy. The convention is `admin.html`'s, which already had a monoline
+set: a 24×24 box, `fill: none`, `currentColor` stroke at 1.7, round caps and joins, all of it
+declared once on `.icon` and inherited through the `<use>` shadow tree. A mark therefore takes
+the colour of the control it sits in and needs no rule in either theme.
+
+A sprite rather than inlining at each site because four marks appear in both the rail and the
+bottom bar. It is measured out of the layout (`position: absolute; width: 0`) rather than
+`display: none`, because a `<use>` whose target sits in a hidden subtree has a history of
+drawing nothing. The brand mark is the one exception — inline, and filled in `--up`/`--down`
+rather than stroked, because that pair of colours is the identity.
+
+A control that swaps marks toggles `.hidden` on two of them rather than writing `textContent`:
+that is what `theme.js` already did on the admin page, and `sound.js` had to learn it, because
+writing text over the button erases the markup on the first press.
+
+**The topbar sheds identity before function.** With a wallet connected and a round running it
+holds brand, live banner, day streak, wallet, two buttons and the theme switch, which do not
+fit on a laptop — it used to wrap and grow 40px on every page for as long as a round ran. At
+1180px the brand's wordmark goes and the mark stays; at 1040px the wallet buttons drop their
+labels and keep their marks, each still carrying `title` and `aria-label`. Nothing is removed,
+and a label only goes from a control whose icon is unambiguous alone.
 
 Script order in `index.html` matters: `pill.js`, `rolling.js` and `avatar.js` define shared
 globals that later files call at load time.
@@ -894,9 +948,10 @@ in Java, cached 60s — this is the only open endpoint whose cache miss scans th
 which is also why it is the only read endpoint in `RateLimiter`. Denormalising onto `users` is
 the next step if it ever gets slow; `docs/LEADERBOARD_PLAN.md` records the trigger.
 
-Adding a tab means **three** edits, not two: the rail item, the `<main>` panel, and the `views`
-map in `nav.js`. Miss the map and `activate()` returns before it touches anything — the rail
-stops responding to that item entirely, with no error to say why.
+Adding a tab means **three** edits, not two: the rail item (inside one group's
+`.rail-group-items`, not loose in `.rail-nav`), the `<main>` panel, and the `views` map in
+`nav.js`. Miss the map and `activate()` returns before it touches anything — the rail stops
+responding to that item entirely, with no error to say why.
 
 The rail draws the caller's rank beside "Bảng Xếp Hạng" from the `candles:rank` event, not from
 a fetch of its own.
