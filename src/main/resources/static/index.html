@@ -642,41 +642,54 @@
     </div>
 </div>
 
-<main id="view-heatmap" class="view app hidden" role="tabpanel" aria-labelledby="tab-heatmap">
+<main id="view-heatmap" class="view app app-heatmap hidden" role="tabpanel" aria-labelledby="tab-heatmap">
     <div class="heatmap-toolbar">
         <h2>Market Heatmap</h2>
+        <div class="pill" id="heatmap-source-pill">
+            <button class="pill-option active" data-source="crypto">Crypto</button>
+            <button class="pill-option" data-source="sp500">S&amp;P 500</button>
+        </div>
         <div class="heatmap-meta">
             <span id="heatmap-updated"></span>
             <button id="heatmap-refresh" class="ghost-btn" type="button">🔄 Làm mới</button>
         </div>
     </div>
 
-    <div class="pill" id="heatmap-source-pill">
-        <button class="pill-option active" data-source="crypto">Crypto</button>
-        <button class="pill-option" data-source="sp500">S&amp;P 500</button>
-    </div>
-
     <p id="heatmap-status" class="status"></p>
-    <div id="heatmap-grid-crypto" class="heatmap-grid" role="img" aria-label="Bản đồ nhiệt vốn hóa thị trường tiền mã hóa"></div>
 
-    <div id="sp500-drilldown-bar" class="sp500-drilldown-bar hidden">
-        <button id="sp500-back" class="ghost-btn hidden" type="button">← Quay lại ngành</button>
-        <span id="sp500-breadcrumb" class="sp500-breadcrumb"></span>
-    </div>
-    <div id="heatmap-grid-sp500" class="heatmap-grid hidden" role="img" aria-label="Bản đồ nhiệt cổ phiếu S&amp;P 500"></div>
-    <p id="heatmap-caption" class="heatmap-caption"></p>
-
-    <div id="heatmap-detail" class="heatmap-detail hidden">
-        <button id="heatmap-detail-close" class="heatmap-detail-close" type="button" aria-label="Đóng">✕</button>
-        <div class="heatmap-detail-head">
-            <span id="heatmap-detail-name" class="heatmap-detail-name"></span>
-            <div class="heatmap-detail-stats">
-                <span id="heatmap-detail-price" class="heatmap-detail-price rolling"></span>
-                <span id="heatmap-detail-delta" class="heatmap-detail-delta rolling"></span>
+    <!-- Map and detail side by side. The panel used to open below the map, which pushed the
+         map up and out of view at the moment somebody had just picked a tile off it. -->
+    <div class="heatmap-layout">
+        <div class="heatmap-map">
+            <div id="sp500-drilldown-bar" class="sp500-drilldown-bar hidden">
+                <button id="sp500-back" class="ghost-btn hidden" type="button">← Quay lại ngành</button>
+                <span id="sp500-breadcrumb" class="sp500-breadcrumb"></span>
             </div>
+            <div id="heatmap-grid-crypto" class="heatmap-grid" role="img" aria-label="Bản đồ nhiệt vốn hóa thị trường tiền mã hóa"></div>
+            <div id="heatmap-grid-sp500" class="heatmap-grid hidden" role="img" aria-label="Bản đồ nhiệt cổ phiếu S&amp;P 500"></div>
+            <p id="heatmap-caption" class="heatmap-caption"></p>
         </div>
-        <div id="heatmap-detail-chart" class="heatmap-detail-chart"></div>
-        <p id="heatmap-detail-caption" class="heatmap-caption"></p>
+
+        <aside class="heatmap-detail" id="heatmap-detail">
+            <span class="side-eyebrow">Ô đang chọn</span>
+            <!-- Standing in for the panel before anything has been picked. A panel that is
+                 simply absent leaves a gap the reader has to guess the purpose of. -->
+            <p class="heatmap-detail-empty" id="heatmap-detail-empty">Bấm vào một ô trên bản đồ để xem chi tiết.</p>
+
+            <div class="heatmap-detail-body hidden" id="heatmap-detail-body">
+                <span id="heatmap-detail-name" class="heatmap-detail-name"></span>
+                <div class="heatmap-detail-stats">
+                    <span id="heatmap-detail-price" class="heatmap-detail-price rolling"></span>
+                    <span id="heatmap-detail-delta" class="heatmap-detail-delta rolling"></span>
+                </div>
+                <div id="heatmap-detail-chart" class="heatmap-detail-chart"></div>
+                <p id="heatmap-detail-caption" class="heatmap-caption"></p>
+                <dl class="heatmap-detail-figures" id="heatmap-detail-figures"></dl>
+                <!-- Only for the four pairs the game actually deals. Offering a round on a
+                     coin there is no stored history for is an offer that cannot be kept. -->
+                <button class="side-cta hidden" type="button" id="heatmap-detail-play"></button>
+            </div>
+        </aside>
     </div>
 </main>
 

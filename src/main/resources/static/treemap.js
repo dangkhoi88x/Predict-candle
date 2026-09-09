@@ -89,6 +89,39 @@
      * items: [{ symbol, name, weight, change, price, capLabel }]
      * opts: { formatPrice(price) -> string, onTileClick(item) }
      */
+    /* How much a tile can say is a question about the pixels it actually occupies, not about
+       its share of a 1000x600 viewBox. The two used to be treated as the same thing — the
+       class was picked from viewBox area — which held only as long as the map was always the
+       same size on screen. It is not: the map now shares its row with a 300px detail panel
+       and its height is a clamp, so the same viewBox area is a comfortable tile on a desktop
+       and a 16px sliver on a laptop, with its price text clipped mid-digit.
+
+       So the thresholds are in real pixels, measured after layout and re-measured whenever
+       the container resizes. Both dimensions count: three stacked lines need the height, and
+       a price like "$104,182" needs about 60px of width at 11px mono however tall the tile
+       is. */
+    var NEEDS_PRICE_HEIGHT = 52;
+    var NEEDS_PCT_HEIGHT = 34;
+    var NEEDS_PRICE_WIDTH = 62;
+
+    function classifyTiles(container) {
+        var box = container.getBoundingClientRect();
+        if (!box.width || !box.height) return;
+
+        Array.prototype.forEach.call(container.children, function (div) {
+            var w = (parseFloat(div.style.width) / 100) * box.width;
+            var h = (parseFloat(div.style.height) / 100) * box.height;
+            var micro = h < NEEDS_PCT_HEIGHT;
+            var tiny = !micro && (h < NEEDS_PRICE_HEIGHT || w < NEEDS_PRICE_WIDTH);
+            div.classList.toggle("tile-micro", micro);
+            div.classList.toggle("tile-tiny", tiny);
+        });
+    }
+
+    /* One observer per container, kept across re-renders: renderTiles replaces the tiles but
+       not the box they sit in, so re-observing on every load would stack duplicates. */
+    var observed = new WeakSet();
+
     function renderTiles(container, items, opts) {
         var formatPrice = opts.formatPrice;
         var tiles = squarify(items, VW, VH);
@@ -96,12 +129,9 @@
 
         tiles.forEach(function (tile) {
             var d = tile.data;
-            var area = tile.w * tile.h;
 
             var div = document.createElement("div");
             div.className = "heatmap-tile";
-            if (area < 700) div.classList.add("tile-micro");
-            else if (area < 2600) div.classList.add("tile-tiny");
 
             div.style.left = (tile.x / VW * 100) + "%";
             div.style.top = (tile.y / VH * 100) + "%";
@@ -135,6 +165,12 @@
 
             container.appendChild(div);
         });
+
+        classifyTiles(container);
+        if (!observed.has(container) && window.ResizeObserver) {
+            observed.add(container);
+            new ResizeObserver(function () { classifyTiles(container); }).observe(container);
+        }
     }
 
     function svgEl(tag, attrs) {

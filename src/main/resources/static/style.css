@@ -4164,7 +4164,7 @@ body:not(.is-admin) .adm-search {
     align-items: center;
     justify-content: space-between;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: 8px 12px;
     margin-bottom: 14px;
 }
 
@@ -4203,15 +4203,43 @@ body:not(.is-admin) .adm-search {
     cursor: not-allowed;
 }
 
+/* Map and detail side by side. The panel used to open below the map, which pushed the map up
+   and out of view at the moment somebody had just picked a tile off it. */
+.app.app-heatmap {
+    max-width: 1180px;
+}
+
+.heatmap-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 300px;
+    gap: 16px;
+    align-items: start;
+}
+
+.heatmap-map {
+    min-width: 0;
+}
+
+@media (max-width: 1000px) {
+    .heatmap-layout {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+/* A pixel height, not an aspect ratio. The map's width is now whatever is left after a 300px
+   panel, and under aspect-ratio that made its height fall with it — at a laptop width the
+   whole map came out short enough that the smaller tiles had no room for their own labels,
+   which is a map that shrinks the closer you look at it. A clamp gives it a floor. */
 .heatmap-grid {
     position: relative;
     width: 100%;
-    aspect-ratio: 5 / 3;
+    height: clamp(340px, 42vw, 460px);
     background: var(--panel);
     border: 1px solid var(--border);
     border-radius: 14px;
     overflow: hidden;
 }
+
 
 .heatmap-tile {
     position: absolute;
@@ -4316,59 +4344,53 @@ body:not(.is-admin) .adm-search {
 /* --- heatmap tile detail panel --- */
 
 .heatmap-detail {
-    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: stretch;
     background: var(--panel);
     border: 1px solid var(--border);
     border-radius: 14px;
-    padding: 16px;
-    margin-top: 14px;
+    padding: 14px;
 }
 
-.heatmap-detail.hidden {
+.heatmap-detail-empty {
+    margin: 0;
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: var(--muted);
+}
+
+.heatmap-detail-empty.hidden,
+.heatmap-detail-body.hidden {
     display: none;
 }
 
-.heatmap-detail-close {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    background: transparent;
-    border: none;
-    color: var(--muted);
-    font-size: 14px;
-    cursor: pointer;
-    padding: 4px 8px;
-}
-
-.heatmap-detail-close:hover {
-    color: var(--text);
-}
-
-.heatmap-detail-head {
-    margin-bottom: 10px;
-    padding-right: 24px;
+.heatmap-detail-body {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
 .heatmap-detail-name {
-    display: block;
     font-weight: 700;
     font-size: 14px;
-    margin-bottom: 4px;
 }
 
 .heatmap-detail-stats {
     display: flex;
     align-items: baseline;
     gap: 10px;
+    flex-wrap: wrap;
 }
 
 .heatmap-detail-price {
-    font: 600 20px var(--mono);
+    font: 600 24px var(--mono);
     font-variant-numeric: tabular-nums;
 }
 
 .heatmap-detail-delta {
-    font: 700 13px var(--mono);
+    font: 700 12.5px var(--mono);
     font-variant-numeric: tabular-nums;
 }
 
@@ -4382,10 +4404,31 @@ body:not(.is-admin) .adm-search {
     overflow: hidden;
 }
 
+/* Label left, figure right, one row each — a definition list because that is what these are,
+   and it keeps the label attached to its value for a screen reader. */
+.heatmap-detail-figures {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 6px 10px;
+    margin: 2px 0 0;
+}
+
+.heatmap-detail-figures dt {
+    font-size: 12px;
+    color: var(--muted);
+}
+
+.heatmap-detail-figures dd {
+    margin: 0;
+    text-align: right;
+    font: 600 12.5px var(--mono);
+    font-variant-numeric: tabular-nums;
+}
+
 .sparkline-svg {
     display: block;
     width: 100%;
-    height: 150px;
+    height: 110px;
 }
 
 /* --- pattern library --- */
