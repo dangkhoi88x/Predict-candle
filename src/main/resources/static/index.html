@@ -45,6 +45,15 @@
         <span class="live-banner-cta">Vào đặt →</span>
     </button>
     <div class="topbar-right">
+        <!-- Days in a row the player has shown up at all — not the daily challenge's own
+             streak on its tab, and not the correct-in-a-row streak on the scoreboard.
+             Signed-in only: nothing is recorded for anonymous play, so a streak here would be
+             a promise the server never made. -->
+        <span id="game-streak" class="game-streak hidden" aria-live="polite">
+            <span class="game-streak-flame" aria-hidden="true">🔥</span>
+            <span class="game-streak-value" id="game-streak-value"></span>
+            <span class="game-streak-unit">ngày</span>
+        </span>
         <div class="auth-area" id="auth-area">
             <span id="auth-error-msg" class="auth-error-msg hidden"></span>
             <button id="theme-toggle" class="theme-toggle" type="button"
@@ -139,12 +148,7 @@
             <button class="pill-option" data-asset="BNBUSDT">BNB/USDT</button>
             <button class="pill-option" data-asset="SOLUSDT">SOL/USDT</button>
         </div>
-        <!-- Days in a row the player has shown up at all — not the daily challenge's own
-             streak on the next tab, and not the correct-in-a-row streak in the board below.
-             Signed-in only: nothing is recorded for anonymous play, so a streak here would be
-             a promise the server never made. -->
         <div class="game-toolbar-end">
-            <span id="game-streak" class="game-streak hidden" aria-live="polite"></span>
             <span id="guess-progress" class="guess-progress hidden"></span>
             <button id="sound-toggle" class="ghost-btn sound-toggle" type="button" aria-label="Bật/tắt âm thanh và rung">🔊</button>
         </div>

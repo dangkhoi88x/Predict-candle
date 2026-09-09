@@ -5646,17 +5646,40 @@ body:not(.is-admin) .adm-search {
 
 /* Day-streak chip in the game toolbar. Pushed to the right so it reads as part of the
    toolbar's controls rather than as a third item competing with the asset picker. */
+/* Sits in the topbar, so a player reading the blog or working through the archive can still
+   see the run they are protecting. Recessed rather than raised — --panel-2 against the
+   topbar's --panel — because it is a readout, not a control, and the two buttons beside it
+   are. */
 .game-streak {
-    margin-left: auto;
-    padding: 5px 10px;
-    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    border-radius: 10px;
     border: 1px solid var(--border);
-    background: var(--panel);
-    font-size: 13px;
-    font-weight: 700;
-    font-variant-numeric: tabular-nums;
+    background: var(--panel-2);
     white-space: nowrap;
 }
+
+.game-streak.hidden {
+    display: none;
+}
+
+.game-streak-flame {
+    font-size: 13px;
+    line-height: 1;
+}
+
+.game-streak-value {
+    font: 700 13px var(--mono);
+    font-variant-numeric: tabular-nums;
+}
+
+.game-streak-unit {
+    font-size: 12px;
+    color: var(--muted);
+}
+
 
 /* Alive but unplayed today — the only state where playing changes the number instead of
    maintaining it, so it is the only one drawn differently. Dashed rather than red: a streak
@@ -5664,6 +5687,10 @@ body:not(.is-admin) .adm-search {
 .game-streak.is-at-risk {
     border-style: dashed;
     border-color: var(--warn);
+}
+
+.game-streak.is-at-risk .game-streak-value,
+.game-streak.is-at-risk .game-streak-unit {
     color: var(--warn);
 }
 
