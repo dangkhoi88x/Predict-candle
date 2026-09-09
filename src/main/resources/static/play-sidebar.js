@@ -35,10 +35,6 @@
         return n;
     }
 
-    function num(value) {
-        return Number(value || 0).toLocaleString("vi-VN");
-    }
-
     /* ---- recent calls ------------------------------------------------------------------ */
 
     function renderDots() {
@@ -99,7 +95,7 @@
             var head = node("div", "side-badge-head");
             head.appendChild(node("b", "side-badge-name", badge.name));
             head.appendChild(node("span", "side-badge-count",
-                num(badge.progress) + " / " + num(badge.target)));
+                window.CandleFormat.count(badge.progress) + " / " + window.CandleFormat.count(badge.target)));
             wrap.appendChild(head);
 
             var bar = node("span", "side-bar");
@@ -121,7 +117,7 @@
            or the two boards read as two sets of people. */
         row.appendChild(window.CandleAvatar.node(entry.displayName));
         row.appendChild(node("span", "side-rank-name", entry.displayName));
-        row.appendChild(node("span", "side-rank-score", num(entry.score)));
+        row.appendChild(node("span", "side-rank-score", window.CandleFormat.count(entry.score)));
         return row;
     }
 

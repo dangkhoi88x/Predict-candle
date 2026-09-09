@@ -58,10 +58,6 @@
         return node;
     }
 
-    function formatPrice(v) {
-        return "$" + v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    }
-
     function renderMiniChart(container, candles, opts) {
         opts = opts || {};
         var W = opts.width || 320, H = opts.height || 150;
@@ -142,7 +138,7 @@
             hLine.setAttribute("y1", py);
             hLine.setAttribute("y2", py);
 
-            var label = formatPrice(c.close);
+            var label = window.CandleFormat.price(c.close);
             badgeText.textContent = label;
             var bw = Math.max(40, label.length * 6 + 12);
             var bx = Math.min(Math.max(px - bw / 2, 2), W - bw - 2);
