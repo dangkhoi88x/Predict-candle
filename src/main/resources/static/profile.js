@@ -21,6 +21,11 @@
         badges: document.getElementById("profile-badges"),
         byAsset: document.getElementById("profile-by-asset"),
         recent: document.getElementById("profile-recent"),
+        shareCard: document.getElementById("profile-share-card"),
+        shareSquares: document.getElementById("profile-share-squares"),
+        shareLine: document.getElementById("profile-share-line"),
+        share: document.getElementById("profile-share"),
+        shareText: document.getElementById("profile-share-text"),
     };
 
     function pct(correct, total) {
@@ -54,6 +59,10 @@
             var card = document.createElement("div");
             card.className = "profile-badge" + (badge.earned ? " is-earned" : "");
 
+            var state = document.createElement("span");
+            state.className = "profile-badge-state";
+            state.textContent = badge.earned ? "Đã đạt" : "Đang tiến";
+
             var name = document.createElement("span");
             name.className = "profile-badge-name";
             name.textContent = badge.name;
@@ -62,6 +71,7 @@
             desc.className = "profile-badge-desc";
             desc.textContent = badge.description;
 
+            card.appendChild(state);
             card.appendChild(name);
             card.appendChild(desc);
 
@@ -180,6 +190,50 @@
         }
     }
 
+    /* ---- the share card ------------------------------------------------------------
+       Standing rather than a round: score, accuracy, day streak, and the last five calls as
+       squares. It follows the daily card's rule of carrying no asset and no dates, though
+       for a different reason — there is no puzzle to spoil here, only a record to post, and
+       naming the pairs would say which markets someone plays without adding anything.
+
+       Recorded results only. A carried-over browser tally has no per-guess detail behind it,
+       so squares drawn from it would be invented. */
+
+    /* The text the button copies, rebuilt whenever the numbers behind it are. */
+    var shareBody = "";
+
+    function renderShare(data) {
+        var results = (data.recent || []).slice(0, 5).map(function (g) { return g.correct; }).reverse();
+        el.shareCard.classList.toggle("hidden", !results.length);
+        if (!results.length) return;
+
+        el.shareSquares.textContent = results
+            .map(function (ok) { return ok ? "🟩" : "🟥"; }).join("");
+        el.shareLine.textContent =
+            data.score + " điểm · " + pct(data.correct, data.total) + " đúng · "
+            + data.dayStreak.current + " ngày liên tiếp";
+        shareBody = "Candle Guess — hồ sơ\n"
+            + el.shareLine.textContent + "\n"
+            + el.shareSquares.textContent + "\n"
+            + window.location.origin;
+    }
+
+    async function copyShare() {
+        try {
+            await navigator.clipboard.writeText(shareBody);
+            el.share.textContent = "Đã sao chép";
+            setTimeout(function () { el.share.textContent = "Sao chép kết quả"; }, 2000);
+        } catch (e) {
+            /* Refused — an insecure origin, or a browser that wants a gesture it did not see.
+               Putting the text on screen and selecting it is the difference between a share
+               button that failed and one the player can still act on. */
+            el.shareText.value = shareBody;
+            el.shareText.classList.remove("hidden");
+            el.shareText.select();
+            el.share.textContent = "Chép thủ công ở dưới";
+        }
+    }
+
     function render(data) {
         var user = window.CandleAuth.getUser();
         el.wallet.textContent = user ? user.displayName : "";
@@ -204,6 +258,7 @@
         renderBadges(data.achievements);
         renderByAsset(data.byAsset);
         renderRecent(data.recent);
+        renderShare(data);
     }
 
     var loaded = false;
@@ -233,6 +288,8 @@
         // error the player can do nothing about.
         if (!loaded) showLoadFailure();
     }
+
+    el.share.addEventListener("click", copyShare);
 
     window.__initProfileView = load;
 })();

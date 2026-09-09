@@ -19,18 +19,46 @@
         updated: document.getElementById("heatmap-updated"),
         refresh: document.getElementById("heatmap-refresh"),
         caption: document.getElementById("heatmap-caption"),
-        detail: document.getElementById("heatmap-detail"),
-        detailClose: document.getElementById("heatmap-detail-close"),
+        detailEmpty: document.getElementById("heatmap-detail-empty"),
+        detailBody: document.getElementById("heatmap-detail-body"),
         detailName: document.getElementById("heatmap-detail-name"),
         detailPrice: document.getElementById("heatmap-detail-price"),
         detailDelta: document.getElementById("heatmap-detail-delta"),
         detailChart: document.getElementById("heatmap-detail-chart"),
         detailCaption: document.getElementById("heatmap-detail-caption"),
+        detailFigures: document.getElementById("heatmap-detail-figures"),
+        detailPlay: document.getElementById("heatmap-detail-play"),
         drilldownBar: document.getElementById("sp500-drilldown-bar"),
     };
 
     var current = "crypto";
     var loaded = { crypto: false, sp500: false };
+
+    /* The figures under the chart. Each loader supplies whatever it actually knows rather
+       than a fixed set — the crypto feed has a 24h turnover and a market-cap share, the
+       stock feed does not — and a row with nothing behind it is left out instead of drawn
+       with a dash. */
+    function renderFigures(item) {
+        el.detailFigures.innerHTML = "";
+        (item.figures || []).forEach(function (figure) {
+            var dt = document.createElement("dt");
+            dt.textContent = figure.label;
+            var dd = document.createElement("dd");
+            dd.textContent = figure.value;
+            el.detailFigures.appendChild(dt);
+            el.detailFigures.appendChild(dd);
+        });
+    }
+
+    /* The map covers two dozen coins and eleven sectors; the game deals four pairs. Offering
+       a round on anything else would be an offer that cannot be kept, so the button appears
+       only when the loader named a pair the game actually has history for. */
+    function renderPlay(item) {
+        el.detailPlay.classList.toggle("hidden", !item.playAsset);
+        if (!item.playAsset) return;
+        el.detailPlay.textContent = "Chơi đoán nến " + item.symbol.toUpperCase();
+        el.detailPlay.dataset.asset = item.playAsset;
+    }
 
     function showDetail(item) {
         el.detailName.textContent = item.symbol.toUpperCase() + " · " + item.name;
@@ -40,8 +68,11 @@
         window.CandleRolling.update(el.detailDelta, (item.change >= 0 ? "+" : "") + item.change.toFixed(2) + "% (24h)");
 
         if (item.sparkline && item.sparkline.length > 1) {
+            /* Narrower than the old full-width panel, and drawn to the box it now sits in:
+               the sparkline's own viewBox is what scales, so the numbers here are the shape
+               of the chart rather than its size on screen. */
             window.Treemap.renderSparkline(el.detailChart, item.sparkline, {
-                width: 640, height: 150, formatPrice: item.formatPrice,
+                width: 320, height: 110, formatPrice: item.formatPrice,
             });
             el.detailCaption.textContent = item.sparklineCaption || "Biến động giá gần đây";
         } else {
@@ -49,15 +80,26 @@
             el.detailCaption.textContent = "Chưa có dữ liệu biểu đồ chi tiết cho mã này.";
         }
 
-        el.detail.classList.remove("hidden");
-        el.detail.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        renderFigures(item);
+        renderPlay(item);
+
+        el.detailEmpty.classList.add("hidden");
+        el.detailBody.classList.remove("hidden");
     }
 
-    if (el.detailClose) {
-        el.detailClose.addEventListener("click", function () {
-            el.detail.classList.add("hidden");
-        });
+    function clearDetail() {
+        el.detailBody.classList.add("hidden");
+        el.detailEmpty.classList.remove("hidden");
     }
+
+    /* Takes the game tab with it: picking the pair here and then having to pick it again on
+       the other tab is the click this button exists to save. */
+    el.detailPlay.addEventListener("click", function () {
+        var pill = document.getElementById("asset-pill");
+        var option = pill.querySelector('.pill-option[data-asset="' + el.detailPlay.dataset.asset + '"]');
+        if (option && !option.classList.contains("active")) option.click();
+        window.CandleNav.go("game");
+    });
 
     window.__showHeatmapDetail = showDetail;
 
@@ -89,7 +131,7 @@
     async function load(source) {
         el.refresh.disabled = true;
         el.status.textContent = "Đang tải dữ liệu thị trường…";
-        el.detail.classList.add("hidden");
+        clearDetail();
         showGridSkeleton(el.grids[source]);
         try {
             await sources[source].load(el.grids[source]);
@@ -106,7 +148,7 @@
 
     function setActive(source) {
         current = source;
-        el.detail.classList.add("hidden");
+        clearDetail();
         el.subtabs.forEach(function (t) { t.classList.toggle("active", t.dataset.source === source); });
         Object.keys(el.grids).forEach(function (key) { el.grids[key].classList.toggle("hidden", key !== source); });
         if (el.drilldownBar) el.drilldownBar.classList.toggle("hidden", source !== "sp500");

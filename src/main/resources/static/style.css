@@ -279,6 +279,13 @@ h1, h2, h3 {
     max-width: 1180px;
 }
 
+/* Between the reading column and the wide one: prose and a list of headlines both stop being
+   comfortable somewhere past 900px, but 760 wastes a desktop when the card carries a picture
+   beside the text. */
+.app.app-read {
+    max-width: 900px;
+}
+
 /* ---- app shell ---------------------------------------------------------------------
    Topbar across the top, a grouped navigation rail down the left, views in what is left.
    This replaced a single row of eleven tabs: eleven peers in one strip say nothing about
@@ -768,6 +775,94 @@ h1, h2, h3 {
     margin-bottom: 16px;
 }
 
+/* ---- profile layout ------------------------------------------------------------------
+   The record on the left, what it earned on the right. In one column the badge grid sat
+   below a list of every recent guess, which is the wrong way round: the trophies are the
+   part worth looking at twice, and the guess log is reference.
+
+   auto-fit rather than two fixed tracks, so the split collapses to one column on its own
+   the moment a track would go under 320px — the badge cards stop being readable below
+   that, and a two-column profile on a phone is two columns of nothing. */
+
+.app.app-profile {
+    max-width: 1180px;
+}
+
+/* min(320px, 100%) rather than a bare 320px: a bare minimum is a floor the track holds even
+   when the container is narrower than it, so on a 300px phone the columns came out 320 wide
+   and the shell — which clips, that being what rounds its corners — simply cut them off. */
+.profile-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
+    gap: 8px 24px;
+    align-items: start;
+}
+
+.profile-col {
+    min-width: 0;
+}
+
+/* The first heading in each column lines up with the other's, rather than inheriting the
+   24px that separates one section from the next. */
+.profile-col > .profile-section:first-child {
+    margin-top: 0;
+}
+
+/* The one figure here that can be lost by not playing — the rest cannot go down — so it is
+   the one drawn in the accent. */
+.stat.is-accent {
+    border-color: var(--accent);
+    background: var(--panel-2);
+}
+
+.stat.is-accent .stat-label {
+    color: var(--accent);
+}
+
+.stat-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+/* Outside .rolling on purpose: that class clips a strip of digits to one line, and an emoji
+   inside it renders the whole strip. The trade tab's account figures learned this the hard
+   way. */
+.stat-flame {
+    font-size: 15px;
+    line-height: 1;
+}
+
+.profile-share {
+    margin-top: 16px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-start;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+}
+
+.profile-share.hidden {
+    display: none;
+}
+
+.profile-share-squares {
+    font-size: 17px;
+    letter-spacing: 2px;
+    line-height: 1;
+}
+
+.profile-share-line {
+    margin: 0;
+    font: 500 12.5px var(--mono);
+    font-variant-numeric: tabular-nums;
+    color: var(--muted);
+}
+
 .profile-wallet {
     font: 500 12px var(--mono);
     color: var(--muted);
@@ -984,6 +1079,17 @@ h1, h2, h3 {
     flex-wrap: wrap;
 }
 
+/* The right end of the toolbar: how far through the chart, and the sound key. Grouped so
+   the row stays two things — picker, then status — however many of these are on screen at
+   the time. The streak chip and the counter both come and go. */
+.game-toolbar-end {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
 .sound-toggle {
     font-size: 15px;
     padding: 7px 10px;
@@ -1026,6 +1132,253 @@ h1, h2, h3 {
     font-weight: 700;
     margin-top: 2px;
     font-variant-numeric: tabular-nums;
+}
+
+/* ---- the play tab's two columns -----------------------------------------------------
+   The chart on the left, and on the right the four things a player looks at between
+   rounds: how the session is going, whether today's challenge is still unplayed, which
+   badge is nearest, and who is ahead. All four used to be somewhere else — the scoreboard
+   above the chart, the rest on tabs nobody opens mid-session — which is why the answer to
+   "why am I still here" was always one click away from the thing being played.
+
+   The right column is 300px and does not stretch: it holds labelled figures, and a stat
+   card that grows with the window only puts more space between a number and its label. */
+
+.app.app-play {
+    max-width: 1180px;
+}
+
+.play-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 300px;
+    gap: 16px;
+    align-items: start;
+}
+
+.play-main {
+    min-width: 0;
+}
+
+.play-side {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* Below 1100px the column has nowhere to go but under the chart, where it reads as a
+   footer to the round rather than as a panel beside it. */
+@media (max-width: 1100px) {
+    .play-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+.side-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+}
+
+.side-card.hidden {
+    display: none;
+}
+
+/* The one card that is an offer rather than a readout, so it is the one card drawn in the
+   accent — on the darker ground, which is what keeps a bordered card from reading as a
+   button the whole way across. */
+.side-card.is-accent {
+    background: var(--panel-2);
+    border-color: var(--accent);
+    gap: 8px;
+}
+
+.side-eyebrow {
+    font: 600 10.5px var(--mono);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted-2);
+}
+
+.side-eyebrow.is-accent {
+    color: var(--accent);
+}
+
+.side-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 8px;
+}
+
+.side-link {
+    background: none;
+    border: none;
+    padding: 0;
+    font-family: inherit;
+    font-size: 11.5px;
+    color: var(--accent);
+    cursor: pointer;
+}
+
+.side-link:hover {
+    text-decoration: underline;
+}
+
+.side-title {
+    font-size: 15px;
+}
+
+.side-text {
+    margin: 0;
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: var(--muted);
+}
+
+.side-cta {
+    margin-top: 2px;
+    padding: 10px;
+    border: none;
+    border-radius: 10px;
+    background: var(--accent);
+    color: var(--bg);
+    font-family: inherit;
+    font-weight: 700;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.side-cta:hover {
+    filter: brightness(1.12);
+}
+
+.side-foot {
+    margin-top: 6px;
+    font-size: 11.5px;
+    color: var(--muted-2);
+}
+
+/* In the sidebar the scoreboard is a 2x2 of bare figures rather than four bordered tiles:
+   the card is already the border, and tiles inside a card is a frame inside a frame. */
+.play-side .scoreboard {
+    grid-template-columns: 1fr 1fr;
+    margin: 10px 0 0;
+}
+
+.play-side .stat {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    padding: 0;
+    text-align: left;
+}
+
+.play-side .stat-value {
+    font: 700 22px var(--mono);
+    font-variant-numeric: tabular-nums;
+}
+
+.side-dots {
+    display: flex;
+    gap: 5px;
+    margin-top: 12px;
+}
+
+.side-dot {
+    flex: 1;
+    height: 6px;
+    border-radius: 999px;
+    background: var(--overlay-strong);
+}
+
+.side-dot.is-correct { background: var(--up); }
+.side-dot.is-wrong { background: var(--down); }
+
+.side-badges {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 10px;
+}
+
+.side-badge-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 8px;
+}
+
+.side-badge-name {
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.side-badge-count {
+    font: 600 11px var(--mono);
+    font-variant-numeric: tabular-nums;
+    color: var(--muted);
+}
+
+.side-bar {
+    display: block;
+    height: 5px;
+    margin-top: 5px;
+    border-radius: 999px;
+    background: var(--border);
+    overflow: hidden;
+}
+
+.side-bar-fill {
+    display: block;
+    height: 100%;
+    border-radius: 999px;
+    background: var(--accent);
+}
+
+.side-rank {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-top: 8px;
+}
+
+.side-rank-row {
+    display: grid;
+    grid-template-columns: 20px 22px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 6px;
+    border-radius: 8px;
+    font-size: 12.5px;
+}
+
+.side-rank-row.is-me {
+    background: var(--tint-accent-weak);
+    font-weight: 700;
+}
+
+.side-rank-pos {
+    font: 600 11px var(--mono);
+    color: var(--muted-2);
+}
+
+.side-rank-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.side-rank-score {
+    font: 600 12px var(--mono);
+    font-variant-numeric: tabular-nums;
+    color: var(--muted);
+}
+
+.side-rank-row.is-me .side-rank-score {
+    color: var(--text);
 }
 
 .result-banner {
@@ -1262,12 +1615,12 @@ h1, h2, h3 {
     color: #200608;
 }
 
+/* Sits in the toolbar row, pushed to the far end so it lands beside the sound toggle and
+   leaves the asset picker the whole left. */
 .guess-progress {
-    text-align: center;
     color: var(--muted);
     font: 500 12px var(--mono);
     letter-spacing: 0.03em;
-    margin-bottom: 10px;
     font-variant-numeric: tabular-nums;
 }
 
@@ -3679,6 +4032,21 @@ body:not(.is-admin) .adm-search {
 
 /* --- leaderboard --- */
 
+/* One face per player, hashed from their name by avatar.js. Shared between this board and
+   the play tab's five-row card, because a player who is a fox on one and an owl on the other
+   reads as two different players. */
+.avatar {
+    width: 22px;
+    height: 22px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    line-height: 1;
+}
+
 .lb-scroller {
     overflow-x: auto;
     border: 1px solid var(--border);
@@ -3688,17 +4056,25 @@ body:not(.is-admin) .adm-search {
 
 .lb-table {
     width: 100%;
-    min-width: 460px;
+    min-width: 560px;
     border-collapse: collapse;
     font-size: 13px;
 }
 
+/* Fixed widths so the four figure columns line up down the whole board — with auto layout
+   they moved with the longest name in the page, and two players' scores read as comparable
+   only when they sit under each other. The name column takes what is left. */
+.lb-table th:nth-child(1), .lb-table td:nth-child(1) { width: 48px; }
+.lb-table th:nth-child(3), .lb-table td:nth-child(3) { width: 90px; }
+.lb-table th:nth-child(4), .lb-table td:nth-child(4) { width: 110px; }
+.lb-table th:nth-child(5), .lb-table td:nth-child(5) { width: 120px; }
+.lb-table th:nth-child(6), .lb-table td:nth-child(6) { width: 80px; }
+
 .lb-table th {
     padding: 12px 14px;
     text-align: left;
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.08em;
+    font: 600 10.5px var(--mono);
+    letter-spacing: 0.12em;
     text-transform: uppercase;
     color: var(--muted-2);
     border-bottom: 1px solid var(--border);
@@ -3706,7 +4082,7 @@ body:not(.is-admin) .adm-search {
 }
 
 .lb-table td {
-    padding: 12px 14px;
+    padding: 11px 14px;
     border-bottom: 1px solid var(--border);
 }
 
@@ -3720,32 +4096,66 @@ body:not(.is-admin) .adm-search {
 }
 
 .lb-rank {
-    width: 1%;
     color: var(--muted);
+    font: 500 12px var(--mono);
     font-variant-numeric: tabular-nums;
 }
 
-.lb-name {
+.lb-who {
     display: flex;
     align-items: center;
-    gap: 8px;
-    font-weight: 500;
+    gap: 10px;
+    min-width: 0;
 }
 
-/* The pinned copy below the table is the same row twice; this is what says which one is you. */
-.lb-you {
-    padding: 1px 7px;
-    border-radius: 999px;
-    background: var(--overlay-strong);
-    color: var(--muted);
-    font-size: 10.5px;
+.lb-who-name {
     font-weight: 600;
-    letter-spacing: 0.04em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Score and streak are the two figures the board is read for, so they are the two drawn in
+   full ink; correct/total is the working behind accuracy and sits back. */
+.lb-score {
+    font: 700 13px var(--mono);
+    font-variant-numeric: tabular-nums;
+}
+
+/* Green because accuracy has a direction — it is the same up-colour the chart calls a
+   winning candle, not a decorative highlight. */
+.lb-accuracy {
+    font: 600 13px var(--mono);
+    font-variant-numeric: tabular-nums;
+    color: var(--up);
+}
+
+.lb-muted {
+    color: var(--muted);
+    font: 500 12.5px var(--mono);
+    font-variant-numeric: tabular-nums;
+}
+
+/* Your row, lifted out of its place in the list and up under the podium. The badge is what
+   explains the jump in the numbering around it. */
+.lb-you {
+    padding: 2px 7px;
+    border-radius: 999px;
+    background: var(--tint-accent-strong);
+    color: var(--accent);
+    font: 600 9.5px var(--mono);
+    letter-spacing: 0.08em;
     text-transform: uppercase;
+    white-space: nowrap;
 }
 
 .lb-row.is-me td {
-    background: color-mix(in srgb, var(--accent) 10%, transparent);
+    background: var(--tint-accent-weak);
+}
+
+.lb-row.is-me .lb-rank {
+    color: var(--accent);
+    font-weight: 700;
 }
 
 .lb-me-label {
@@ -3761,7 +4171,7 @@ body:not(.is-admin) .adm-search {
     align-items: center;
     justify-content: space-between;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: 8px 12px;
     margin-bottom: 14px;
 }
 
@@ -3800,15 +4210,43 @@ body:not(.is-admin) .adm-search {
     cursor: not-allowed;
 }
 
+/* Map and detail side by side. The panel used to open below the map, which pushed the map up
+   and out of view at the moment somebody had just picked a tile off it. */
+.app.app-heatmap {
+    max-width: 1180px;
+}
+
+.heatmap-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 300px;
+    gap: 16px;
+    align-items: start;
+}
+
+.heatmap-map {
+    min-width: 0;
+}
+
+@media (max-width: 1000px) {
+    .heatmap-layout {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+/* A pixel height, not an aspect ratio. The map's width is now whatever is left after a 300px
+   panel, and under aspect-ratio that made its height fall with it — at a laptop width the
+   whole map came out short enough that the smaller tiles had no room for their own labels,
+   which is a map that shrinks the closer you look at it. A clamp gives it a floor. */
 .heatmap-grid {
     position: relative;
     width: 100%;
-    aspect-ratio: 5 / 3;
+    height: clamp(340px, 42vw, 460px);
     background: var(--panel);
     border: 1px solid var(--border);
     border-radius: 14px;
     overflow: hidden;
 }
+
 
 .heatmap-tile {
     position: absolute;
@@ -3913,59 +4351,53 @@ body:not(.is-admin) .adm-search {
 /* --- heatmap tile detail panel --- */
 
 .heatmap-detail {
-    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: stretch;
     background: var(--panel);
     border: 1px solid var(--border);
     border-radius: 14px;
-    padding: 16px;
-    margin-top: 14px;
+    padding: 14px;
 }
 
-.heatmap-detail.hidden {
+.heatmap-detail-empty {
+    margin: 0;
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: var(--muted);
+}
+
+.heatmap-detail-empty.hidden,
+.heatmap-detail-body.hidden {
     display: none;
 }
 
-.heatmap-detail-close {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    background: transparent;
-    border: none;
-    color: var(--muted);
-    font-size: 14px;
-    cursor: pointer;
-    padding: 4px 8px;
-}
-
-.heatmap-detail-close:hover {
-    color: var(--text);
-}
-
-.heatmap-detail-head {
-    margin-bottom: 10px;
-    padding-right: 24px;
+.heatmap-detail-body {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
 .heatmap-detail-name {
-    display: block;
     font-weight: 700;
     font-size: 14px;
-    margin-bottom: 4px;
 }
 
 .heatmap-detail-stats {
     display: flex;
     align-items: baseline;
     gap: 10px;
+    flex-wrap: wrap;
 }
 
 .heatmap-detail-price {
-    font: 600 20px var(--mono);
+    font: 600 24px var(--mono);
     font-variant-numeric: tabular-nums;
 }
 
 .heatmap-detail-delta {
-    font: 700 13px var(--mono);
+    font: 700 12.5px var(--mono);
     font-variant-numeric: tabular-nums;
 }
 
@@ -3979,10 +4411,31 @@ body:not(.is-admin) .adm-search {
     overflow: hidden;
 }
 
+/* Label left, figure right, one row each — a definition list because that is what these are,
+   and it keeps the label attached to its value for a screen reader. */
+.heatmap-detail-figures {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 6px 10px;
+    margin: 2px 0 0;
+}
+
+.heatmap-detail-figures dt {
+    font-size: 12px;
+    color: var(--muted);
+}
+
+.heatmap-detail-figures dd {
+    margin: 0;
+    text-align: right;
+    font: 600 12.5px var(--mono);
+    font-variant-numeric: tabular-nums;
+}
+
 .sparkline-svg {
     display: block;
     width: 100%;
-    height: 150px;
+    height: 110px;
 }
 
 /* --- pattern library --- */
@@ -4056,31 +4509,71 @@ body:not(.is-admin) .adm-search {
    the container is narrower than it, so on a 375px phone these 360px cards came out wider
    than the column they sit in. That used to give the page a sideways scrollbar; inside the
    shell — which clips, that being what rounds its corners — it cuts the card off instead. */
+/* 520 rather than 360: the card now carries a 300px chart, so a 360px track left about
+   sixty pixels for the description. One card per row on a laptop, two on a wide screen. */
 .technical-grid {
-    grid-template-columns: repeat(auto-fill, minmax(min(360px, 100%), 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(520px, 100%), 1fr));
+}
+
+/* Chart beside the description rather than above it. These shapes are read left to right —
+   a head and shoulders is a sentence about what price did — and a 360px card with a 160px
+   picture stacked on three lines of prose is twice as tall as it needs to be. */
+.technical-grid .pattern-card {
+    display: grid;
+    grid-template-columns: 300px minmax(0, 1fr);
+    align-items: stretch;
+}
+
+.technical-chart {
+    border-bottom: none;
+    border-right: 1px solid var(--border);
+    display: flex;
+    align-items: center;
 }
 
 .technical-chart .pattern-chart-svg {
-    height: 160px;
+    height: 140px;
+}
+
+/* Capped in characters, not pixels: at one card per row the body would otherwise run the
+   whole width the chart leaves it, and a 90-character line is a line people lose their
+   place in. */
+.technical-grid .pattern-body > .pattern-summary {
+    max-width: 60ch;
+}
+
+@media (max-width: 760px) {
+    .technical-grid .pattern-card {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .technical-chart {
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+    }
 }
 
 .psych-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(380px, 100%), 1fr));
     gap: 14px;
 }
 
+/* The number beside the principle, not above it: it is an index into a list, and a line of
+   its own gives a label three characters long the same weight as the idea under it. */
 .psych-card {
     background: var(--panel);
     border: 1px solid var(--border);
     border-radius: 14px;
     padding: 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: baseline;
+    gap: 6px 12px;
 }
 
 .psych-card-number {
+    grid-row: 1 / span 2;
     font: 700 12px var(--mono);
     color: var(--accent);
 }
@@ -4110,9 +4603,12 @@ body:not(.is-admin) .adm-search {
     color: var(--accent);
 }
 
+/* One column of wide cards rather than a grid of narrow ones. A blog index is a list of
+   headlines being scanned in order, and a two-across grid asks the reader to scan in two
+   directions to do that; the cover moves beside the title instead of above it, which is
+   also what stops a row of covers taking the top half of the screen. */
 .blog-list {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr));
     gap: 14px;
     align-items: start;
 }
@@ -4122,17 +4618,14 @@ body:not(.is-admin) .adm-search {
     border: 1px solid var(--border);
     border-radius: 14px;
     overflow: hidden;
-    display: flex;
-    flex-direction: column;
-}
-
-.blog-post.expanded {
-    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: 220px minmax(0, 1fr);
+    align-items: stretch;
 }
 
 .blog-post-cover {
     background: var(--panel-2);
-    border-bottom: 1px solid var(--border);
+    border-right: 1px solid var(--border);
     line-height: 0;
 }
 
@@ -4140,7 +4633,8 @@ body:not(.is-admin) .adm-search {
 .blog-post-cover img {
     display: block;
     width: 100%;
-    height: 140px;
+    height: 100%;
+    min-height: 128px;
     object-fit: cover;
 }
 
@@ -4148,36 +4642,70 @@ body:not(.is-admin) .adm-search {
     all: unset;
     box-sizing: border-box;
     cursor: pointer;
-    padding: 14px;
+    padding: 16px;
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
+    flex-direction: column;
+    gap: 6px;
+    justify-content: center;
 }
 
 .blog-post-summary:hover .blog-post-title {
     color: var(--accent);
 }
 
+.blog-post-kicker {
+    font: 600 10.5px var(--mono);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+}
+
 .blog-post-title {
     margin: 0;
-    font-size: 15.5px;
+    font-size: 17px;
     font-weight: 700;
+    line-height: 1.35;
     color: var(--text);
 }
 
-.blog-post-hint {
-    flex-shrink: 0;
+.blog-post-meta {
+    font: 500 11.5px var(--mono);
+    font-variant-numeric: tabular-nums;
     color: var(--muted);
-    font-size: 11.5px;
-    white-space: nowrap;
 }
 
+.blog-post-hint {
+    color: var(--muted-2);
+    font-size: 11.5px;
+}
+
+/* The body spans both tracks: it is the article, and a column of prose 220px narrower than
+   the card it sits in for no reason but the cover above it is a worse read. */
 .blog-post-detail {
-    padding: 0 14px 16px;
+    grid-column: 1 / -1;
+    border-top: 1px solid var(--border);
+    padding: 14px 16px 16px;
     display: flex;
     flex-direction: column;
     gap: 10px;
+}
+
+/* On a phone the cover goes back above the text — 220px of the 340 available is most of the
+   row, and what is left cannot hold a headline. */
+@media (max-width: 640px) {
+    .blog-post {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .blog-post-cover {
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .blog-post-cover svg,
+    .blog-post-cover img {
+        height: 140px;
+    }
 }
 
 .blog-post-detail.hidden {
@@ -4972,9 +5500,27 @@ body:not(.is-admin) .adm-search {
 
 .profile-badges {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
     gap: 10px;
     margin-bottom: 8px;
+}
+
+/* Says which of the two a card is without making the reader work it out from whether there
+   is a progress bar under it. */
+.profile-badge-state {
+    align-self: flex-start;
+    padding: 2px 7px;
+    border-radius: 999px;
+    font: 600 9.5px var(--mono);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    background: var(--overlay-soft);
+    color: var(--muted);
+}
+
+.profile-badge.is-earned .profile-badge-state {
+    background: var(--tint-accent-strong);
+    color: var(--accent);
 }
 
 .profile-badge {
@@ -5100,17 +5646,40 @@ body:not(.is-admin) .adm-search {
 
 /* Day-streak chip in the game toolbar. Pushed to the right so it reads as part of the
    toolbar's controls rather than as a third item competing with the asset picker. */
+/* Sits in the topbar, so a player reading the blog or working through the archive can still
+   see the run they are protecting. Recessed rather than raised — --panel-2 against the
+   topbar's --panel — because it is a readout, not a control, and the two buttons beside it
+   are. */
 .game-streak {
-    margin-left: auto;
-    padding: 5px 10px;
-    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    border-radius: 10px;
     border: 1px solid var(--border);
-    background: var(--panel);
-    font-size: 13px;
-    font-weight: 700;
-    font-variant-numeric: tabular-nums;
+    background: var(--panel-2);
     white-space: nowrap;
 }
+
+.game-streak.hidden {
+    display: none;
+}
+
+.game-streak-flame {
+    font-size: 13px;
+    line-height: 1;
+}
+
+.game-streak-value {
+    font: 700 13px var(--mono);
+    font-variant-numeric: tabular-nums;
+}
+
+.game-streak-unit {
+    font-size: 12px;
+    color: var(--muted);
+}
+
 
 /* Alive but unplayed today — the only state where playing changes the number instead of
    maintaining it, so it is the only one drawn differently. Dashed rather than red: a streak
@@ -5118,6 +5687,10 @@ body:not(.is-admin) .adm-search {
 .game-streak.is-at-risk {
     border-style: dashed;
     border-color: var(--warn);
+}
+
+.game-streak.is-at-risk .game-streak-value,
+.game-streak.is-at-risk .game-streak-unit {
     color: var(--warn);
 }
 

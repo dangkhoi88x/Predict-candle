@@ -168,6 +168,18 @@
         activate(link.dataset.navView);
     });
 
+    /* The rank beside "Bảng Xếp Hạng". play-sidebar.js publishes it off the board it already
+       fetches; the rail only draws. No rank — signed out, or short of the minimum guesses —
+       means no tag at all, because an empty pill beside a label reads as something that
+       failed to load. */
+    var rankTag = document.getElementById("rail-tag-rank");
+
+    document.addEventListener("candles:rank", function (event) {
+        var rank = event.detail.rank;
+        rankTag.classList.toggle("hidden", !rank);
+        if (rank) rankTag.textContent = "#" + rank;
+    });
+
     /* The profile tab only exists for a signed-in player. */
     var profileTab = document.getElementById("tab-profile");
 

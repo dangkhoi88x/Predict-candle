@@ -74,6 +74,13 @@
                 priceLabel: formatPrice(q.price),
                 formatPrice: formatPrice,
                 capLabel: formatCompactUsd(q.marketCap) + " (ước tính)",
+                /* No turnover and no share: this feed carries neither, and the panel leaves
+                   a row out rather than drawing it with a dash. No playAsset either — the
+                   game deals crypto pairs, so there is no round to offer on a stock. */
+                figures: [
+                    { label: "Vốn hóa", value: formatCompactUsd(q.marketCap) + " (ước tính)" },
+                    { label: "Ngành", value: sectorName },
+                ],
                 sparkline: q.sparkline,
                 sparklineCaption: "Biến động giá 5 ngày gần nhất (giờ giao dịch) · nguồn dữ liệu Yahoo Finance",
             };

@@ -45,6 +45,15 @@
         <span class="live-banner-cta">Vào đặt →</span>
     </button>
     <div class="topbar-right">
+        <!-- Days in a row the player has shown up at all — not the daily challenge's own
+             streak on its tab, and not the correct-in-a-row streak on the scoreboard.
+             Signed-in only: nothing is recorded for anonymous play, so a streak here would be
+             a promise the server never made. -->
+        <span id="game-streak" class="game-streak hidden" aria-live="polite">
+            <span class="game-streak-flame" aria-hidden="true">🔥</span>
+            <span class="game-streak-value" id="game-streak-value"></span>
+            <span class="game-streak-unit">ngày</span>
+        </span>
         <div class="auth-area" id="auth-area">
             <span id="auth-error-msg" class="auth-error-msg hidden"></span>
             <button id="theme-toggle" class="theme-toggle" type="button"
@@ -129,7 +138,9 @@
 
     <div class="shell-main">
 
-<main id="view-game" class="view app" role="tabpanel" aria-labelledby="tab-game">
+<main id="view-game" class="view app app-play" role="tabpanel" aria-labelledby="tab-game">
+<div class="play-grid">
+<div class="play-main">
     <div class="game-toolbar">
         <div class="pill" id="asset-pill">
             <button class="pill-option active" data-asset="BTCUSDT">BTC/USDT</button>
@@ -137,30 +148,9 @@
             <button class="pill-option" data-asset="BNBUSDT">BNB/USDT</button>
             <button class="pill-option" data-asset="SOLUSDT">SOL/USDT</button>
         </div>
-        <!-- Days in a row the player has shown up at all — not the daily challenge's own
-             streak on the next tab, and not the correct-in-a-row streak in the board below.
-             Signed-in only: nothing is recorded for anonymous play, so a streak here would be
-             a promise the server never made. -->
-        <span id="game-streak" class="game-streak hidden" aria-live="polite"></span>
-        <button id="sound-toggle" class="ghost-btn sound-toggle" type="button" aria-label="Bật/tắt âm thanh và rung">🔊</button>
-    </div>
-
-    <div class="scoreboard">
-        <div class="stat">
-            <span class="stat-label">Điểm</span>
-            <span class="stat-value rolling" id="score">0</span>
-        </div>
-        <div class="stat">
-            <span class="stat-label">Streak</span>
-            <span class="stat-value rolling" id="streak">0</span>
-        </div>
-        <div class="stat">
-            <span class="stat-label">Best streak</span>
-            <span class="stat-value rolling" id="best-streak">0</span>
-        </div>
-        <div class="stat">
-            <span class="stat-label">Tỉ lệ đúng</span>
-            <span class="stat-value rolling" id="accuracy">–</span>
+        <div class="game-toolbar-end">
+            <span id="guess-progress" class="guess-progress hidden"></span>
+            <button id="sound-toggle" class="ghost-btn sound-toggle" type="button" aria-label="Bật/tắt âm thanh và rung">🔊</button>
         </div>
     </div>
 
@@ -231,8 +221,6 @@
         </ul>
     </section>
 
-    <div id="guess-progress" class="guess-progress hidden"></div>
-
     <!-- Names whatever the chart just gained. An indicator appearing unannounced reads as a
          glitch rather than as the game giving ground after a miss. -->
     <p id="game-hint" class="daily-hint hidden"></p>
@@ -250,6 +238,59 @@
     <button id="next-chart" class="next-btn hidden">🔄 Biểu đồ mới</button>
 
     <p id="status" class="status"></p>
+</div><!-- /.play-main -->
+
+<aside class="play-side">
+    <!-- The scoreboard, out of the chart's way. It answers "how am I doing", which is a
+         question about the session rather than about the candle on screen. -->
+    <section class="side-card">
+        <span class="side-eyebrow">Phiên này</span>
+        <div class="scoreboard">
+            <div class="stat">
+                <span class="stat-label">Điểm</span>
+                <span class="stat-value rolling" id="score">0</span>
+            </div>
+            <div class="stat">
+                <span class="stat-label">Streak</span>
+                <span class="stat-value rolling" id="streak">0</span>
+            </div>
+            <div class="stat">
+                <span class="stat-label">Best streak</span>
+                <span class="stat-value rolling" id="best-streak">0</span>
+            </div>
+            <div class="stat">
+                <span class="stat-label">Tỉ lệ đúng</span>
+                <span class="stat-value rolling" id="accuracy">–</span>
+            </div>
+        </div>
+        <!-- Ten calls, oldest on the left. Seeded from the server's recorded history when
+             signed in and appended to as the session goes, so the strip means the same thing
+             either way rather than being a feature only an account has. -->
+        <div class="side-dots" id="side-dots" aria-hidden="true"></div>
+        <span class="side-foot" id="side-dots-label">Chưa có lượt nào</span>
+    </section>
+
+    <section class="side-card is-accent" id="side-daily">
+        <span class="side-eyebrow is-accent">Thử thách hôm nay</span>
+        <b class="side-title" id="side-daily-title">Đang tải…</b>
+        <p class="side-text">Một biểu đồ, năm lượt, giống nhau cho mọi người.</p>
+        <button class="side-cta" type="button" data-nav-view="daily">Chơi ngay</button>
+    </section>
+
+    <section class="side-card hidden" id="side-badges">
+        <span class="side-eyebrow">Huy hiệu gần đạt</span>
+        <div class="side-badges" id="side-badges-list"></div>
+    </section>
+
+    <section class="side-card hidden" id="side-rank">
+        <div class="side-head">
+            <span class="side-eyebrow">Top người chơi</span>
+            <button class="side-link" type="button" data-nav-view="leaderboard">Xem tất cả</button>
+        </div>
+        <div class="side-rank" id="side-rank-list"></div>
+    </section>
+</aside>
+</div><!-- /.play-grid -->
 </main>
 
 <main id="view-daily" class="view app hidden" role="tabpanel" aria-labelledby="tab-daily">
@@ -605,45 +646,58 @@
     </div>
 </div>
 
-<main id="view-heatmap" class="view app hidden" role="tabpanel" aria-labelledby="tab-heatmap">
+<main id="view-heatmap" class="view app app-heatmap hidden" role="tabpanel" aria-labelledby="tab-heatmap">
     <div class="heatmap-toolbar">
         <h2>Market Heatmap</h2>
+        <div class="pill" id="heatmap-source-pill">
+            <button class="pill-option active" data-source="crypto">Crypto</button>
+            <button class="pill-option" data-source="sp500">S&amp;P 500</button>
+        </div>
         <div class="heatmap-meta">
             <span id="heatmap-updated"></span>
             <button id="heatmap-refresh" class="ghost-btn" type="button">🔄 Làm mới</button>
         </div>
     </div>
 
-    <div class="pill" id="heatmap-source-pill">
-        <button class="pill-option active" data-source="crypto">Crypto</button>
-        <button class="pill-option" data-source="sp500">S&amp;P 500</button>
-    </div>
-
     <p id="heatmap-status" class="status"></p>
-    <div id="heatmap-grid-crypto" class="heatmap-grid" role="img" aria-label="Bản đồ nhiệt vốn hóa thị trường tiền mã hóa"></div>
 
-    <div id="sp500-drilldown-bar" class="sp500-drilldown-bar hidden">
-        <button id="sp500-back" class="ghost-btn hidden" type="button">← Quay lại ngành</button>
-        <span id="sp500-breadcrumb" class="sp500-breadcrumb"></span>
-    </div>
-    <div id="heatmap-grid-sp500" class="heatmap-grid hidden" role="img" aria-label="Bản đồ nhiệt cổ phiếu S&amp;P 500"></div>
-    <p id="heatmap-caption" class="heatmap-caption"></p>
-
-    <div id="heatmap-detail" class="heatmap-detail hidden">
-        <button id="heatmap-detail-close" class="heatmap-detail-close" type="button" aria-label="Đóng">✕</button>
-        <div class="heatmap-detail-head">
-            <span id="heatmap-detail-name" class="heatmap-detail-name"></span>
-            <div class="heatmap-detail-stats">
-                <span id="heatmap-detail-price" class="heatmap-detail-price rolling"></span>
-                <span id="heatmap-detail-delta" class="heatmap-detail-delta rolling"></span>
+    <!-- Map and detail side by side. The panel used to open below the map, which pushed the
+         map up and out of view at the moment somebody had just picked a tile off it. -->
+    <div class="heatmap-layout">
+        <div class="heatmap-map">
+            <div id="sp500-drilldown-bar" class="sp500-drilldown-bar hidden">
+                <button id="sp500-back" class="ghost-btn hidden" type="button">← Quay lại ngành</button>
+                <span id="sp500-breadcrumb" class="sp500-breadcrumb"></span>
             </div>
+            <div id="heatmap-grid-crypto" class="heatmap-grid" role="img" aria-label="Bản đồ nhiệt vốn hóa thị trường tiền mã hóa"></div>
+            <div id="heatmap-grid-sp500" class="heatmap-grid hidden" role="img" aria-label="Bản đồ nhiệt cổ phiếu S&amp;P 500"></div>
+            <p id="heatmap-caption" class="heatmap-caption"></p>
         </div>
-        <div id="heatmap-detail-chart" class="heatmap-detail-chart"></div>
-        <p id="heatmap-detail-caption" class="heatmap-caption"></p>
+
+        <aside class="heatmap-detail" id="heatmap-detail">
+            <span class="side-eyebrow">Ô đang chọn</span>
+            <!-- Standing in for the panel before anything has been picked. A panel that is
+                 simply absent leaves a gap the reader has to guess the purpose of. -->
+            <p class="heatmap-detail-empty" id="heatmap-detail-empty">Bấm vào một ô trên bản đồ để xem chi tiết.</p>
+
+            <div class="heatmap-detail-body hidden" id="heatmap-detail-body">
+                <span id="heatmap-detail-name" class="heatmap-detail-name"></span>
+                <div class="heatmap-detail-stats">
+                    <span id="heatmap-detail-price" class="heatmap-detail-price rolling"></span>
+                    <span id="heatmap-detail-delta" class="heatmap-detail-delta rolling"></span>
+                </div>
+                <div id="heatmap-detail-chart" class="heatmap-detail-chart"></div>
+                <p id="heatmap-detail-caption" class="heatmap-caption"></p>
+                <dl class="heatmap-detail-figures" id="heatmap-detail-figures"></dl>
+                <!-- Only for the four pairs the game actually deals. Offering a round on a
+                     coin there is no stored history for is an offer that cannot be kept. -->
+                <button class="side-cta hidden" type="button" id="heatmap-detail-play"></button>
+            </div>
+        </aside>
     </div>
 </main>
 
-<main id="view-patterns" class="view app hidden" role="tabpanel" aria-labelledby="tab-patterns">
+<main id="view-patterns" class="view app app-wide hidden" role="tabpanel" aria-labelledby="tab-patterns">
     <div class="heatmap-toolbar">
         <h2>Mẫu Nến</h2>
     </div>
@@ -670,7 +724,7 @@
     <p class="heatmap-caption">Dữ liệu minh họa mang tính mô phỏng để thể hiện rõ hình dạng mẫu nến, không phải giá thị trường thật.</p>
 </main>
 
-<main id="view-technical" class="view app hidden" role="tabpanel" aria-labelledby="tab-technical">
+<main id="view-technical" class="view app app-wide hidden" role="tabpanel" aria-labelledby="tab-technical">
     <div class="heatmap-toolbar">
         <h2>Mẫu Hình Kỹ Thuật</h2>
     </div>
@@ -697,7 +751,7 @@
     <p class="heatmap-caption">Dữ liệu minh họa mang tính mô phỏng để thể hiện rõ hình dạng mẫu hình biểu đồ, không phải giá thị trường thật.</p>
 </main>
 
-<main id="view-psychology" class="view app hidden" role="tabpanel" aria-labelledby="tab-psychology">
+<main id="view-psychology" class="view app app-read hidden" role="tabpanel" aria-labelledby="tab-psychology">
     <div class="heatmap-toolbar">
         <h2>Tâm Lý Giao Dịch</h2>
     </div>
@@ -706,7 +760,7 @@
     <p class="heatmap-caption">Nội dung tổng hợp từ chia sẻ của trader Mizer (<a href="https://x.com/MizerXBT" target="_blank" rel="noopener">@MizerXBT</a>) về tâm lý giao dịch — không phải lời khuyên đầu tư.</p>
 </main>
 
-<main id="view-blog" class="view app hidden" role="tabpanel" aria-labelledby="tab-blog">
+<main id="view-blog" class="view app app-read hidden" role="tabpanel" aria-labelledby="tab-blog">
     <div class="heatmap-toolbar">
         <h2>Blog / Kiến Thức</h2>
     </div>
@@ -726,33 +780,63 @@
     <div id="leaderboard-body"></div>
 </main>
 
-<main id="view-profile" class="view app hidden" role="tabpanel" aria-labelledby="tab-profile">
+<main id="view-profile" class="view app app-profile hidden" role="tabpanel" aria-labelledby="tab-profile">
     <div class="view-head">
         <h2>Hồ Sơ</h2>
         <span id="profile-wallet" class="profile-wallet"></span>
     </div>
 
-    <div class="scoreboard scoreboard-profile">
-        <div class="stat"><span class="stat-label">Điểm</span><span class="stat-value rolling" id="profile-score">0</span></div>
-        <div class="stat"><span class="stat-label">Lượt đoán</span><span class="stat-value rolling" id="profile-total">0</span></div>
-        <div class="stat"><span class="stat-label">Tỉ lệ đúng</span><span class="stat-value rolling" id="profile-accuracy">–</span></div>
-        <div class="stat"><span class="stat-label">Chuỗi dài nhất</span><span class="stat-value rolling" id="profile-best">0</span></div>
-        <!-- Days in a row, not correct guesses in a row: a different number from the tile
-             beside it, which is why the label says days and not "chuỗi". -->
-        <div class="stat"><span class="stat-label">Ngày liên tiếp</span><span class="stat-value rolling" id="profile-day-streak">0</span></div>
+    <!-- Two columns: the record on the left, what it earned on the right. One column meant
+         the badges sat below a list of every recent guess, which is the wrong way round —
+         the trophies are the part worth looking at twice. -->
+    <div class="profile-grid">
+        <div class="profile-col">
+            <div class="scoreboard scoreboard-profile">
+                <div class="stat"><span class="stat-label">Điểm</span><span class="stat-value rolling" id="profile-score">0</span></div>
+                <div class="stat"><span class="stat-label">Lượt đoán</span><span class="stat-value rolling" id="profile-total">0</span></div>
+                <div class="stat"><span class="stat-label">Tỉ lệ đúng</span><span class="stat-value rolling" id="profile-accuracy">–</span></div>
+                <div class="stat"><span class="stat-label">Chuỗi dài nhất</span><span class="stat-value rolling" id="profile-best">0</span></div>
+                <!-- Days in a row, not correct guesses in a row: a different number from the
+                     tile beside it, which is why the label says days and not "chuỗi". Drawn in
+                     the accent because it is the only figure here that can be lost by not
+                     playing — the rest cannot go down. -->
+                <div class="stat is-accent">
+                    <span class="stat-label">Ngày liên tiếp</span>
+                    <span class="stat-row">
+                        <span class="stat-value rolling" id="profile-day-streak">0</span>
+                        <span class="stat-flame" aria-hidden="true">🔥</span>
+                    </span>
+                </div>
+            </div>
+
+            <p id="profile-streak-note" class="profile-note hidden"></p>
+            <p id="profile-legacy-note" class="profile-note hidden"></p>
+
+            <h3 class="profile-section">Theo từng cặp</h3>
+            <div id="profile-by-asset" class="profile-assets"></div>
+
+            <h3 class="profile-section">Gần đây</h3>
+            <div id="profile-recent" class="profile-recent"></div>
+        </div>
+
+        <div class="profile-col">
+            <h3 class="profile-section">Huy hiệu</h3>
+            <div id="profile-badges" class="profile-badges"></div>
+
+            <!-- Standing, not a round: score, accuracy, day streak and the last five calls.
+                 No asset and no dates, the same rule the daily's card follows — except here
+                 there is no puzzle to spoil, only a player's own record to post. -->
+            <section class="profile-share hidden" id="profile-share-card">
+                <span class="side-eyebrow">Chia sẻ</span>
+                <div class="profile-share-squares" id="profile-share-squares" aria-hidden="true"></div>
+                <p class="profile-share-line" id="profile-share-line"></p>
+                <button class="ghost-btn" type="button" id="profile-share">Sao chép kết quả</button>
+                <!-- Shown only when the clipboard refuses, the same fallback the daily uses. -->
+                <textarea class="daily-share-text hidden" id="profile-share-text" readonly rows="4"
+                          aria-label="Kết quả để chia sẻ"></textarea>
+            </section>
+        </div>
     </div>
-
-    <p id="profile-streak-note" class="profile-note hidden"></p>
-    <p id="profile-legacy-note" class="profile-note hidden"></p>
-
-    <h3 class="profile-section">Huy hiệu</h3>
-    <div id="profile-badges" class="profile-badges"></div>
-
-    <h3 class="profile-section">Theo từng cặp</h3>
-    <div id="profile-by-asset" class="profile-assets"></div>
-
-    <h3 class="profile-section">Gần đây</h3>
-    <div id="profile-recent" class="profile-recent"></div>
 </main>
 
     </div><!-- /.shell-main -->
@@ -783,6 +867,7 @@
 <script src="theme.js"></script>
 <script src="pill.js"></script>
 <script src="rolling.js"></script>
+<script src="avatar.js"></script>
 <script src="content.js"></script>
 <script src="auth.js"></script>
 <script src="candle-chart.js"></script>
@@ -794,6 +879,7 @@
 <script src="nav.js"></script>
 <script src="live-banner.js"></script>
 <script src="app.js"></script>
+<script src="play-sidebar.js"></script>
 <script src="treemap.js"></script>
 <script src="heatmap.js"></script>
 <script src="heatmap-sp500.js"></script>

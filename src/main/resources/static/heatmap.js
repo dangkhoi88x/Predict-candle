@@ -10,6 +10,13 @@
         return "$" + v.toLocaleString("en-US", { minimumFractionDigits: 4, maximumFractionDigits: 6 });
     }
 
+    /* The four pairs the game has stored candles for. Anything else on the map is a coin you
+       can read about here and not a round you can play, and the detail panel hides its play
+       button rather than offering one. Keeping the list here rather than in the panel is
+       deliberate: it is a fact about this data source's symbols, and the S&P loader answers
+       the same question differently — it never sets one. */
+    var PLAYABLE = { BTC: "BTCUSDT", ETH: "ETHUSDT", BNB: "BNBUSDT", SOL: "SOLUSDT" };
+
     function formatCompactUsd(v) {
         return "$" + new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 2 }).format(v);
     }
@@ -23,8 +30,14 @@
             var coins = await res.json();
             if (!Array.isArray(coins) || !coins.length) throw new Error("Không có dữ liệu");
 
-            var items = coins
-                .filter(function (c) { return c.market_cap > 0; })
+            var priced = coins.filter(function (c) { return c.market_cap > 0; });
+            /* Share of what is on the map, not of the whole market — the map is the top 24
+               by cap and nothing here knows the total. The label says "trên bản đồ" for that
+               reason: a figure called market dominance would be wrong by whatever the tail
+               weighs. */
+            var mappedCap = priced.reduce(function (sum, c) { return sum + c.market_cap; }, 0);
+
+            var items = priced
                 .map(function (c) {
                     return {
                         symbol: c.symbol,
@@ -40,6 +53,12 @@
                         capLabel: formatCompactUsd(c.market_cap),
                         sparkline: c.sparkline_in_7d && c.sparkline_in_7d.price,
                         sparklineCaption: "Biến động giá 7 ngày gần nhất · nguồn dữ liệu CoinGecko",
+                        figures: [
+                            { label: "Vốn hóa", value: formatCompactUsd(c.market_cap) },
+                            { label: "KL 24h", value: formatCompactUsd(c.total_volume || 0) },
+                            { label: "Tỉ trọng trên bản đồ", value: (c.market_cap / mappedCap * 100).toFixed(1) + "%" },
+                        ],
+                        playAsset: PLAYABLE[c.symbol.toUpperCase()] || null,
                     };
                 });
 
