@@ -130,11 +130,20 @@
    in the stylesheet, and none of the SVG drawing code, needs to know which theme is active,
    because everything reads these variables (SVG presentation attributes accept var() too). */
 :root {
+    /* --bg-deep is the ground the shell card sits on; --bg is the card itself, so the two
+       have to differ or the shell's border is the only thing drawing its edge. */
+    --bg-deep: #070707;
     --bg: #0a0a0a;
     --panel: #141414;
     --panel-2: #101010;
+    /* The navigation rail, a shade off the shell so the column reads as a separate surface
+       without a second border. */
+    --rail: #0d0d0d;
     --border: #232323;
     --text: #f2f2f2;
+    /* Primary navigation is brighter than --muted and dimmer than --text: rail labels are
+       the thing being scanned, but only one of them is where you are. */
+    --text-2: #c9c9cd;
     --muted: #7d7d82;
     --muted-2: #58585d;
     --up: #34d399;
@@ -170,11 +179,14 @@
 }
 
 :root[data-theme="light"] {
+    --bg-deep: #e9ebef;
     --bg: #f6f7f9;
     --panel: #ffffff;
     --panel-2: #eff1f4;
+    --rail: #f0f2f5;
     --border: #dfe2e8;
     --text: #14161a;
+    --text-2: #3d434e;
     --muted: #5f6672;
     --muted-2: #8a909c;
     /* Darker than the dark-theme greens/reds: the originals are tuned for glowing on black
@@ -242,7 +254,7 @@
 
 body {
     margin: 0;
-    background: var(--bg);
+    background: var(--bg-deep);
     color: var(--text);
     font-family: var(--sans);
 }
@@ -251,10 +263,12 @@ h1, h2, h3 {
     letter-spacing: var(--tracking-tight);
 }
 
+/* A view is a reading column centred in whatever the shell leaves it. The padding is the
+   shell's (.shell-main), not the view's — otherwise every view would have to agree with the
+   rail about how much gutter the page has. */
 .app {
     max-width: 760px;
     margin: 0 auto;
-    padding: 24px 16px 48px;
 }
 
 /* The trading terminal is the one view that is not a reading column. 760px is right for a
@@ -265,90 +279,322 @@ h1, h2, h3 {
     max-width: 1180px;
 }
 
-.top-nav {
+/* ---- app shell ---------------------------------------------------------------------
+   Topbar across the top, a grouped navigation rail down the left, views in what is left.
+   This replaced a single row of eleven tabs: eleven peers in one strip say nothing about
+   which of them is the game and which is a reference page anyone opens twice a year, and
+   the strip wrapped to two lines on a laptop as soon as a wallet was connected.
+
+   The rail is the only list of views on the page. Below 900px it slides up as a sheet
+   that .tabbar's "Thêm" key opens, so the phone layout is the same buttons in a different
+   place rather than a second menu to keep in step. */
+
+.shell-page {
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 20px 20px 56px;
+}
+
+.shell {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    overflow: hidden;
+}
+
+.topbar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    padding: 12px 20px;
     background: var(--panel);
     border-bottom: 1px solid var(--border);
 }
 
-/* Two rows rather than one three-track row: a single row that gives brand and the wallet
-   controls first claim on the width (both flex-shrink: 0) leaves whatever is left over for
-   the tabs, and "whatever is left over" shrinks every time the auth side grows — connecting
-   a wallet turns "Kết nối ví" into an address plus, for an admin, a "Quản trị" button, at
-   which point the middle track could lose enough width that even a wide desktop window had
-   the tab pill scrolling. Giving the tabs a row of their own means they always get the full
-   1180px to work with, signed in or not, admin or not — not a fraction of it. */
-.top-nav-inner {
-    max-width: 1180px;
-    margin: 0 auto;
-    padding: 10px 16px;
-    display: grid;
-    grid-template-columns: 1fr auto;
-    grid-template-areas:
-        "brand auth"
-        "tabs  tabs";
-    align-items: center;
-    row-gap: 10px;
-    column-gap: 8px;
-}
-
 .brand {
-    grid-area: brand;
     font-weight: 800;
     font-size: 15px;
     white-space: nowrap;
     flex-shrink: 0;
 }
 
-.nav-tabs {
-    grid-area: tabs;
+.topbar-right {
+    margin-left: auto;
     display: flex;
-    flex-wrap: wrap;
-    gap: 2px;
-    min-width: 0;
-    justify-self: stretch;
-    justify-content: center;
-    overflow-x: visible;
-    scrollbar-width: none;
-    background: var(--panel-2);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 4px;
-    position: relative;
+    align-items: center;
+    gap: 10px;
 }
 
-.nav-tabs::-webkit-scrollbar {
+/* The live round is the one thing on the site with a deadline, so it is the one thing that
+   gets to interrupt from the topbar. Warn-coloured rather than accent: it is a clock
+   running out, not a place to go. */
+.live-banner {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 10px;
+    border-radius: 999px;
+    background: color-mix(in oklab, var(--warn) 12%, transparent);
+    border: 1px solid color-mix(in oklab, var(--warn) 35%, transparent);
+    cursor: pointer;
+    font-family: inherit;
+    transition: background var(--duration-fast) var(--ease-out);
+}
+
+.live-banner.hidden {
     display: none;
 }
 
-.nav-tab {
-    background: transparent;
-    border: none;
-    color: var(--muted);
-    font-weight: 600;
-    font-size: 13px;
-    padding: 7px 14px;
-    border-radius: 999px;
-    cursor: pointer;
+.live-banner:hover {
+    background: color-mix(in oklab, var(--warn) 20%, transparent);
+}
+
+.live-banner-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--warn);
+}
+
+.live-banner-text {
+    font: 600 12px var(--mono);
+    font-variant-numeric: tabular-nums;
+    color: var(--warn);
     white-space: nowrap;
+}
+
+.live-banner-cta {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--warn);
+}
+
+.shell-body {
+    display: grid;
+    grid-template-columns: 236px minmax(0, 1fr);
+    align-items: stretch;
+}
+
+.rail {
+    background: var(--rail);
+    border-right: 1px solid var(--border);
+    padding: 18px 14px;
+}
+
+.rail-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+}
+
+.rail-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.rail-group-title {
+    font: 600 10.5px var(--mono);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted-2);
+    padding: 0 8px;
+}
+
+.rail-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 9px 10px;
+    border: none;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--text-2);
+    font-family: inherit;
+    font-size: 13.5px;
+    font-weight: 600;
+    text-align: left;
+    cursor: pointer;
+    transition: background var(--duration-fast) var(--ease-out),
+                color var(--duration-fast) var(--ease-out);
+}
+
+.rail-item.hidden {
+    display: none;
+}
+
+.rail-item:hover {
+    background: var(--overlay-soft);
+    color: var(--text);
+}
+
+.rail-item.active,
+.rail-item.active:hover {
+    background: var(--tint-accent-weak);
+    color: var(--accent);
+}
+
+.rail-icon {
+    font-size: 14px;
+    width: 18px;
+    text-align: center;
     flex-shrink: 0;
-    position: relative;
-    z-index: 1;
-    transition: color var(--duration-fast) var(--ease-out);
 }
 
-.nav-tab:hover {
-    color: var(--text);
+.rail-label {
+    flex: 1;
+    min-width: 0;
 }
 
-.nav-tab.active {
-    color: var(--text);
-    background: var(--overlay-strong);
+.rail-tag {
+    font: 600 10.5px var(--mono);
+    font-variant-numeric: tabular-nums;
+    color: var(--muted-2);
+    flex-shrink: 0;
+}
+
+.rail-tag.hidden { display: none; }
+.rail-tag.is-new { color: var(--accent); }
+.rail-tag.is-live { color: var(--warn); }
+.rail-item.active .rail-tag { color: var(--accent); }
+
+.shell-main {
+    padding: 20px 20px 40px;
+    min-width: 0;
+}
+
+/* The rail's sheet backdrop, and the bottom bar it is opened from. Both are dead weight
+   on a desktop, so they only take a box below 900px. */
+.rail-backdrop {
+    display: none;
+}
+
+.tabbar {
+    display: none;
+}
+
+/* Below this the topbar cannot hold brand, banner and wallet on one line — the banner broke
+   mid-sentence and shoved the wallet button onto a row of its own. It takes a full row instead,
+   which is a layout rather than an accident. */
+@media (max-width: 720px) {
+    .live-banner {
+        order: 3;
+        flex-basis: 100%;
+        justify-content: center;
+        min-width: 0;
+    }
+
+    /* The whole pill is the button, so the arrow is the first thing that can go — it is what
+       pushed the countdown off the right edge of a 320px screen. */
+    .live-banner-cta {
+        display: none;
+    }
+}
+
+@media (max-width: 900px) {
+    .shell-page {
+        padding: 0 0 calc(58px + env(safe-area-inset-bottom));
+    }
+
+    .shell {
+        border: none;
+        border-radius: 0;
+    }
+
+    .topbar {
+        padding: 10px 14px;
+        gap: 10px;
+    }
+
+    .shell-body {
+        display: block;
+    }
+
+    .shell-main {
+        padding: 16px 14px 24px;
+    }
+
+    /* A sheet rather than a drawer off the side: it opens next to the thumb that pressed
+       "Thêm", and it stops short of the top so the page it covers stays visible behind it. */
+    .rail {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: calc(58px + env(safe-area-inset-bottom));
+        z-index: 40;
+        max-height: min(70vh, 520px);
+        overflow-y: auto;
+        border-right: none;
+        border-top: 1px solid var(--border);
+        border-radius: 16px 16px 0 0;
+        box-shadow: 0 -12px 32px var(--shadow);
+        transform: translateY(calc(100% + 58px + env(safe-area-inset-bottom)));
+        visibility: hidden;
+        transition: transform var(--duration-normal) var(--ease-out),
+                    visibility var(--duration-normal) var(--ease-out);
+    }
+
+    .rail.is-open {
+        transform: translateY(0);
+        visibility: visible;
+    }
+
+    .rail-backdrop {
+        display: block;
+        position: fixed;
+        inset: 0;
+        z-index: 30;
+        background: rgba(0, 0, 0, 0.5);
+    }
+
+    .rail-backdrop[hidden] {
+        display: none;
+    }
+
+    .tabbar {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 50;
+        background: var(--panel);
+        border-top: 1px solid var(--border);
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    .tabbar-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 2px;
+        padding: 8px 2px;
+        min-height: 58px;
+        border: none;
+        background: transparent;
+        color: var(--muted);
+        font-family: inherit;
+        font-size: 10.5px;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    .tabbar-item.active {
+        color: var(--accent);
+    }
+
+    .tabbar-icon {
+        font-size: 17px;
+        line-height: 1;
+    }
 }
 
 /* pill.js injects the indicator and stamps .has-indicator on the track, at which point the
    active option hands its background over to the sliding element. Without JS those rules
    still paint the active one, so a track never ends up with nothing marked. */
-.has-indicator .nav-tab.active,
 .has-indicator .pill-option.active {
     background: transparent;
 }
@@ -637,14 +883,25 @@ h1, h2, h3 {
     .profile-guess-when { display: none; }
 }
 
-/* Price ticker strip above the nav */
+/* Price ticker strip, above the shell rather than inside it — it is the market talking,
+   not part of the app's own chrome. */
 .ticker {
     background: var(--panel-2);
-    border-bottom: 1px solid var(--border);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 12px;
     height: 34px;
     display: flex;
     align-items: center;
     overflow: hidden;
+}
+
+@media (max-width: 900px) {
+    .ticker {
+        border-radius: 0;
+        border-width: 0 0 1px;
+        margin-bottom: 0;
+    }
 }
 
 .ticker.hidden {
@@ -3795,8 +4052,12 @@ body:not(.is-admin) .adm-search {
     height: 110px;
 }
 
+/* min(…, 100%) rather than a bare minimum: a bare one is a floor the track holds even when
+   the container is narrower than it, so on a 375px phone these 360px cards came out wider
+   than the column they sit in. That used to give the page a sideways scrollbar; inside the
+   shell — which clips, that being what rounds its corners — it cuts the card off instead. */
 .technical-grid {
-    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(360px, 100%), 1fr));
 }
 
 .technical-chart .pattern-chart-svg {
@@ -3851,7 +4112,7 @@ body:not(.is-admin) .adm-search {
 
 .blog-list {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr));
     gap: 14px;
     align-items: start;
 }
