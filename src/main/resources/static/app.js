@@ -2,7 +2,6 @@
     "use strict";
 
     var STORAGE_KEY = "candleGuess.stats.v1";
-    var MUTE_STORAGE_KEY = "candleGuess.muted.v1";
     /** Set once this browser's tally has been carried into some account. */
     var STATS_CARRIED_KEY = "candleGuess.statsCarried.v1";
     var CANDLE_STEP_SECONDS = 3600;
@@ -73,64 +72,6 @@
         gameStreak: document.getElementById("game-streak"),
         gameStreakValue: document.getElementById("game-streak-value"),
     };
-
-    // ---------- sound + haptic feedback ----------
-
-    var muted = localStorage.getItem(MUTE_STORAGE_KEY) === "1";
-    var audioCtx = null;
-
-    function updateSoundToggleUi() {
-        el.soundToggle.textContent = muted ? "🔇" : "🔊";
-        el.soundToggle.setAttribute("aria-pressed", muted ? "true" : "false");
-    }
-
-    function unlockAudio() {
-        if (muted) return;
-        if (!audioCtx) {
-            var Ctx = window.AudioContext || window.webkitAudioContext;
-            if (!Ctx) return;
-            audioCtx = new Ctx();
-        }
-        if (audioCtx.state === "suspended") audioCtx.resume();
-    }
-
-    function tone(freq, startDelay, duration, type, peakGain) {
-        if (muted || !audioCtx) return;
-        var startAt = audioCtx.currentTime + startDelay;
-        var osc = audioCtx.createOscillator();
-        var gain = audioCtx.createGain();
-        osc.type = type;
-        osc.frequency.value = freq;
-        gain.gain.setValueAtTime(0, startAt);
-        gain.gain.linearRampToValueAtTime(peakGain, startAt + 0.012);
-        gain.gain.exponentialRampToValueAtTime(0.0001, startAt + duration);
-        osc.connect(gain).connect(audioCtx.destination);
-        osc.start(startAt);
-        osc.stop(startAt + duration + 0.02);
-    }
-
-    function playCorrectSound() {
-        tone(880, 0, 0.11, "sine", 0.11);
-        tone(1318.5, 0.08, 0.16, "sine", 0.09);
-    }
-
-    function playWrongSound() {
-        tone(196, 0, 0.22, "sawtooth", 0.07);
-    }
-
-    function playSummarySound(cls) {
-        if (cls === "correct") {
-            [880, 1108.7, 1318.5].forEach(function (f, i) { tone(f, i * 0.09, 0.16, "sine", 0.1); });
-        } else if (cls === "wrong") {
-            tone(220, 0, 0.16, "sawtooth", 0.07);
-            tone(164.8, 0.14, 0.28, "sawtooth", 0.07);
-        }
-    }
-
-    function vibrate(pattern) {
-        if (muted || !navigator.vibrate) return;
-        navigator.vibrate(pattern);
-    }
 
     // ---------- formatting helpers (ported from the market-chart reference) ----------
 
@@ -1090,11 +1031,11 @@
             updateStatsAfterGuess(result.correct);
 
             if (result.correct) {
-                playCorrectSound();
-                vibrate(30);
+                window.CandleSound.correct();
+                window.CandleSound.vibrate(30);
             } else {
-                playWrongSound();
-                vibrate([25, 40, 25]);
+                window.CandleSound.wrong();
+                window.CandleSound.vibrate([25, 40, 25]);
             }
             var missedIt = !direction;
 
@@ -1103,7 +1044,7 @@
                 el.resultBanner.textContent = summary.text;
                 el.resultBanner.className = "result-banner summary " + summary.cls;
                 el.resultBanner.classList.remove("hidden");
-                playSummarySound(summary.cls);
+                window.CandleSound.summary(summary.cls);
                 el.guessProgress.textContent = "Hoàn thành " + result.totalGuesses + " / " + result.totalGuesses + " nến";
                 el.nextChart.disabled = false;
 
@@ -1172,16 +1113,11 @@
         if (window.CandleAuth.getUser()) refreshAccountStats();
     }
 
-    el.guessLong.addEventListener("click", function () { unlockAudio(); submitGuess("LONG"); });
-    el.guessShort.addEventListener("click", function () { unlockAudio(); submitGuess("SHORT"); });
+    el.guessLong.addEventListener("click", function () { window.CandleSound.unlock(); submitGuess("LONG"); });
+    el.guessShort.addEventListener("click", function () { window.CandleSound.unlock(); submitGuess("SHORT"); });
     el.nextChart.addEventListener("click", loadRound);
 
-    el.soundToggle.addEventListener("click", function () {
-        muted = !muted;
-        localStorage.setItem(MUTE_STORAGE_KEY, muted ? "1" : "0");
-        updateSoundToggleUi();
-        if (!muted) unlockAudio();
-    });
+    window.CandleSound.attachToggle(el.soundToggle);
 
     el.assetButtons.forEach(function (btn) {
         btn.addEventListener("click", function () {
@@ -1242,6 +1178,5 @@
 
     initChart();
     renderStats();
-    updateSoundToggleUi();
     loadAssetPicker().then(loadRound);
 })();
