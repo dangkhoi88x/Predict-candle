@@ -166,7 +166,16 @@ globals that later files call at load time.
 | `pill.js` | `CandlePill.attach(track, sel)` | 6 asset/filter pickers |
 | `rolling.js` | `CandleRolling.update(el, text)` | price, delta, scoreboard, ticker, heatmap |
 | `avatar.js` | `CandleAvatar.node(name)` | leaderboard + the play tab's board card |
-| `candle-chart.js` | `CandleChart.draw(svg, candles, opts)` | daily, live popup, trade, pattern quiz |
+| `format.js` | `CandleFormat.price/usd/compactUsd/count/percent/signedPct/clock` | everywhere a number is drawn |
+| `sound.js` | `CandleSound.unlock/correct/wrong/summary/vibrate/attachToggle` | the practice round |
+| `candle-chart.js` | `CandleChart.draw(svg, candles, opts)` | **every** candlestick chart on the site |
+
+**`price()` and `usd()` are two formats on purpose.** `price()` sizes decimals to magnitude,
+for a column being scanned; `usd()` always shows cents, for a single figure somebody is about
+to act on. Collapsing them would either drop the cents off the live round's price or put four
+decimals on a market list. Anything that renders a missing value returns an en dash — guard
+null *before* `Number()`, which turns null into a perfectly finite 0 and a missing price into
+`$0.00`.
 
 **Nothing fetches what another module already asked for.** `/api/stats/me` answers several
 questions at once and `app.js` is already asking it after every recorded guess, so it publishes
@@ -327,10 +336,10 @@ clicked on back to its `openTime`, pinned by a round-trip test over 50 rounds. R
 in-progress round's own detail is refused (400): that round has no settled candle yet, and
 `GET /api/live/round` already covers it.
 
-Frontend draws that candle context with a new shared module, `candle-chart.js`
-(`window.CandleChart.draw(svg, candles, options)`), rather than the practice tab's own SVG
-renderer in `app.js` — those closures aren't exported on `window`, and reusing them properly
-would mean pulling them into a shared module first, which is a separate change from this one.
+Frontend draws that candle context with `candle-chart.js`
+(`window.CandleChart.draw(svg, candles, options)`), which every candlestick chart on the site
+now goes through — `app.js` used to carry two more renderers of its own and they have been
+folded in.
 `live.js` clicks a round in the history strip, fetches its detail, and opens a popup: a mini
 candlestick chart with a dashed line at the round's open price, a trophy badge naming the
 winner, and the open/close prices and pool split. Closing follows the modal's own three exits
@@ -704,11 +713,11 @@ Two frontend traps, both hit while building this:
 - **Set `chart.hints` before the reveal animation, not after.** The animation is what redraws
   `app.js`'s chart, so assigning afterwards left every hint a guess late — named in the text,
   invisible on the chart until the next candle. The hint series are sized for the chart
-  *including* the candle about to appear, and both renderers ignore entries past the candles
-  they have.
-- **The volume strip comes out of the price plot**, in both `app.js` and `candle-chart.js`. The
-  viewBox is fixed by the caller, so candles make room rather than the chart growing; the strip
-  is only reserved once volume is actually unlocked, leaving an unhinted chart exactly as it was.
+  *including* the candle about to appear, and the renderer ignores entries past the candles it
+  has.
+- **The volume strip comes out of the price plot**, in `candle-chart.js`. The viewBox is fixed
+  by the caller, so candles make room rather than the chart growing; the strip is only reserved
+  once volume is actually unlocked, leaving an unhinted chart exactly as it was.
 
 Volume scales to the tallest bar in its own strip — it shares no units with the price axis
 beside it. The average draws in `--accent`, not up/down colours: it is a smoothing of closes
@@ -943,6 +952,33 @@ and S&P 500 (`/api/market/sp500` → `YahooFinanceClient`). `treemap.js` does th
   misrepresents who owns this work. Author and committer have always been the repo owner alone;
   the trailer was only ever text in the message body. Leave it off new commits — the 35 that
   already carry it are staying as they are rather than force-pushing a rewrite over an open PR.
+
+- **Merging a stack of PRs: never `--delete-branch` until the whole stack is in.** These land
+  as chains — each PR based on the one before it — and deleting a base branch on merge makes
+  GitHub **close** the PR sitting on top of it rather than retarget it to `main`. A closed PR
+  cannot be retargeted, so the only way back is to push the deleted branch again from its SHA,
+  reopen, retarget, merge. This has cost two recoveries; the second happened after the first
+  was misdiagnosed as a scripting error, which it was not — the branch deletion is the cause.
+
+  ```bash
+  gh pr merge <n> --merge          # no --delete-branch
+  gh pr edit <n+1> --base main     # retarget while it is still open
+  # delete the branches once the whole stack has landed
+  ```
+
+  Retarget the next PR **before** merging the current one where you can: a PR already pointing
+  at `main` cannot be orphaned by anything that happens underneath it.
+
+- **CI is red on `main` only when it is really broken.** It used to be red permanently because
+  three test classes read whatever the first-run Binance backfill had left in the database, and
+  GitHub's runners are geo-blocked by Binance (HTTP 451) — so the suite was quietly asserting
+  that somebody had already run the app on this machine. `CandleFixture.seedIfEmpty` is the fix
+  and the rule: **a test that needs candle history seeds its own**, and never assumes the table
+  has any. Reproduce CI locally with an empty database and no exchange:
+
+  ```bash
+  ./mvnw test -Dspring.datasource.url=jdbc:postgresql://localhost:5544/candles_ci -Dcandles.binance.base-url=http://127.0.0.1:9
+  ```
 
 - **Schema is Flyway's, not Hibernate's.** `ddl-auto` is `validate`: adding a field to an
   entity without a matching migration in `src/main/resources/db/migration` fails startup
