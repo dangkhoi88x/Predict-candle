@@ -89,11 +89,6 @@
 
     /* Money is shown to the cent and quantities to as much precision as they need. A holding of
        0.0003 BTC rounded to two places would read as nothing at all. */
-    function usd(v) {
-        if (v == null) return "–";
-        return (v < 0 ? "-$" : "$") + Math.abs(v).toLocaleString("en-US",
-            { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    }
 
     function qty(v) {
         if (v == null) return "–";
@@ -107,7 +102,7 @@
         if (n >= 1e9) return "$" + (n / 1e9).toFixed(1) + "B";
         if (n >= 1e6) return "$" + (n / 1e6).toFixed(1) + "M";
         if (n >= 1e3) return "$" + (n / 1e3).toFixed(1) + "K";
-        return usd(n);
+        return window.CandleFormat.usd(n);
     }
 
     /* A price level on the chart, with no currency symbol: four of them sit in one row and the
@@ -120,12 +115,6 @@
         });
     }
 
-    function pct(v) {
-        if (v == null) return "—";
-        var n = Number(v);
-        return (n >= 0 ? "+" : "") + n.toFixed(2) + "%";
-    }
-
     function tone(node, value) {
         node.classList.toggle("is-up", value > 0);
         node.classList.toggle("is-down", value < 0);
@@ -135,7 +124,7 @@
        digits and needs the .rolling class to clip it; these values carry currency symbols and
        separators and change on every poll, so a plain write is both correct and calmer. */
     function signed(node, value) {
-        node.textContent = (value > 0 ? "+" : "") + usd(value);
+        node.textContent = (value > 0 ? "+" : "") + window.CandleFormat.usd(value);
         node.classList.toggle("is-up", value > 0);
         node.classList.toggle("is-down", value < 0);
     }
@@ -183,11 +172,11 @@
             price.className = "trade-market-price";
             // A market with no price is shown and dimmed rather than hidden: it exists, the
             // feed is just quiet, and removing the row would look like a delisting.
-            price.textContent = market.price == null ? "—" : usd(Number(market.price));
+            price.textContent = market.price == null ? "—" : window.CandleFormat.usd(Number(market.price));
 
             var change = document.createElement("span");
             change.className = "trade-market-change";
-            change.textContent = pct(market.change24h);
+            change.textContent = window.CandleFormat.signedPct(market.change24h);
             if (market.change24h != null) tone(change, Number(market.change24h));
 
             row.appendChild(name);
@@ -209,8 +198,8 @@
 
         el.pair.textContent = market.symbol;
         el.pairName.textContent = market.name || "";
-        el.statPrice.textContent = market.price == null ? "—" : usd(Number(market.price));
-        el.statChange.textContent = pct(market.change24h);
+        el.statPrice.textContent = market.price == null ? "—" : window.CandleFormat.usd(Number(market.price));
+        el.statChange.textContent = window.CandleFormat.signedPct(market.change24h);
         if (market.change24h != null) tone(el.statChange, Number(market.change24h));
         el.statVolume.textContent = compact(market.volume24h);
 
@@ -403,7 +392,7 @@
             el.ohlc.appendChild(readoutField(field[0], field[1], field[2]));
         });
         if (change != null) {
-            el.ohlc.appendChild(readoutField("", pct(change), change >= 0 ? 1 : -1));
+            el.ohlc.appendChild(readoutField("", window.CandleFormat.signedPct(change), change >= 0 ? 1 : -1));
         }
         /* Reported in dollars, like the "KL 24h" figure above it. Binance counts volume in the
            base asset, so the raw number under a $ sign is out by the price of the coin — four
@@ -505,14 +494,14 @@
         if (side === "BUY") {
             el.preview.innerHTML = "";
             el.preview.appendChild(previewRow("Nhận về", qty(amount / price) + " " + selected));
-            el.preview.appendChild(previewRow("Phí", usd(amount * feeRate)));
-            el.preview.appendChild(previewRow("Tổng trừ", usd(amount * (1 + feeRate))));
+            el.preview.appendChild(previewRow("Phí", window.CandleFormat.usd(amount * feeRate)));
+            el.preview.appendChild(previewRow("Tổng trừ", window.CandleFormat.usd(amount * (1 + feeRate))));
         } else {
             var gross = amount * price;
             el.preview.innerHTML = "";
             el.preview.appendChild(previewRow("Bán", qty(amount) + " " + selected));
-            el.preview.appendChild(previewRow("Phí", usd(gross * feeRate)));
-            el.preview.appendChild(previewRow("Nhận về", usd(gross * (1 - feeRate))));
+            el.preview.appendChild(previewRow("Phí", window.CandleFormat.usd(gross * feeRate)));
+            el.preview.appendChild(previewRow("Nhận về", window.CandleFormat.usd(gross * (1 - feeRate))));
         }
     }
 
@@ -540,12 +529,12 @@
         if (!position) return;
 
         el.positionCard.appendChild(previewRow("Đang giữ", qty(position.quantity)));
-        el.positionCard.appendChild(previewRow("Giá vốn", usd(Number(position.averageCost))));
+        el.positionCard.appendChild(previewRow("Giá vốn", window.CandleFormat.usd(Number(position.averageCost))));
         el.positionCard.appendChild(previewRow("Giá trị",
-            position.value == null ? "—" : usd(Number(position.value))));
+            position.value == null ? "—" : window.CandleFormat.usd(Number(position.value))));
 
         var pnl = previewRow("Lãi/lỗ", position.unrealisedPnl == null ? "—"
-            : (Number(position.unrealisedPnl) >= 0 ? "+" : "") + usd(Number(position.unrealisedPnl)));
+            : (Number(position.unrealisedPnl) >= 0 ? "+" : "") + window.CandleFormat.usd(Number(position.unrealisedPnl)));
         if (position.unrealisedPnl != null) tone(pnl.lastChild, Number(position.unrealisedPnl));
         el.positionCard.appendChild(pnl);
     }
@@ -576,13 +565,13 @@
 
             var value = document.createElement("span");
             value.className = "trade-position-value";
-            value.textContent = position.value == null ? "—" : usd(Number(position.value));
+            value.textContent = position.value == null ? "—" : window.CandleFormat.usd(Number(position.value));
 
             var pnl = document.createElement("span");
             pnl.className = "trade-position-pnl";
             if (position.unrealisedPnl != null) {
                 var open = Number(position.unrealisedPnl);
-                pnl.textContent = (open >= 0 ? "+" : "") + usd(open);
+                pnl.textContent = (open >= 0 ? "+" : "") + window.CandleFormat.usd(open);
                 pnl.classList.toggle("is-up", open > 0);
                 pnl.classList.toggle("is-down", open < 0);
             } else {
@@ -591,7 +580,7 @@
 
             var cost = document.createElement("span");
             cost.className = "trade-position-cost";
-            cost.textContent = "vốn " + usd(Number(position.averageCost));
+            cost.textContent = "vốn " + window.CandleFormat.usd(Number(position.averageCost));
 
             card.appendChild(name);
             card.appendChild(amount);
@@ -640,7 +629,7 @@
             var detail = document.createElement("span");
             detail.className = "trade-fill-detail";
             detail.textContent = (buy ? "mua " : "bán ") + qty(fill.quantity)
-                + " @ " + usd(Number(fill.price));
+                + " @ " + window.CandleFormat.usd(Number(fill.price));
 
             var when = document.createElement("span");
             when.className = "trade-fill-when";
@@ -658,16 +647,14 @@
     function render() {
         if (!selected && state.markets.length) selected = state.markets[0].symbol;
 
-        el.equity.textContent = usd(state.equity);
-        el.cash.textContent = usd(state.cash);
+        el.equity.textContent = window.CandleFormat.usd(state.equity);
+        el.cash.textContent = window.CandleFormat.usd(state.cash);
         signed(el.realised, Number(state.realisedPnl));
         signed(el.unrealised, Number(state.unrealisedPnl));
 
         var start = Number(state.startingBalance);
-        // Named `ret`, not `pct` — pct() is the formatter and shadowing it here would silently
-        // break every percentage on the page below this line.
         var ret = start === 0 ? 0 : ((Number(state.equity) - start) / start) * 100;
-        el.ret.textContent = (ret >= 0 ? "+" : "") + ret.toFixed(2) + "%";
+        el.ret.textContent = window.CandleFormat.signedPct(ret);
         tone(el.ret, ret);
 
         el.inputLabel.textContent = side === "BUY" ? "Số tiền (USD)" : "Số lượng " + selected;
@@ -774,8 +761,8 @@
 
         var detail = document.createElement("span");
         detail.className = "trade-toast-detail";
-        detail.textContent = qty(fill.quantity) + " @ " + usd(Number(fill.price))
-            + " · phí " + usd(Number(fill.fee));
+        detail.textContent = qty(fill.quantity) + " @ " + window.CandleFormat.usd(Number(fill.price))
+            + " · phí " + window.CandleFormat.usd(Number(fill.fee));
 
         el.toast.appendChild(head);
         el.toast.appendChild(detail);

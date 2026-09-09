@@ -26,15 +26,6 @@
         return node;
     }
 
-    function percent(fraction) {
-        if (fraction === null || fraction === undefined) return "–";
-        return Math.round(fraction * 100) + "%";
-    }
-
-    function num(value) {
-        return Number(value || 0).toLocaleString("vi-VN");
-    }
-
     /* `pinned` marks the row lifted up under the podium. It is the only place that player
        appears — the row is moved, not duplicated — so it carries a badge to explain why the
        numbering jumps around it. */
@@ -55,10 +46,10 @@
         who.appendChild(cell);
         tr.appendChild(who);
 
-        tr.appendChild(el("td", "lb-num lb-score", num(entry.score)));
-        tr.appendChild(el("td", "lb-num lb-accuracy", percent(entry.accuracy)));
-        tr.appendChild(el("td", "lb-num lb-muted", num(entry.correct) + "/" + num(entry.total)));
-        tr.appendChild(el("td", "lb-num lb-score", num(entry.bestStreak)));
+        tr.appendChild(el("td", "lb-num lb-score", window.CandleFormat.count(entry.score)));
+        tr.appendChild(el("td", "lb-num lb-accuracy", window.CandleFormat.percent(entry.accuracy)));
+        tr.appendChild(el("td", "lb-num lb-muted", window.CandleFormat.count(entry.correct) + "/" + window.CandleFormat.count(entry.total)));
+        tr.appendChild(el("td", "lb-num lb-score", window.CandleFormat.count(entry.bestStreak)));
         return tr;
     }
 

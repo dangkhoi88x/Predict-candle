@@ -16,14 +16,6 @@
     var allQuotes = null;
     var activeGrid = null;
 
-    function formatPrice(v) {
-        return "$" + v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    }
-
-    function formatCompactUsd(v) {
-        return "$" + new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 2 }).format(v);
-    }
-
     function groupBySector(quotes) {
         var bySector = {};
         quotes.forEach(function (q) {
@@ -47,14 +39,14 @@
                 weight: s.totalCap,
                 change: s.weightedChange / s.totalCap,
                 price: s.totalCap,
-                priceLabel: formatCompactUsd(s.totalCap),
-                capLabel: formatCompactUsd(s.totalCap) + " (tổng vốn hóa ước tính)",
+                priceLabel: window.CandleFormat.compactUsd(s.totalCap),
+                capLabel: window.CandleFormat.compactUsd(s.totalCap) + " (tổng vốn hóa ước tính)",
                 _stocks: s.stocks,
             };
         });
 
         window.Treemap.renderTiles(grid, items, {
-            formatPrice: formatCompactUsd,
+            formatPrice: window.CandleFormat.compactUsd,
             onTileClick: function (item) { renderStockView(grid, item.name, item._stocks); },
         });
     }
@@ -71,14 +63,14 @@
                 weight: Math.sqrt(q.marketCap),
                 change: q.changePercent,
                 price: q.price,
-                priceLabel: formatPrice(q.price),
-                formatPrice: formatPrice,
-                capLabel: formatCompactUsd(q.marketCap) + " (ước tính)",
+                priceLabel: window.CandleFormat.price(q.price),
+                formatPrice: window.CandleFormat.price,
+                capLabel: window.CandleFormat.compactUsd(q.marketCap) + " (ước tính)",
                 /* No turnover and no share: this feed carries neither, and the panel leaves
                    a row out rather than drawing it with a dash. No playAsset either — the
                    game deals crypto pairs, so there is no round to offer on a stock. */
                 figures: [
-                    { label: "Vốn hóa", value: formatCompactUsd(q.marketCap) + " (ước tính)" },
+                    { label: "Vốn hóa", value: window.CandleFormat.compactUsd(q.marketCap) + " (ước tính)" },
                     { label: "Ngành", value: sectorName },
                 ],
                 sparkline: q.sparkline,
@@ -86,7 +78,7 @@
             };
         });
 
-        window.Treemap.renderTiles(grid, items, { formatPrice: formatPrice, onTileClick: window.__showHeatmapDetail });
+        window.Treemap.renderTiles(grid, items, { formatPrice: window.CandleFormat.price, onTileClick: window.__showHeatmapDetail });
     }
 
     if (el.backBtn) {

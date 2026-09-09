@@ -21,13 +21,6 @@
     // track instead would restart the CSS animation and make the strip visibly jump.
     var renderedItems = [];
 
-    function formatPrice(v) {
-        if (typeof v !== "number") return "–";
-        if (v >= 1000) return "$" + v.toLocaleString("en-US", { maximumFractionDigits: 0 });
-        if (v >= 1) return "$" + v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        return "$" + v.toLocaleString("en-US", { minimumFractionDigits: 4, maximumFractionDigits: 6 });
-    }
-
     function formatChange(pct) {
         if (typeof pct !== "number") return { text: "–", up: true };
         var up = pct >= 0;
@@ -54,7 +47,7 @@
 
         var price = document.createElement("span");
         price.className = "ticker-price rolling";
-        window.CandleRolling.update(price, formatPrice(coin.current_price));
+        window.CandleRolling.update(price, window.CandleFormat.price(coin.current_price));
         item.appendChild(price);
 
         var change = formatChange(coin.price_change_percentage_24h);
@@ -67,7 +60,7 @@
     }
 
     function updateItem(entry, coin) {
-        window.CandleRolling.update(entry.price, formatPrice(coin.current_price));
+        window.CandleRolling.update(entry.price, window.CandleFormat.price(coin.current_price));
         var change = formatChange(coin.price_change_percentage_24h);
         // Reassigning className here would drop .rolling along with the old direction class.
         entry.change.className = "ticker-change rolling " + (change.up ? "up" : "down");

@@ -57,23 +57,6 @@
     var pollTimer = null;
     var tickTimer = null;
 
-    function formatUsd(value) {
-        if (value === null || value === undefined) return "–";
-        return "$" + Number(value).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    }
-
-    function formatSignedPct(pct) {
-        var sign = pct > 0 ? "+" : "";
-        return sign + pct.toFixed(2) + "%";
-    }
-
-    function formatClock(ms) {
-        var total = Math.max(0, Math.ceil(ms / 1000));
-        var m = Math.floor(total / 60);
-        var s = total % 60;
-        return (m < 10 ? "0" : "") + m + ":" + (s < 10 ? "0" : "") + s;
-    }
-
     /* ---- fetching -------------------------------------------------------------------- */
 
     function fetchRound() {
@@ -136,16 +119,16 @@
         el.roundState.className = "live-round-state " + (r.locked ? "is-locked" : "is-open");
 
         var price = r.livePrice !== null && r.livePrice !== undefined ? r.livePrice : r.openPrice;
-        window.CandleRolling.update(el.price, formatUsd(price));
+        window.CandleRolling.update(el.price, window.CandleFormat.usd(price));
 
         if (r.openPrice && price !== null && price !== undefined) {
             var pct = (Number(price) - Number(r.openPrice)) / Number(r.openPrice) * 100;
-            window.CandleRolling.update(el.delta, formatSignedPct(pct));
+            window.CandleRolling.update(el.delta, window.CandleFormat.signedPct(pct));
             el.delta.className = "market-delta live-delta rolling " + (pct >= 0 ? "outcome-up" : "outcome-down");
         } else {
             el.delta.textContent = "";
         }
-        el.openNote.textContent = r.openPrice ? "Giá mở vòng: " + formatUsd(r.openPrice) : "";
+        el.openNote.textContent = r.openPrice ? "Giá mở vòng: " + window.CandleFormat.usd(r.openPrice) : "";
 
         renderPool(r.longCount, r.shortCount);
         renderButtons(r);
@@ -349,7 +332,7 @@
         var left = Math.max(0, target - now);
 
         el.timerFill.style.width = ((left / total) * 100).toFixed(1) + "%";
-        el.timerValue.textContent = (now < lockAt ? "Khoá sau " : "Đóng sau ") + formatClock(left);
+        el.timerValue.textContent = (now < lockAt ? "Khoá sau " : "Đóng sau ") + window.CandleFormat.clock(left);
 
         // Crossed lock or close since the last poll: refresh from the server rather than guess.
         if (left === 0) loadAll();
@@ -438,8 +421,8 @@
         el.modalBadgeState.textContent = "VÒNG #" + detail.roundNumber + " ĐÃ KẾT THÚC";
         el.modalBadgeResult.textContent = (detail.result === "LONG" ? "LONG" : "SHORT") + " thắng vòng này";
         el.modalBadgeResult.classList.add(detail.result === "LONG" ? "outcome-up" : "outcome-down");
-        el.modalOpen.textContent = formatUsd(detail.openPrice);
-        el.modalClosePrice.textContent = formatUsd(detail.closePrice);
+        el.modalOpen.textContent = window.CandleFormat.usd(detail.openPrice);
+        el.modalClosePrice.textContent = window.CandleFormat.usd(detail.closePrice);
 
         var total = detail.longCount + detail.shortCount;
         var pct = total === 0 ? 50 : Math.round((detail.longCount / total) * 100);

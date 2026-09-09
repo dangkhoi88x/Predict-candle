@@ -22,13 +22,6 @@
     var round = null;
     var refetchAt = 0;
 
-    function formatClock(ms) {
-        var total = Math.max(0, Math.ceil(ms / 1000));
-        var m = Math.floor(total / 60);
-        var s = total % 60;
-        return m + ":" + (s < 10 ? "0" : "") + s;
-    }
-
     function hide() {
         banner.classList.add("hidden");
         railTag.classList.add("hidden");
@@ -69,9 +62,9 @@
             return;
         }
 
-        text.textContent = "Vòng live #" + round.roundNumber + " chốt sau " + formatClock(left);
+        text.textContent = "Vòng live #" + round.roundNumber + " chốt sau " + window.CandleFormat.clock(left);
         banner.classList.remove("hidden");
-        railTag.textContent = formatClock(left);
+        railTag.textContent = window.CandleFormat.clock(left);
         railTag.classList.remove("hidden");
     }
 
