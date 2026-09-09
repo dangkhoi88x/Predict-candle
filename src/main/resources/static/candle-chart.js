@@ -20,6 +20,25 @@ window.CandleChart = (function () {
         return pad(d.getDate()) + "/" + pad(d.getMonth() + 1) + " " + pad(d.getHours()) + "h";
     }
 
+    /* Round numbers at a human interval — 1, 2 or 5 times a power of ten — rather than the
+       data's own extremes. An axis exists to be read off, and 23,417.83 is not a number anybody
+       reads off anything. */
+    function niceTicks(lo, hi, target) {
+        if (!isFinite(lo) || !isFinite(hi) || hi <= lo) return [lo];
+        var raw = (hi - lo) / (target || 4);
+        var mag = Math.pow(10, Math.floor(Math.log10(raw)));
+        var norm = raw / mag;
+        var stepSize = (norm >= 7.5 ? 10 : norm >= 3.5 ? 5 : norm >= 2.25 ? 2.5 : norm >= 1.5 ? 2 : 1) * mag;
+        var first = Math.ceil(lo / stepSize) * stepSize;
+        var out = [];
+        /* Re-rounded on the way out because repeated addition of a fractional step accumulates
+           float error, and an axis labelled 62000.000000000007 is not an axis. */
+        for (var v = first; v <= hi + stepSize * 0.001; v += stepSize) {
+            out.push(Math.round(v / stepSize) * stepSize);
+        }
+        return out;
+    }
+
     function formatAxisPrice(v) {
         if (v >= 1000) return (v / 1000).toFixed(v >= 10000 ? 0 : 1) + "K";
         return v.toFixed(v >= 100 ? 0 : 2);
@@ -76,7 +95,13 @@ window.CandleChart = (function () {
         var volY1 = plotY1;
         if (volumes) plotY1 -= volH + 4;
         var step = (plotX1 - plotX0) / n;
-        var bodyW = Math.max(1.5, Math.min(step * 0.62, 14));
+        /* Bounds, not a fixed width. A live popup showing forty candles in a small box and a
+           practice round showing twenty-five across a wide card both want the widest body the
+           step allows, but "widest" means something four times larger in one than the other —
+           and a body clamped to 14px in the practice card leaves the chart looking like a bar
+           code. Defaults are the small-chart values every existing caller was drawn with. */
+        var body = options.body || {};
+        var bodyW = Math.max(body.min || 1.5, Math.min(step * (body.ratio || 0.62), body.max || 14));
 
         var lo = Infinity, hi = -Infinity;
         candles.forEach(function (c) {
@@ -101,17 +126,27 @@ window.CandleChart = (function () {
         /* A band behind the candles the caller is asking about. Drawn first so the candles sit
            on top of it — the pattern quiz would otherwise be asking "name the pattern" of a
            chart with no indication which candles it means, a far harder and different question. */
-        if (options.highlight) {
-            var hFrom = options.highlight.from, hLen = options.highlight.length;
-            if (hLen > 0 && hFrom >= 0 && hFrom + hLen <= n) {
-                svg.appendChild(svgEl("rect", {
-                    x: cx(hFrom) - step / 2, y: plotY0 - 4,
-                    width: step * hLen, height: (volumes ? volY1 : plotY1) - plotY0 + 8,
-                    rx: 3, fill: accent, "fill-opacity": "0.12",
-                    stroke: accent, "stroke-opacity": "0.5", "stroke-width": "1",
-                }));
+        /* Bands behind the candles, marking stretches of the x axis. One caller marks the
+           pattern it is asking about; another marks three at once — what the player saw, what
+           they had to guess, and the context either side — which is why this takes a list. A
+           band with no colour of its own gets the accent and an outline, the shape the single
+           highlight has always had. */
+        var bands = options.highlight ? [options.highlight] : (options.highlights || []);
+        bands.forEach(function (band) {
+            if (!band || !(band.length > 0) || band.from < 0 || band.from + band.length > n) return;
+            var attrs = {
+                x: cx(band.from) - step / 2, y: plotY0 - 4,
+                width: step * band.length, height: (volumes ? volY1 : plotY1) - plotY0 + 8,
+                rx: 3, fill: band.color || accent,
+                "fill-opacity": band.opacity == null ? "0.12" : band.opacity,
+            };
+            if (!band.color) {
+                attrs.stroke = accent;
+                attrs["stroke-opacity"] = "0.5";
+                attrs["stroke-width"] = "1";
             }
-        }
+            svg.appendChild(svgEl("rect", attrs));
+        });
 
         /* Volume first, so candles and the average draw over it rather than under. Scaled to
            its own strip's tallest bar — volume is read as "big for this chart", never against
@@ -159,29 +194,61 @@ window.CandleChart = (function () {
             svg.appendChild(tag);
         }
 
-        candles.forEach(function (c, i) {
+        /* Each candle is a group rather than two loose shapes. Two callers need to address a
+           candle after the fact — one animates the ones that just arrived, one dims the ones
+           the pointer is not on — and a group is what gives them something to address. The
+           groups come back on the frame. */
+        var groups = candles.map(function (c, i) {
             var color = c.close >= c.open ? up : down;
             var x = cx(i);
             var yOpen = py(c.open), yClose = py(c.close);
-            svg.appendChild(svgEl("line", {
-                x1: x, x2: x, y1: py(c.high), y2: py(c.low), stroke: color, "stroke-width": "1",
+            var g = svgEl("g", { "class": "chart-candle" });
+            g.appendChild(svgEl("line", {
+                x1: x, x2: x, y1: py(c.high), y2: py(c.low), stroke: color,
+                "stroke-width": options.wickWidth || "1",
             }));
-            svg.appendChild(svgEl("rect", {
+            g.appendChild(svgEl("rect", {
                 x: x - bodyW / 2, y: Math.min(yOpen, yClose), width: bodyW,
-                height: Math.max(1, Math.abs(yClose - yOpen)), rx: 1, fill: color,
+                height: Math.max(1, Math.abs(yClose - yOpen)),
+                rx: Math.min(options.bodyRadius == null ? 1 : options.bodyRadius, bodyW * 0.18),
+                fill: color,
             }));
+            /* Candles at or after enterFrom are the ones this draw is adding, so they rise into
+               place; the ones already on screen must not move, or every reveal would re-animate
+               the whole chart. */
+            if (options.enterFrom != null && i >= options.enterFrom) {
+                g.style.transformBox = "fill-box";
+                g.style.transformOrigin = "bottom center";
+                g.style.animation = "candle-rise var(--duration-enter) var(--ease-out) both";
+            }
+            svg.appendChild(g);
+            return g;
         });
 
-        // Skipped near the reference line's own price tag so the two labels never overlap.
+        /* The price axis. Three levels off the data's own extremes by default, which is right
+           for a chart the size of a postage stamp; options.ticks asks instead for round numbers
+           at a readable interval, plus a rule at each. A big chart wants those — "23K" printed
+           three times because the range is narrower than the rounding is not an axis — and a
+           small one has no room for them. */
         var refY = options.referencePrice != null ? py(options.referencePrice) : null;
-        [hi, lo + span / 2, lo].forEach(function (tick) {
+        var axisFormat = options.axisFormat || formatAxisPrice;
+        var levels = options.ticks ? niceTicks(lo, hi, options.ticks) : [hi, lo + span / 2, lo];
+        levels.forEach(function (tick) {
             var y = py(tick);
-            if (refY != null && Math.abs(y - refY) < 10) return;
+            if (y < plotY0 - 1 || y > plotY1 + 1) return;
+            if (options.ticks) {
+                svg.appendChild(svgEl("line", {
+                    x1: plotX0, x2: plotX1, y1: y, y2: y, stroke: muted,
+                    "stroke-opacity": "0.16", "stroke-dasharray": "2 4",
+                }));
+            }
+            // Skipped near the reference line's own price tag so the two labels never overlap.
+            if (refY != null && Math.abs(y - refY) < (options.ticks ? 16 : 10)) return;
             var label = svgEl("text", {
                 x: plotX1 + 6, y: y, "dominant-baseline": "middle",
-                "font-size": "9.5", fill: muted, "font-family": "var(--mono)",
+                "font-size": options.axisFontSize || "9.5", fill: muted, "font-family": "var(--mono)",
             });
-            label.textContent = formatAxisPrice(tick);
+            label.textContent = axisFormat(tick);
             svg.appendChild(label);
         });
 
@@ -206,25 +273,53 @@ window.CandleChart = (function () {
             }));
         });
 
+        /* A labelled divider at a candle boundary. The practice round puts one where guessing
+           stopped and the "what happened next" candles begin — without it the reveal reads as
+           part of what was being guessed. */
+        if (options.marker && options.marker.index > 0 && options.marker.index < n) {
+            var mx = plotX0 + step * options.marker.index;
+            svg.appendChild(svgEl("line", {
+                x1: mx, x2: mx, y1: plotY0, y2: plotY1, stroke: accent,
+                "stroke-opacity": "0.55", "stroke-width": "1.4", "stroke-dasharray": "5 4",
+            }));
+            if (options.marker.label) {
+                var ml = svgEl("text", {
+                    x: mx + 5, y: plotY0 + 10, "font-size": "9.5", fill: accent,
+                    "font-family": "var(--mono)", "font-weight": "600",
+                });
+                ml.textContent = options.marker.label;
+                svg.appendChild(ml);
+            }
+        }
+
         /* No time axis when the candles carry no time. The daily challenge is the caller that
            needs this: sending dates with a round the player is still guessing would hand them
            the period to go and look up, so its candles arrive without one. Drawing the axis
            anyway turned every missing date into "01/01 08h", which is worse than no axis —
            it is a wrong one. */
-        var labelStep = Math.max(1, Math.round(n / 4));
+        /* options.timeAt(i) lets a caller label the axis from something other than the candle:
+           the practice round's candles carry no timestamp — a date is the answer — but it does
+           know the window's start and the step between candles, so it can still say what hour
+           each one is. Without it the axis reads the candle's own time, and draws nothing when
+           there is none. */
+        var timeAt = options.timeAt || function (i) {
+            return candles[i].time == null ? null : formatDayHour(candles[i].time);
+        };
+        var labelStep = Math.max(1, Math.round(n / (options.timeLabels || 4)));
         candles.forEach(function (c, i) {
-            if (c.time == null) return;
             if (i % labelStep !== 0 && i !== n - 1) return;
+            var label = timeAt(i);
+            if (label == null) return;
             var t = svgEl("text", {
-                x: cx(i), y: h - 4, "text-anchor": "middle",
-                "font-size": "9", fill: muted, "font-family": "var(--mono)",
+                x: cx(i), y: h - (options.timeAxisInset || 4), "text-anchor": "middle",
+                "font-size": options.timeFontSize || "9", fill: muted, "font-family": "var(--mono)",
             });
-            t.textContent = formatDayHour(c.time);
+            t.textContent = label;
             svg.appendChild(t);
         });
 
         return {
-            n: n, step: step,
+            n: n, step: step, candles: candles, groups: groups, bodyW: bodyW,
             plotX0: plotX0, plotX1: plotX1, plotY0: plotY0, plotY1: plotY1,
             /* Where the drawing actually ends, which is below plotY1 whenever volume took its
                strip. The crosshair reads this rather than plotY1: a vertical line that stopped

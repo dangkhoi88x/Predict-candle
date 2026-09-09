@@ -155,18 +155,6 @@
         return sign + Math.abs(value).toFixed(2) + "%";
     }
 
-    function niceTicks(lo, hi, target) {
-        if (!isFinite(lo) || !isFinite(hi) || hi <= lo) return [lo];
-        var raw = (hi - lo) / (target || 4);
-        var mag = Math.pow(10, Math.floor(Math.log10(raw)));
-        var norm = raw / mag;
-        var step = (norm >= 7.5 ? 10 : norm >= 3.5 ? 5 : norm >= 2.25 ? 2.5 : norm >= 1.5 ? 2 : 1) * mag;
-        var first = Math.ceil(lo / step) * step;
-        var out = [];
-        for (var v = first; v <= hi + step * 0.001; v += step) out.push(Math.round(v / step) * step);
-        return out;
-    }
-
     // ---------- chart ----------
 
     var chart = {
@@ -244,250 +232,162 @@
         chart.svg.addEventListener("pointerdown", onPointerMove);
     }
 
-    function geometry(n) {
-        var plotX0 = PAD.left, plotX1 = W - PAD.right;
-        var plotY0 = PAD.top, plotY1 = H - PAD.bottom;
-        /* The volume strip comes out of the price plot rather than being added below it: the
-           viewBox is fixed, so the candles have to make room. Reserved only once volume is
-           actually unlocked, so an unhinted chart is drawn exactly as tall as it always was. */
-        var volumes = chart.hints && chart.hints.volumes;
-        var volH = volumes ? (plotY1 - plotY0) * 0.18 : 0;
-        var volY1 = plotY1;
-        if (volumes) plotY1 -= volH + 6;
-        var step = (plotX1 - plotX0) / Math.max(n, 1);
-        var bodyW = Math.max(4, Math.min(step * 0.55, 44));
-        return {
-            plotX0: plotX0, plotX1: plotX1, plotY0: plotY0, plotY1: plotY1,
-            plotW: plotX1 - plotX0, plotH: plotY1 - plotY0,
-            volH: volH, volY1: volY1,
-            step: step, bodyW: bodyW,
-            cx: function (i) { return plotX0 + step * (i + 0.5); },
-        };
-    }
-
-    function domain(candles) {
-        var lo = Infinity, hi = -Infinity;
-        for (var i = 0; i < candles.length; i++) {
-            if (candles[i].low < lo) lo = candles[i].low;
-            if (candles[i].high > hi) hi = candles[i].high;
-        }
-        var pad = (hi - lo) * 0.15 || Math.abs(hi) * 0.02 || 1;
-        return { lo: lo - pad, hi: hi + pad };
-    }
-
+    /* Which candle the pointer is over, in the svg's own units.
+     *
+     * These charts are drawn with preserveAspectRatio="none", so x and y are scaled by
+     * different factors and no single ratio converts a screen point into chart units. Only the
+     * x axis is needed here — the hover snaps to a candle — so a width ratio is enough and
+     * cheaper than inverting the full matrix. */
     function onPointerMove(evt) {
-        if (!chart.candles.length) return;
+        if (!chart.frame) return;
         var box = chart.svg.getBoundingClientRect();
+        if (!box.width) return;
         var x = ((evt.clientX - box.left) / box.width) * W;
-        var geo = geometry(chart.candles.length);
-        var i = Math.floor((x - geo.plotX0) / geo.step);
-        chart.hoverIndex = Math.max(0, Math.min(chart.candles.length - 1, i));
-        draw();
+        setHover(chart.frame.indexAt(x));
     }
 
     function onPointerLeave() {
-        chart.hoverIndex = null;
-        draw();
+        setHover(null);
     }
 
-    function draw() {
-        var candles = chart.candles;
-        var n = candles.length;
-        var svg = chart.svg;
-        svg.innerHTML = "";
-        if (!n) return;
-
-        var geo = geometry(n);
-        var dom = domain(candles);
-
-        function priceY(v) {
-            return geo.plotY1 - ((v - dom.lo) / (dom.hi - dom.lo || 1)) * geo.plotH;
-        }
-
-        // grid lines + axis labels
-        var ticks = niceTicks(dom.lo, dom.hi, 4);
-        var lastClose = candles[n - 1].close;
-        var lastY = priceY(lastClose);
-        ticks.forEach(function (tick) {
-            var y = priceY(tick);
-            if (y < geo.plotY0 - 1 || y > geo.plotY1 + 1) return;
-            svg.appendChild(svgEl("line", {
-                x1: geo.plotX0, x2: geo.plotX1, y1: y, y2: y,
-                stroke: GRID, "stroke-opacity": "0.16", "stroke-dasharray": "2 4",
-            }));
-            if (Math.abs(y - lastY) < 16) return;
-            var label = svgEl("text", {
-                x: geo.plotX1 + 8, y: y, "dominant-baseline": "middle",
-                "font-size": "10.5", fill: GRID, "font-family": "var(--mono)",
-            });
-            label.textContent = formatAxisPrice(tick);
-            svg.appendChild(label);
+    /**
+     * The hover state, drawn as a layer over a chart that is already on screen.
+     *
+     * It used to redraw the whole chart on every pointer move, which is a few hundred DOM
+     * insertions between the mouse and the picture. Now the candles are dimmed in place — one
+     * opacity per group — and the guides and badges are rebuilt from the frame draw() handed
+     * back. The practice chart's hover is deliberately not CandleChart.crosshair(): that one
+     * follows the pointer freely on the price axis, which is right for the trade terminal
+     * where somebody is measuring a level. Here the question is "which candle is that", so
+     * both guides snap to the candle and a dot marks its close.
+     */
+    function setHover(index) {
+        if (index === chart.hoverIndex) return;
+        chart.hoverIndex = index;
+        chart.frame.groups.forEach(function (g, i) {
+            g.style.opacity = index != null && index !== i ? "0.35" : "1";
+            g.style.transition = "opacity var(--duration-fast) var(--ease-out)";
         });
+        drawHover();
+        updateQuote();
+    }
 
-        /* Volume before the candles so they draw over it. Scaled to the tallest bar in its
-           own strip — volume shares no units with the price axis beside it, and is read as
-           "big for this chart" rather than against any number. */
-        var volumes = chart.hints && chart.hints.volumes;
-        if (volumes) {
-            var maxVol = 0;
-            for (var vi = 0; vi < volumes.length && vi < n; vi++) {
-                maxVol = Math.max(maxVol, +volumes[vi] || 0);
-            }
-            for (var vj = 0; vj < volumes.length && vj < n; vj++) {
-                var barH = maxVol ? ((+volumes[vj] || 0) / maxVol) * geo.volH : 0;
-                svg.appendChild(svgEl("rect", {
-                    x: geo.cx(vj) - geo.bodyW / 2, y: geo.volY1 - barH,
-                    width: geo.bodyW, height: Math.max(barH, 0.5),
-                    fill: candles[vj].close >= candles[vj].open ? UP : DOWN,
-                    "fill-opacity": "0.3",
-                }));
-            }
+    var HOVER_LAYER = "chart-hover";
+
+    function drawHover() {
+        var old = chart.svg.querySelector("." + HOVER_LAYER);
+        if (old) chart.svg.removeChild(old);
+        if (chart.hoverIndex == null || !chart.frame) return;
+
+        var f = chart.frame;
+        var c = chart.candles[chart.hoverIndex];
+        var hx = f.cx(chart.hoverIndex);
+        var hy = f.py(c.close);
+        var g = svgEl("g", { "class": HOVER_LAYER });
+
+        g.appendChild(svgEl("line", {
+            x1: hx, x2: hx, y1: f.plotY0, y2: f.bottom,
+            stroke: GRID, "stroke-opacity": "0.5", "stroke-dasharray": "3 3",
+        }));
+        g.appendChild(svgEl("line", {
+            x1: f.plotX0, x2: f.plotX1, y1: hy, y2: hy,
+            stroke: GRID, "stroke-opacity": "0.5", "stroke-dasharray": "3 3",
+        }));
+        g.appendChild(svgEl("circle", {
+            cx: hx, cy: hy, r: 4.5, fill: SURFACE,
+            stroke: c.close >= c.open ? UP : DOWN, "stroke-width": "2",
+        }));
+
+        var badgeW = PAD.right - 6;
+        g.appendChild(svgEl("rect", {
+            x: f.plotX1 + 3, y: hy - 9, width: badgeW, height: 18, rx: 4, fill: HOVER_BADGE_BG,
+        }));
+        var priceText = svgEl("text", {
+            x: f.plotX1 + 3 + badgeW / 2, y: hy, "text-anchor": "middle",
+            "dominant-baseline": "middle", "font-size": "10", "font-weight": "700",
+            fill: HOVER_BADGE_TEXT, "font-family": "var(--mono)",
+        });
+        priceText.textContent = formatAxisPrice(c.close);
+        g.appendChild(priceText);
+
+        var dateLabel = formatClock(chart.baseTime + chart.hoverIndex * CANDLE_STEP_SECONDS);
+        var dateW = Math.max(38, dateLabel.length * 6.5 + 12);
+        var dateX = Math.min(Math.max(hx - dateW / 2, f.plotX0), f.plotX1 - dateW);
+        g.appendChild(svgEl("rect", {
+            x: dateX, y: H - 17, width: dateW, height: 15, rx: 3, fill: HOVER_BADGE_BG,
+        }));
+        var dateText = svgEl("text", {
+            x: dateX + dateW / 2, y: H - 9.5, "text-anchor": "middle",
+            "dominant-baseline": "middle", "font-size": "9.5", "font-weight": "700",
+            fill: HOVER_BADGE_TEXT, "font-family": "var(--mono)",
+        });
+        dateText.textContent = dateLabel;
+        g.appendChild(dateText);
+
+        chart.svg.appendChild(g);
+    }
+
+    /**
+     * The practice chart, drawn by the same module every other chart on the site uses.
+     *
+     * This file used to carry its own renderer — grid, axis, volume strip, moving average,
+     * candles, last-price line — three hundred lines that did what candle-chart.js already
+     * did, a few pixels differently. Two implementations of one picture is two places to fix
+     * anything about how a candle looks, and nothing to make you fix the second.
+     *
+     * What stayed here is the interaction, because that genuinely differs: see setHover().
+     */
+    function draw() {
+        var n = chart.candles.length;
+        if (!n) {
+            chart.svg.innerHTML = "";
+            chart.frame = null;
+            return;
         }
 
-        /* A smoothing of closes already on screen, so it is drawn in the neutral accent: it
-           adds no facts, it makes the trend readable. Leading nulls have no full period behind
-           them and start the line late rather than at zero. */
-        var ma = chart.hints && chart.hints.movingAverage;
-        if (ma) {
-            var maPoints = [];
-            for (var mi = 0; mi < ma.length && mi < n; mi++) {
-                if (ma[mi] == null) continue;
-                maPoints.push(geo.cx(mi).toFixed(1) + "," + priceY(+ma[mi]).toFixed(1));
-            }
-            if (maPoints.length > 1) {
-                svg.appendChild(svgEl("polyline", {
-                    points: maPoints.join(" "), fill: "none", stroke: ACCENT,
-                    "stroke-width": "1.8", "stroke-linejoin": "round", "stroke-opacity": "0.85",
-                }));
-            }
-        }
-
-        // candles
-        var newFrom = n > chart.drawnCount ? chart.drawnCount : Infinity;
-        var wantLabels = Math.max(2, Math.min(6, Math.floor(geo.plotW / 70)));
-        var labelStep = Math.max(1, Math.round(n / wantLabels));
-        for (var i = 0; i < n; i++) {
-            var c = candles[i];
-            var up = c.close >= c.open;
-            var color = up ? UP : DOWN;
-            var x = geo.cx(i);
-            var yHigh = priceY(c.high), yLow = priceY(c.low);
-            var yOpen = priceY(c.open), yClose = priceY(c.close);
-            var top = Math.min(yOpen, yClose);
-            var bodyH = Math.max(1.5, Math.abs(yClose - yOpen));
-            var dim = chart.hoverIndex != null && chart.hoverIndex !== i;
-
-            var group = svgEl("g", {});
-            group.style.opacity = dim ? "0.35" : "1";
-            group.style.transition = "opacity var(--duration-fast) var(--ease-out)";
-            if (i >= newFrom) {
-                group.style.transformBox = "fill-box";
-                group.style.transformOrigin = "bottom center";
-                group.style.animation = "candle-rise var(--duration-enter) var(--ease-out) both";
-            }
-
-            group.appendChild(svgEl("line", {
-                x1: x, x2: x, y1: yHigh, y2: yLow, stroke: color, "stroke-width": "1.4",
-            }));
-            group.appendChild(svgEl("rect", {
-                x: x - geo.bodyW / 2, y: top, width: geo.bodyW, height: bodyH,
-                rx: Math.min(2.5, geo.bodyW * 0.18), fill: color,
-            }));
-            svg.appendChild(group);
-
-            if (i % labelStep === 0 || i === n - 1) {
-                var timeLabel = svgEl("text", {
-                    x: x, y: H - 6, "text-anchor": "middle", "font-size": "10.5",
-                    fill: GRID, "font-family": "var(--mono)",
-                });
-                timeLabel.textContent = formatClock(chart.baseTime + i * CANDLE_STEP_SECONDS);
-                svg.appendChild(timeLabel);
-            }
-        }
+        var last = chart.candles[n - 1];
+        chart.frame = window.CandleChart.draw(chart.svg, chart.candles, {
+            /* Wider bodies than the small charts this module was written for: the practice
+               card is the widest chart on the site and shows the fewest candles. */
+            body: { min: 4, ratio: 0.55, max: 44 },
+            wickWidth: "1.4",
+            bodyRadius: 2.5,
+            volumes: chart.hints && chart.hints.volumes,
+            lines: chart.hints && chart.hints.movingAverage
+                ? [{ values: chart.hints.movingAverage, color: ACCENT, width: "1.8" }]
+                : [],
+            /* The last close, coloured by that candle's own direction — the reader is asking
+               "where is price now", and the line answering carries the same green or red the
+               candle it came from does. */
+            referencePrice: last.close,
+            referenceColor: last.close >= last.open ? "up" : "down",
+            referenceLabel: formatAxisPrice(last.close),
+            // Round levels with a rule at each: this is the widest chart on the site.
+            ticks: 4,
+            axisFormat: formatAxisPrice,
+            axisFontSize: "10.5",
+            marker: chart.revealMarkerIndex != null
+                ? { index: chart.revealMarkerIndex, label: "diễn biến thực tế →" }
+                : null,
+            // Only the candles this draw is adding rise into place.
+            enterFrom: n > chart.drawnCount ? chart.drawnCount : null,
+            /* The candles carry no timestamp — a date is the answer — but the window's start
+               and the step between candles are known, so the axis can still say the hour. */
+            timeAt: function (i) { return formatClock(chart.baseTime + i * CANDLE_STEP_SECONDS); },
+            timeLabels: 6,
+            timeAxisInset: 6,
+            timeFontSize: "10.5",
+        });
         chart.drawnCount = n;
 
-        // divider marking where guessing stopped and the "here's what happened next" reveal begins
-        if (chart.revealMarkerIndex != null && chart.revealMarkerIndex > 0 && chart.revealMarkerIndex < n) {
-            var markerX = geo.plotX0 + geo.step * chart.revealMarkerIndex;
-            svg.appendChild(svgEl("line", {
-                x1: markerX, x2: markerX, y1: geo.plotY0, y2: geo.plotY1,
-                stroke: ACCENT, "stroke-opacity": "0.55", "stroke-width": "1.4", "stroke-dasharray": "5 4",
-            }));
-            var markerLabel = svgEl("text", {
-                x: markerX + 5, y: geo.plotY0 + 10, "font-size": "9.5",
-                fill: ACCENT, "font-family": "var(--mono)", "font-weight": "600",
-            });
-            markerLabel.textContent = "diễn biến thực tế →";
-            svg.appendChild(markerLabel);
-        }
-
-        // last-price dashed line + badge
-        var lastUp = candles[n - 1].close >= candles[n - 1].open;
-        var lastColor = lastUp ? UP : DOWN;
-        svg.appendChild(svgEl("line", {
-            x1: geo.plotX0, x2: geo.plotX1, y1: lastY, y2: lastY,
-            stroke: lastColor, "stroke-opacity": "0.55", "stroke-width": "1", "stroke-dasharray": "4 4",
-        }));
-        var badgeW = PAD.right - 6;
-        svg.appendChild(svgEl("rect", {
-            x: geo.plotX1 + 3, y: lastY - 9, width: badgeW, height: 18, rx: 4, fill: lastColor,
-        }));
-        var badgeText = svgEl("text", {
-            x: geo.plotX1 + 3 + badgeW / 2, y: lastY, "text-anchor": "middle",
-            "dominant-baseline": "middle", "font-size": "10", "font-weight": "600",
-            fill: SURFACE, "font-family": "var(--mono)",
+        if (chart.hoverIndex != null && chart.hoverIndex >= n) chart.hoverIndex = null;
+        /* Every draw wipes the layer, so it goes back from the remembered position rather than
+           waiting for the next pointer move — otherwise a reveal leaves a chart with no
+           crosshair under a stationary cursor. */
+        chart.frame.groups.forEach(function (g, i) {
+            if (chart.hoverIndex != null && chart.hoverIndex !== i) g.style.opacity = "0.35";
         });
-        badgeText.textContent = formatAxisPrice(lastClose);
-        svg.appendChild(badgeText);
-
-        // hover crosshair: vertical + horizontal dashed guides, plus price/time badges
-        // that read off the exact hovered value — mirrors a standard trading-chart crosshair.
-        if (chart.hoverIndex != null) {
-            var hc = candles[chart.hoverIndex];
-            var hx = geo.cx(chart.hoverIndex);
-            var hy = priceY(hc.close);
-
-            svg.appendChild(svgEl("line", {
-                x1: hx, x2: hx, y1: geo.plotY0, y2: geo.plotY1,
-                stroke: GRID, "stroke-opacity": "0.5", "stroke-dasharray": "3 3",
-            }));
-            svg.appendChild(svgEl("line", {
-                x1: geo.plotX0, x2: geo.plotX1, y1: hy, y2: hy,
-                stroke: GRID, "stroke-opacity": "0.5", "stroke-dasharray": "3 3",
-            }));
-            svg.appendChild(svgEl("circle", {
-                cx: hx, cy: hy, r: 4.5, fill: SURFACE,
-                stroke: hc.close >= hc.open ? UP : DOWN, "stroke-width": "2",
-            }));
-
-            // price badge on the right axis, at the hovered y position
-            var hoverBadgeW = PAD.right - 6;
-            svg.appendChild(svgEl("rect", {
-                x: geo.plotX1 + 3, y: hy - 9, width: hoverBadgeW, height: 18, rx: 4, fill: HOVER_BADGE_BG,
-            }));
-            var hoverPriceText = svgEl("text", {
-                x: geo.plotX1 + 3 + hoverBadgeW / 2, y: hy, "text-anchor": "middle",
-                "dominant-baseline": "middle", "font-size": "10", "font-weight": "700",
-                fill: HOVER_BADGE_TEXT, "font-family": "var(--mono)",
-            });
-            hoverPriceText.textContent = formatAxisPrice(hc.close);
-            svg.appendChild(hoverPriceText);
-
-            // date/time badge on the bottom axis, at the hovered x position
-            var dateLabel = formatClock(chart.baseTime + chart.hoverIndex * CANDLE_STEP_SECONDS);
-            var dateBadgeW = Math.max(38, dateLabel.length * 6.5 + 12);
-            var dateBadgeX = Math.min(Math.max(hx - dateBadgeW / 2, geo.plotX0), geo.plotX1 - dateBadgeW);
-            svg.appendChild(svgEl("rect", {
-                x: dateBadgeX, y: H - 17, width: dateBadgeW, height: 15, rx: 3, fill: HOVER_BADGE_BG,
-            }));
-            var dateText = svgEl("text", {
-                x: dateBadgeX + dateBadgeW / 2, y: H - 9.5, "text-anchor": "middle",
-                "dominant-baseline": "middle", "font-size": "9.5", "font-weight": "700",
-                fill: HOVER_BADGE_TEXT, "font-family": "var(--mono)",
-            });
-            dateText.textContent = dateLabel;
-            svg.appendChild(dateText);
-        }
+        drawHover();
 
         updateQuote();
     }
@@ -870,6 +770,14 @@
      * The parts that are genuinely shared (scale, tick picking, price formatting) are reused
      * as-is; only the drawing differs.
      */
+    /**
+     * The end-of-round context chart: the window the player saw, the candles they had to call,
+     * and the run-up and aftermath either side.
+     *
+     * Drawn by CandleChart like everything else. It was the third renderer in this file — the
+     * practice chart, this one, and a copy of the geometry in each — and the three agreed on
+     * what a candle looks like only for as long as nobody edited one of them.
+     */
     function drawContextChart(context) {
         var candles = context.candles;
         var n = candles.length;
@@ -881,98 +789,61 @@
             role: "img",
             "aria-label": "Biểu đồ bối cảnh: " + n + " nến quanh vòng chơi vừa rồi.",
         });
+        el.rcChart.innerHTML = "";
+        el.rcChart.appendChild(svg);
 
-        var plotX0 = RC.pad.left, plotX1 = RC.w - RC.pad.right;
-        var plotY0 = RC.pad.top, plotY1 = RC.h - RC.pad.bottom;
-        var step = (plotX1 - plotX0) / n;
-        var bodyW = Math.max(2, Math.min(step * 0.6, 18));
-        var dom = domain(candles);
-        function cx(i) { return plotX0 + step * (i + 0.5); }
-        function priceY(v) { return plotY1 - ((v - dom.lo) / (dom.hi - dom.lo || 1)) * (plotY1 - plotY0); }
-        function bandX(from, count) { return { x: plotX0 + step * from, width: step * count }; }
+        var frame = window.CandleChart.draw(svg, candles, {
+            body: { min: 2, ratio: 0.6, max: 18 },
+            bodyRadius: 1.5,
+            ticks: 4,
+            axisFormat: formatAxisPrice,
+            axisFontSize: "10",
+            timeLabels: 5,
+            timeAxisInset: 5,
+            timeFontSize: "9.5",
+            /* Two bands behind the candles: the stretch the player was shown, and inside it
+               the candles they had to call. Painted before the candles, which is what makes
+               them read as ground rather than as marks on the chart. */
+            highlights: [
+                { from: context.playedFrom, length: context.guessFrom - context.playedFrom,
+                  color: GRID, opacity: "0.09" },
+                { from: context.guessFrom, length: context.guessCount,
+                  color: ACCENT, opacity: "0.14" },
+            ],
+            // The moment guessing started, which is what the whole chart is arranged around.
+            marker: { index: context.guessFrom },
+        });
+        if (!frame) return;
 
-        // shaded regions first, so candles sit on top of them
-        var played = bandX(context.playedFrom, context.guessFrom - context.playedFrom);
-        svg.appendChild(svgEl("rect", {
-            x: played.x, y: plotY0, width: played.width, height: plotY1 - plotY0,
-            fill: GRID, "fill-opacity": "0.09",
-        }));
-        var guessed = bandX(context.guessFrom, context.guessCount);
-        svg.appendChild(svgEl("rect", {
-            x: guessed.x, y: plotY0, width: guessed.width, height: plotY1 - plotY0,
-            fill: ACCENT, "fill-opacity": "0.14",
-        }));
-
-        niceTicks(dom.lo, dom.hi, 4).forEach(function (tick) {
-            var y = priceY(tick);
-            if (y < plotY0 - 1 || y > plotY1 + 1) return;
-            svg.appendChild(svgEl("line", {
-                x1: plotX0, x2: plotX1, y1: y, y2: y,
-                stroke: GRID, "stroke-opacity": "0.14", "stroke-dasharray": "2 4",
-            }));
-            var label = svgEl("text", {
-                x: plotX1 + 8, y: y, "dominant-baseline": "middle",
-                "font-size": "10", fill: GRID, "font-family": "var(--mono)",
-            });
-            label.textContent = formatAxisPrice(tick);
-            svg.appendChild(label);
+        /* Outside the played window the candles are context, not the puzzle — dimmed so the
+           eye lands on the stretch the player actually saw. */
+        frame.groups.forEach(function (g, i) {
+            if (i < context.playedFrom || i >= context.guessFrom + context.guessCount) {
+                g.setAttribute("opacity", "0.45");
+            }
         });
 
-        var labelStep = Math.max(1, Math.round(n / 5));
-        for (var i = 0; i < n; i++) {
-            var c = candles[i];
-            var color = c.close >= c.open ? UP : DOWN;
-            var x = cx(i);
-            var yOpen = priceY(c.open), yClose = priceY(c.close);
-            // Outside the played window the candles are context, not the puzzle — dimmed so
-            // the eye lands on the stretch the player actually saw.
-            var outside = i < context.playedFrom || i >= context.guessFrom + context.guessCount;
-            var g = svgEl("g", { opacity: outside ? "0.45" : "1" });
-            g.appendChild(svgEl("line", {
-                x1: x, x2: x, y1: priceY(c.high), y2: priceY(c.low), stroke: color, "stroke-width": "1",
-            }));
-            g.appendChild(svgEl("rect", {
-                x: x - bodyW / 2, y: Math.min(yOpen, yClose), width: bodyW,
-                height: Math.max(1, Math.abs(yClose - yOpen)), rx: 1.5, fill: color,
-            }));
-            svg.appendChild(g);
-
-            if (i % labelStep === 0) {
-                var t = svgEl("text", {
-                    x: i === 0 ? plotX0 : x, y: RC.h - 5,
-                    "text-anchor": i === 0 ? "start" : "middle", "font-size": "9.5",
-                    fill: GRID, "font-family": "var(--mono)",
-                });
-                t.textContent = formatDayHour(candles[i].time);
-                svg.appendChild(t);
-            }
-        }
-
-        // the moment the guessing started, which is what the whole chart is arranged around
-        svg.appendChild(svgEl("line", {
-            x1: guessed.x, x2: guessed.x, y1: plotY0, y2: plotY1,
-            stroke: ACCENT, "stroke-width": "1", "stroke-dasharray": "3 3", "stroke-opacity": "0.7",
-        }));
-
-        // one faint tick under the closing candle of each pattern; the band comes on hover
+        // One faint tick under the closing candle of each pattern; the band comes on hover.
         (context.patterns || []).forEach(function (p) {
-            var last = cx(p.startIndex + p.length - 1);
+            var last = frame.cx(p.startIndex + p.length - 1);
             svg.appendChild(svgEl("line", {
-                x1: last, x2: last, y1: plotY1 + 3, y2: plotY1 + 7,
+                x1: last, x2: last, y1: frame.plotY1 + 3, y2: frame.plotY1 + 7,
                 stroke: ACCENT, "stroke-width": "1.2", "stroke-opacity": "0.55",
             }));
         });
 
         var highlight = svgEl("rect", {
-            y: plotY0, height: plotY1 - plotY0, fill: ACCENT, "fill-opacity": "0.3",
-            width: "0", x: "0", opacity: "0",
+            y: frame.plotY0, height: frame.plotY1 - frame.plotY0, fill: ACCENT,
+            "fill-opacity": "0.3", width: "0", x: "0", opacity: "0",
         });
         svg.appendChild(highlight);
 
-        rcGeom = { highlight: highlight, band: bandX };
-
-        el.rcChart.innerHTML = "";
-        el.rcChart.appendChild(svg);
+        rcGeom = {
+            highlight: highlight,
+            band: function (from, count) {
+                return { x: frame.plotX0 + frame.step * from, width: frame.step * count };
+            },
+        };
     }
 
     function highlightPatternBand(mark) {
