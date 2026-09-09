@@ -1,5 +1,6 @@
 package com.example.candles.service;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -13,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import com.example.candles.CandleFixture;
 import com.example.candles.config.CandlesProperties;
 import com.example.candles.dto.response.PatternQuizResponse;
 import com.example.candles.entity.Asset;
@@ -50,6 +52,19 @@ class PatternQuizTest {
     @Autowired private PatternQuizResultRepository results;
     @Autowired private CandlesProperties properties;
     @Autowired private StatsService stats;
+
+    /* Every test here asks the quiz a question, and the quiz cannot build one without a
+       history to find a clean pattern occurrence in. On CI that table is empty — the pairs
+       exist, the Binance backfill never ran — so the corpus is seeded here. A pair that
+       already has candles is left alone, which keeps a developer machine asking questions of
+       the real market the matchers were tuned on. */
+    @BeforeEach
+    void seedHistory() {
+        String timeframe = properties.timeframe();
+        for (Asset asset : assets.findAllByOrderByPositionAscSymbolAsc()) {
+            CandleFixture.seedIfEmpty(candles, asset, timeframe);
+        }
+    }
 
     private User player() {
         User user = new User("0x" + UUID.randomUUID().toString().replace("-", ""), "Q");

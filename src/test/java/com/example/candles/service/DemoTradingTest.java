@@ -18,7 +18,9 @@ import com.example.candles.config.CandlesProperties;
 import com.example.candles.dto.response.DemoPortfolioResponse;
 import com.example.candles.entity.Role;
 import com.example.candles.entity.User;
+import com.example.candles.CandleFixture;
 import com.example.candles.repository.AssetRepository;
+import com.example.candles.repository.CandleRepository;
 import com.example.candles.repository.UserRepository;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -43,6 +45,7 @@ class DemoTradingTest {
     @Autowired private DemoTradingService trading;
     @Autowired private UserRepository users;
     @Autowired private AssetRepository assets;
+    @Autowired private CandleRepository candles;
     @Autowired private CandlesProperties properties;
     @Autowired private LivePriceService livePrices;
     @Autowired private IntradayCandleService intradayCandles;
@@ -54,7 +57,12 @@ class DemoTradingTest {
 
     @BeforeEach
     void pinThePrice() {
-        symbol = assets.findByEnabledTrueOrderByPositionAscSymbolAsc().getFirst().getSymbol();
+        var asset = assets.findByEnabledTrueOrderByPositionAscSymbolAsc().getFirst();
+        symbol = asset.getSymbol();
+        /* The chart assertions read stored candles, which on CI is an empty table — this pair
+           exists there but the Binance backfill never ran. Seeded only when it is empty, so a
+           developer machine keeps testing folds against real candles. */
+        CandleFixture.seedIfEmpty(candles, asset, properties.timeframe());
         priceIs(100);
     }
 
