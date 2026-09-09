@@ -1,5 +1,6 @@
 package com.example.candles.service;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -9,10 +10,12 @@ import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import com.example.candles.CandleFixture;
 import com.example.candles.config.CandlesProperties;
 import com.example.candles.domain.RoundSelection;
 import com.example.candles.entity.Asset;
@@ -43,6 +46,17 @@ class DailyRoundSelectionTest {
     @Autowired private AssetRepository assets;
     @Autowired private CandleRepository candles;
     @Autowired private CandlesProperties properties;
+
+    /* The daily draw needs a pair with enough history to cut a window out of. On CI there is
+       none — the pairs are seeded, their candles are not, because the Binance backfill cannot
+       reach Binance from a GitHub runner. Pairs that already have history are left alone. */
+    @BeforeEach
+    void seedHistory() {
+        String timeframe = properties.timeframe();
+        for (Asset asset : assets.findAllByOrderByPositionAscSymbolAsc()) {
+            CandleFixture.seedIfEmpty(candles, asset, timeframe);
+        }
+    }
 
     private static String describe(RoundSelection round) {
         return round.asset().getSymbol() + "@" + round.startIndex();
@@ -95,11 +109,25 @@ class DailyRoundSelectionTest {
         assertThat(round.startIndex()).isNotNegative();
     }
 
-    /** One more candle at the end of an asset's history, the way the hourly sync adds them. */
+    /**
+     * One more candle at the end of an asset's history, the way the hourly sync adds them —
+     * and landing inside {@link #DAY}, which is the whole point: a candle that closed before
+     * the day began is part of the corpus the day draws from, and moving the chart would then
+     * be correct rather than a bug.
+     *
+     * Taking the later of "one hour past the end" and "midday on DAY" is what makes that true
+     * on both kinds of database. A developer machine has history running to roughly now, well
+     * past DAY, so the first term wins and this behaves as it always did. CI has the seeded
+     * corpus, which stops before DAY, so the second wins — appending at the end there would
+     * land in February and quietly test the opposite of what the name claims.
+     */
     private void appendCandleTo(Asset asset) {
         List<Candle> last = candles.findWindow(asset.getId(), properties.timeframe(),
                 (int) candles.countByAssetAndTimeframe(asset, properties.timeframe()) - 1, 1);
-        Instant next = last.get(0).getOpenTime().plus(Duration.ofHours(1));
+        Instant afterEnd = last.get(0).getOpenTime().plus(Duration.ofHours(1));
+        Instant duringTheDay = DAY.atStartOfDay(ZoneOffset.UTC).toInstant().plus(Duration.ofHours(12));
+        Instant next = afterEnd.isAfter(duringTheDay) ? afterEnd : duringTheDay;
+
         candles.saveAndFlush(new Candle(asset, properties.timeframe(), next,
                 BigDecimal.valueOf(100), BigDecimal.valueOf(110),
                 BigDecimal.valueOf(90), BigDecimal.valueOf(105), BigDecimal.ONE));
