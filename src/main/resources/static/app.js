@@ -71,6 +71,7 @@
         marketCard: document.querySelector(".market-card"),
         soundToggle: document.getElementById("sound-toggle"),
         gameStreak: document.getElementById("game-streak"),
+        gameStreakValue: document.getElementById("game-streak-value"),
     };
 
     // ---------- sound + haptic feedback ----------
@@ -646,21 +647,22 @@
 
     /* Days in a row the player has shown up — the habit number, kept out of the scoreboard on
        purpose. That grid already has a "Streak" (correct calls in a row), and two different
-       numbers under the same word in one grid is how a scoreboard stops being read.
+       numbers under the same word in one place is how a scoreboard stops being read.
+
+       It lives in the topbar rather than on the game tab, so a player who is reading the blog
+       or working through the archive can still see the run they are protecting. Everything
+       that made it worth putting on the game tab still holds: it is refreshed after every
+       recorded guess, so the day's first round ticks it up in front of the player.
 
        Hidden signed out and at zero alike: nothing is recorded for anonymous play, so a streak
        there would be a promise that vanishes the moment they sign in, and a player with no run
-       going has nothing to protect.
-
-       This is refreshed after every recorded guess, so the day's first round ticks it up in
-       front of the player — which is the whole reason it is on this tab and not only the
-       profile. */
+       going has nothing to protect. */
     function renderDayStreak(dayStreak) {
         var running = dayStreak && dayStreak.current > 0;
         el.gameStreak.classList.toggle("hidden", !running);
         if (!running) return;
 
-        el.gameStreak.textContent = "🔥 " + dayStreak.current;
+        el.gameStreakValue.textContent = dayStreak.current;
         // Alive but unplayed today is the one state worth drawing differently: it is the only
         // moment when playing a round changes the number rather than just maintaining it.
         el.gameStreak.classList.toggle("is-at-risk", !dayStreak.playedToday);

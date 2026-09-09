@@ -125,6 +125,15 @@
         return row;
     }
 
+    /* The rail wants to show the caller's rank beside "Bảng Xếp Hạng", and this module is
+       already asking the endpoint that knows it. Publishing beats a second fetch for the same
+       reason `candles:stats` exists — two callers reading one figure out of two responses can
+       only end up disagreeing about it. Null means "no rank to show", which the rail draws as
+       no tag rather than as a blank one. */
+    function publishRank(rank) {
+        document.dispatchEvent(new CustomEvent("candles:rank", { detail: { rank: rank } }));
+    }
+
     function loadRank() {
         /* Five rows, not fifty: this is a glance at who is ahead, and "Xem tất cả" is right
            there for the rest. */
@@ -136,9 +145,11 @@
             .then(function (board) {
                 if (!board.rows.length) {
                     el.rank.classList.add("hidden");
+                    publishRank(null);
                     return;
                 }
                 var meRank = board.me ? board.me.rank : null;
+                publishRank(meRank);
                 el.rankList.innerHTML = "";
                 board.rows.forEach(function (entry) {
                     el.rankList.appendChild(rankRow(entry, entry.rank === meRank));
@@ -154,6 +165,7 @@
             .catch(function () {
                 // An empty card says less than no card. Leave it out rather than draw a gap.
                 el.rank.classList.add("hidden");
+                publishRank(null);
             });
     }
 

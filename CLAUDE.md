@@ -129,16 +129,50 @@ also bumps `tokenVersion`, killing the account's refresh tokens on any role chan
 ### Frontend
 
 Plain static files under `src/main/resources/static/` — no bundler, no framework, ES5-style
-IIFEs, one global per file. All six views live in **one `index.html`**; `nav.js` toggles
-`.hidden` between them and drives a `role="tablist"` (roving tabindex, arrow keys).
+IIFEs, one global per file. All eleven views live in **one `index.html`**; `nav.js` toggles
+`.hidden` between them.
 
-Script order in `index.html` matters: `pill.js` and `rolling.js` define shared globals that
-later files call at load time.
+**The page is a shell: topbar, a 236px rail down the left, views in what is left.** The rail
+replaced a single row of eleven tabs — eleven peers in one strip said nothing about which of
+them is the game and which is a reference page anyone opens twice a year, and the strip wrapped
+to a second line on a laptop as soon as a wallet was connected. It groups the views into Chơi /
+Học / Bạn & cộng đồng and is the `role="tablist"` (roving tabindex, Up/Down, Left/Right kept
+from the strip it replaced).
+
+Below 900px the rail becomes a sheet that `.tabbar`'s "Thêm" key slides up. **The rail is the
+only list of views on the page** — the bottom bar repeats four of them and defers to the rail
+for the rest, so there is no second menu to keep in step.
+
+**Activation is keyed on the view name, never on the element pressed.** Three sets of controls
+point at the same views: the rail, the bottom bar, and deep links inside the views themselves.
+`window.CandleNav.go(view)` is how code moves between them, mirroring `CandleAdminNav.go`, and
+anything carrying `data-nav-view` gets it through one delegated handler.
+
+`.app` is the reading column at 760px; `.app-read` (900) is for prose and headline lists,
+`.app-wide` (1180) for anything laid out in more than one track. The gutter belongs to
+`.shell-main`, not to the views — otherwise every view would have to agree with the rail about
+how much of it there is.
+
+**A `minmax()` minimum inside the shell must be written `min(Npx, 100%)`.** A bare minimum is a
+floor the track holds even when its container is narrower, and the shell clips (that being what
+rounds its corners), so an overflowing card is cut off rather than scrolled to. Two grids
+already shipped this bug.
+
+Script order in `index.html` matters: `pill.js`, `rolling.js` and `avatar.js` define shared
+globals that later files call at load time.
 
 | Shared module | Global | Used by |
 |---|---|---|
-| `pill.js` | `CandlePill.attach(track, sel)` | nav + 6 asset/filter pickers |
+| `pill.js` | `CandlePill.attach(track, sel)` | 6 asset/filter pickers |
 | `rolling.js` | `CandleRolling.update(el, text)` | price, delta, scoreboard, ticker, heatmap |
+| `avatar.js` | `CandleAvatar.node(name)` | leaderboard + the play tab's board card |
+| `candle-chart.js` | `CandleChart.draw(svg, candles, opts)` | daily, live popup, trade, pattern quiz |
+
+**Nothing fetches what another module already asked for.** `/api/stats/me` answers several
+questions at once and `app.js` is already asking it after every recorded guess, so it publishes
+`candles:stats` and the play tab's column listens; `play-sidebar.js` publishes `candles:rank`
+off the board it fetches and the rail draws the tag. Two callers reading one figure out of two
+responses can only end up disagreeing about it.
 
 `nav.js` fires `candles:view` (`detail.view`) on every switch, mirroring `candles:pane` on the
 admin page. The game listens for it: **auto-advance stops dealing charts when nobody is
@@ -817,13 +851,16 @@ for that reason — "ngày liên tiếp" for the general one, "ngày thử thác
 tab. Reusing one label for both is the mistake to avoid: adjacent tabs disagreeing about a
 number under identical wording reads as a bug, not as two facts.
 
-The game-tab chip is deliberately **not** a fifth scoreboard tile. That grid already has a
-"Streak" — correct calls in a row — and two different numbers under the same word in one grid
-is how a scoreboard stops being read. It is hidden when signed out and at zero alike: nothing
-is recorded for anonymous play, so a streak there would be a promise that vanishes on sign-in,
-and a player with no run going has nothing to protect. `refreshAccountStats` runs after every
-recorded guess, so the day's first round ticks it up in front of the player — which is the
-reason it is on that tab and not only the profile.
+The chip is deliberately **not** a fifth scoreboard tile. That grid already has a "Streak" —
+correct calls in a row — and two different numbers under the same word in one place is how a
+scoreboard stops being read. It lives in the topbar instead, so a player reading the blog or
+working through the archive can still see the run they are protecting. `refreshAccountStats`
+runs after every recorded guess, so the day's first round still ticks it up in front of the
+player, which was the reason it was ever on the game tab rather than only the profile.
+
+It is hidden when signed out and at zero alike: nothing is recorded for anonymous play, so a
+streak there would be a promise that vanishes on sign-in, and a player with no run going has
+nothing to protect.
 
 ### Leaderboard
 
@@ -848,9 +885,12 @@ in Java, cached 60s — this is the only open endpoint whose cache miss scans th
 which is also why it is the only read endpoint in `RateLimiter`. Denormalising onto `users` is
 the next step if it ever gets slow; `docs/LEADERBOARD_PLAN.md` records the trigger.
 
-Adding a tab means **three** edits, not two: the button, the `<main>` panel, and the `views` map
-in `nav.js`. Miss the map and `activate()` hides every panel and unhides none — the tab's init
-still runs, so the data is correct and the screen is blank.
+Adding a tab means **three** edits, not two: the rail item, the `<main>` panel, and the `views`
+map in `nav.js`. Miss the map and `activate()` returns before it touches anything — the rail
+stops responding to that item entirely, with no error to say why.
+
+The rail draws the caller's rank beside "Bảng Xếp Hạng" from the `candles:rank` event, not from
+a fetch of its own.
 
 ### CSS conventions
 
