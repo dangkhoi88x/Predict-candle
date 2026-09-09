@@ -1,0 +1,6579 @@
+/* Inter Variable, self-hosted. One file per script covers the whole 100–900 weight range,
+   and the unicode-range split means an English-only visitor never downloads the Vietnamese
+   glyphs. Only two subsets are shipped because the UI is Vietnamese and English:
+
+     vietnamese  10 KB  U+1EA0-1EF9 and the Ơ Ư Đ Ă letters, plus the ₫ sign
+     latin       48 KB  ASCII, U+2000-206F (the en dash and the − in price deltas)
+
+   latin-ext is deliberately left out — it is 85 KB and only adds other European scripts.
+   Every modern Vietnamese letter, ỳ ỷ ỹ ỵ included, sits at or below U+1EF9. Declaration
+   order follows Fontsource: where ranges overlap on combining marks, the later rule wins
+   and both files carry the same glyph, so it makes no visible difference. */
+@font-face {
+    font-family: "Inter Variable";
+    font-style: normal;
+    font-weight: 100 900;
+    font-display: swap;
+    src: url("fonts/inter-vietnamese-wght-normal.woff2") format("woff2-variations");
+    unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1,
+                   U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329,
+                   U+1EA0-1EF9, U+20AB;
+}
+
+@font-face {
+    font-family: "Inter Variable";
+    font-style: normal;
+    font-weight: 100 900;
+    font-display: swap;
+    src: url("fonts/inter-latin-wght-normal.woff2") format("woff2-variations");
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+                   U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+                   U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* IBM Plex Mono, self-hosted for the same reasons. It is not published as a variable font,
+   so each weight is its own file — 400 for body-ish mono, 500/600 for labels, and 700 for
+   the emphasised numbers. 700 in particular was previously never downloaded: the Google
+   Fonts request asked for 400;500;600 only, so every bold mono number was faux-bold, which
+   thickens glyphs by altering their advance and undoes the tabular alignment the odometer
+   depends on. Vietnamese is needed here too — "Nến 1 / 5" and the pattern tags are mono. */
+
+@font-face {
+    font-family: "IBM Plex Mono";
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url("fonts/ibm-plex-mono-vietnamese-400-normal.woff2") format("woff2");
+    unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1,
+                   U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329,
+                   U+1EA0-1EF9, U+20AB;
+}
+
+@font-face {
+    font-family: "IBM Plex Mono";
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url("fonts/ibm-plex-mono-latin-400-normal.woff2") format("woff2");
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+                   U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+                   U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+    font-family: "IBM Plex Mono";
+    font-style: normal;
+    font-weight: 500;
+    font-display: swap;
+    src: url("fonts/ibm-plex-mono-vietnamese-500-normal.woff2") format("woff2");
+    unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1,
+                   U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329,
+                   U+1EA0-1EF9, U+20AB;
+}
+
+@font-face {
+    font-family: "IBM Plex Mono";
+    font-style: normal;
+    font-weight: 500;
+    font-display: swap;
+    src: url("fonts/ibm-plex-mono-latin-500-normal.woff2") format("woff2");
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+                   U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+                   U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+    font-family: "IBM Plex Mono";
+    font-style: normal;
+    font-weight: 600;
+    font-display: swap;
+    src: url("fonts/ibm-plex-mono-vietnamese-600-normal.woff2") format("woff2");
+    unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1,
+                   U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329,
+                   U+1EA0-1EF9, U+20AB;
+}
+
+@font-face {
+    font-family: "IBM Plex Mono";
+    font-style: normal;
+    font-weight: 600;
+    font-display: swap;
+    src: url("fonts/ibm-plex-mono-latin-600-normal.woff2") format("woff2");
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+                   U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+                   U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+    font-family: "IBM Plex Mono";
+    font-style: normal;
+    font-weight: 700;
+    font-display: swap;
+    src: url("fonts/ibm-plex-mono-vietnamese-700-normal.woff2") format("woff2");
+    unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1,
+                   U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329,
+                   U+1EA0-1EF9, U+20AB;
+}
+
+@font-face {
+    font-family: "IBM Plex Mono";
+    font-style: normal;
+    font-weight: 700;
+    font-display: swap;
+    src: url("fonts/ibm-plex-mono-latin-700-normal.woff2") format("woff2");
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+                   U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+                   U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* Dark is the default palette. The light one below only swaps colour tokens — nothing else
+   in the stylesheet, and none of the SVG drawing code, needs to know which theme is active,
+   because everything reads these variables (SVG presentation attributes accept var() too). */
+:root {
+    /* --bg-deep is the ground the shell card sits on; --bg is the card itself, so the two
+       have to differ or the shell's border is the only thing drawing its edge. */
+    --bg-deep: #070707;
+    --bg: #0a0a0a;
+    --panel: #141414;
+    --panel-2: #101010;
+    /* The navigation rail, a shade off the shell so the column reads as a separate surface
+       without a second border. */
+    --rail: #0d0d0d;
+    --border: #232323;
+    --text: #f2f2f2;
+    /* Primary navigation is brighter than --muted and dimmer than --text: rail labels are
+       the thing being scanned, but only one of them is where you are. */
+    --text-2: #c9c9cd;
+    --muted: #7d7d82;
+    --muted-2: #58585d;
+    --up: #34d399;
+    --down: #fb7185;
+    --accent: #4f8cff;
+    --warn: #f5bf42;
+    /* Tints layered over a surface for hover/active states — they have to flip direction
+       between themes, since white-on-white would be invisible. */
+    --overlay-soft: rgba(255, 255, 255, 0.05);
+    --overlay-strong: rgba(255, 255, 255, 0.1);
+    /* Selection tints. A picked thing is the accent at low alpha with accent-coloured text —
+       one rule at every scale, rather than a different treatment per control. Derived from
+       --accent so they follow the theme with no second set of values to maintain. */
+    --tint-accent-weak: color-mix(in oklab, var(--accent) 12%, transparent);
+    --tint-accent-strong: color-mix(in oklab, var(--accent) 18%, transparent);
+    /* The neutral counterpart of these is --overlay-soft above, which already is exactly an ink
+       tint that flips per theme. Naming it a second time would be two spellings of one value. */
+    --shadow: rgba(0, 0, 0, 0.4);
+    --sans: "Inter Variable", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    /* Inter needs no tracking at UI sizes — it is drawn for them — but tightens up well
+       above roughly 20px, which is where the view headings sit. */
+    --tracking-tight: -0.015em;
+    /* Motion. One curve — a hard decelerate — so nothing on the page eases differently
+       from anything else. Durations are named for the job, not the number, because that
+       is what makes the right one obvious at the call site. Overridden wholesale in the
+       reduced-motion block near the chart, which is why nothing below hard-codes a time. */
+    --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+    --duration-fast: 0.18s;    /* hover, colour, opacity */
+    --duration-normal: 0.28s;  /* layout shifts, sliding */
+    --duration-enter: 0.38s;   /* an element arriving */
+    --duration-roll: 0.48s;    /* odometer digit travel */
+}
+
+:root[data-theme="light"] {
+    --bg-deep: #e9ebef;
+    --bg: #f6f7f9;
+    --panel: #ffffff;
+    --panel-2: #eff1f4;
+    --rail: #f0f2f5;
+    --border: #dfe2e8;
+    --text: #14161a;
+    --text-2: #3d434e;
+    --muted: #5f6672;
+    --muted-2: #8a909c;
+    /* Darker than the dark-theme greens/reds: the originals are tuned for glowing on black
+       and drop below readable contrast once they sit on white. */
+    --up: #0f9d70;
+    --down: #d92643;
+    --accent: #2563eb;
+    --warn: #a8730a;
+    --overlay-soft: rgba(0, 0, 0, 0.04);
+    --overlay-strong: rgba(0, 0, 0, 0.08);
+    --shadow: rgba(0, 0, 0, 0.14);
+}
+
+/* Admin palette. Kept apart from the game tokens on purpose: the dashboard wants a soft grey
+   ground, hairline borders and a low shadow, where the game page wants near-black and glow.
+   Nothing outside the .admin-shell layer below reads an --adm-* token, so changing one of
+   these can never move a pixel on the game page. Dark first, matching :root above. */
+:root {
+    --adm-bg: #141416;
+    --adm-shell: #1b1b1e;
+    --adm-panel: #232326;
+    --adm-panel-2: #1c1c1f;
+    --adm-panel-3: #2b2b2f;
+    --adm-border: rgba(255, 255, 255, 0.1);
+    --adm-border-2: rgba(255, 255, 255, 0.18);
+    --adm-text: #f1f0ee;
+    --adm-muted: #8f8d89;
+    --adm-muted-2: #6a6864;
+    /* --adm-ink is the "drawn" colour: LONG columns, the primary button, the ADMIN badge.
+       It inverts with the theme, which is why the chart code never names a colour itself. */
+    --adm-ink: #f1f0ee;
+    --adm-ink-2: #3a3a3e;
+    --adm-ink-3: #2a2a2d;
+    --adm-up: #34d399;
+    --adm-down: #fb7185;
+    --adm-warn: #f5bf42;
+    --adm-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 6px 18px rgba(0, 0, 0, 0.35);
+    --adm-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+:root[data-theme="light"] {
+    --adm-bg: #e9e7e4;
+    --adm-shell: #f4f3f1;
+    --adm-panel: #ffffff;
+    --adm-panel-2: #f1f0ee;
+    --adm-panel-3: #e6e4e1;
+    --adm-border: rgba(0, 0, 0, 0.09);
+    --adm-border-2: rgba(0, 0, 0, 0.16);
+    --adm-text: #1b1a19;
+    --adm-muted: #7b7975;
+    --adm-muted-2: #a5a29e;
+    --adm-ink: #141312;
+    --adm-ink-2: #c9c7c3;
+    --adm-ink-3: #e3e1de;
+    --adm-up: #0f9d70;
+    --adm-down: #d0402c;
+    --adm-warn: #a8730a;
+    --adm-shadow: 0 1px 2px rgba(0, 0, 0, 0.06), 0 4px 12px rgba(0, 0, 0, 0.05);
+    --adm-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.07);
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    background: var(--bg-deep);
+    color: var(--text);
+    font-family: var(--sans);
+}
+
+h1, h2, h3 {
+    letter-spacing: var(--tracking-tight);
+}
+
+/* A view is a reading column centred in whatever the shell leaves it. The padding is the
+   shell's (.shell-main), not the view's — otherwise every view would have to agree with the
+   rail about how much gutter the page has. */
+.app {
+    max-width: 760px;
+    margin: 0 auto;
+}
+
+/* The trading terminal is the one view that is not a reading column. 760px is right for a
+   chart with two buttons under it and far too narrow for a market list, a chart and an order
+   ticket side by side — at 760 the middle track collapsed to about 120px. It gets the same
+   width the nav already uses, so the page still lines up. */
+.app.app-wide {
+    max-width: 1180px;
+}
+
+/* Between the reading column and the wide one: prose, a list of headlines and a table of
+   ranked players all stop being comfortable somewhere past 900px, but 760 wastes a desktop
+   when the row carries a picture or five figures beside the name.
+
+   The board is capped for a reason of its own: its four figure columns are fixed widths, so
+   every pixel past this goes to the name column and pushes the score further from the player
+   it belongs to. */
+.app.app-read {
+    max-width: 900px;
+}
+
+/* Every mark on this page is one <use> of the sprite at the top of index.html, and this is
+   the whole of its drawing convention: no fill, a currentColor stroke at 1.7, round caps.
+   Colour is inherited, so a mark takes the colour of the control it sits in and needs no
+   rule of its own in either theme — which is exactly what emoji could not do.
+   These properties inherit through the <use> shadow tree, so they only need saying here. */
+.icon {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.7;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+}
+
+/* The sprite itself. Measured out of the layout rather than display:none: a <use> whose
+   target sits inside a display:none subtree has a history of drawing nothing. */
+.icon-defs {
+    position: absolute;
+    width: 0;
+    height: 0;
+    overflow: hidden;
+}
+
+/* ---- app shell ---------------------------------------------------------------------
+   Topbar across the top, a grouped navigation rail down the left, views in what is left.
+   This replaced a single row of eleven tabs: eleven peers in one strip say nothing about
+   which of them is the game and which is a reference page anyone opens twice a year, and
+   the strip wrapped to two lines on a laptop as soon as a wallet was connected.
+
+   The rail is the only list of views on the page. Below 900px it slides up as a sheet
+   that .tabbar's "Thêm" key opens, so the phone layout is the same buttons in a different
+   place rather than a second menu to keep in step. */
+
+.shell-page {
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 20px 20px 56px;
+}
+
+.shell {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    overflow: hidden;
+}
+
+.topbar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    padding: 12px 20px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 800;
+    font-size: 15px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+/* The favicon's mark. Filled in --up/--down rather than stroked, so it is the one icon on
+   the page that does not read currentColor — the pair of colours is the identity. */
+.brand-mark {
+    width: 19px;
+    height: 19px;
+    flex-shrink: 0;
+}
+
+.topbar-right {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* The live round is the one thing on the site with a deadline, so it is the one thing that
+   gets to interrupt from the topbar. Warn-coloured rather than accent: it is a clock
+   running out, not a place to go. */
+.live-banner {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 10px;
+    border-radius: 999px;
+    background: color-mix(in oklab, var(--warn) 12%, transparent);
+    border: 1px solid color-mix(in oklab, var(--warn) 35%, transparent);
+    cursor: pointer;
+    font-family: inherit;
+    transition: background var(--duration-fast) var(--ease-out);
+}
+
+.live-banner.hidden {
+    display: none;
+}
+
+.live-banner:hover {
+    background: color-mix(in oklab, var(--warn) 20%, transparent);
+}
+
+.live-banner-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--warn);
+}
+
+.live-banner-text {
+    font: 600 12px var(--mono);
+    font-variant-numeric: tabular-nums;
+    color: var(--warn);
+    white-space: nowrap;
+}
+
+.live-banner-cta {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--warn);
+}
+
+.shell-body {
+    display: grid;
+    grid-template-columns: 236px minmax(0, 1fr);
+    align-items: stretch;
+}
+
+.rail {
+    background: var(--rail);
+    border-right: 1px solid var(--border);
+    padding: 18px 14px;
+}
+
+.rail-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.rail-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+/* The group heading is the disclosure. It stays quiet — muted, mono, the same size the
+   heading always was — because a rail with three controls competing with eleven is not
+   less busy than a rail with eleven. */
+.rail-group-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    padding: 4px 8px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--muted-2);
+    font-family: inherit;
+    cursor: pointer;
+    transition: color var(--duration-fast) var(--ease-out),
+                background var(--duration-fast) var(--ease-out);
+}
+
+.rail-group-toggle:hover {
+    background: var(--overlay-soft);
+    color: var(--text-2);
+}
+
+.rail-group-title {
+    font: 600 10.5px var(--mono);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+.rail-group-chevron {
+    width: 13px;
+    height: 13px;
+    margin-left: auto;
+    transition: transform var(--duration-fast) var(--ease-out);
+}
+
+.rail-group[data-open="false"] .rail-group-chevron {
+    transform: rotate(-90deg);
+}
+
+/* A closed group must not swallow a signal. The rank tag and the live countdown live on
+   items inside these, so when one of them is showing and its group is shut, the heading
+   carries a dot in its place — nav.js watches the tags for it. */
+.rail-group-flag {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--accent);
+}
+
+.rail-group-flag.hidden {
+    display: none;
+}
+
+.rail-group-items {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.rail-group[data-open="false"] .rail-group-items {
+    display: none;
+}
+
+.rail-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 9px 10px;
+    border: none;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--text-2);
+    font-family: inherit;
+    font-size: 13.5px;
+    font-weight: 600;
+    text-align: left;
+    cursor: pointer;
+    transition: background var(--duration-fast) var(--ease-out),
+                color var(--duration-fast) var(--ease-out);
+}
+
+.rail-item.hidden {
+    display: none;
+}
+
+.rail-item:hover {
+    background: var(--overlay-soft);
+    color: var(--text);
+}
+
+.rail-item.active,
+.rail-item.active:hover {
+    background: var(--tint-accent-weak);
+    color: var(--accent);
+}
+
+.rail-icon {
+    width: 17px;
+    height: 17px;
+}
+
+.rail-label {
+    flex: 1;
+    min-width: 0;
+}
+
+.rail-tag {
+    font: 600 10.5px var(--mono);
+    font-variant-numeric: tabular-nums;
+    color: var(--muted-2);
+    flex-shrink: 0;
+}
+
+.rail-tag.hidden { display: none; }
+.rail-tag.is-new { color: var(--accent); }
+.rail-tag.is-live { color: var(--warn); }
+.rail-item.active .rail-tag { color: var(--accent); }
+
+.shell-main {
+    padding: 20px 20px 40px;
+    min-width: 0;
+}
+
+/* The rail's sheet backdrop, and the bottom bar it is opened from. Both are dead weight
+   on a desktop, so they only take a box below 900px. */
+.rail-backdrop {
+    display: none;
+}
+
+.tabbar {
+    display: none;
+}
+
+/* Below this the topbar cannot hold brand, banner and wallet on one line — the banner broke
+   mid-sentence and shoved the wallet button onto a row of its own. It takes a full row instead,
+   which is a layout rather than an accident. */
+@media (max-width: 720px) {
+    .live-banner {
+        order: 3;
+        flex-basis: 100%;
+        justify-content: center;
+        min-width: 0;
+    }
+
+    /* The whole pill is the button, so the arrow is the first thing that can go — it is what
+       pushed the countdown off the right edge of a 320px screen. */
+    .live-banner-cta {
+        display: none;
+    }
+}
+
+@media (max-width: 900px) {
+    .shell-page {
+        padding: 0 0 calc(58px + env(safe-area-inset-bottom));
+    }
+
+    .shell {
+        border: none;
+        border-radius: 0;
+    }
+
+    .topbar {
+        padding: 10px 14px;
+        gap: 10px;
+    }
+
+    .shell-body {
+        display: block;
+    }
+
+    .shell-main {
+        padding: 16px 14px 24px;
+    }
+
+    /* A sheet rather than a drawer off the side: it opens next to the thumb that pressed
+       "Thêm", and it stops short of the top so the page it covers stays visible behind it. */
+    .rail {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: calc(58px + env(safe-area-inset-bottom));
+        z-index: 40;
+        max-height: min(70vh, 520px);
+        overflow-y: auto;
+        border-right: none;
+        border-top: 1px solid var(--border);
+        border-radius: 16px 16px 0 0;
+        box-shadow: 0 -12px 32px var(--shadow);
+        transform: translateY(calc(100% + 58px + env(safe-area-inset-bottom)));
+        visibility: hidden;
+        transition: transform var(--duration-normal) var(--ease-out),
+                    visibility var(--duration-normal) var(--ease-out);
+    }
+
+    .rail.is-open {
+        transform: translateY(0);
+        visibility: visible;
+    }
+
+    .rail-backdrop {
+        display: block;
+        position: fixed;
+        inset: 0;
+        z-index: 30;
+        background: rgba(0, 0, 0, 0.5);
+    }
+
+    .rail-backdrop[hidden] {
+        display: none;
+    }
+
+    .tabbar {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 50;
+        background: var(--panel);
+        border-top: 1px solid var(--border);
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    .tabbar-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 2px;
+        padding: 8px 2px;
+        min-height: 58px;
+        border: none;
+        background: transparent;
+        color: var(--muted);
+        font-family: inherit;
+        font-size: 10.5px;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    .tabbar-item.active {
+        color: var(--accent);
+    }
+
+    .tabbar-icon {
+        width: 20px;
+        height: 20px;
+    }
+}
+
+/* pill.js injects the indicator and stamps .has-indicator on the track, at which point the
+   active option hands its background over to the sliding element. Without JS those rules
+   still paint the active one, so a track never ends up with nothing marked. */
+.has-indicator .pill-option.active {
+    background: transparent;
+}
+
+/* Absolutely positioned inside the scrolling track rather than over it, so it travels with
+   the options when the track is scrolled sideways and needs no repositioning on scroll. */
+.pill-indicator {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 0;
+    border-radius: 999px;
+    background: var(--overlay-strong);
+    pointer-events: none;
+    will-change: transform, width;
+    transition: transform var(--duration-normal) var(--ease-out),
+                width var(--duration-normal) var(--ease-out);
+}
+
+/* Used for the first placement and for re-measures after a resize — landing in the right
+   spot is not a state change worth animating. */
+.pill-indicator.no-transition {
+    transition: none;
+}
+
+/* ---- shared pill track -------------------------------------------------------------
+   The nav keeps its own skin above; this is the one used by the asset pickers. Same
+   structure either way: a track that scrolls when the options outgrow it, options that
+   only animate their colour, and the indicator doing the rest. */
+.pill {
+    position: relative;
+    display: inline-flex;
+    gap: 2px;
+    max-width: 100%;
+    padding: 4px;
+    border-radius: 999px;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.pill::-webkit-scrollbar {
+    display: none;
+}
+
+.pill-option {
+    position: relative;
+    z-index: 1;
+    flex-shrink: 0;
+    background: transparent;
+    border: none;
+    border-radius: 999px;
+    color: var(--muted);
+    font-weight: 600;
+    font-size: 13px;
+    padding: 7px 14px;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: color var(--duration-fast) var(--ease-out);
+}
+
+.pill-option:hover {
+    color: var(--text);
+}
+
+.pill-option.active {
+    color: var(--text);
+    background: var(--overlay-strong);
+}
+
+/* ---- loading skeletons ---------------------------------------------------------------
+   Each skeleton carries the geometry of the thing it stands in for, so content landing
+   never shifts the layout under the reader. */
+.skeleton {
+    position: relative;
+    overflow: hidden;
+    background: var(--overlay-soft);
+    border-radius: 6px;
+}
+
+/* A 105deg sweep rather than a plain left-to-right wipe: the diagonal reads as light
+   crossing a surface instead of a bar sliding along a track. */
+.skeleton::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-120%);
+    background: linear-gradient(105deg,
+        transparent 0%,
+        var(--overlay-soft) 35%,
+        var(--overlay-strong) 50%,
+        var(--overlay-soft) 65%,
+        transparent 100%);
+    animation: skeleton-shimmer 2.1s var(--ease-out) infinite;
+}
+
+@keyframes skeleton-shimmer {
+    to { transform: translateX(120%); }
+}
+
+/* The market card and chart swap between real content and their placeholders together. */
+.market-card.is-loading .market-price,
+.market-card.is-loading .market-delta,
+.market-card.is-loading .chart {
+    display: none;
+}
+
+.market-card:not(.is-loading) .market-price-skeleton,
+.market-card:not(.is-loading) .market-delta-skeleton,
+.market-card:not(.is-loading) .chart-skeleton {
+    display: none;
+}
+
+/* Sized to the real readouts: 26px mono price, 12px delta pill. */
+.market-price-skeleton {
+    display: inline-block;
+    width: 148px;
+    height: 26px;
+    border-radius: 7px;
+}
+
+.market-delta-skeleton {
+    display: inline-block;
+    width: 54px;
+    height: 16px;
+    margin-bottom: 2px;
+    border-radius: 5px;
+}
+
+/* Bars rather than one flat block — the silhouette of a candle series is what is coming. */
+.chart-skeleton {
+    height: 300px;
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 4px;
+}
+
+.chart-skeleton span {
+    flex: 1;
+    border-radius: 3px;
+}
+
+.chart-skeleton span:nth-child(8n + 1) { height: 34%; }
+.chart-skeleton span:nth-child(8n + 2) { height: 52%; }
+.chart-skeleton span:nth-child(8n + 3) { height: 41%; }
+.chart-skeleton span:nth-child(8n + 4) { height: 63%; }
+.chart-skeleton span:nth-child(8n + 5) { height: 47%; }
+.chart-skeleton span:nth-child(8n + 6) { height: 71%; }
+.chart-skeleton span:nth-child(8n + 7) { height: 38%; }
+.chart-skeleton span:nth-child(8n + 8) { height: 58%; }
+
+/* Treemap placeholders are positioned the same way the real tiles are — percentage boxes
+   inside the aspect-ratio grid — so the block does not resize when data lands. */
+.heatmap-tile-skeleton {
+    position: absolute;
+    border-radius: 0;
+    background: var(--overlay-soft);
+    border: 1px solid var(--panel);
+}
+
+/* ---- profile ------------------------------------------------------------------------- */
+.view-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+/* ---- profile layout ------------------------------------------------------------------
+   The record on the left, what it earned on the right. In one column the badge grid sat
+   below a list of every recent guess, which is the wrong way round: the trophies are the
+   part worth looking at twice, and the guess log is reference.
+
+   auto-fit rather than two fixed tracks, so the split collapses to one column on its own
+   the moment a track would go under 320px — the badge cards stop being readable below
+   that, and a two-column profile on a phone is two columns of nothing. */
+
+.app.app-profile {
+    max-width: 1180px;
+}
+
+/* min(320px, 100%) rather than a bare 320px: a bare minimum is a floor the track holds even
+   when the container is narrower than it, so on a 300px phone the columns came out 320 wide
+   and the shell — which clips, that being what rounds its corners — simply cut them off. */
+.profile-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
+    gap: 8px 24px;
+    align-items: start;
+}
+
+.profile-col {
+    min-width: 0;
+}
+
+/* The first heading in each column lines up with the other's, rather than inheriting the
+   24px that separates one section from the next. */
+.profile-col > .profile-section:first-child {
+    margin-top: 0;
+}
+
+/* The one figure here that can be lost by not playing — the rest cannot go down — so it is
+   the one drawn in the accent. */
+.stat.is-accent {
+    border-color: var(--accent);
+    background: var(--panel-2);
+}
+
+.stat.is-accent .stat-label {
+    color: var(--accent);
+}
+
+.stat-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+/* Outside .rolling on purpose: that class clips a strip of digits to one line, and a mark
+   inside it renders the whole strip. The trade tab's account figures learned this the hard
+   way. */
+.stat-flame {
+    width: 16px;
+    height: 16px;
+    color: var(--warn);
+}
+
+.profile-share {
+    margin-top: 16px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-start;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+}
+
+.profile-share.hidden {
+    display: none;
+}
+
+.profile-share-squares {
+    font-size: 17px;
+    letter-spacing: 2px;
+    line-height: 1;
+}
+
+.profile-share-line {
+    margin: 0;
+    font: 500 12.5px var(--mono);
+    font-variant-numeric: tabular-nums;
+    color: var(--muted);
+}
+
+.profile-wallet {
+    font: 500 12px var(--mono);
+    color: var(--muted);
+}
+
+.profile-note {
+    margin: 0 0 16px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 12.5px;
+    line-height: 1.5;
+}
+
+.profile-section {
+    margin: 24px 0 10px;
+    font-size: 13px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+}
+
+.profile-empty {
+    margin: 0;
+    color: var(--muted-2);
+    font-size: 13px;
+}
+
+.profile-assets {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 10px;
+}
+
+/* Name and rate on the first row, count beside the rate, bar spanning underneath. */
+.profile-asset {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    align-items: baseline;
+    gap: 4px 10px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+}
+
+.profile-asset-name { font: 600 13px var(--mono); }
+
+.profile-asset-rate {
+    font: 700 15px var(--mono);
+    font-variant-numeric: tabular-nums;
+}
+
+.profile-asset-count {
+    font: 500 11.5px var(--mono);
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.profile-asset-track {
+    grid-column: 1 / -1;
+    height: 4px;
+    margin-top: 6px;
+    border-radius: 999px;
+    background: var(--overlay-strong);
+    overflow: hidden;
+}
+
+.profile-asset-fill {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: var(--up);
+    transition: width var(--duration-normal) var(--ease-out);
+}
+
+.profile-recent {
+    display: grid;
+    gap: 6px;
+}
+
+.profile-guess {
+    display: grid;
+    grid-template-columns: auto auto 1fr auto;
+    align-items: baseline;
+    gap: 10px;
+    padding: 9px 12px;
+    border-radius: 9px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    font-size: 12.5px;
+}
+
+.profile-guess-mark { font-weight: 700; }
+.profile-guess.is-correct .profile-guess-mark { color: var(--up); }
+.profile-guess.is-wrong .profile-guess-mark { color: var(--down); }
+
+.profile-guess-symbol { font: 600 12px var(--mono); }
+.profile-guess-call { color: var(--muted); min-width: 0; }
+
+.profile-guess-when {
+    color: var(--muted-2);
+    font-size: 11.5px;
+    white-space: nowrap;
+}
+
+@media (max-width: 480px) {
+    /* The relative time is the first thing worth dropping when the row runs out of width. */
+    .profile-guess { grid-template-columns: auto auto 1fr; }
+    .profile-guess-when { display: none; }
+}
+
+/* Price ticker strip, above the shell rather than inside it — it is the market talking,
+   not part of the app's own chrome. */
+.ticker {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 12px;
+    height: 34px;
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+}
+
+@media (max-width: 900px) {
+    .ticker {
+        border-radius: 0;
+        border-width: 0 0 1px;
+        margin-bottom: 0;
+    }
+}
+
+.ticker.hidden {
+    display: none;
+}
+
+.ticker-track {
+    display: flex;
+    width: max-content;
+    animation: ticker-scroll linear infinite;
+}
+
+/* Let people stop the strip to actually read a price they spotted. */
+.ticker:hover .ticker-track {
+    animation-play-state: paused;
+}
+
+.ticker-group {
+    display: flex;
+}
+
+.ticker-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 14px;
+    border-right: 1px solid var(--border);
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+.ticker-logo {
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+}
+
+.ticker-symbol {
+    font-weight: 700;
+    color: var(--text);
+}
+
+.ticker-price,
+.ticker-change {
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+}
+
+.ticker-price {
+    font-weight: 500;
+    color: var(--muted);
+}
+
+.ticker-change {
+    font-weight: 700;
+}
+
+.ticker-change.up { color: var(--up); }
+.ticker-change.down { color: var(--down); }
+
+@keyframes ticker-scroll {
+    from { transform: translateX(0); }
+    to   { transform: translateX(-50%); }
+}
+
+.view.hidden {
+    display: none !important;
+}
+
+.game-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 16px;
+    /* Wraps so the streak chip cannot take width off the asset picker on a phone. The picker
+       scrolls horizontally when it has to, and it was already doing so at 375px — this just
+       stops a second control making the squeeze worse. Everything fits one row on a desktop,
+       so nothing moves there. */
+    flex-wrap: wrap;
+}
+
+/* The right end of the toolbar: how far through the chart, and the sound key. Grouped so
+   the row stays two things — picker, then status — however many of these are on screen at
+   the time. The streak chip and the counter both come and go. */
+.game-toolbar-end {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.sound-toggle {
+    padding: 7px 9px;
+    line-height: 1;
+}
+
+.scoreboard {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+/* One tile more than the game's board: the day streak, which only a signed-in account has.
+   Five fixed columns is one too many for a phone — the fifth ran off the edge — so these wrap
+   on width instead, five across on a desktop and three then two on a narrow screen. */
+.scoreboard-profile {
+    grid-template-columns: repeat(auto-fit, minmax(88px, 1fr));
+}
+
+.stat {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 12px;
+    text-align: center;
+}
+
+.stat-label {
+    display: block;
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.stat-value {
+    display: block;
+    font-size: 20px;
+    font-weight: 700;
+    margin-top: 2px;
+    font-variant-numeric: tabular-nums;
+}
+
+/* ---- the play tab's two columns -----------------------------------------------------
+   The chart on the left, and on the right the four things a player looks at between
+   rounds: how the session is going, whether today's challenge is still unplayed, which
+   badge is nearest, and who is ahead. All four used to be somewhere else — the scoreboard
+   above the chart, the rest on tabs nobody opens mid-session — which is why the answer to
+   "why am I still here" was always one click away from the thing being played.
+
+   The right column is 300px and does not stretch: it holds labelled figures, and a stat
+   card that grows with the window only puts more space between a number and its label. */
+
+.app.app-play {
+    max-width: 1180px;
+}
+
+.play-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 300px;
+    gap: 16px;
+    align-items: start;
+}
+
+.play-main {
+    min-width: 0;
+}
+
+.play-side {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* Below 1100px the column has nowhere to go but under the chart, where it reads as a
+   footer to the round rather than as a panel beside it. */
+@media (max-width: 1100px) {
+    .play-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+.side-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+}
+
+.side-card.hidden {
+    display: none;
+}
+
+/* The one card that is an offer rather than a readout, so it is the one card drawn in the
+   accent — on the darker ground, which is what keeps a bordered card from reading as a
+   button the whole way across. */
+.side-card.is-accent {
+    background: var(--panel-2);
+    border-color: var(--accent);
+    gap: 8px;
+}
+
+.side-eyebrow {
+    font: 600 10.5px var(--mono);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted-2);
+}
+
+.side-eyebrow.is-accent {
+    color: var(--accent);
+}
+
+.side-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 8px;
+}
+
+.side-link {
+    background: none;
+    border: none;
+    padding: 0;
+    font-family: inherit;
+    font-size: 11.5px;
+    color: var(--accent);
+    cursor: pointer;
+}
+
+.side-link:hover {
+    text-decoration: underline;
+}
+
+.side-title {
+    font-size: 15px;
+}
+
+.side-text {
+    margin: 0;
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: var(--muted);
+}
+
+.side-cta {
+    margin-top: 2px;
+    padding: 10px;
+    border: none;
+    border-radius: 10px;
+    background: var(--accent);
+    color: var(--bg);
+    font-family: inherit;
+    font-weight: 700;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.side-cta:hover {
+    filter: brightness(1.12);
+}
+
+.side-foot {
+    margin-top: 6px;
+    font-size: 11.5px;
+    color: var(--muted-2);
+}
+
+/* In the sidebar the scoreboard is a 2x2 of bare figures rather than four bordered tiles:
+   the card is already the border, and tiles inside a card is a frame inside a frame. */
+.play-side .scoreboard {
+    grid-template-columns: 1fr 1fr;
+    margin: 10px 0 0;
+}
+
+.play-side .stat {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    padding: 0;
+    text-align: left;
+}
+
+.play-side .stat-value {
+    font: 700 22px var(--mono);
+    font-variant-numeric: tabular-nums;
+}
+
+.side-dots {
+    display: flex;
+    gap: 5px;
+    margin-top: 12px;
+}
+
+.side-dot {
+    flex: 1;
+    height: 6px;
+    border-radius: 999px;
+    background: var(--overlay-strong);
+}
+
+.side-dot.is-correct { background: var(--up); }
+.side-dot.is-wrong { background: var(--down); }
+
+.side-badges {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 10px;
+}
+
+.side-badge-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 8px;
+}
+
+.side-badge-name {
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.side-badge-count {
+    font: 600 11px var(--mono);
+    font-variant-numeric: tabular-nums;
+    color: var(--muted);
+}
+
+.side-bar {
+    display: block;
+    height: 5px;
+    margin-top: 5px;
+    border-radius: 999px;
+    background: var(--border);
+    overflow: hidden;
+}
+
+.side-bar-fill {
+    display: block;
+    height: 100%;
+    border-radius: 999px;
+    background: var(--accent);
+}
+
+.side-rank {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-top: 8px;
+}
+
+.side-rank-row {
+    display: grid;
+    grid-template-columns: 20px 22px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 6px;
+    border-radius: 8px;
+    font-size: 12.5px;
+}
+
+.side-rank-row.is-me {
+    background: var(--tint-accent-weak);
+    font-weight: 700;
+}
+
+.side-rank-pos {
+    font: 600 11px var(--mono);
+    color: var(--muted-2);
+}
+
+.side-rank-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.side-rank-score {
+    font: 600 12px var(--mono);
+    font-variant-numeric: tabular-nums;
+    color: var(--muted);
+}
+
+.side-rank-row.is-me .side-rank-score {
+    color: var(--text);
+}
+
+.result-banner {
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 12px;
+}
+
+.result-banner.correct {
+    background: rgba(52, 211, 153, 0.12);
+    color: var(--up);
+    border: 1px solid var(--up);
+}
+
+.result-banner.wrong {
+    background: rgba(251, 113, 133, 0.12);
+    color: var(--down);
+    border: 1px solid var(--down);
+}
+
+.result-banner.neutral {
+    background: rgba(125, 125, 130, 0.12);
+    color: var(--text);
+    border: 1px solid var(--border);
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* --- market chart card --- */
+
+.market-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px 16px 8px;
+    margin-bottom: 16px;
+}
+
+.market-head {
+    margin-bottom: 4px;
+}
+
+.market-symbol-row {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+}
+
+.market-symbol {
+    font: 500 12px var(--mono);
+    letter-spacing: 0.03em;
+    color: var(--text);
+}
+
+.market-name {
+    font-size: 12px;
+    color: var(--muted);
+}
+
+.market-price-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+    margin-top: 4px;
+}
+
+.market-price {
+    font: 500 26px/1 var(--mono);
+    color: var(--text);
+}
+
+/* ---- odometer digits ----------------------------------------------------------------
+   Any element carrying .rolling can be driven by updateRollingText() in app.js. The digit
+   boxes size themselves off the container's own font — 1ch is the advance of "0", which
+   tabular-nums makes true of every digit — so the same markup works at 26px monospace in
+   the price and at 20px sans in the scoreboard. */
+.rolling {
+    display: inline-flex;
+    font-variant-numeric: tabular-nums;
+}
+
+.rolling .digit {
+    position: relative;
+    display: inline-block;
+    width: 1ch;
+    height: 1em;
+    overflow: hidden;
+    vertical-align: bottom;
+}
+
+.rolling .digit-strip {
+    position: absolute;
+    inset: 0 0 auto 0;
+    transition: transform var(--duration-roll) var(--ease-out);
+}
+
+.rolling .digit-strip span {
+    display: block;
+    height: 1em;
+    line-height: 1;
+    text-align: center;
+}
+
+/* Carries the plain value for assistive tech, since the digit strips themselves are
+   aria-hidden. Clipped rather than display:none, which would take it out of the a11y tree
+   along with the rest. */
+.rolling-sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    border: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+}
+
+/* Everything that is not a digit — separators, signs, the "%". These are flex items too,
+   so without a height they size to their own line box and end up taller than the 1em digit
+   windows, which drags the whole container's height with them. */
+.rolling .lit {
+    display: inline-block;
+    height: 1em;
+    line-height: 1;
+    /* These are flex items, so a lit holding nothing but a space — "▲ 1.42%", "+2.41%
+       (24h)" — collapses to zero width and the separator vanishes. */
+    white-space: pre;
+}
+
+.market-delta {
+    font: 600 12px var(--mono);
+    padding: 2px 6px;
+    border-radius: 5px;
+    margin-bottom: 2px;
+    font-variant-numeric: tabular-nums;
+    transition: color var(--duration-normal) var(--ease-out),
+                background-color var(--duration-normal) var(--ease-out);
+}
+
+.market-ohlc {
+    height: 16px;
+    margin-top: 6px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    font: 500 10.5px var(--mono);
+    color: var(--muted);
+    opacity: 0;
+    transition: opacity var(--duration-fast) var(--ease-out);
+    font-variant-numeric: tabular-nums;
+}
+
+.market-ohlc.visible { opacity: 1; }
+.market-ohlc b { color: var(--text); font-weight: 600; }
+
+.chart {
+    margin-top: 10px;
+    height: 300px;
+}
+
+.chart svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    touch-action: pan-y;
+}
+
+.chart svg:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+@keyframes candle-rise {
+    from { transform: scaleY(0); opacity: 0; }
+    to   { transform: scaleY(1); opacity: 1; }
+}
+
+@keyframes price-flash {
+    from { opacity: 0.35; }
+    to   { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    /* Collapsing the durations at the token catches everything that reads them —
+       including the candle-rise animation app.js writes as an inline style, which no
+       stylesheet rule could have overridden. */
+    :root {
+        --duration-fast: 0.01ms;
+        --duration-normal: 0.01ms;
+        --duration-enter: 0.01ms;
+        --duration-roll: 0.01ms;
+    }
+    /* Permanently looping motion is exactly what this preference exists to stop, and
+       shortening these would only spin them faster — they have to be switched off. */
+    .ticker-track { animation: none; }
+    .skeleton::after { display: none; }
+}
+
+.controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.guess-btn {
+    padding: 16px;
+    border-radius: 12px;
+    border: none;
+    font-size: 16px;
+    font-weight: 800;
+    letter-spacing: 0.03em;
+    cursor: pointer;
+    color: #06110f;
+}
+
+.guess-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.guess-btn.long {
+    background: var(--up);
+}
+
+.guess-btn.short {
+    background: var(--down);
+    color: #200608;
+}
+
+/* Sits in the toolbar row, pushed to the far end so it lands beside the sound toggle and
+   leaves the asset picker the whole left. */
+.guess-progress {
+    color: var(--muted);
+    font: 500 12px var(--mono);
+    letter-spacing: 0.03em;
+    font-variant-numeric: tabular-nums;
+}
+
+/* The end-of-session reveal: which stretch of history the chart actually was. Sits between
+   the chart and the controls so it reads as a caption of what is still on screen. */
+.round-identity {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 4px 12px;
+    margin-bottom: 10px;
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--panel-2);
+    font-size: 13px;
+    animation: identity-in var(--duration-enter) var(--ease-out) both;
+}
+
+.round-identity .ri-label {
+    color: var(--muted-2);
+    font: 500 11px var(--mono);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.round-identity .ri-asset {
+    color: var(--text);
+    font-weight: 600;
+}
+
+.round-identity .ri-range {
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+}
+
+.round-identity .ri-link {
+    margin-left: auto;
+    color: var(--accent);
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.round-identity .ri-link:hover {
+    text-decoration: underline;
+}
+
+@keyframes identity-in {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: none; }
+}
+
+/* Post-session context chart. Deliberately a separate block below the result rather than
+   more candles on the game chart: what happened around the round is a different question
+   from what the player was just asked, and mixing them muddles both. */
+.round-context {
+    margin-bottom: 12px;
+    padding: 14px 16px 12px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--panel);
+    animation: identity-in var(--duration-enter) var(--ease-out) both;
+}
+
+.round-context .rc-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 2px 10px;
+}
+
+.round-context .rc-title {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+}
+
+.round-context .rc-sub {
+    margin: 0;
+    color: var(--muted);
+    font: 400 12px var(--mono);
+    font-variant-numeric: tabular-nums;
+}
+
+.round-context .rc-chart {
+    margin-top: 8px;
+    height: 200px;
+}
+
+.round-context .rc-chart svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+}
+
+.round-context .rc-patterns {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+}
+
+.round-context .rc-patterns-label {
+    margin: 0 0 6px;
+    color: var(--muted-2);
+    font: 500 11px var(--mono);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.round-context .rc-patterns-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.rc-pattern {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 7px;
+    padding: 5px 10px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--panel-2);
+    color: var(--text);
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: border-color var(--duration-fast) var(--ease-out),
+                color var(--duration-fast) var(--ease-out);
+}
+
+.rc-pattern:hover,
+.rc-pattern:focus-visible {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.rc-pattern .rc-pattern-at {
+    color: var(--muted);
+    font: 400 11px var(--mono);
+    font-variant-numeric: tabular-nums;
+}
+
+/* Briefly rings the card the game tab just sent the player to, so it is obvious which of
+   the thirteen cards answered the question they clicked on. */
+.pattern-card-called {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+    transition: outline-color var(--duration-normal) var(--ease-out);
+}
+
+.round-context .rc-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 16px;
+    margin: 10px 0 0;
+    padding: 0;
+    list-style: none;
+    color: var(--muted);
+    font-size: 11.5px;
+}
+
+.round-context .rc-legend li {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.round-context .rc-key {
+    width: 14px;
+    height: 10px;
+    border-radius: 3px;
+    border: 1px solid var(--border);
+}
+
+.rc-key-before { background: transparent; }
+.rc-key-played { background: color-mix(in srgb, var(--muted) 16%, transparent); }
+.rc-key-guess { background: color-mix(in srgb, var(--accent) 22%, transparent); }
+
+/* Countdown for the current guess. The fill is driven from JS, one width per tick, rather
+   than a CSS transition — the reduced-motion block collapses the duration tokens, and a
+   shot clock that finishes instantly is not a shot clock. */
+.guess-timer {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.guess-timer-track {
+    flex: 1;
+    height: 4px;
+    border-radius: 999px;
+    background: var(--overlay-strong);
+    overflow: hidden;
+}
+
+.guess-timer-fill {
+    height: 100%;
+    width: 100%;
+    border-radius: 999px;
+    background: var(--accent);
+}
+
+.guess-timer-value {
+    color: var(--muted);
+    font: 500 12px var(--mono);
+    font-variant-numeric: tabular-nums;
+    min-width: 3ch;
+    text-align: right;
+}
+
+/* Colour only, no pulse: an infinite animation would have to be switched off by hand in the
+   reduced-motion block, and the colour already says everything the pulse would. */
+.guess-timer.urgent .guess-timer-fill { background: var(--down); }
+.guess-timer.urgent .guess-timer-value { color: var(--down); }
+
+.admin-link {
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+}
+
+/* --- admin page ---------------------------------------------------------------------
+   A dashboard shell: fixed sidebar, sticky topbar, and a content column that shows one
+   pane at a time. Everything below is scoped to .admin-shell and reads --adm-* tokens, so
+   the game page is untouched even where a class name is shared (.ghost-btn, .pill).
+
+   The panes are switched by a data-pane attribute on the container rather than by
+   .hidden, because each admin-*.js module owns .hidden on its own section already and
+   re-asserts it on every refresh. Two mechanisms writing one class would fight; an
+   attribute the modules never touch does not. */
+
+.admin-shell {
+    display: flex;
+    min-height: 100vh;
+    background: var(--adm-bg);
+    color: var(--adm-text);
+}
+
+.admin-shell :focus-visible {
+    outline: 2px solid var(--adm-text);
+    outline-offset: 2px;
+}
+
+/* ---- sidebar ---- */
+
+.adm-side {
+    width: 272px;
+    flex: 0 0 272px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    padding: 14px 14px 10px;
+    background: var(--adm-shell);
+    border-right: 1px solid var(--adm-border);
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow: auto;
+}
+
+.adm-workspace {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--adm-border);
+    border-radius: 12px;
+    background: var(--adm-panel);
+    box-shadow: var(--adm-shadow-sm);
+    text-align: left;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+    transition: border-color var(--duration-fast) var(--ease-out);
+}
+
+.adm-workspace:hover {
+    border-color: var(--adm-border-2);
+}
+
+.adm-workspace-mark {
+    width: 34px;
+    height: 34px;
+    flex: 0 0 34px;
+    border-radius: 9px;
+    background: var(--adm-ink);
+    color: var(--adm-panel);
+    display: grid;
+    place-items: center;
+    font-family: var(--mono);
+    font-weight: 700;
+    font-size: 15px;
+}
+
+.adm-workspace-text {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+    flex: 1;
+}
+
+.adm-workspace-kicker {
+    font-size: 11px;
+    color: var(--adm-muted);
+    letter-spacing: 0.02em;
+}
+
+.adm-workspace-name {
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.adm-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+}
+
+.adm-nav-group {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.adm-nav-label {
+    margin: 0 0 6px 10px;
+    font-size: 11.5px;
+    font-weight: 500;
+    color: var(--adm-muted);
+}
+
+.adm-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 9px 11px;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--adm-muted);
+    font-family: inherit;
+    font-size: 14.5px;
+    font-weight: 450;
+    letter-spacing: -0.005em;
+    text-align: left;
+    cursor: pointer;
+    transition: color var(--duration-fast) var(--ease-out),
+                background var(--duration-fast) var(--ease-out),
+                border-color var(--duration-fast) var(--ease-out);
+}
+
+.adm-nav-item:hover {
+    border-color: var(--adm-border);
+    color: var(--adm-text);
+}
+
+.adm-nav-item[aria-current="page"] {
+    background: var(--adm-panel);
+    color: var(--adm-text);
+    font-weight: 600;
+    border-color: var(--adm-border);
+    box-shadow: var(--adm-shadow-sm);
+}
+
+.adm-nav-item svg {
+    flex: 0 0 17px;
+}
+
+/* Late candles are the one thing worth pulling out of the pane and onto the nav. */
+.adm-nav-badge {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--adm-panel);
+    background: var(--adm-down);
+    border-radius: 6px;
+    padding: 1px 6px;
+}
+
+.adm-side-foot {
+    margin-top: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-top: 14px;
+    border-top: 1px solid var(--adm-border);
+}
+
+.adm-back {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 11px;
+    border-radius: 10px;
+    font-size: 13.5px;
+    color: var(--adm-muted);
+    text-decoration: none;
+    transition: color var(--duration-fast) var(--ease-out),
+                background var(--duration-fast) var(--ease-out);
+}
+
+.adm-back:hover {
+    background: var(--adm-panel-3);
+    color: var(--adm-text);
+}
+
+/* The wallet card is #auth-area's home on this page — auth.js still owns which of the two
+   children is visible, so only the skin changes here. */
+.admin-shell .auth-area {
+    position: relative;
+    display: block;
+    justify-self: auto;
+}
+
+.admin-shell .auth-user {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 10px;
+    background: var(--adm-panel);
+    border: 1px solid var(--adm-border);
+}
+
+.adm-avatar {
+    width: 26px;
+    height: 26px;
+    flex: 0 0 26px;
+    border-radius: 50%;
+    background: var(--adm-panel-3);
+    display: grid;
+    place-items: center;
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--adm-muted);
+}
+
+.adm-wallet-text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    flex: 1;
+}
+
+.admin-shell .auth-display-name {
+    padding: 0;
+    border: none;
+    border-radius: 0;
+    background: none;
+    color: var(--adm-text);
+    font-size: 13px;
+    font-weight: 500;
+    max-width: 100%;
+    text-align: left;
+}
+
+.admin-shell .auth-display-name:hover {
+    background: none;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.adm-wallet-meta {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--adm-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.admin-shell .auth-error-msg {
+    top: auto;
+    bottom: calc(100% + 8px);
+    right: 0;
+    background: var(--adm-panel);
+    border-color: var(--adm-border);
+    color: var(--adm-down);
+    box-shadow: var(--adm-shadow);
+}
+
+.adm-icon-btn {
+    border: none;
+    background: none;
+    padding: 4px;
+    border-radius: 6px;
+    color: var(--adm-muted-2);
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    transition: color var(--duration-fast) var(--ease-out),
+                background var(--duration-fast) var(--ease-out);
+}
+
+.adm-icon-btn:hover {
+    color: var(--adm-text);
+    background: var(--adm-panel-3);
+}
+
+/* ---- main column ---- */
+
+.adm-main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.adm-topbar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 32px;
+    border-bottom: 1px solid var(--adm-border);
+    position: sticky;
+    top: 0;
+    background: var(--adm-bg);
+    z-index: 5;
+}
+
+.adm-crumb {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    font-size: 15px;
+    min-width: 0;
+    color: var(--adm-muted);
+}
+
+.adm-crumb svg {
+    color: var(--adm-muted-2);
+    flex: 0 0 14px;
+}
+
+.adm-crumb-pane {
+    color: var(--adm-text);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.adm-topbar-tools {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* The wrapper only positions the dropdown; the field keeps the card look. */
+.adm-search {
+    position: relative;
+    width: 240px;
+}
+
+.adm-search-field {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 12px;
+    background: var(--adm-panel);
+    border: 1px solid var(--adm-border);
+    border-radius: 10px;
+    box-shadow: var(--adm-shadow-sm);
+    transition: border-color var(--duration-fast) var(--ease-out);
+}
+
+.adm-search-field:focus-within {
+    border-color: var(--adm-border-2);
+}
+
+.adm-search-field svg {
+    color: var(--adm-muted-2);
+    flex: 0 0 15px;
+}
+
+.adm-search-field input {
+    border: none;
+    outline: none;
+    background: none;
+    width: 100%;
+    min-width: 0;
+    font-family: inherit;
+    font-size: 13.5px;
+    color: var(--adm-text);
+}
+
+/* Safari draws its own clear button on type=search and it lands on the border radius. */
+.adm-search-field input::-webkit-search-cancel-button {
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.adm-search-results {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    z-index: 30;
+    width: min(380px, calc(100vw - 32px));
+    max-height: 60vh;
+    overflow-y: auto;
+    padding: 6px;
+    background: var(--adm-panel);
+    border: 1px solid var(--adm-border);
+    border-radius: 12px;
+    box-shadow: var(--adm-shadow);
+}
+
+.adm-search-group {
+    margin: 8px 0 4px 8px;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--adm-muted-2);
+}
+
+.adm-search-group:first-child {
+    margin-top: 2px;
+}
+
+.adm-search-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    width: 100%;
+    padding: 8px 10px;
+    border: none;
+    border-radius: 8px;
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.adm-search-item:hover,
+.adm-search-item.is-active {
+    background: var(--adm-panel-2);
+}
+
+.adm-search-title {
+    font-size: 13.5px;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.adm-search-detail {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--adm-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.adm-search-empty {
+    margin: 0;
+    padding: 10px;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--adm-muted);
+}
+
+.adm-search-scope {
+    display: block;
+    margin-top: 4px;
+    font-size: 12px;
+    color: var(--adm-muted-2);
+}
+
+/* Where search dropped you. Colour rather than motion, and it fades out on its own — a ring
+   that stayed would be one more thing to dismiss. */
+/* Scoped with .admin-shell purely for weight: .media-tile and .blog-admin-row set their own
+   background further down this file and would otherwise win on source order. */
+.admin-shell .is-found,
+.admin-shell tr.is-found > td {
+    background: color-mix(in oklch, var(--adm-warn) 22%, transparent);
+    transition: background var(--duration-enter) var(--ease-out);
+}
+
+/* Replaces the game page's round .theme-toggle; same id, same script, different skin. */
+.admin-shell .theme-toggle {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    border: 1px solid var(--adm-border);
+    background: var(--adm-panel);
+    color: var(--adm-text);
+    box-shadow: var(--adm-shadow-sm);
+    transition: border-color var(--duration-fast) var(--ease-out);
+}
+
+.admin-shell .theme-toggle:hover {
+    background: var(--adm-panel);
+    border-color: var(--adm-border-2);
+}
+
+.adm-content {
+    padding: 30px 32px 56px;
+    display: flex;
+    flex-direction: column;
+    gap: 26px;
+}
+
+/* ---- pane switching ---- */
+
+.admin-panes > section[data-pane] {
+    display: none;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.admin-panes[data-pane="overview"] > section[data-pane="overview"]:not(.hidden),
+.admin-panes[data-pane="ops"] > section[data-pane="ops"]:not(.hidden),
+.admin-panes[data-pane="assets"] > section[data-pane="assets"]:not(.hidden),
+.admin-panes[data-pane="players"] > section[data-pane="players"]:not(.hidden),
+.admin-panes[data-pane="content"] > section[data-pane="content"]:not(.hidden),
+.admin-panes[data-pane="media"] > section[data-pane="media"]:not(.hidden),
+.admin-panes[data-pane="blog"] > section[data-pane="blog"]:not(.hidden) {
+    display: flex;
+}
+
+/* Nothing but the permission card until the server has said ADMIN. */
+body:not(.is-admin) .admin-panes,
+body:not(.is-admin) .adm-nav,
+body:not(.is-admin) .adm-search {
+    display: none;
+}
+
+/* ---- permission states ---- */
+
+.admin-state {
+    max-width: 560px;
+    margin: 40px auto 0;
+    padding: 22px 24px;
+    background: var(--adm-panel);
+    border: 1px solid var(--adm-border);
+    border-radius: 12px;
+    box-shadow: var(--adm-shadow-sm);
+}
+
+.admin-state h2 {
+    margin: 0 0 8px;
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+}
+
+.admin-state p {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--adm-muted);
+}
+
+.admin-who {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 14px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--adm-muted);
+    word-break: break-all;
+}
+
+.admin-who b {
+    color: var(--adm-text);
+    font-weight: 600;
+}
+
+/* ---- shared pane furniture ---- */
+
+.adm-pane-head {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.admin-shell .admin-h1 {
+    margin: 0;
+    font-size: 30px;
+    font-weight: 600;
+    letter-spacing: -0.03em;
+}
+
+.admin-shell .admin-h2 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0;
+}
+
+.admin-shell .admin-h3 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.admin-shell .admin-bar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.admin-shell .editor-actions {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.admin-shell .content-note {
+    margin: 0;
+    font-size: 13.5px;
+    line-height: 1.6;
+    color: var(--adm-muted);
+    max-width: 80ch;
+}
+
+.admin-shell code {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    background: var(--adm-panel-3);
+    padding: 1px 5px;
+    border-radius: 4px;
+}
+
+/* An outer tray in --adm-panel-2 holding a white card: the tray carries the kicker, the
+   card carries the data. Used by every block on the overview pane. */
+.adm-tray {
+    background: var(--adm-panel-2);
+    border: 1px solid var(--adm-border);
+    border-radius: 14px;
+    padding: 6px;
+}
+
+.adm-tray-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px 14px;
+}
+
+.adm-kicker {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--adm-muted);
+}
+
+.adm-kicker-note {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--adm-muted);
+}
+
+.adm-card {
+    background: var(--adm-panel);
+    border: 1px solid var(--adm-border);
+    border-radius: 10px;
+    box-shadow: var(--adm-shadow-sm);
+}
+
+/* ---- buttons and inputs ---- */
+
+.admin-shell .ghost-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 14px;
+    border-radius: 10px;
+    border: 1px solid var(--adm-border);
+    background: var(--adm-panel);
+    color: var(--adm-text);
+    font-family: inherit;
+    font-size: 13.5px;
+    font-weight: 400;
+    box-shadow: var(--adm-shadow-sm);
+    transition: border-color var(--duration-fast) var(--ease-out);
+}
+
+.admin-shell .ghost-btn:hover {
+    color: var(--adm-text);
+    border-color: var(--adm-border-2);
+}
+
+.admin-shell .primary-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 16px;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    background: var(--adm-ink);
+    color: var(--adm-panel);
+    font-family: inherit;
+    font-size: 13.5px;
+    font-weight: 500;
+    cursor: pointer;
+    box-shadow: var(--adm-shadow-sm);
+    transition: opacity var(--duration-fast) var(--ease-out);
+}
+
+.admin-shell .primary-btn:hover {
+    filter: none;
+    opacity: 0.88;
+}
+
+.admin-shell .danger-btn {
+    color: var(--adm-down);
+}
+
+.admin-shell .danger-btn:hover {
+    border-color: var(--adm-down);
+}
+
+.admin-shell .ghost-btn:disabled,
+.admin-shell .primary-btn:disabled,
+.admin-shell .danger-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* The in-table button size: small enough that seven of them fit a row. nowrap because a
+   two-word label breaking in half is what makes a row grow a second line. */
+.admin-shell td .ghost-btn,
+.admin-shell td .danger-btn,
+.admin-shell .blog-admin-actions button,
+.admin-shell .media-actions button,
+.admin-shell .block-tools button {
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 12.5px;
+    background: var(--adm-panel-2);
+    box-shadow: none;
+    white-space: nowrap;
+}
+
+.folder-input,
+.admin-shell .field input,
+.admin-shell .field textarea {
+    padding: 9px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--adm-border);
+    background: var(--adm-panel);
+    color: var(--adm-text);
+    font-family: inherit;
+    font-size: 13.5px;
+    outline: none;
+    transition: border-color var(--duration-fast) var(--ease-out);
+}
+
+.folder-input:hover,
+.admin-shell .field input:hover,
+.admin-shell .field textarea:hover {
+    border-color: var(--adm-border-2);
+}
+
+#asset-symbol { width: 130px; font-family: var(--mono); font-size: 13px; }
+#asset-name { width: 150px; }
+#media-folder { width: 180px; font-family: var(--mono); font-size: 13px; }
+
+/* The kind switcher. .pill/.pill-option are the game page's classes, so the segmented
+   skin has to be scoped rather than replacing them. */
+.admin-shell .pill {
+    display: inline-flex;
+    gap: 2px;
+    padding: 3px;
+    border-radius: 999px;
+    background: var(--adm-panel-2);
+    border: 1px solid var(--adm-border);
+}
+
+.admin-shell .pill-option {
+    padding: 7px 15px;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--adm-muted);
+    font-size: 13.5px;
+    font-weight: 450;
+    transition: color var(--duration-fast) var(--ease-out),
+                background var(--duration-fast) var(--ease-out),
+                border-color var(--duration-fast) var(--ease-out);
+}
+
+.admin-shell .pill-option:hover {
+    color: var(--adm-text);
+}
+
+.admin-shell .pill-option.active {
+    background: var(--adm-panel);
+    border-color: var(--adm-border);
+    color: var(--adm-text);
+    font-weight: 600;
+}
+
+/* ---- tables ---- */
+
+/* The rounded card clips its corners, so the horizontal scroll has to happen on a layer
+   inside it. Without this the last column — the one with the destructive button — is cut
+   off instead of reachable once the viewport narrows. */
+.adm-table-card {
+    background: var(--adm-panel);
+    border: 1px solid var(--adm-border);
+    border-radius: 12px;
+    box-shadow: var(--adm-shadow-sm);
+    overflow: hidden;
+}
+
+.adm-table-card > .scroller {
+    overflow-x: auto;
+}
+
+/* Names the table from inside its own card, so the label cannot drift away from it the way
+   a heading stacked above would once the pane gains another block. */
+.adm-table-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--adm-border);
+}
+
+.adm-table-head b {
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.adm-table-head span {
+    margin-left: auto;
+    font-size: 13px;
+    color: var(--adm-muted);
+}
+
+.ops-table {
+    width: 100%;
+    min-width: 760px;
+    border-collapse: collapse;
+    font-size: 13.5px;
+}
+
+.ops-table th {
+    text-align: left;
+    padding: 12px 18px;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--adm-muted);
+    border-bottom: 1px solid var(--adm-border);
+    white-space: nowrap;
+}
+
+.ops-table td {
+    padding: 13px 18px;
+    border-bottom: 1px solid var(--adm-border);
+    vertical-align: middle;
+}
+
+.ops-table tbody tr {
+    transition: background var(--duration-fast) var(--ease-out);
+}
+
+.ops-table tbody tr:hover {
+    background: var(--adm-panel-2);
+}
+
+.ops-table th.num,
+.ops-table td.num {
+    text-align: right;
+}
+
+.ops-table td.num {
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+}
+
+/* admin-players.js marks the wallet cell .num to get the mono face. It is an identifier,
+   not a quantity, so it keeps the left edge the rest of the first column reads down. */
+#player-table td:first-child.num {
+    text-align: left;
+}
+
+.ops-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 9px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.ops-badge.is-good {
+    background: color-mix(in oklch, var(--adm-up) 16%, transparent);
+    color: var(--adm-up);
+}
+
+.ops-badge.is-bad {
+    background: color-mix(in oklch, var(--adm-down) 16%, transparent);
+    color: var(--adm-down);
+}
+
+.ops-badge.is-off {
+    background: var(--adm-panel-3);
+    color: var(--adm-muted);
+}
+
+.ops-badge.is-admin {
+    background: var(--adm-ink);
+    color: var(--adm-panel);
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+}
+
+.asset-actions {
+    display: flex;
+    gap: 6px;
+    justify-content: flex-end;
+}
+
+/* ↑ and ↓ are square; the on/off button keeps a floor so the row does not jump when its
+   label flips between "Tắt" and "Bật". */
+.admin-shell .asset-actions button:is(:first-child, :nth-child(2)) {
+    width: 30px;
+    padding: 6px 0;
+    justify-content: center;
+}
+
+.admin-shell .asset-actions button:last-child {
+    min-width: 52px;
+    justify-content: center;
+}
+
+/* ---- overview pane ---- */
+
+.adm-hero {
+    display: flex;
+    align-items: flex-end;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.adm-hero-text {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.admin-shell .admin-h1.adm-hero-title {
+    font-size: 34px;
+}
+
+.adm-hero-sub {
+    margin: 0;
+    font-size: 14px;
+    color: var(--adm-muted);
+}
+
+.adm-hero-sub .is-stale {
+    color: var(--adm-down);
+}
+
+.adm-hero-actions {
+    margin-left: auto;
+    display: flex;
+    gap: 8px;
+}
+
+.adm-kpis {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 16px;
+}
+
+.adm-kpi {
+    display: flex;
+    flex-direction: column;
+}
+
+.adm-kpi-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding: 16px 16px 14px;
+}
+
+.adm-kpi-text {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-width: 130px;
+    flex: 1 1 130px;
+}
+
+.adm-kpi-label {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--adm-muted);
+}
+
+.adm-kpi-figure {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.adm-kpi-value {
+    font-family: var(--mono);
+    font-size: 27px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+}
+
+.adm-kpi-unit {
+    font-size: 13px;
+    color: var(--adm-muted);
+}
+
+.adm-spark {
+    display: flex;
+    align-items: flex-end;
+    gap: 2px;
+    height: 46px;
+    flex: 0 1 auto;
+    overflow: hidden;
+}
+
+.adm-spark span {
+    width: 3px;
+    border-radius: 2px;
+    background: var(--adm-ink-2);
+}
+
+.adm-spark span.is-now {
+    background: var(--adm-ink);
+}
+
+.adm-kpi-delta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px 6px;
+}
+
+.adm-delta-mark {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--adm-panel-3);
+    display: grid;
+    place-items: center;
+    color: var(--adm-muted);
+}
+
+.adm-kpi-delta.is-down .adm-delta-mark svg {
+    transform: rotate(180deg);
+}
+
+.adm-kpi-delta.is-down .adm-delta-mark {
+    color: var(--adm-down);
+}
+
+.adm-delta-text {
+    margin-left: auto;
+    font-size: 13px;
+    color: var(--adm-muted);
+}
+
+.adm-delta-text b {
+    font-family: var(--mono);
+    font-weight: 600;
+    color: var(--adm-up);
+}
+
+.adm-kpi-delta.is-down .adm-delta-text b {
+    color: var(--adm-down);
+}
+
+.adm-info-dot {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--adm-panel-3);
+    display: grid;
+    place-items: center;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--adm-muted);
+}
+
+.adm-round-btn {
+    margin-left: auto;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: 1px solid var(--adm-border);
+    background: var(--adm-panel);
+    display: grid;
+    place-items: center;
+    color: var(--adm-muted);
+    cursor: pointer;
+    transition: color var(--duration-fast) var(--ease-out);
+}
+
+.adm-round-btn:hover {
+    color: var(--adm-text);
+}
+
+.adm-chart-card {
+    padding: 20px 22px 16px;
+}
+
+.adm-chart-bar {
+    display: flex;
+    align-items: center;
+    gap: 26px;
+    flex-wrap: wrap;
+    margin-bottom: 22px;
+}
+
+.adm-chart-total {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    font-size: 13.5px;
+    color: var(--adm-muted);
+}
+
+.adm-chart-total b {
+    font-family: var(--mono);
+    font-size: 24px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: var(--adm-text);
+}
+
+.adm-legend {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    letter-spacing: 0.1em;
+    color: var(--adm-muted);
+}
+
+.adm-legend i {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--adm-ink-2);
+}
+
+.adm-legend.is-long i {
+    background: var(--adm-ink);
+}
+
+.adm-range {
+    margin-left: auto;
+}
+
+.adm-chart-body {
+    display: flex;
+    gap: 14px;
+}
+
+.adm-yaxis {
+    display: flex;
+    flex-direction: column-reverse;
+    justify-content: space-between;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--adm-muted);
+    padding-bottom: 26px;
+    flex: 0 0 auto;
+    text-align: right;
+}
+
+.adm-plot {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* A grid of cells rather than solid bars: at this density the quantisation reads as a
+   texture, and the LONG/SHORT split stays legible without a second axis. */
+.adm-grid {
+    display: flex;
+    gap: 3px;
+    align-items: flex-end;
+    height: 238px;
+}
+
+.adm-grid-col {
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    justify-content: center;
+}
+
+/* The stack is capped so a five-year view draws columns, not slabs, while the column itself
+   keeps flex:1 — that is what holds each stack centred under its own x-axis label. */
+.adm-grid-stack {
+    flex: 1 1 auto;
+    max-width: 72px;
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 3px;
+}
+
+.adm-grid-stack span {
+    height: 14px;
+    border-radius: 1px;
+    background: var(--adm-ink-3);
+}
+
+.adm-grid-stack span.is-long { background: var(--adm-ink); }
+.adm-grid-stack span.is-short { background: var(--adm-ink-2); }
+
+.adm-xaxis {
+    display: flex;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--adm-muted);
+}
+
+.adm-xaxis span {
+    flex: 1;
+    text-align: center;
+    letter-spacing: 0.06em;
+}
+
+.adm-xaxis span.is-focus {
+    color: var(--adm-text);
+    font-weight: 600;
+}
+
+.adm-duo {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.adm-mini-card {
+    padding: 18px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.adm-mini-head {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+}
+
+.adm-mini-value {
+    font-family: var(--mono);
+    font-size: 26px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+}
+
+.adm-mini-note {
+    font-size: 13px;
+    color: var(--adm-muted);
+}
+
+/* Three figures side by side, wrapping rather than shrinking — a retention rate squeezed to
+   two characters is worse than one on its own row. */
+.adm-retention {
+    padding: 18px 20px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 18px;
+}
+
+.adm-retention-figure {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.adm-retention-base {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--adm-muted);
+}
+
+.adm-retention-foot {
+    margin: 10px 2px 0;
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: var(--adm-muted);
+}
+
+.adm-mini-aside {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    color: var(--adm-muted);
+}
+
+/* A line chart with nothing to plot is a blank box that reads as broken. This says which
+   it is — the commonest state on a deployment that went live last week. */
+.adm-chart-empty {
+    margin: 0;
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: var(--adm-muted);
+}
+
+.adm-mini-axis {
+    display: flex;
+    justify-content: space-between;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--adm-muted);
+}
+
+.adm-accuracy-svg {
+    width: 100%;
+    height: 96px;
+    overflow: visible;
+}
+
+.adm-bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 5px;
+    height: 96px;
+}
+
+.adm-bars span {
+    flex: 1;
+    border-radius: 2px 2px 0 0;
+    background: var(--adm-ink-2);
+}
+
+.adm-bars span.is-now {
+    background: var(--adm-ink);
+}
+
+/* ---- ops pane ---- */
+
+.ops-generated {
+    color: var(--adm-muted);
+    font: 400 12.5px var(--mono);
+}
+
+/* Same element and same class as the ops timestamp, but this one is a count standing beside
+   a heading rather than a note under it — a chip reads as a fact about the table. */
+#players-count {
+    background: var(--adm-panel);
+    border: 1px solid var(--adm-border);
+    border-radius: 999px;
+    padding: 4px 10px;
+}
+
+/* Before the first load there is no count, and an empty chip is a bordered blank. */
+#players-count:empty {
+    display: none;
+}
+
+.ops-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 14px;
+}
+
+.ops-card {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 16px;
+    background: var(--adm-panel);
+    border: 1px solid var(--adm-border);
+    border-left: 3px solid var(--adm-border-2);
+    border-radius: 12px;
+    box-shadow: var(--adm-shadow-sm);
+}
+
+.ops-card.tone-good { border-left-color: var(--adm-up); }
+.ops-card.tone-bad { border-left-color: var(--adm-down); }
+
+.ops-card-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--adm-muted);
+}
+
+.ops-card-value {
+    font-size: 19px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+}
+
+.ops-card-hint {
+    font-size: 12.5px;
+    color: var(--adm-muted);
+}
+
+.ops-settings {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 10px;
+}
+
+.ops-setting {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    background: var(--adm-panel);
+    border: 1px solid var(--adm-border);
+    border-radius: 10px;
+    font-size: 13px;
+    color: var(--adm-muted);
+}
+
+.ops-setting b {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--adm-text);
+}
+
+/* A stale feed is the one thing on this page worth interrupting for. */
+.adm-alert {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border-radius: 12px;
+    border: 1px solid var(--adm-down);
+    background: color-mix(in oklch, var(--adm-down) 10%, transparent);
+    font-size: 13.5px;
+    color: var(--adm-text);
+}
+
+.adm-alert svg { color: var(--adm-down); flex: 0 0 17px; }
+.adm-alert .ghost-btn { margin-left: auto; }
+
+/* ---- content and blog lists ---- */
+
+.blog-admin-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.blog-admin-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 14px 18px;
+    background: var(--adm-panel);
+    border: 1px solid var(--adm-border);
+    border-radius: 12px;
+    box-shadow: var(--adm-shadow-sm);
+    transition: border-color var(--duration-fast) var(--ease-out);
+}
+
+.blog-admin-row:hover {
+    border-color: var(--adm-border-2);
+}
+
+.blog-admin-row.is-draft {
+    opacity: 0.55;
+}
+
+.blog-admin-cover {
+    width: 44px;
+    height: 44px;
+    flex: 0 0 44px;
+    border-radius: 8px;
+    background: var(--adm-panel-3);
+    overflow: hidden;
+}
+
+.blog-admin-cover img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+/* The middle column has to be allowed to shrink, or a long title pushes the action buttons
+   off the end of the row instead of ellipsising. */
+.blog-admin-row > div:not(.blog-admin-actions) {
+    min-width: 0;
+}
+
+.blog-admin-title {
+    margin: 0 0 3px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 14.5px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+}
+
+.blog-admin-meta {
+    margin: 0;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--adm-muted);
+}
+
+.blog-admin-actions {
+    margin-left: auto;
+    display: flex;
+    gap: 6px;
+    flex: 0 0 auto;
+}
+
+/* ---- editors ---- */
+
+.blog-editor {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    padding: 20px;
+    background: var(--adm-panel);
+    border: 1px solid var(--adm-border);
+    border-radius: 12px;
+    box-shadow: var(--adm-shadow-sm);
+}
+
+.field-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 14px;
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--adm-muted);
+}
+
+/* A .field that wraps controls rather than one input cannot be a <label> — clicking it would
+   forward to whichever control the browser picked first. It gets its caption from this. */
+.field-label {
+    font-size: 13px;
+    color: var(--adm-muted);
+}
+
+.field-wide {
+    grid-column: 1 / -1;
+}
+
+.admin-shell .field textarea {
+    resize: vertical;
+    line-height: 1.55;
+}
+
+.checkbox-field {
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    accent-color: var(--adm-ink);
+}
+
+.checkbox-field input {
+    width: auto;
+}
+
+.key-lock {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--adm-warn);
+}
+
+.raw-json {
+    border: 1px solid var(--adm-border);
+    border-radius: 10px;
+    padding: 10px 12px;
+    background: var(--adm-panel-2);
+}
+
+.raw-json summary {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--adm-text);
+    cursor: pointer;
+}
+
+.raw-json-note {
+    margin: 10px 0;
+    font-size: 12.5px;
+    color: var(--adm-muted);
+}
+
+.admin-shell #c-raw {
+    width: 100%;
+    font-family: var(--mono);
+    font-size: 12.5px;
+}
+
+/* ---- cover image ---- */
+
+.cover-field {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px;
+    border: 1px solid var(--adm-border);
+    border-radius: 10px;
+    background: var(--adm-panel-2);
+}
+
+.cover-preview,
+.cover-svg-preview,
+.cover-empty {
+    width: 104px;
+    height: 68px;
+    flex: 0 0 104px;
+    border-radius: 8px;
+    border: 1px solid var(--adm-border);
+    background: var(--adm-panel-3);
+}
+
+.cover-preview {
+    object-fit: cover;
+}
+
+/* The SVG is authored against the game's tokens, so it lands in an admin panel reading
+   colours that belong to the other palette. Clipping it and letting it fill is enough — it is
+   an identifying thumbnail here, not the finished artwork the public page draws. */
+.cover-svg-preview {
+    overflow: hidden;
+}
+
+.cover-svg-preview svg,
+.blog-admin-cover.is-svg svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.blog-admin-cover.is-svg {
+    overflow: hidden;
+}
+
+.cover-empty {
+    display: grid;
+    place-items: center;
+    font-size: 11.5px;
+    color: var(--adm-muted-2);
+}
+
+.cover-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.admin-shell .cover-actions button {
+    padding: 7px 12px;
+    font-size: 12.5px;
+    box-shadow: none;
+}
+
+/* The URL is still the stored value and still editable — pasting an external image should
+   not require uploading it first — but it reads as the fallback, not the main way in. */
+.cover-url {
+    margin-top: 8px;
+    font-family: var(--mono);
+    font-size: 12px;
+}
+
+/* ---- the blog writing surface ---- */
+
+/* No `overflow: hidden` here, however tempting it is for clipping the toolbar to the rounded
+   corners. Any overflow other than visible makes this element the scroll container for the
+   sticky toolbar inside it — and since it never scrolls, the toolbar pins 68px down from the
+   shell's own top and sits on the first line of the post. The toolbar rounds its own corners
+   instead. */
+.blog-editor-shell {
+    border: 1px solid var(--adm-border);
+    border-radius: 10px;
+    background: var(--adm-panel);
+}
+
+.blog-editor-shell:focus-within {
+    border-color: var(--adm-border-2);
+}
+
+.blog-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 2px;
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--adm-border);
+    border-radius: 9px 9px 0 0;
+    background: var(--adm-panel-2);
+    /* Sticky against the page, clearing the admin topbar, so the controls stay reachable
+       while writing a long post. */
+    position: sticky;
+    top: 69px;
+    z-index: 4;
+}
+
+.blog-tool {
+    min-width: 30px;
+    height: 30px;
+    padding: 0 7px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: none;
+    color: var(--adm-muted);
+    font-family: inherit;
+    font-size: 13px;
+    line-height: 1;
+    cursor: pointer;
+    transition: color var(--duration-fast) var(--ease-out),
+                background var(--duration-fast) var(--ease-out),
+                border-color var(--duration-fast) var(--ease-out);
+}
+
+.blog-tool:hover {
+    color: var(--adm-text);
+    border-color: var(--adm-border);
+}
+
+/* Pressed state, not hover state: this says the caret is inside bold text right now. */
+.blog-tool.is-on {
+    background: var(--adm-panel);
+    border-color: var(--adm-border);
+    color: var(--adm-text);
+    box-shadow: var(--adm-shadow-sm);
+}
+
+.blog-tool-sep {
+    width: 1px;
+    height: 18px;
+    margin: 0 4px;
+    background: var(--adm-border);
+}
+
+.blog-count {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--adm-muted-2);
+}
+
+/* Tiptap renders into a .ProseMirror element inside #blog-body. Styling that rather than
+   #blog-body itself is what keeps the padding on the editable region, so clicking the margin
+   still puts the caret in the text. */
+.blog-compose .ProseMirror {
+    min-height: 300px;
+    padding: 18px 20px;
+    outline: none;
+    font-size: 15px;
+    line-height: 1.7;
+}
+
+.blog-compose .ProseMirror > * + * {
+    margin-top: 14px;
+}
+
+.blog-compose .ProseMirror p {
+    margin: 0;
+}
+
+.blog-compose .ProseMirror h2 { margin: 0; font-size: 22px; font-weight: 600; letter-spacing: -0.02em; }
+.blog-compose .ProseMirror h3 { margin: 0; font-size: 18px; font-weight: 600; letter-spacing: -0.01em; }
+
+.blog-compose .ProseMirror ul,
+.blog-compose .ProseMirror ol {
+    margin: 0;
+    padding-left: 24px;
+}
+
+.blog-compose .ProseMirror li + li {
+    margin-top: 6px;
+}
+
+.blog-compose .ProseMirror blockquote {
+    margin: 0;
+    padding-left: 14px;
+    border-left: 3px solid var(--adm-border-2);
+    color: var(--adm-muted);
+}
+
+.blog-compose .ProseMirror pre {
+    margin: 0;
+    padding: 12px 14px;
+    border-radius: 8px;
+    background: var(--adm-panel-2);
+    font-family: var(--mono);
+    font-size: 12.5px;
+    overflow-x: auto;
+}
+
+.blog-compose .ProseMirror code {
+    font-family: var(--mono);
+    font-size: 0.92em;
+}
+
+.blog-compose .ProseMirror hr {
+    border: none;
+    border-top: 1px solid var(--adm-border);
+}
+
+.blog-compose .ProseMirror a {
+    color: var(--adm-text);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.blog-compose .ProseMirror img {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+}
+
+/* ProseMirror marks the node the caret has selected; without this an image reads as no
+   different from one the caret is merely near. */
+.blog-compose .ProseMirror .ProseMirror-selectednode {
+    outline: 2px solid var(--adm-text);
+    outline-offset: 2px;
+}
+
+/* Placeholder comes from the Tiptap extension, which stamps this attribute on the first
+   empty node rather than on the container. */
+.blog-compose .ProseMirror p.is-editor-empty:first-child::before {
+    content: attr(data-placeholder);
+    float: left;
+    height: 0;
+    pointer-events: none;
+    color: var(--adm-muted-2);
+}
+
+.block-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.block {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px;
+    border: 1px solid var(--adm-border);
+    border-radius: 10px;
+    background: var(--adm-panel-2);
+}
+
+.block-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.block-kind {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--adm-muted);
+}
+
+.block-tools {
+    margin-left: auto;
+    display: flex;
+    gap: 6px;
+}
+
+.block-size {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.block-empty {
+    margin: 0;
+    padding: 14px;
+    border: 1px dashed var(--adm-border-2);
+    border-radius: 10px;
+    color: var(--adm-muted);
+    font-size: 13px;
+    font-style: italic;
+    text-align: center;
+}
+
+/* ---- media library ---- */
+
+.media-drop {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 140px;
+    border: 1.5px dashed var(--adm-border-2);
+    border-radius: 14px;
+    background: var(--adm-panel-2);
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: border-color var(--duration-fast) var(--ease-out),
+                background var(--duration-fast) var(--ease-out);
+}
+
+.media-drop small {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    font-weight: 400;
+    color: var(--adm-muted);
+}
+
+.media-drop:hover,
+.media-drop.is-over {
+    border-color: var(--adm-text);
+    background: var(--adm-panel);
+}
+
+.media-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 14px;
+}
+
+.media-tile {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    background: var(--adm-panel);
+    border: 1px solid var(--adm-border);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: var(--adm-shadow-sm);
+}
+
+.media-tile img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+    background: var(--adm-panel-3);
+}
+
+.media-tile figcaption {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 10px 12px;
+    border-top: 1px solid var(--adm-border);
+}
+
+.media-name {
+    font-size: 12.5px;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.media-meta {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--adm-muted);
+}
+
+.media-actions {
+    display: flex;
+    gap: 6px;
+    padding: 0 12px 12px;
+}
+
+.media-actions button:first-child {
+    flex: 1;
+    justify-content: center;
+}
+
+#media-more {
+    align-self: flex-start;
+}
+
+/* admin-media.js stamps .is-picking while the blog editor is waiting for an image. The nav
+   has already brought the reader to this pane, so the ring only has to say why they are
+   here — and it goes round the grid, which is the thing they are about to click. */
+.admin-shell .is-picking .media-grid {
+    outline: 2px solid var(--adm-text);
+    outline-offset: 10px;
+    border-radius: 4px;
+}
+
+/* ---- status toast ---- */
+
+/* A line of text at the bottom of a five-screen page is a line nobody reads. Same element,
+   same textContent-only contract with every module — only where it appears changed. */
+#admin-status {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 20;
+    margin: 0;
+    min-height: 0;
+    max-width: min(560px, calc(100vw - 32px));
+    padding: 10px 16px;
+    border-radius: 10px;
+    background: var(--adm-ink);
+    color: var(--adm-panel);
+    font-size: 13.5px;
+    text-align: center;
+    box-shadow: var(--adm-shadow);
+    transition: opacity var(--duration-fast) var(--ease-out);
+}
+
+#admin-status:empty {
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* ---- loading skeletons ---- */
+
+.adm-skeleton {
+    background: var(--adm-panel-2);
+    border-radius: 10px;
+    animation: adm-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes adm-pulse {
+    0%, 100% { opacity: 0.55; }
+    50% { opacity: 1; }
+}
+
+/* ---- responsive ---- */
+
+@media (max-width: 1100px) {
+    .adm-duo {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 900px) {
+    /* The sidebar collapses to an icon rail rather than a drawer: every label has a title,
+       and a rail keeps the pane switch one click away instead of two. */
+    .adm-side {
+        width: 64px;
+        flex: 0 0 64px;
+        padding: 12px 10px 10px;
+        align-items: center;
+    }
+
+    .adm-workspace {
+        padding: 6px;
+        justify-content: center;
+    }
+
+    .adm-workspace-text,
+    .adm-workspace > svg,
+    .adm-nav-label,
+    .adm-nav-item span:not(.adm-nav-badge),
+    .adm-back span,
+    .adm-wallet-text,
+    .adm-search {
+        display: none;
+    }
+
+    .adm-nav-item,
+    .adm-back {
+        justify-content: center;
+        padding: 9px 0;
+    }
+
+    .adm-nav-badge {
+        position: absolute;
+        margin-left: 0;
+        transform: translate(14px, -12px);
+    }
+
+    .adm-nav-item {
+        position: relative;
+    }
+
+    .admin-shell .auth-user {
+        padding: 6px;
+        justify-content: center;
+    }
+
+    .adm-topbar {
+        padding: 14px 16px;
+    }
+
+    .adm-content {
+        padding: 20px 16px 48px;
+    }
+
+    .admin-shell .admin-h1.adm-hero-title {
+        font-size: 28px;
+    }
+}
+
+@media (max-width: 720px) {
+    /* Fewer, shorter cells: the texture survives, the horizontal scrollbar does not appear. */
+    .adm-grid {
+        height: 170px;
+        gap: 2px;
+    }
+
+    .adm-grid-stack {
+        gap: 2px;
+    }
+
+    .adm-grid-stack span {
+        height: 10px;
+    }
+}
+
+.next-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    width: 100%;
+    margin-top: 10px;
+    padding: 11px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.next-btn:hover {
+    color: var(--text);
+    border-color: var(--muted-2);
+}
+
+.result-banner.summary {
+    font-size: 15px;
+    padding: 14px 16px;
+}
+
+.status {
+    text-align: center;
+    color: var(--muted);
+    font-size: 13px;
+    min-height: 18px;
+    margin-top: 14px;
+}
+
+/* The one empty/error state the four content tabs share. They used to carry a compiled-in
+   copy of their data, so a failed request still drew something; now a failure is visible, and
+   this is what it looks like. */
+.view-notice {
+    margin: 0;
+    padding: 28px 16px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 13.5px;
+    line-height: 1.6;
+}
+
+/* --- leaderboard --- */
+
+/* One face per player, hashed from their name by avatar.js. Shared between this board and
+   the play tab's five-row card, because a player who is a fox on one and an owl on the other
+   reads as two different players. */
+.avatar {
+    width: 22px;
+    height: 22px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    line-height: 1;
+}
+
+.lb-scroller {
+    overflow-x: auto;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: var(--panel);
+}
+
+.lb-table {
+    width: 100%;
+    min-width: 560px;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+/* Fixed widths so the four figure columns line up down the whole board — with auto layout
+   they moved with the longest name in the page, and two players' scores read as comparable
+   only when they sit under each other. The name column takes what is left. */
+.lb-table th:nth-child(1), .lb-table td:nth-child(1) { width: 48px; }
+.lb-table th:nth-child(3), .lb-table td:nth-child(3) { width: 90px; }
+.lb-table th:nth-child(4), .lb-table td:nth-child(4) { width: 110px; }
+.lb-table th:nth-child(5), .lb-table td:nth-child(5) { width: 120px; }
+.lb-table th:nth-child(6), .lb-table td:nth-child(6) { width: 80px; }
+
+.lb-table th {
+    padding: 12px 14px;
+    text-align: left;
+    font: 600 10.5px var(--mono);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted-2);
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+}
+
+.lb-table td {
+    padding: 11px 14px;
+    border-bottom: 1px solid var(--border);
+}
+
+.lb-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.lb-num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.lb-rank {
+    color: var(--muted);
+    font: 500 12px var(--mono);
+    font-variant-numeric: tabular-nums;
+}
+
+.lb-who {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+}
+
+.lb-who-name {
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Score and streak are the two figures the board is read for, so they are the two drawn in
+   full ink; correct/total is the working behind accuracy and sits back. */
+.lb-score {
+    font: 700 13px var(--mono);
+    font-variant-numeric: tabular-nums;
+}
+
+/* Green because accuracy has a direction — it is the same up-colour the chart calls a
+   winning candle, not a decorative highlight. */
+.lb-accuracy {
+    font: 600 13px var(--mono);
+    font-variant-numeric: tabular-nums;
+    color: var(--up);
+}
+
+.lb-muted {
+    color: var(--muted);
+    font: 500 12.5px var(--mono);
+    font-variant-numeric: tabular-nums;
+}
+
+/* Your row, lifted out of its place in the list and up under the podium. The badge is what
+   explains the jump in the numbering around it. */
+.lb-you {
+    padding: 2px 7px;
+    border-radius: 999px;
+    background: var(--tint-accent-strong);
+    color: var(--accent);
+    font: 600 9.5px var(--mono);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.lb-row.is-me td {
+    background: var(--tint-accent-weak);
+}
+
+.lb-row.is-me .lb-rank {
+    color: var(--accent);
+    font-weight: 700;
+}
+
+.lb-me-label {
+    margin: 18px 0 8px;
+    font-size: 12px;
+    color: var(--muted);
+}
+
+/* --- market heatmap --- */
+
+.heatmap-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-bottom: 14px;
+}
+
+.heatmap-toolbar h2 {
+    margin: 0;
+    font-size: 18px;
+}
+
+.heatmap-meta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 12px;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+}
+
+/* inline-flex so the marks these now carry sit on the text's centre line rather than its
+   baseline; a text-only .ghost-btn is unchanged by it. */
+.ghost-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 6px 10px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.ghost-btn:hover {
+    color: var(--text);
+    border-color: var(--muted-2);
+}
+
+.ghost-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Map and detail side by side. The panel used to open below the map, which pushed the map up
+   and out of view at the moment somebody had just picked a tile off it. */
+.app.app-heatmap {
+    max-width: 1180px;
+}
+
+.heatmap-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 300px;
+    gap: 16px;
+    align-items: start;
+}
+
+.heatmap-map {
+    min-width: 0;
+}
+
+@media (max-width: 1000px) {
+    .heatmap-layout {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+/* A pixel height, not an aspect ratio. The map's width is now whatever is left after a 300px
+   panel, and under aspect-ratio that made its height fall with it — at a laptop width the
+   whole map came out short enough that the smaller tiles had no room for their own labels,
+   which is a map that shrinks the closer you look at it. A clamp gives it a floor. */
+.heatmap-grid {
+    position: relative;
+    width: 100%;
+    height: clamp(340px, 42vw, 460px);
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+}
+
+
+.heatmap-tile {
+    position: absolute;
+    box-sizing: border-box;
+    border: 1px solid rgba(0, 0, 0, 0.4);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    overflow: hidden;
+    padding: 2px;
+    transition: filter var(--duration-fast) var(--ease-out);
+}
+
+.heatmap-tile:hover {
+    filter: brightness(1.18);
+    z-index: 1;
+}
+
+.heatmap-tile.clickable {
+    cursor: pointer;
+}
+
+.heatmap-tile.clickable:active {
+    filter: brightness(0.92);
+}
+
+.heatmap-tile .tile-symbol {
+    font: 700 13px var(--mono);
+    color: #fff;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.55);
+    white-space: nowrap;
+    letter-spacing: 0.02em;
+}
+
+.heatmap-tile .tile-price {
+    font: 600 11px var(--mono);
+    color: rgba(255, 255, 255, 0.95);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
+.heatmap-tile .tile-pct {
+    font: 700 11.5px var(--mono);
+    color: rgba(255, 255, 255, 0.95);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
+.heatmap-tile.tile-tiny .tile-symbol {
+    font-size: 10.5px;
+}
+
+.heatmap-tile.tile-tiny .tile-price {
+    display: none;
+}
+
+.heatmap-tile.tile-tiny .tile-pct {
+    font-size: 9.5px;
+}
+
+.heatmap-tile.tile-micro .tile-symbol {
+    font-size: 8.5px;
+}
+
+.heatmap-tile.tile-micro .tile-price {
+    display: none;
+}
+
+.heatmap-tile.tile-micro .tile-pct {
+    display: none;
+}
+
+.heatmap-caption {
+    text-align: center;
+    color: var(--muted-2);
+    font-size: 11.5px;
+    margin-top: 10px;
+}
+
+.sp500-drilldown-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+    min-height: 30px;
+}
+
+.sp500-drilldown-bar.hidden {
+    display: none;
+}
+
+.sp500-breadcrumb {
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 600;
+}
+
+/* --- heatmap tile detail panel --- */
+
+.heatmap-detail {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: stretch;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px;
+}
+
+.heatmap-detail-empty {
+    margin: 0;
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: var(--muted);
+}
+
+.heatmap-detail-empty.hidden,
+.heatmap-detail-body.hidden {
+    display: none;
+}
+
+.heatmap-detail-body {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.heatmap-detail-name {
+    font-weight: 700;
+    font-size: 14px;
+}
+
+.heatmap-detail-stats {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.heatmap-detail-price {
+    font: 600 24px var(--mono);
+    font-variant-numeric: tabular-nums;
+}
+
+.heatmap-detail-delta {
+    font: 700 12.5px var(--mono);
+    font-variant-numeric: tabular-nums;
+}
+
+.heatmap-detail-delta.outcome-up { color: var(--up); }
+.heatmap-detail-delta.outcome-down { color: var(--down); }
+
+.heatmap-detail-chart {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+/* Label left, figure right, one row each — a definition list because that is what these are,
+   and it keeps the label attached to its value for a screen reader. */
+.heatmap-detail-figures {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 6px 10px;
+    margin: 2px 0 0;
+}
+
+.heatmap-detail-figures dt {
+    font-size: 12px;
+    color: var(--muted);
+}
+
+.heatmap-detail-figures dd {
+    margin: 0;
+    text-align: right;
+    font: 600 12.5px var(--mono);
+    font-variant-numeric: tabular-nums;
+}
+
+.sparkline-svg {
+    display: block;
+    width: 100%;
+    height: 110px;
+}
+
+/* --- pattern library --- */
+
+/* The filter row is a .pill track; this is left carrying only its spacing. */
+.pattern-filters {
+    margin-bottom: 16px;
+}
+
+.pattern-asset-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 14px;
+}
+
+.pattern-asset-label {
+    color: var(--muted);
+    font-size: 12.5px;
+}
+
+.pattern-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 14px;
+}
+
+/* Every card here carries its own inline SVG chart, so an off-screen one still costs a
+   layout and a paint. Skipping those is what content-visibility buys; the intrinsic size
+   keeps the scrollbar honest meanwhile. The `auto` keyword matters — cards grow when their
+   "Cách nhận diện" section is expanded, and it lets the browser remember the real height
+   rather than snapping back to the placeholder once the card scrolls away. */
+.pattern-grid > *,
+.technical-grid > * {
+    content-visibility: auto;
+}
+
+.pattern-grid > * {
+    contain-intrinsic-size: auto 300px;
+}
+
+.technical-grid > * {
+    contain-intrinsic-size: auto 330px;
+}
+
+.pattern-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.pattern-card.hidden {
+    display: none;
+}
+
+.pattern-chart {
+    background: var(--panel-2);
+    border-bottom: 1px solid var(--border);
+}
+
+.pattern-chart-svg {
+    display: block;
+    width: 100%;
+    height: 110px;
+}
+
+/* min(…, 100%) rather than a bare minimum: a bare one is a floor the track holds even when
+   the container is narrower than it, so on a 375px phone these 360px cards came out wider
+   than the column they sit in. That used to give the page a sideways scrollbar; inside the
+   shell — which clips, that being what rounds its corners — it cuts the card off instead. */
+/* 520 rather than 360: the card now carries a 300px chart, so a 360px track left about
+   sixty pixels for the description. One card per row on a laptop, two on a wide screen. */
+.technical-grid {
+    grid-template-columns: repeat(auto-fill, minmax(min(520px, 100%), 1fr));
+}
+
+/* Chart beside the description rather than above it. These shapes are read left to right —
+   a head and shoulders is a sentence about what price did — and a 360px card with a 160px
+   picture stacked on three lines of prose is twice as tall as it needs to be. */
+.technical-grid .pattern-card {
+    display: grid;
+    grid-template-columns: 300px minmax(0, 1fr);
+    align-items: stretch;
+}
+
+.technical-chart {
+    border-bottom: none;
+    border-right: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+}
+
+.technical-chart .pattern-chart-svg {
+    height: 140px;
+}
+
+/* Capped in characters, not pixels: at one card per row the body would otherwise run the
+   whole width the chart leaves it, and a 90-character line is a line people lose their
+   place in. */
+.technical-grid .pattern-body > .pattern-summary {
+    max-width: 60ch;
+}
+
+@media (max-width: 760px) {
+    .technical-grid .pattern-card {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .technical-chart {
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+    }
+}
+
+.psych-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(380px, 100%), 1fr));
+    gap: 14px;
+}
+
+/* The number beside the principle, not above it: it is an index into a list, and a line of
+   its own gives a label three characters long the same weight as the idea under it. */
+.psych-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: baseline;
+    gap: 6px 12px;
+}
+
+.psych-card-number {
+    grid-row: 1 / span 2;
+    font: 700 12px var(--mono);
+    color: var(--accent);
+}
+
+.psych-card-title {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+}
+
+.psych-card-body {
+    margin: 0;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.55;
+}
+
+.psych-case-study {
+    grid-column: 1 / -1;
+    border-color: var(--accent);
+    background: rgba(79, 140, 255, 0.06);
+}
+
+.psych-case-study .psych-card-number,
+.psych-case-study .psych-card-title {
+    color: var(--accent);
+}
+
+/* One column of wide cards rather than a grid of narrow ones. A blog index is a list of
+   headlines being scanned in order, and a two-across grid asks the reader to scan in two
+   directions to do that; the cover moves beside the title instead of above it, which is
+   also what stops a row of covers taking the top half of the screen. */
+.blog-list {
+    display: grid;
+    gap: 14px;
+    align-items: start;
+}
+
+.blog-post {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    display: grid;
+    grid-template-columns: 220px minmax(0, 1fr);
+    align-items: stretch;
+}
+
+.blog-post-cover {
+    background: var(--panel-2);
+    border-right: 1px solid var(--border);
+    line-height: 0;
+}
+
+.blog-post-cover svg,
+.blog-post-cover img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    min-height: 128px;
+    object-fit: cover;
+}
+
+.blog-post-summary {
+    all: unset;
+    box-sizing: border-box;
+    cursor: pointer;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    justify-content: center;
+}
+
+.blog-post-summary:hover .blog-post-title {
+    color: var(--accent);
+}
+
+.blog-post-kicker {
+    font: 600 10.5px var(--mono);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+}
+
+.blog-post-title {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 700;
+    line-height: 1.35;
+    color: var(--text);
+}
+
+.blog-post-meta {
+    font: 500 11.5px var(--mono);
+    font-variant-numeric: tabular-nums;
+    color: var(--muted);
+}
+
+.blog-post-hint {
+    color: var(--muted-2);
+    font-size: 11.5px;
+}
+
+/* The body spans both tracks: it is the article, and a column of prose 220px narrower than
+   the card it sits in for no reason but the cover above it is a worse read. */
+.blog-post-detail {
+    grid-column: 1 / -1;
+    border-top: 1px solid var(--border);
+    padding: 14px 16px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* On a phone the cover goes back above the text — 220px of the 340 available is most of the
+   row, and what is left cannot hold a headline. */
+@media (max-width: 640px) {
+    .blog-post {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .blog-post-cover {
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .blog-post-cover svg,
+    .blog-post-cover img {
+        height: 140px;
+    }
+}
+
+.blog-post-detail.hidden {
+    display: none;
+}
+
+.blog-post-tags {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.blog-tag {
+    padding: 3px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.blog-post-body p {
+    margin: 0 0 10px;
+    color: var(--muted);
+    font-size: 13.5px;
+    line-height: 1.6;
+}
+
+.blog-post-body p:last-child {
+    margin-bottom: 0;
+}
+
+.blog-post-figure {
+    margin: 4px 0 14px;
+}
+
+.blog-post-figure img {
+    display: block;
+    width: 100%;
+    /* With the width/height attributes blog.js sets, height:auto is what makes the browser
+       derive the ratio from them and hold the space open while the file loads. */
+    height: auto;
+    max-width: 560px;
+    margin: 0 auto;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+}
+
+.blog-post-credit {
+    margin: 0;
+    color: var(--muted-2);
+    font-size: 11px;
+    font-style: italic;
+}
+
+.blog-post-source {
+    align-self: flex-start;
+    color: var(--accent);
+    font-size: 12.5px;
+    text-decoration: none;
+}
+
+.blog-post-source:hover {
+    text-decoration: underline;
+}
+
+.pattern-body {
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.pattern-tags {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.pattern-tag {
+    font: 600 10.5px var(--mono);
+    padding: 3px 8px;
+    border-radius: 999px;
+    letter-spacing: 0.02em;
+}
+
+.pattern-tag.tag-bullish { background: rgba(52, 211, 153, 0.14); color: var(--up); }
+.pattern-tag.tag-bearish { background: rgba(251, 113, 133, 0.14); color: var(--down); }
+.pattern-tag.tag-neutral { background: rgba(125, 125, 130, 0.16); color: var(--muted); }
+.pattern-tag.tag-reversal { background: rgba(79, 140, 255, 0.14); color: var(--accent); }
+.pattern-tag.tag-continuation { background: rgba(245, 191, 66, 0.14); color: var(--warn); }
+
+.pattern-name {
+    margin: 0;
+    font-size: 15px;
+}
+
+.pattern-summary {
+    margin: 0;
+    color: var(--muted);
+    font-size: 12.5px;
+    line-height: 1.5;
+}
+
+.pattern-toggle {
+    align-self: flex-start;
+    background: transparent;
+    border: none;
+    color: var(--accent);
+    font-weight: 600;
+    font-size: 12px;
+    padding: 0;
+    cursor: pointer;
+}
+
+.pattern-detail {
+    margin: 0;
+    padding-left: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    color: var(--text);
+    font-size: 12.5px;
+    line-height: 1.5;
+}
+
+.pattern-detail.hidden {
+    display: none;
+}
+
+.pattern-find-btn {
+    color: var(--up);
+}
+
+.pattern-find-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.pattern-example {
+    border-top: 1px solid var(--border);
+    padding-top: 10px;
+    margin-top: 2px;
+}
+
+.pattern-example.hidden {
+    display: none;
+}
+
+.pattern-example-chart {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.pattern-example-chart .pattern-chart-svg {
+    height: 190px;
+}
+
+.pattern-example-caption {
+    margin: 8px 0 0;
+    color: var(--muted);
+    font-size: 11.5px;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+}
+
+.pattern-example-outcome {
+    margin: 8px 0 0;
+    text-align: center;
+    font: 700 13px var(--mono);
+    font-variant-numeric: tabular-nums;
+}
+
+.pattern-example-outcome.outcome-up {
+    color: var(--up);
+}
+
+.pattern-example-outcome.outcome-down {
+    color: var(--down);
+}
+
+.pattern-example-error {
+    color: var(--down);
+}
+
+.auth-area {
+    grid-area: auth;
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+    justify-self: end;
+}
+
+.theme-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    background: transparent;
+    font-size: 13px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.theme-toggle:hover {
+    background: var(--overlay-soft);
+    border-color: var(--muted-2);
+}
+
+.auth-user {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.auth-user.hidden {
+    display: none;
+}
+
+.auth-display-name {
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    padding: 6px 8px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    max-width: 140px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.auth-display-name:hover {
+    border-color: var(--border);
+    background: var(--overlay-soft);
+}
+
+.auth-error-msg {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    z-index: 20;
+    width: max-content;
+    max-width: 240px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 11px;
+    line-height: 1.4;
+    color: var(--down);
+    white-space: normal;
+    box-shadow: 0 8px 20px var(--shadow);
+}
+
+.auth-error-msg.hidden {
+    display: none;
+}
+
+@media (max-width: 640px) {
+    .auth-display-name {
+        max-width: 80px;
+    }
+
+    .auth-error-msg {
+        max-width: 200px;
+    }
+}
+
+/* ---- live round (G7) --------------------------------------------------------------
+   Round header, sparkline, lock countdown, pool split and history strip. Reuses
+   .market-card, .guess-btn, .guess-timer and .pill wholesale — a live call and a
+   practice guess should look like the same game, not two different products. */
+
+.live-round-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin: 12px 0;
+}
+
+.live-round-number {
+    font: 700 15px var(--mono);
+    color: var(--text);
+}
+
+.live-round-state {
+    font: 600 12px var(--mono);
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.live-round-state.is-open { color: var(--up); }
+.live-round-state.is-locked { color: var(--down); }
+
+.live-sparkline-wrap {
+    margin-top: 4px;
+    height: 60px;
+}
+
+.live-sparkline {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.live-sparkline-line {
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 2;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+}
+
+.live-delta.outcome-up { color: var(--up); background: color-mix(in srgb, var(--up) 14%, transparent); }
+.live-delta.outcome-down { color: var(--down); background: color-mix(in srgb, var(--down) 14%, transparent); }
+
+.live-pool {
+    margin: 14px 0;
+}
+
+.live-pool-track {
+    height: 8px;
+    border-radius: 999px;
+    background: var(--down);
+    overflow: hidden;
+}
+
+.live-pool-long {
+    height: 100%;
+    background: var(--up);
+    width: 50%;
+    transition: width var(--duration-normal) var(--ease-out);
+}
+
+.live-pool-labels {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 4px;
+    font: 600 11px var(--mono);
+    color: var(--muted);
+}
+
+.live-history {
+    margin-top: 20px;
+}
+
+.live-history-title {
+    font-size: 13px;
+    color: var(--muted);
+    margin: 0 0 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.live-history-strip {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+}
+
+.live-history-item {
+    flex: 0 0 auto;
+    min-width: 84px;
+    padding: 8px 10px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--panel);
+    text-align: center;
+}
+
+.live-history-item .lh-round {
+    display: block;
+    font: 600 11px var(--mono);
+    color: var(--muted);
+}
+
+.live-history-item .lh-result {
+    display: block;
+    font: 800 12px var(--mono);
+    margin-top: 2px;
+    letter-spacing: 0.03em;
+}
+
+.live-history-item.lh-long .lh-result { color: var(--up); }
+.live-history-item.lh-short .lh-result { color: var(--down); }
+
+/* Bấm rồi và vẫn hiển thị rõ đã chọn bên nào, dù nút đã bị vô hiệu hoá. */
+.guess-btn.chosen {
+    outline: 3px solid color-mix(in srgb, currentColor 55%, transparent);
+    outline-offset: 2px;
+}
+
+/* ---- live round detail popup ------------------------------------------------------- */
+
+.live-round-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+}
+
+.live-round-modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background: color-mix(in srgb, black 55%, transparent);
+}
+
+.live-round-modal-card {
+    position: relative;
+    width: min(480px, 100%);
+    max-height: calc(100vh - 32px);
+    overflow-y: auto;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+}
+
+.live-round-modal-close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    font-size: 16px;
+    cursor: pointer;
+    padding: 4px 8px;
+}
+
+.live-round-modal-eyebrow {
+    font: 700 11px var(--mono);
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin: 0 0 4px;
+}
+
+.live-round-modal-title {
+    font-size: 18px;
+    margin: 0 0 12px;
+    padding-right: 24px;
+}
+
+.live-round-modal-chart-wrap {
+    height: 220px;
+    margin-bottom: 14px;
+}
+
+.live-round-modal-chart {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.live-round-modal-badge {
+    text-align: center;
+    margin-bottom: 14px;
+}
+
+.live-round-modal-badge-icon {
+    display: block;
+    width: 26px;
+    height: 26px;
+    margin: 0 auto 6px;
+    color: var(--warn);
+}
+
+.live-round-modal-badge-state {
+    font: 700 11px var(--mono);
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin: 0;
+}
+
+.live-round-modal-badge-result {
+    font-size: 17px;
+    font-weight: 800;
+    margin: 4px 0 0;
+}
+
+.live-round-modal-badge-result.outcome-up { color: var(--up); }
+.live-round-modal-badge-result.outcome-down { color: var(--down); }
+
+.live-round-modal-prices {
+    display: flex;
+    justify-content: space-between;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 14px;
+    margin-bottom: 14px;
+}
+
+.live-round-modal-prices > div {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.live-round-modal-prices > div:last-child {
+    align-items: flex-end;
+}
+
+.live-round-modal-price-label {
+    font-size: 11px;
+    color: var(--muted);
+}
+
+.live-round-modal-price-value {
+    font: 700 15px var(--mono);
+    font-variant-numeric: tabular-nums;
+}
+
+.live-round-modal-pool {
+    margin-bottom: 10px;
+}
+
+.live-round-modal-status {
+    text-align: center;
+    color: var(--muted);
+    font-size: 13px;
+    margin: 0;
+}
+
+/* ---- who called this round (participants roster) ------------------------------------ */
+
+.live-participants {
+    margin-top: 20px;
+}
+
+.live-participants-title {
+    font-size: 13px;
+    color: var(--muted);
+    margin: 0 0 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.live-participants-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.live-participants-empty {
+    color: var(--muted);
+    font-size: 13px;
+    margin: 0;
+}
+
+/* Rounds in the strip are buttons now, styled to read the same as the plain cards did. */
+.live-history-item {
+    cursor: pointer;
+    font: inherit;
+    color: inherit;
+}
+
+.live-history-item:hover {
+    border-color: var(--accent);
+}
+
+.live-participant-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--panel);
+}
+
+.live-participant-avatar {
+    flex: 0 0 auto;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    line-height: 1;
+    /* Set inline per row (avatar-bg-N classes below) rather than one fixed color — a roster
+       of one accent-colored circle each read as one anonymous shape; a palette that rotates
+       by name is what makes the list read as people. */
+}
+
+.live-participant-avatar.avatar-bg-0 { background: color-mix(in srgb, #f59e0b 22%, var(--panel)); }
+.live-participant-avatar.avatar-bg-1 { background: color-mix(in srgb, #3b82f6 22%, var(--panel)); }
+.live-participant-avatar.avatar-bg-2 { background: color-mix(in srgb, #ec4899 22%, var(--panel)); }
+.live-participant-avatar.avatar-bg-3 { background: color-mix(in srgb, #10b981 22%, var(--panel)); }
+.live-participant-avatar.avatar-bg-4 { background: color-mix(in srgb, #8b5cf6 22%, var(--panel)); }
+.live-participant-avatar.avatar-bg-5 { background: color-mix(in srgb, #f97316 22%, var(--panel)); }
+
+.live-participant-info {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.live-participant-name {
+    font: 700 14px var(--mono);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.live-participant-wallet {
+    font: 500 11px var(--mono);
+    color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.live-participant-meta {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+}
+
+.live-participant-direction {
+    font: 700 12px var(--mono);
+    padding: 4px 10px;
+    border-radius: 8px;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+}
+
+.live-participant-direction.dir-long {
+    color: var(--up);
+    background: color-mix(in srgb, var(--up) 16%, transparent);
+}
+
+.live-participant-direction.dir-short {
+    color: var(--down);
+    background: color-mix(in srgb, var(--down) 16%, transparent);
+}
+
+.live-participant-time {
+    font: 600 11px var(--mono);
+    color: var(--muted);
+}
+
+/* ---- Daily challenge ---- */
+
+.daily-number {
+    font-family: var(--mono);
+    font-size: 14px;
+    color: var(--muted);
+}
+
+.daily-intro {
+    margin: 0 0 14px;
+    color: var(--muted);
+    font-size: 14px;
+}
+
+.daily-streak {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.daily-streak-value {
+    font-size: 26px;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+}
+
+.daily-streak-label {
+    font-size: 14px;
+    color: var(--muted);
+}
+
+.daily-streak-best {
+    margin-left: auto;
+    font-size: 13px;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.daily-board {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px;
+}
+
+.daily-chart {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+.daily-status {
+    margin: 12px 0;
+    font-size: 14px;
+    color: var(--muted);
+}
+
+/* One dot per guess of the chart, filled in as the round goes — the same shape the share
+   card copies out, so what a player sees is what their friends will see. */
+.daily-dots {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 14px;
+}
+
+.daily-dot {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 700;
+    color: #06110f;
+}
+
+.daily-dot.is-correct {
+    background: var(--up);
+    border-color: transparent;
+}
+
+.daily-dot.is-wrong {
+    background: var(--down);
+    border-color: transparent;
+}
+
+.daily-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.daily-done-line {
+    margin: 0 0 6px;
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.daily-next {
+    margin: 0 0 12px;
+    font-size: 13px;
+    color: var(--muted);
+}
+
+.daily-share-text {
+    display: block;
+    width: 100%;
+    margin-top: 10px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 13px;
+    resize: vertical;
+}
+
+.daily-hint {
+    margin: -4px 0 12px;
+    font-size: 13px;
+    color: var(--accent);
+}
+
+/* ---- Profile badges ---- */
+
+.profile-badges {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+/* Says which of the two a card is without making the reader work it out from whether there
+   is a progress bar under it. */
+.profile-badge-state {
+    align-self: flex-start;
+    padding: 2px 7px;
+    border-radius: 999px;
+    font: 600 9.5px var(--mono);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    background: var(--overlay-soft);
+    color: var(--muted);
+}
+
+.profile-badge.is-earned .profile-badge-state {
+    background: var(--tint-accent-strong);
+    color: var(--accent);
+}
+
+.profile-badge {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 12px 14px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--panel);
+}
+
+/* Earned reads as lit rather than merely ticked — the accent edge is the reward. */
+.profile-badge.is-earned {
+    border-color: var(--accent);
+    background: var(--panel-2);
+}
+
+.profile-badge-name {
+    font-weight: 700;
+    font-size: 14px;
+}
+
+.profile-badge.is-earned .profile-badge-name {
+    color: var(--accent);
+}
+
+.profile-badge-desc {
+    font-size: 12.5px;
+    color: var(--muted);
+    line-height: 1.4;
+}
+
+.profile-badge-count {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--muted-2);
+    font-variant-numeric: tabular-nums;
+}
+
+.profile-badge-track {
+    height: 4px;
+    border-radius: 999px;
+    background: var(--border);
+    overflow: hidden;
+}
+
+.profile-badge-fill {
+    display: block;
+    height: 100%;
+    background: var(--accent);
+    border-radius: 999px;
+    transition: width var(--duration-normal) var(--ease-out);
+}
+
+/* ---- Daily archive ---- */
+
+.daily-archive {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+    gap: 8px;
+}
+
+.daily-archive-day {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 10px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--panel);
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: border-color var(--duration-fast) var(--ease-out);
+}
+
+.daily-archive-day:hover {
+    border-color: var(--accent);
+}
+
+/* Finished and currently-open are different things and must not look alike: one is a result,
+   the other is where you are. */
+.daily-archive-day.is-done .daily-archive-state {
+    color: var(--up);
+}
+
+.daily-archive-day.is-open {
+    border-color: var(--accent);
+    background: var(--panel-2);
+}
+
+.daily-archive-number {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+}
+
+.daily-archive-date {
+    font-size: 14px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.daily-archive-state {
+    font-size: 12px;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.daily-replay {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 12px;
+    padding: 8px 12px;
+    border: 1px dashed var(--accent);
+    border-radius: 10px;
+    font-size: 13px;
+}
+
+/* Day-streak chip in the game toolbar. Pushed to the right so it reads as part of the
+   toolbar's controls rather than as a third item competing with the asset picker. */
+/* Sits in the topbar, so a player reading the blog or working through the archive can still
+   see the run they are protecting. Recessed rather than raised — --panel-2 against the
+   topbar's --panel — because it is a readout, not a control, and the two buttons beside it
+   are. */
+.game-streak {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--panel-2);
+    white-space: nowrap;
+}
+
+.game-streak.hidden {
+    display: none;
+}
+
+/* Warn-coloured rather than inheriting the chip's text: the flame is the only part of this
+   readout that is decoration, and a grey one says nothing. .is-at-risk below recolours the
+   figures beside it, not this — the mark is already the right colour for that state. */
+.game-streak-flame {
+    width: 14px;
+    height: 14px;
+    color: var(--warn);
+}
+
+.game-streak-value {
+    font: 700 13px var(--mono);
+    font-variant-numeric: tabular-nums;
+}
+
+.game-streak-unit {
+    font-size: 12px;
+    color: var(--muted);
+}
+
+
+/* Alive but unplayed today — the only state where playing changes the number instead of
+   maintaining it, so it is the only one drawn differently. Dashed rather than red: a streak
+   in reach is not an error. */
+.game-streak.is-at-risk {
+    border-style: dashed;
+    border-color: var(--warn);
+}
+
+.game-streak.is-at-risk .game-streak-value,
+.game-streak.is-at-risk .game-streak-unit {
+    color: var(--warn);
+}
+
+/* ---- Pattern quiz ---- */
+
+.quiz-board {
+    margin-bottom: 8px;
+}
+
+.quiz-choices {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 8px;
+    margin: 12px 0;
+}
+
+.quiz-choice {
+    padding: 11px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--panel-2);
+    color: inherit;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    transition: border-color var(--duration-fast) var(--ease-out);
+}
+
+.quiz-choice:hover:not(:disabled) {
+    border-color: var(--accent);
+}
+
+.quiz-choice:disabled {
+    cursor: default;
+}
+
+/* The right answer and the one that was picked are different marks: a wrong pick has to be
+   shown beside the truth, or there is nothing to learn from having been wrong. */
+.quiz-choice.is-correct {
+    border-color: var(--up);
+    color: var(--up);
+}
+
+.quiz-choice.is-wrong {
+    border-color: var(--down);
+    color: var(--down);
+    text-decoration: line-through;
+}
+
+/* ---- Demo trading terminal ---- */
+
+/* Account figures first: on a terminal "how am I doing" outranks any single market, and it is
+   the one thing that is true across all of them. */
+.trade-account {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 26px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--panel);
+}
+
+.trade-account-fig {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+/* One micro-label style for every reading on the tab. Small, letterspaced, muted, with the
+   value below it carrying the weight — the pattern Prism uses above PRICE, 24H CHANGE, FDV. */
+.trade-account-label,
+.trade-stat-label,
+.trade-list-head,
+.trade-rsi-label {
+    font-size: 10.5px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+
+.trade-account-value {
+    font-size: 19px;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+}
+
+.trade-account-actions {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Said plainly and permanently. A terminal that looks like this one should never leave anyone
+   wondering for a second whether the money is real. */
+.trade-demo-badge {
+    padding: 3px 8px;
+    border-radius: 999px;
+    border: 1px dashed var(--warn);
+    color: var(--warn);
+    font-size: 12px;
+    font-weight: 700;
+}
+
+/* One framed grid whose columns are divided by hairlines, rather than three cards floating in a
+   row. The gaps and the per-card rounding are what made this read as a page; a terminal is panes
+   that meet. Prism's trade view is the same shape edge to edge — this keeps the app's 1180px
+   column, so the nav above it still lines up. */
+.trade-terminal {
+    display: grid;
+    grid-template-columns: minmax(220px, 280px) minmax(0, 1fr) minmax(240px, 300px);
+    margin-bottom: 18px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--panel);
+    overflow: hidden;
+}
+
+.trade-chart-col,
+.trade-panel {
+    border-left: 1px solid var(--border);
+}
+
+@media (max-width: 1100px) {
+    .trade-terminal {
+        grid-template-columns: minmax(0, 1fr) minmax(240px, 300px);
+    }
+    /* The chart leads on a narrower screen and the other two drop under it, rather than
+       squeezing the one pane that needs width. */
+    .trade-chart-col {
+        order: -1;
+        grid-column: 1 / -1;
+        border-left: 0;
+        border-bottom: 1px solid var(--border);
+    }
+}
+
+@media (max-width: 720px) {
+    .trade-terminal {
+        grid-template-columns: 1fr;
+    }
+    .trade-list {
+        border-bottom: 1px solid var(--border);
+    }
+    .trade-panel {
+        border-left: 0;
+    }
+}
+
+.trade-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px;
+    min-width: 0;
+}
+
+.trade-search {
+    padding: 6px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    font: inherit;
+    font-size: 13px;
+}
+
+.trade-list-head {
+    display: flex;
+    justify-content: space-between;
+    padding: 0 4px;
+}
+
+.trade-markets {
+    display: flex;
+    flex-direction: column;
+    max-height: 420px;
+    overflow-y: auto;
+}
+
+/* No rule between rows. A picked row is the accent at low alpha with accent-coloured text, and
+   a hovered one is the same idea a step weaker — the whole interaction language of this tab,
+   introduced here because this is where it is used most. */
+.trade-market {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 1px 10px;
+    padding: 8px 12px;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: background var(--duration-fast) var(--ease-out),
+                color var(--duration-fast) var(--ease-out);
+}
+
+.trade-market:hover {
+    background: var(--overlay-soft);
+}
+
+.trade-market.is-selected {
+    background: var(--tint-accent-weak);
+}
+
+/* Only the name takes the accent. The price and the day's move are data, and tinting numbers
+   costs legibility for a signal the background already carries — worse, it would fight the
+   up/down colour the change is meant to be read by. */
+.trade-market.is-selected .trade-market-name {
+    color: var(--accent);
+}
+
+.trade-market-name {
+    font-weight: 700;
+    font-size: 13.5px;
+}
+
+.trade-market-price {
+    text-align: right;
+    font-family: var(--mono);
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+}
+
+.trade-market-sub {
+    font-size: 11.5px;
+    color: var(--muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.trade-market-change {
+    text-align: right;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    font-variant-numeric: tabular-nums;
+}
+
+.trade-chart-col {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.trade-headline {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 24px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+}
+
+.trade-headline-pair {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+}
+
+.trade-headline-pair b {
+    font-size: 18px;
+    font-weight: 800;
+}
+
+.trade-headline-name {
+    font-size: 12.5px;
+    color: var(--muted);
+}
+
+.trade-headline-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 22px;
+    margin-left: auto;
+}
+
+.trade-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+
+.trade-stat-value {
+    font-family: var(--mono);
+    font-size: 14px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.trade-chart-card {
+    padding: 10px 12px 12px;
+}
+
+/* Timeframes on the left where Prism puts them, zoom and pan on the right. Wraps so the zoom
+   controls cannot take width off the timeframes — on a phone the pill had 193px for 249px of
+   buttons, which left 1D scrolled out of sight. */
+.trade-chart-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+}
+
+.trade-timeframes,
+.trade-indicators {
+    width: fit-content;
+}
+
+.trade-zoom {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.trade-zoom-count {
+    min-width: 52px;
+    text-align: center;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+}
+
+/* Borderless until hovered, like every other control here. A grid of outlined boxes competes
+   with the chart it sits above. */
+.trade-zoom-btn {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    font: inherit;
+    font-size: 15px;
+    line-height: 1;
+    cursor: pointer;
+    transition: background var(--duration-fast) var(--ease-out),
+                color var(--duration-fast) var(--ease-out);
+}
+
+.trade-zoom-btn:hover:not(:disabled) {
+    background: var(--overlay-soft);
+    color: var(--text);
+}
+
+.trade-zoom-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+/* The readout above the chart. min-height rather than content-driven height: this row empties
+   and refills as the pointer moves, and a card that grows a line when you touch it is worse
+   than one that holds its shape. */
+.trade-ohlc {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px 12px;
+    padding: 0 14px 6px;
+    min-height: 18px;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    font-variant-numeric: tabular-nums;
+    color: var(--muted);
+}
+
+/* Each value carries its own direction, not the row's. O/H/L/C follow the candle's body, but
+   the percentage is measured against the previous close — a green candle that closed below the
+   one before it is down, and colouring it by the body would say the opposite. The label stays
+   muted either way: it names the field, and a coloured label beside a coloured number is the
+   same fact said twice. */
+.trade-ohlc b {
+    font-weight: 600;
+    color: var(--text);
+    margin-left: 3px;
+}
+
+.trade-ohlc b.is-up { color: var(--up); }
+.trade-ohlc b.is-down { color: var(--down); }
+
+.trade-chart {
+    width: 100%;
+    height: auto;
+    display: block;
+    cursor: grab;
+    touch-action: pan-y;
+}
+
+.trade-chart.is-dragging {
+    cursor: grabbing;
+}
+
+/* Its own pane: an oscillator bounded 0-100 shares no units with a candle, and overlaying it
+   either flattens the candles or leaves a meaningless squiggle across them. */
+.trade-rsi {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--border);
+}
+
+.trade-rsi-label {
+    display: block;
+    margin-bottom: 2px;
+}
+
+.trade-rsi-chart {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+.trade-panel {
+    display: flex;
+    flex-direction: column;
+    align-content: start;
+    gap: 10px;
+    padding: 12px;
+}
+
+.trade-sides {
+    width: 100%;
+}
+
+.trade-field {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    font-size: 12.5px;
+    color: var(--muted);
+}
+
+.trade-field input {
+    padding: 9px 11px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    font: inherit;
+    font-family: var(--mono);
+    font-size: 16px;
+    font-variant-numeric: tabular-nums;
+}
+
+.trade-quick {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px;
+}
+
+.trade-quick-btn {
+    padding: 5px 6px;
+    border-radius: 4px;
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    font: inherit;
+    font-size: 12.5px;
+    cursor: pointer;
+    transition: background var(--duration-fast) var(--ease-out),
+                color var(--duration-fast) var(--ease-out);
+}
+
+.trade-quick-btn:hover:not(:disabled) {
+    background: var(--overlay-soft);
+    color: var(--text);
+}
+
+.trade-quick-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+.trade-preview,
+.trade-position-card {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 8px 10px;
+    border-radius: 6px;
+    background: var(--overlay-soft);
+    font-size: 12.5px;
+}
+
+.trade-preview-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.trade-preview-row span:first-child {
+    color: var(--muted);
+}
+
+.trade-preview-row span:last-child {
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+}
+
+/* Two kinds of message share this line, and only one of them is a refusal: "nothing held to
+   sell" explains a disabled button, while "not enough cash" is the server saying no. Red for
+   both made a successful sell-all announce itself beside a red line about holding nothing. */
+.trade-status {
+    margin: 0;
+    font-size: 12.5px;
+    color: var(--muted);
+    min-height: 1em;
+}
+
+.trade-status.is-error {
+    color: var(--down);
+}
+
+/* A fill is worth saying out loud once, where the eye already is — the account block updates
+   silently above the fold and the history row is below it, so a trade could otherwise complete
+   with nothing on screen visibly changing. Fixed rather than in the flow: it must not push the
+   order ticket around at the moment somebody is clicking in it. */
+.trade-toast {
+    position: fixed;
+    right: 16px;
+    bottom: 16px;
+    z-index: 40;
+    width: min(300px, calc(100vw - 32px));
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 8px;
+    background: var(--panel);
+    box-shadow: 0 10px 30px var(--shadow);
+    font-size: 12.5px;
+}
+
+/* The entrance lives on a class the script takes off and puts back, because a second fill while
+   the first toast is still up has to replay it — an animation on the element itself only runs
+   when the element appears, and this one does not disappear in between. */
+.trade-toast.is-in {
+    animation: trade-toast-in var(--duration-enter) var(--ease-out);
+}
+
+.trade-toast.is-buy { border-left-color: var(--up); }
+.trade-toast.is-sell { border-left-color: var(--down); }
+
+.trade-toast-head {
+    font-weight: 700;
+}
+
+.trade-toast.is-buy .trade-toast-head { color: var(--up); }
+.trade-toast.is-sell .trade-toast-head { color: var(--down); }
+
+.trade-toast-detail {
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+    color: var(--muted);
+}
+
+@keyframes trade-toast-in {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: none; }
+}
+
+/* The pills inside the terminal pick things rather than navigate, so they follow the tab's own
+   selection language. Scoped to the frame, not to `#view-trade`: `.pill` appears in nearly fifty
+   places across both pages and the nav's sliding indicator is positioned from the shared rule,
+   so the narrowest scope that covers every pill in here is the right one — and if this tab ever
+   grows a pill outside the terminal, that pill should look like the rest of the app. */
+.trade-terminal .pill-option.active {
+    background: var(--tint-accent-strong);
+    color: var(--accent);
+}
+
+/* Profit and loss carry the same colours the charts use, so green and red mean one thing across
+   the whole app rather than one thing per surface. */
+.is-up {
+    color: var(--up);
+}
+
+.is-down {
+    color: var(--down);
+}
+
+/* Holdings and fills have classes of their own rather than borrowing the profile's. The two
+   looked alike once, and restyling this tab to match the terminal would otherwise have quietly
+   restyled the profile with it. */
+.trade-section {
+    margin: 22px 0 10px;
+    font-size: 13px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+}
+
+/* The signed-out state of a tab that is otherwise a three-column terminal. A bare line of
+   text centred in that much width reads as a view that failed to load rather than one asking
+   for an account, so it is a card of its own — sized to what it says, not to the tab. */
+.trade-gate {
+    max-width: 420px;
+    margin: 48px auto;
+    padding: 28px 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    text-align: center;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+}
+
+.trade-gate.hidden {
+    display: none;
+}
+
+.trade-gate-icon {
+    font-size: 28px;
+    line-height: 1;
+}
+
+.trade-gate-title {
+    font-size: 17px;
+}
+
+.trade-gate-text {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--muted);
+}
+
+.trade-gate .side-cta {
+    margin-top: 4px;
+    padding: 10px 20px;
+}
+
+.trade-empty {
+    margin: 0;
+    color: var(--muted-2);
+    font-size: 13px;
+}
+
+.trade-positions {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 8px;
+}
+
+/* A control, because tapping a holding takes you to that pair's chart. The button reset is the
+   market row's, but the framing stays a card: this list sits in the page rather than inside the
+   terminal, and borderless rows there would have nothing to sit on. */
+.trade-position {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    align-items: baseline;
+    gap: 4px 10px;
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--panel);
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: background var(--duration-fast) var(--ease-out),
+                border-color var(--duration-fast) var(--ease-out);
+}
+
+.trade-position:hover {
+    background: var(--overlay-soft);
+}
+
+/* Same selection language as the market list: the row tints, and only the symbol takes the
+   accent — the quantity, value and P&L are data, and the P&L already owns up/down colour. */
+.trade-position.is-selected {
+    background: var(--tint-accent-weak);
+    border-color: color-mix(in oklab, var(--accent) 35%, var(--border));
+}
+
+.trade-position.is-selected .trade-position-symbol {
+    color: var(--accent);
+}
+
+.trade-position-symbol {
+    font: 600 13px var(--mono);
+}
+
+.trade-position-value {
+    font: 500 11.5px var(--mono);
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.trade-position-qty,
+.trade-position-cost {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.trade-position-pnl {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 700;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.trade-fills {
+    display: grid;
+    gap: 4px;
+}
+
+.trade-fill {
+    display: grid;
+    grid-template-columns: auto auto 1fr auto;
+    align-items: baseline;
+    gap: 10px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--panel);
+    font-size: 12.5px;
+}
+
+/* The row that just arrived, lit for as long as it takes to find it. The tint is the neutral
+   accent rather than the side's colour: the row's own mark already says buy or sell, and this is
+   answering a different question — "which of these is the one I just did". */
+.trade-fill.is-new {
+    animation: trade-fill-land var(--duration-roll) var(--ease-out);
+}
+
+@keyframes trade-fill-land {
+    from { background: var(--tint-accent-strong); border-color: var(--accent); }
+    to   { background: var(--panel); border-color: var(--border); }
+}
+
+/* A buy and a sell are directions, not verdicts — they take the up/down colours rather than the
+   right/wrong ones the profile's history uses. */
+.trade-fill-mark {
+    font-weight: 700;
+}
+
+.trade-fill.is-buy .trade-fill-mark {
+    color: var(--up);
+}
+
+.trade-fill.is-sell .trade-fill-mark {
+    color: var(--down);
+}
+
+.trade-fill-symbol {
+    font: 600 12px var(--mono);
+}
+
+.trade-fill-detail {
+    color: var(--muted);
+    min-width: 0;
+}
+
+.trade-fill-when {
+    color: var(--muted-2);
+    font-size: 11.5px;
+    white-space: nowrap;
+}

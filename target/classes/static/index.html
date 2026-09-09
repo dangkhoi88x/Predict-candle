@@ -1,0 +1,1061 @@
+<!doctype html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>Candle Guess</title>
+    <!-- .ico first because browsers request /favicon.ico on their own whether or not it is
+         declared, and a 404 on every page load is a poor thing to leave in the log. The SVG
+         wins where it is supported, being sharp at any size and a tenth of the bytes. -->
+    <link rel="icon" href="/favicon.ico" sizes="32x32"/>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml"/>
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png"/>
+    <meta name="theme-color" content="#0a0a0a" media="(prefers-color-scheme: dark)"/>
+    <meta name="theme-color" content="#f6f7f9" media="(prefers-color-scheme: light)"/>
+    <link rel="stylesheet" href="style.css"/>
+    <script>
+        // Runs before the first paint on purpose: applying the theme from JS after the body
+        // renders would flash the wrong palette on every page load.
+        (function () {
+            var theme = "dark";
+            try {
+                theme = localStorage.getItem("candles-theme")
+                    || (window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+            } catch (e) {
+                // Storage blocked (private mode / disabled cookies) — fall back to dark.
+            }
+            document.documentElement.setAttribute("data-theme", theme);
+        })();
+    </script>
+</head>
+<body>
+<!-- ---- icon set -----------------------------------------------------------------------
+     One monoline set for every mark on this page: the rail, the phone's bottom bar, the
+     brand and the topbar's readouts. Emoji were doing that job, and emoji are drawn by the
+     operating system — the same rail is a flat Noto glyph on Android, a glossy Apple one on
+     a Mac and a Segoe one on Windows, which is the one thing a set of navigation marks
+     cannot afford. It also read as a toy beside a candlestick chart.
+
+     Same drawing convention as admin.html, which already had a monoline set: a 24x24 box,
+     no fill, currentColor stroke at 1.7, round caps and joins. Colour comes from whatever
+     the mark sits in, so an icon needs no theme rule of its own.
+
+     Defined once and referenced with <use> rather than inlined at each site: four of these
+     appear in both the rail and the bottom bar, and this page counts its elements. The
+     sprite is measured out of the layout rather than display:none, because a <use> target
+     inside a display:none subtree has a history of not rendering. -->
+<svg class="icon-defs" aria-hidden="true" focusable="false" width="0" height="0">
+    <!-- The game: the favicon's two candles, one up and one down, offset so the pair reads
+         as movement rather than as two matching bars. -->
+    <symbol id="i-candles" viewBox="0 0 24 24">
+        <path d="M8 3v3.4M8 16.6v3"/>
+        <rect x="5.2" y="6.4" width="5.6" height="10.2" rx="1.4"/>
+        <path d="M16 7.4v2.7M16 17.6v3"/>
+        <rect x="13.2" y="10.1" width="5.6" height="7.5" rx="1.4"/>
+    </symbol>
+    <!-- The daily challenge: a calendar with the day ticked off. -->
+    <symbol id="i-calendar-check" viewBox="0 0 24 24">
+        <rect x="3" y="5" width="18" height="16" rx="2"/>
+        <path d="M8 3v4M16 3v4M3 10h18"/>
+        <path d="M9 15.2l2 2 4-4"/>
+    </symbol>
+    <symbol id="i-bolt" viewBox="0 0 24 24">
+        <path d="M13 2.5 4.5 14H11l-1 7.5L19.5 10H13z"/>
+    </symbol>
+    <!-- Demo trading: a portfolio, not a chart — the chart is the game's mark. -->
+    <symbol id="i-briefcase" viewBox="0 0 24 24">
+        <rect x="3" y="7" width="18" height="13" rx="2"/>
+        <path d="M8.5 7V5.5a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2V7"/>
+        <path d="M3 12.5h18"/>
+    </symbol>
+    <!-- The candlestick library: a reference to read, so a book rather than more candles —
+         the game already owns the candle silhouette. -->
+    <symbol id="i-book" viewBox="0 0 24 24">
+        <path d="M12 6.8C10.6 5.2 8.6 4.5 4.5 4.5v13c4.1 0 6.1.7 7.5 2.3 1.4-1.6 3.4-2.3 7.5-2.3v-13c-4.1 0-6.1.7-7.5 2.3z"/>
+        <path d="M12 6.8v13"/>
+    </symbol>
+    <!-- Chart-shape patterns: a trend line through its swing pivots, which is literally what
+         SwingPivotDetector hands the matcher. -->
+    <symbol id="i-wedge" viewBox="0 0 24 24">
+        <path d="M3.5 4.8 14.5 11.5M3.5 18.2 14.5 11.5"/>
+        <path d="M14.5 11.5 20.5 5.5"/>
+        <path d="M20.5 9.5v-4h-4"/>
+    </symbol>
+    <!-- Psychology: a head with the question inside it. -->
+    <symbol id="i-mind" viewBox="0 0 24 24">
+        <path d="M16 21v-3.4c2.3-1.3 3.8-3.6 3.8-6.2 0-4.1-3.5-7.4-7.8-7.4S4.2 7.3 4.2 11.4c0 2 .8 3.8 2.2 5.1V21"/>
+        <path d="M9.8 10.9a2.3 2.3 0 0 1 4.5.5c0 1.2-1 1.8-1.6 2.3-.4.4-.7.8-.7 1.5"/>
+        <path d="M12 18.2v.1"/>
+    </symbol>
+    <symbol id="i-news" viewBox="0 0 24 24">
+        <path d="M4 5h13a1 1 0 0 1 1 1v13H5a1 1 0 0 1-1-1z"/>
+        <path d="M18 9h1.5A1.5 1.5 0 0 1 21 10.5V17a2 2 0 0 1-2 2"/>
+        <path d="M7.5 8.5h6M7.5 12h6M7.5 15.5h4"/>
+    </symbol>
+    <symbol id="i-trophy" viewBox="0 0 24 24">
+        <path d="M7.5 4h9v4.5a4.5 4.5 0 0 1-9 0z"/>
+        <path d="M7.5 5.5H5A2.5 2.5 0 0 0 7.7 10M16.5 5.5H19a2.5 2.5 0 0 1-2.7 4.5"/>
+        <path d="M12 13v3.4M8.7 20h6.6l-.8-3.6H9.5z"/>
+    </symbol>
+    <!-- The heatmap: the treemap's own split, not a generic grid. -->
+    <symbol id="i-treemap" viewBox="0 0 24 24">
+        <rect x="3" y="3" width="18" height="18" rx="2"/>
+        <path d="M13 3v18M3 13.5h10M13 9.5h8"/>
+    </symbol>
+    <symbol id="i-user" viewBox="0 0 24 24">
+        <circle cx="12" cy="8.2" r="3.6"/>
+        <path d="M4.8 20c0-3.8 3.2-6.2 7.2-6.2s7.2 2.4 7.2 6.2"/>
+    </symbol>
+    <symbol id="i-caret" viewBox="0 0 24 24">
+        <path d="M6.5 9.5 12 15l5.5-5.5"/>
+    </symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24">
+        <path d="M4 7h16M4 12h16M4 17h16"/>
+    </symbol>
+    <symbol id="i-flame" viewBox="0 0 24 24">
+        <path d="M12 2.5c.4 3.5-1.4 5.2-2.5 6.4C8.2 10.3 7 11.8 7 14.2A5 5 0 0 0 17 14.4c0-4.3-3.4-6.5-5-11.9z"/>
+        <path d="M12 20.5a2.6 2.6 0 0 1-2.6-2.6c0-1.7 1.6-2.3 2.6-4.2 1 1.9 2.6 2.5 2.6 4.2a2.6 2.6 0 0 1-2.6 2.6z"/>
+    </symbol>
+    <symbol id="i-sliders" viewBox="0 0 24 24">
+        <path d="M3.5 7.5h10M18.5 7.5h2M3.5 16.5h2M10.5 16.5h10"/>
+        <circle cx="16" cy="7.5" r="2.3"/>
+        <circle cx="8" cy="16.5" r="2.3"/>
+    </symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24">
+        <path d="M20 14.5A8 8 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/>
+    </symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="4"/>
+        <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>
+    </symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24">
+        <path d="M20 11.5A8 8 0 0 0 6.3 6.3L3.5 9"/>
+        <path d="M4 12.5a8 8 0 0 0 13.7 5.2L20.5 15"/>
+        <path d="M3.5 4.5V9H8M20.5 19.5V15H16"/>
+    </symbol>
+    <symbol id="i-sound-on" viewBox="0 0 24 24">
+        <path d="M11 4.5 6.5 8.5H3.5v7h3l4.5 4z"/>
+        <path d="M15 9.2a4 4 0 0 1 0 5.6M17.8 6.4a8 8 0 0 1 0 11.2"/>
+    </symbol>
+    <symbol id="i-sound-off" viewBox="0 0 24 24">
+        <path d="M11 4.5 6.5 8.5H3.5v7h3l4.5 4z"/>
+        <path d="M16 9.5l5 5M21 9.5l-5 5"/>
+    </symbol>
+</svg>
+
+<div class="shell-page">
+<div class="ticker hidden" id="ticker" aria-label="Giá các đồng coin vốn hóa lớn">
+    <div class="ticker-track" id="ticker-track"></div>
+</div>
+
+<div class="shell">
+<header class="topbar">
+    <!-- The favicon's own mark, redrawn centred: up candle high, down candle low. Inline
+         rather than in the sprite above because it is the one mark that is filled, and filled
+         in --up/--down rather than taking the colour it sits in. -->
+    <span class="brand">
+        <svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M8 3v14" stroke="var(--up)" stroke-width="2" stroke-linecap="round"/>
+            <rect x="5" y="5" width="6" height="9" rx="1.5" fill="var(--up)"/>
+            <path d="M16 7v14" stroke="var(--down)" stroke-width="2" stroke-linecap="round"/>
+            <rect x="13" y="9" width="6" height="9" rx="1.5" fill="var(--down)"/>
+        </svg>
+        <span class="brand-text">Candle Guess</span>
+    </span>
+    <!-- Hidden until live.js knows there is a round to point at: a banner counting down to
+         nothing is worse than no banner. -->
+    <button id="live-banner" class="live-banner hidden" type="button" data-nav-view="live">
+        <span class="live-banner-dot" aria-hidden="true"></span>
+        <span class="live-banner-text" id="live-banner-text"></span>
+        <span class="live-banner-cta">Vào đặt →</span>
+    </button>
+    <div class="topbar-right">
+        <!-- Days in a row the player has shown up at all — not the daily challenge's own
+             streak on its tab, and not the correct-in-a-row streak on the scoreboard.
+             Signed-in only: nothing is recorded for anonymous play, so a streak here would be
+             a promise the server never made. -->
+        <span id="game-streak" class="game-streak hidden" aria-live="polite">
+            <svg class="icon game-streak-flame" aria-hidden="true" focusable="false"><use href="#i-flame"/></svg>
+            <span class="game-streak-value" id="game-streak-value"></span>
+            <span class="game-streak-unit">ngày</span>
+        </span>
+        <div class="auth-area" id="auth-area">
+            <span id="auth-error-msg" class="auth-error-msg hidden"></span>
+            <button id="theme-toggle" class="theme-toggle" type="button"
+                    aria-label="Chuyển giao diện sáng/tối" title="Chuyển giao diện sáng/tối">
+                <svg data-theme-icon="moon" class="icon" aria-hidden="true" focusable="false"><use href="#i-moon"/></svg>
+                <svg data-theme-icon="sun" class="icon hidden" aria-hidden="true" focusable="false"><use href="#i-sun"/></svg>
+            </button>
+            <button id="auth-login-btn" class="ghost-btn" type="button">Kết nối ví</button>
+            <div id="auth-user" class="auth-user hidden">
+                <button id="auth-display-name" class="auth-display-name" type="button"
+                        title="Xem chi tiết ví"></button>
+                    <a id="admin-link" class="ghost-btn admin-link hidden" href="/admin.html"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-sliders"/></svg>Quản trị</a>
+                <button id="auth-logout-btn" class="ghost-btn" type="button">Ngắt kết nối</button>
+            </div>
+        </div>
+    </div>
+</header>
+
+<div class="shell-body">
+    <!-- The rail is the one list of views. On a phone it turns into a bottom sheet the
+         "Thêm" key of .tabbar opens, so the same buttons serve both layouts and neither
+         has its own copy of the menu to fall out of step. -->
+    <div class="rail-backdrop" id="rail-backdrop" hidden></div>
+    <aside class="rail" id="rail">
+        <!-- Three disclosure groups rather than eleven rows always on. Grouping alone did not
+             make the rail short: the eleven are still eleven, and four of them are reference
+             pages somebody opens twice a year sitting at the same weight as the game. Học
+             starts shut for that reason; the state is remembered per group, and nav.js opens
+             whichever group holds the view being activated, so a deep link into the blog can
+             never leave the tablist with its selected tab inside a closed group.
+
+             The toggles are buttons inside a role="tablist", which the pattern does not
+             describe. The alternative was hiding a real control from the accessibility tree
+             to keep the role tidy, which is the worse of the two. -->
+        <nav class="rail-nav" role="tablist" aria-orientation="vertical" aria-label="Khu vực của ứng dụng">
+            <div class="rail-group" role="presentation" data-open="true">
+                <button class="rail-group-toggle" type="button" aria-expanded="true" aria-controls="rail-group-play">
+                    <span class="rail-group-title">Chơi</span>
+                    <span class="rail-group-flag hidden" aria-hidden="true"></span>
+                    <svg class="icon rail-group-chevron" aria-hidden="true" focusable="false"><use href="#i-caret"/></svg>
+                </button>
+                <div class="rail-group-items" id="rail-group-play">
+                    <button class="rail-item active" role="tab" id="tab-game" aria-controls="view-game" aria-selected="true" data-view="game">
+                        <svg class="icon rail-icon" aria-hidden="true" focusable="false"><use href="#i-candles"/></svg>
+                        <span class="rail-label">Đoán Nến</span>
+                    </button>
+                    <button class="rail-item" role="tab" id="tab-daily" aria-controls="view-daily" aria-selected="false" data-view="daily">
+                        <svg class="icon rail-icon" aria-hidden="true" focusable="false"><use href="#i-calendar-check"/></svg>
+                        <span class="rail-label">Thử Thách</span>
+                        <span class="rail-tag is-new">MỚI</span>
+                    </button>
+                    <button class="rail-item" role="tab" id="tab-live" aria-controls="view-live" aria-selected="false" data-view="live">
+                        <svg class="icon rail-icon" aria-hidden="true" focusable="false"><use href="#i-bolt"/></svg>
+                        <span class="rail-label">Trực Tiếp</span>
+                        <span class="rail-tag is-live hidden" id="rail-tag-live"></span>
+                    </button>
+                    <button class="rail-item" role="tab" id="tab-trade" aria-controls="view-trade" aria-selected="false" data-view="trade">
+                        <svg class="icon rail-icon" aria-hidden="true" focusable="false"><use href="#i-briefcase"/></svg>
+                        <span class="rail-label">Giao Dịch Demo</span>
+                    </button>
+                </div>
+            </div>
+            <div class="rail-group" role="presentation" data-open="false">
+                <button class="rail-group-toggle" type="button" aria-expanded="false" aria-controls="rail-group-learn">
+                    <span class="rail-group-title">Học</span>
+                    <span class="rail-group-flag hidden" aria-hidden="true"></span>
+                    <svg class="icon rail-group-chevron" aria-hidden="true" focusable="false"><use href="#i-caret"/></svg>
+                </button>
+                <div class="rail-group-items" id="rail-group-learn">
+                    <button class="rail-item" role="tab" id="tab-patterns" aria-controls="view-patterns" aria-selected="false" data-view="patterns">
+                        <svg class="icon rail-icon" aria-hidden="true" focusable="false"><use href="#i-book"/></svg>
+                        <span class="rail-label">Mẫu Nến</span>
+                    </button>
+                    <button class="rail-item" role="tab" id="tab-technical" aria-controls="view-technical" aria-selected="false" data-view="technical">
+                        <svg class="icon rail-icon" aria-hidden="true" focusable="false"><use href="#i-wedge"/></svg>
+                        <span class="rail-label">Mẫu Hình Kỹ Thuật</span>
+                    </button>
+                    <button class="rail-item" role="tab" id="tab-psychology" aria-controls="view-psychology" aria-selected="false" data-view="psychology">
+                        <svg class="icon rail-icon" aria-hidden="true" focusable="false"><use href="#i-mind"/></svg>
+                        <span class="rail-label">Tâm Lý</span>
+                    </button>
+                    <button class="rail-item" role="tab" id="tab-blog" aria-controls="view-blog" aria-selected="false" data-view="blog">
+                        <svg class="icon rail-icon" aria-hidden="true" focusable="false"><use href="#i-news"/></svg>
+                        <span class="rail-label">Blog / Kiến Thức</span>
+                    </button>
+                </div>
+            </div>
+            <div class="rail-group" role="presentation" data-open="true">
+                <button class="rail-group-toggle" type="button" aria-expanded="true" aria-controls="rail-group-you">
+                    <span class="rail-group-title">Bạn &amp; cộng đồng</span>
+                    <span class="rail-group-flag hidden" aria-hidden="true"></span>
+                    <svg class="icon rail-group-chevron" aria-hidden="true" focusable="false"><use href="#i-caret"/></svg>
+                </button>
+                <div class="rail-group-items" id="rail-group-you">
+                    <button class="rail-item" role="tab" id="tab-leaderboard" aria-controls="view-leaderboard" aria-selected="false" data-view="leaderboard">
+                        <svg class="icon rail-icon" aria-hidden="true" focusable="false"><use href="#i-trophy"/></svg>
+                        <span class="rail-label">Bảng Xếp Hạng</span>
+                        <span class="rail-tag hidden" id="rail-tag-rank"></span>
+                    </button>
+                    <button class="rail-item" role="tab" id="tab-heatmap" aria-controls="view-heatmap" aria-selected="false" data-view="heatmap">
+                        <svg class="icon rail-icon" aria-hidden="true" focusable="false"><use href="#i-treemap"/></svg>
+                        <span class="rail-label">Market Heatmap</span>
+                    </button>
+                    <!-- Shown only while signed in; nav.js toggles it on the session event. -->
+                    <button class="rail-item hidden" role="tab" id="tab-profile" aria-controls="view-profile" aria-selected="false" data-view="profile">
+                        <svg class="icon rail-icon" aria-hidden="true" focusable="false"><use href="#i-user"/></svg>
+                        <span class="rail-label">Hồ Sơ</span>
+                    </button>
+                </div>
+            </div>
+        </nav>
+    </aside>
+
+    <div class="shell-main">
+
+<main id="view-game" class="view app app-play" role="tabpanel" aria-labelledby="tab-game">
+<div class="play-grid">
+<div class="play-main">
+    <div class="game-toolbar">
+        <div class="pill" id="asset-pill">
+            <button class="pill-option active" data-asset="BTCUSDT">BTC/USDT</button>
+            <button class="pill-option" data-asset="ETHUSDT">ETH/USDT</button>
+            <button class="pill-option" data-asset="BNBUSDT">BNB/USDT</button>
+            <button class="pill-option" data-asset="SOLUSDT">SOL/USDT</button>
+        </div>
+        <div class="game-toolbar-end">
+            <span id="guess-progress" class="guess-progress hidden"></span>
+            <button id="sound-toggle" class="ghost-btn sound-toggle" type="button" aria-label="Bật/tắt âm thanh và rung"><svg data-sound-icon="on" class="icon" aria-hidden="true" focusable="false"><use href="#i-sound-on"/></svg><svg data-sound-icon="off" class="icon hidden" aria-hidden="true" focusable="false"><use href="#i-sound-off"/></svg></button>
+        </div>
+    </div>
+
+    <div id="result-banner" class="result-banner hidden"></div>
+
+    <div class="market-card">
+        <div class="market-head">
+            <div class="market-quote">
+                <div class="market-symbol-row">
+                    <span class="market-symbol" id="market-symbol">BTC</span>
+                    <span class="market-name" id="market-name">Bitcoin</span>
+                </div>
+                <div class="market-price-row">
+                    <span class="market-price rolling" id="market-price" aria-live="polite"></span>
+                    <span class="market-delta rolling" id="market-delta"></span>
+                    <span class="skeleton market-price-skeleton" aria-hidden="true"></span>
+                    <span class="skeleton market-delta-skeleton" aria-hidden="true"></span>
+                </div>
+                <div class="market-ohlc" id="market-ohlc" aria-hidden="true"></div>
+            </div>
+        </div>
+
+        <div class="chart" id="chart"></div>
+        <div class="chart-skeleton" aria-hidden="true">
+            <span class="skeleton"></span>
+            <span class="skeleton"></span>
+            <span class="skeleton"></span>
+            <span class="skeleton"></span>
+            <span class="skeleton"></span>
+            <span class="skeleton"></span>
+            <span class="skeleton"></span>
+            <span class="skeleton"></span>
+            <span class="skeleton"></span>
+            <span class="skeleton"></span>
+            <span class="skeleton"></span>
+            <span class="skeleton"></span>
+            <span class="skeleton"></span>
+            <span class="skeleton"></span>
+            <span class="skeleton"></span>
+            <span class="skeleton"></span>
+            <span class="skeleton"></span>
+            <span class="skeleton"></span>
+            <span class="skeleton"></span>
+            <span class="skeleton"></span>
+            <span class="skeleton"></span>
+            <span class="skeleton"></span>
+            <span class="skeleton"></span>
+            <span class="skeleton"></span>
+        </div>
+    </div>
+
+    <div id="round-identity" class="round-identity hidden" aria-live="polite"></div>
+
+    <section id="round-context" class="round-context hidden" aria-label="Bối cảnh của biểu đồ vừa chơi">
+        <div class="rc-head">
+            <h3 class="rc-title">Toàn cảnh setup</h3>
+            <p class="rc-sub" id="rc-sub"></p>
+        </div>
+        <div class="rc-chart" id="rc-chart"></div>
+        <div class="rc-patterns hidden" id="rc-patterns">
+            <p class="rc-patterns-label">Mẫu nến xuất hiện trong vòng này</p>
+            <div class="rc-patterns-list" id="rc-patterns-list"></div>
+        </div>
+        <ul class="rc-legend">
+            <li><span class="rc-key rc-key-before"></span>Trước &amp; sau — phần bạn không được xem</li>
+            <li><span class="rc-key rc-key-played"></span>20 nến bạn đã xem</li>
+            <li><span class="rc-key rc-key-guess"></span>5 nến bạn phải đoán</li>
+        </ul>
+    </section>
+
+    <!-- Names whatever the chart just gained. An indicator appearing unannounced reads as a
+         glitch rather than as the game giving ground after a miss. -->
+    <p id="game-hint" class="daily-hint hidden"></p>
+
+    <div id="guess-timer" class="guess-timer hidden">
+        <div class="guess-timer-track"><div class="guess-timer-fill" id="guess-timer-fill"></div></div>
+        <span class="guess-timer-value" id="guess-timer-value"></span>
+    </div>
+
+    <div class="controls">
+        <button id="guess-long" class="guess-btn long" disabled>▲ LONG</button>
+        <button id="guess-short" class="guess-btn short" disabled>▼ SHORT</button>
+    </div>
+
+    <button id="next-chart" class="next-btn hidden"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-refresh"/></svg>Biểu đồ mới</button>
+
+    <p id="status" class="status"></p>
+</div><!-- /.play-main -->
+
+<aside class="play-side">
+    <!-- The scoreboard, out of the chart's way. It answers "how am I doing", which is a
+         question about the session rather than about the candle on screen. -->
+    <section class="side-card">
+        <span class="side-eyebrow">Phiên này</span>
+        <div class="scoreboard">
+            <div class="stat">
+                <span class="stat-label">Điểm</span>
+                <span class="stat-value rolling" id="score">0</span>
+            </div>
+            <div class="stat">
+                <span class="stat-label">Streak</span>
+                <span class="stat-value rolling" id="streak">0</span>
+            </div>
+            <div class="stat">
+                <span class="stat-label">Best streak</span>
+                <span class="stat-value rolling" id="best-streak">0</span>
+            </div>
+            <div class="stat">
+                <span class="stat-label">Tỉ lệ đúng</span>
+                <span class="stat-value rolling" id="accuracy">–</span>
+            </div>
+        </div>
+        <!-- Ten calls, oldest on the left. Seeded from the server's recorded history when
+             signed in and appended to as the session goes, so the strip means the same thing
+             either way rather than being a feature only an account has. -->
+        <div class="side-dots" id="side-dots" aria-hidden="true"></div>
+        <span class="side-foot" id="side-dots-label">Chưa có lượt nào</span>
+    </section>
+
+    <section class="side-card is-accent" id="side-daily">
+        <span class="side-eyebrow is-accent">Thử thách hôm nay</span>
+        <b class="side-title" id="side-daily-title">Đang tải…</b>
+        <p class="side-text">Một biểu đồ, năm lượt, giống nhau cho mọi người.</p>
+        <button class="side-cta" type="button" data-nav-view="daily">Chơi ngay</button>
+    </section>
+
+    <section class="side-card hidden" id="side-badges">
+        <span class="side-eyebrow">Huy hiệu gần đạt</span>
+        <div class="side-badges" id="side-badges-list"></div>
+    </section>
+
+    <section class="side-card hidden" id="side-rank">
+        <div class="side-head">
+            <span class="side-eyebrow">Top người chơi</span>
+            <button class="side-link" type="button" data-nav-view="leaderboard">Xem tất cả</button>
+        </div>
+        <div class="side-rank" id="side-rank-list"></div>
+    </section>
+</aside>
+</div><!-- /.play-grid -->
+</main>
+
+<main id="view-daily" class="view app hidden" role="tabpanel" aria-labelledby="tab-daily">
+    <div class="view-head">
+        <h2>Thử Thách Hôm Nay</h2>
+        <span class="daily-number" id="daily-number"></span>
+    </div>
+
+    <p class="daily-intro">Cùng một biểu đồ cho tất cả mọi người, mỗi ngày một lần.</p>
+
+    <div class="daily-streak hidden" id="daily-streak">
+        <span class="daily-streak-value rolling" id="daily-streak-current">0</span>
+        <span class="daily-streak-label">ngày thử thách liên tiếp</span>
+        <span class="daily-streak-best" id="daily-streak-best"></span>
+    </div>
+
+    <div class="daily-board">
+        <!-- Only while replaying: the board is the same board, so it has to say which day is
+             on it or a player cannot tell a replay from today's round. -->
+        <div class="daily-replay hidden" id="daily-replay">
+            <span id="daily-replay-label"></span>
+            <button class="ghost-btn" type="button" id="daily-back">Về hôm nay</button>
+        </div>
+
+        <div class="daily-chart-wrap">
+            <svg id="daily-chart" class="daily-chart" viewBox="0 0 720 300" preserveAspectRatio="none"
+                 role="img" aria-label="Biểu đồ nến của thử thách hôm nay"></svg>
+        </div>
+
+        <p class="daily-status" id="daily-status">Đang tải…</p>
+
+        <!-- Says why the chart just gained something. A hint that appears unannounced reads as
+             a glitch rather than as the game giving ground. -->
+        <p class="daily-hint hidden" id="daily-hint"></p>
+
+        <!-- The dots are the whole result at a glance, and the same shape the share card
+             copies out — so what a player sees is what their friends will see. -->
+        <div class="daily-dots" id="daily-dots" aria-label="Kết quả từng lượt"></div>
+
+        <!-- The same shot clock practice runs on, because the server enforces it either way:
+             an answered guess arriving after the limit is refused, and on a once-a-day round
+             that would burn the attempt. -->
+        <div id="daily-timer" class="guess-timer hidden">
+            <div class="guess-timer-track"><div class="guess-timer-fill" id="daily-timer-fill"></div></div>
+            <span class="guess-timer-value" id="daily-timer-value"></span>
+        </div>
+
+        <div class="daily-actions hidden" id="daily-actions">
+            <button class="guess-btn long" type="button" id="daily-long">LONG</button>
+            <button class="guess-btn short" type="button" id="daily-short">SHORT</button>
+        </div>
+
+        <div class="daily-done hidden" id="daily-done">
+            <p class="daily-done-line" id="daily-done-line"></p>
+            <p class="daily-next" id="daily-next"></p>
+            <button class="ghost-btn" type="button" id="daily-share">Sao chép kết quả</button>
+        <!-- Shown only when the clipboard refuses. A share button that can fail silently is a
+             share button that does not work, so the text has to become reachable by hand. -->
+        <textarea class="daily-share-text hidden" id="daily-share-text" readonly rows="3"
+                  aria-label="Kết quả để chia sẻ"></textarea>
+        </div>
+    </div>
+
+    <h3 class="profile-section">Nhận diện mẫu nến</h3>
+    <div class="daily-board quiz-board">
+        <p class="daily-intro" id="quiz-intro">Mẫu nến nào đang được đánh dấu?</p>
+        <div class="daily-chart-wrap">
+            <svg id="quiz-chart" class="daily-chart" viewBox="0 0 720 260" preserveAspectRatio="none"
+                 role="img" aria-label="Biểu đồ chứa mẫu nến cần nhận diện"></svg>
+        </div>
+        <div class="quiz-choices" id="quiz-choices"></div>
+        <p class="daily-status" id="quiz-status"></p>
+    </div>
+
+    <h3 class="profile-section">Chơi lại ngày trước</h3>
+    <div id="daily-archive" class="daily-archive"></div>
+</main>
+
+<main id="view-trade" class="view app app-wide hidden" role="tabpanel" aria-labelledby="tab-trade">
+    <!-- The whole surface needs an account: a portfolio nobody owns cannot be held to a
+         balance. The tab stays visible signed out so the feature is discoverable — which is
+         why this is an invitation with a way to accept it, rather than a line of grey text
+         alone in the width a three-column terminal needs. -->
+    <div class="trade-gate hidden" id="trade-signin">
+        <span class="trade-gate-icon" aria-hidden="true">💼</span>
+        <b class="trade-gate-title">Giao dịch demo</b>
+        <p class="trade-gate-text">Tiền ảo, giá thật, không đòn bẩy. Kết nối ví để nhận vốn
+            demo và bắt đầu đặt lệnh.</p>
+        <button class="side-cta" type="button" id="trade-gate-connect">Kết nối ví</button>
+    </div>
+
+    <div id="trade-body" class="hidden">
+        <!-- Account figures first: on a terminal the question "how am I doing" outranks any
+             single market, and it is the one thing that is true across all of them. -->
+        <div class="trade-account" id="trade-account">
+            <div class="trade-account-fig">
+                <span class="trade-account-label">Tổng tài sản</span>
+                <b class="trade-account-value" id="trade-equity">–</b>
+            </div>
+            <div class="trade-account-fig">
+                <span class="trade-account-label">Tiền mặt</span>
+                <b class="trade-account-value" id="trade-cash">–</b>
+            </div>
+            <div class="trade-account-fig">
+                <span class="trade-account-label">Đã chốt</span>
+                <b class="trade-account-value" id="trade-realised">–</b>
+            </div>
+            <div class="trade-account-fig">
+                <span class="trade-account-label">Đang mở</span>
+                <b class="trade-account-value" id="trade-unrealised">–</b>
+            </div>
+            <div class="trade-account-fig">
+                <span class="trade-account-label">Tổng lời</span>
+                <b class="trade-account-value" id="trade-return">–</b>
+            </div>
+            <div class="trade-account-actions">
+                <span class="trade-demo-badge">Tiền demo</span>
+                <button class="ghost-btn" type="button" id="trade-reset">Chơi lại</button>
+            </div>
+        </div>
+
+        <div class="trade-terminal">
+            <!-- Left: every market, its price and the day's move. -->
+            <aside class="trade-list">
+                <input id="trade-search" class="trade-search" type="search" placeholder="Tìm cặp…"
+                       aria-label="Tìm cặp giao dịch"/>
+                <div class="trade-list-head">
+                    <span>Thị trường</span>
+                    <span>Giá / 24h</span>
+                </div>
+                <div id="trade-markets" class="trade-markets"></div>
+            </aside>
+
+            <!-- Centre: the selected market's numbers and its chart. -->
+            <section class="trade-chart-col">
+                <div class="trade-headline">
+                    <div class="trade-headline-pair">
+                        <b id="trade-pair">—</b>
+                        <span class="trade-headline-name" id="trade-pair-name"></span>
+                    </div>
+                    <div class="trade-headline-stats">
+                        <div class="trade-stat">
+                            <span class="trade-stat-label">Giá</span>
+                            <b class="trade-stat-value" id="trade-stat-price">—</b>
+                        </div>
+                        <div class="trade-stat">
+                            <span class="trade-stat-label">24h</span>
+                            <b class="trade-stat-value" id="trade-stat-change">—</b>
+                        </div>
+                        <div class="trade-stat">
+                            <span class="trade-stat-label">KL 24h</span>
+                            <b class="trade-stat-value" id="trade-stat-volume">—</b>
+                        </div>
+                        <div class="trade-stat">
+                            <span class="trade-stat-label">Đang giữ</span>
+                            <b class="trade-stat-value" id="trade-stat-held">—</b>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="trade-chart-card">
+                    <div class="trade-chart-toolbar">
+                        <div class="pill trade-timeframes" id="trade-timeframes">
+                            <button class="pill-option" type="button" data-tf="1m">1M</button>
+                            <button class="pill-option" type="button" data-tf="15m">15M</button>
+                            <button class="pill-option active" type="button" data-tf="1h">1H</button>
+                            <button class="pill-option" type="button" data-tf="4h">4H</button>
+                            <button class="pill-option" type="button" data-tf="1d">1D</button>
+                        </div>
+                        <!-- Zoom is how many candles are on screen, not a scale factor: the
+                             chart redraws to fit whatever it is given, so fewer bars is more
+                             detail. Slices data already fetched, so neither button costs a
+                             request. -->
+                        <div class="pill trade-indicators" id="trade-indicators">
+                            <button class="pill-option" type="button" data-ind="ma">MA</button>
+                            <button class="pill-option" type="button" data-ind="rsi">RSI</button>
+                        </div>
+                        <div class="trade-zoom">
+                            <!-- Pan and zoom both slice data already fetched, so none of these
+                                 four buttons costs a request. -->
+                            <button class="trade-zoom-btn" type="button" id="trade-pan-back"
+                                    aria-label="Xem về quá khứ" title="Xem về quá khứ">‹</button>
+                            <button class="trade-zoom-btn" type="button" id="trade-pan-forward"
+                                    aria-label="Xem về hiện tại" title="Xem về hiện tại">›</button>
+                            <button class="trade-zoom-btn" type="button" id="trade-zoom-out"
+                                    aria-label="Thu nhỏ, xem nhiều nến hơn" title="Xem nhiều nến hơn">−</button>
+                            <span class="trade-zoom-count" id="trade-zoom-count"></span>
+                            <button class="trade-zoom-btn" type="button" id="trade-zoom-in"
+                                    aria-label="Phóng to, xem ít nến hơn" title="Xem ít nến hơn">+</button>
+                        </div>
+                    </div>
+                    <!-- Reads the candle under the pointer, and the newest one when there is no
+                         pointer on the chart — so the row always has something in it and the
+                         card never changes height as the mouse comes and goes. -->
+                    <div class="trade-ohlc" id="trade-ohlc" aria-live="off"></div>
+                    <svg id="trade-chart" class="trade-chart" viewBox="0 0 900 420"
+                         preserveAspectRatio="none" role="img"
+                         aria-label="Biểu đồ giá của cặp đang chọn"></svg>
+                    <!-- Its own pane: an oscillator bounded 0-100 shares no units with a candle,
+                         and overlaying it either flattens the candles or leaves a meaningless
+                         squiggle across them. -->
+                    <div class="trade-rsi hidden" id="trade-rsi-pane">
+                        <span class="trade-rsi-label">RSI 14</span>
+                        <svg id="trade-rsi" class="trade-rsi-chart" viewBox="0 0 900 90"
+                             preserveAspectRatio="none" role="img"
+                             aria-label="Chỉ báo RSI 14 của cặp đang chọn"></svg>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Right: the order ticket. -->
+            <aside class="trade-panel">
+                <div class="pill trade-sides" id="trade-sides">
+                    <button class="pill-option active" type="button" data-side="BUY">Mua</button>
+                    <button class="pill-option" type="button" data-side="SELL">Bán</button>
+                </div>
+
+                <label class="trade-field">
+                    <span id="trade-input-label">Số tiền (USD)</span>
+                    <input id="trade-amount" type="number" min="0" step="any" inputmode="decimal" placeholder="0"/>
+                </label>
+
+                <div class="trade-quick" id="trade-quick"></div>
+
+                <div class="trade-preview" id="trade-preview"></div>
+
+                <button class="guess-btn long" type="button" id="trade-submit">Mua</button>
+                <p class="trade-status" id="trade-status"></p>
+
+                <div class="trade-position-card" id="trade-position-card"></div>
+            </aside>
+        </div>
+
+        <h3 class="trade-section">Đang giữ</h3>
+        <div id="trade-positions" class="trade-positions"></div>
+
+        <h3 class="trade-section">Lệnh gần đây</h3>
+        <div id="trade-fills" class="trade-fills"></div>
+    </div>
+
+    <!-- What actually filled, read back off the server's own record of the trade rather than
+         off what was typed into the form — the price is the server's to state. role="status"
+         so a screen reader hears the fill without the focus moving to it. -->
+    <div class="trade-toast hidden" id="trade-toast" role="status" aria-live="polite"></div>
+</main>
+
+<main id="view-live" class="view app hidden" role="tabpanel" aria-labelledby="tab-live">
+    <div class="game-toolbar">
+        <div class="pill" id="live-asset-pill">
+            <button class="pill-option active" data-asset="BTCUSDT">BTC/USDT</button>
+            <button class="pill-option" data-asset="ETHUSDT">ETH/USDT</button>
+            <button class="pill-option" data-asset="BNBUSDT">BNB/USDT</button>
+            <button class="pill-option" data-asset="SOLUSDT">SOL/USDT</button>
+        </div>
+    </div>
+
+    <div class="live-round-head">
+        <span class="live-round-number" id="live-round-number">Vòng —</span>
+        <span class="live-round-state" id="live-round-state"></span>
+    </div>
+
+    <div class="market-card">
+        <div class="market-head">
+            <div class="market-quote">
+                <div class="market-symbol-row">
+                    <span class="market-symbol" id="live-symbol">BTC</span>
+                    <span class="market-name">Giá trực tiếp</span>
+                </div>
+                <div class="market-price-row">
+                    <span class="market-price rolling" id="live-price" aria-live="polite"></span>
+                    <span class="market-delta rolling" id="live-delta"></span>
+                </div>
+                <div class="market-ohlc" id="live-open-note"></div>
+            </div>
+        </div>
+
+        <div class="live-sparkline-wrap">
+            <svg class="live-sparkline" id="live-sparkline" viewBox="0 0 300 60" preserveAspectRatio="none" aria-hidden="true"></svg>
+        </div>
+    </div>
+
+    <div id="live-timer" class="guess-timer">
+        <div class="guess-timer-track"><div class="guess-timer-fill" id="live-timer-fill"></div></div>
+        <span class="guess-timer-value" id="live-timer-value"></span>
+    </div>
+
+    <div class="live-pool" id="live-pool" aria-hidden="true">
+        <div class="live-pool-track">
+            <div class="live-pool-long" id="live-pool-long"></div>
+        </div>
+        <div class="live-pool-labels">
+            <span id="live-pool-long-label">LONG 50%</span>
+            <span id="live-pool-short-label">50% SHORT</span>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button id="live-long" class="guess-btn long" disabled>▲ LONG</button>
+        <button id="live-short" class="guess-btn short" disabled>▼ SHORT</button>
+    </div>
+
+    <p id="live-status" class="status"></p>
+
+    <section class="live-participants" id="live-participants-section" aria-label="Người chơi vòng này">
+        <h3 class="live-participants-title" id="live-participants-title">Người chơi vòng này</h3>
+        <div class="live-participants-list" id="live-participants-list"></div>
+        <p class="live-participants-empty hidden" id="live-participants-empty">Chưa ai dự đoán vòng này.</p>
+    </section>
+
+    <section class="live-history" aria-label="Các vòng trước">
+        <h3 class="live-history-title">Vòng trước</h3>
+        <div class="live-history-strip" id="live-history-strip"></div>
+    </section>
+</main>
+
+<div id="live-round-modal" class="live-round-modal hidden" role="dialog" aria-modal="true" aria-labelledby="live-round-modal-title">
+    <div class="live-round-modal-backdrop" id="live-round-modal-backdrop"></div>
+    <div class="live-round-modal-card">
+        <button id="live-round-modal-close" class="live-round-modal-close" type="button" aria-label="Đóng">✕</button>
+        <p class="live-round-modal-eyebrow" id="live-round-modal-eyebrow"></p>
+        <h2 class="live-round-modal-title" id="live-round-modal-title"></h2>
+
+        <div class="live-round-modal-chart-wrap">
+            <svg class="live-round-modal-chart" id="live-round-modal-chart" viewBox="0 0 480 220" preserveAspectRatio="none" aria-hidden="true"></svg>
+        </div>
+
+        <div class="live-round-modal-badge" id="live-round-modal-badge">
+            <svg class="icon live-round-modal-badge-icon" aria-hidden="true" focusable="false"><use href="#i-trophy"/></svg>
+            <p class="live-round-modal-badge-state" id="live-round-modal-badge-state"></p>
+            <p class="live-round-modal-badge-result" id="live-round-modal-badge-result"></p>
+        </div>
+
+        <div class="live-round-modal-prices">
+            <div>
+                <span class="live-round-modal-price-label">Mở</span>
+                <span class="live-round-modal-price-value" id="live-round-modal-open"></span>
+            </div>
+            <div>
+                <span class="live-round-modal-price-label">Đóng</span>
+                <span class="live-round-modal-price-value" id="live-round-modal-close-price"></span>
+            </div>
+        </div>
+
+        <div class="live-round-modal-pool" id="live-round-modal-pool">
+            <div class="live-pool-track">
+                <div class="live-pool-long" id="live-round-modal-pool-long"></div>
+            </div>
+            <div class="live-pool-labels">
+                <span id="live-round-modal-pool-long-label"></span>
+                <span id="live-round-modal-pool-short-label"></span>
+            </div>
+        </div>
+
+        <section class="live-participants" aria-label="Người chơi vòng này">
+            <h3 class="live-participants-title" id="live-round-modal-participants-title">Người chơi vòng này</h3>
+            <div class="live-participants-list" id="live-round-modal-participants-list"></div>
+            <p class="live-participants-empty hidden" id="live-round-modal-participants-empty">Chưa ai dự đoán vòng này.</p>
+        </section>
+
+        <p class="live-round-modal-status" id="live-round-modal-status"></p>
+    </div>
+</div>
+
+<main id="view-heatmap" class="view app app-heatmap hidden" role="tabpanel" aria-labelledby="tab-heatmap">
+    <div class="heatmap-toolbar">
+        <h2>Market Heatmap</h2>
+        <div class="pill" id="heatmap-source-pill">
+            <button class="pill-option active" data-source="crypto">Crypto</button>
+            <button class="pill-option" data-source="sp500">S&amp;P 500</button>
+        </div>
+        <div class="heatmap-meta">
+            <span id="heatmap-updated"></span>
+            <button id="heatmap-refresh" class="ghost-btn" type="button"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-refresh"/></svg>Làm mới</button>
+        </div>
+    </div>
+
+    <p id="heatmap-status" class="status"></p>
+
+    <!-- Map and detail side by side. The panel used to open below the map, which pushed the
+         map up and out of view at the moment somebody had just picked a tile off it. -->
+    <div class="heatmap-layout">
+        <div class="heatmap-map">
+            <div id="sp500-drilldown-bar" class="sp500-drilldown-bar hidden">
+                <button id="sp500-back" class="ghost-btn hidden" type="button">← Quay lại ngành</button>
+                <span id="sp500-breadcrumb" class="sp500-breadcrumb"></span>
+            </div>
+            <div id="heatmap-grid-crypto" class="heatmap-grid" role="img" aria-label="Bản đồ nhiệt vốn hóa thị trường tiền mã hóa"></div>
+            <div id="heatmap-grid-sp500" class="heatmap-grid hidden" role="img" aria-label="Bản đồ nhiệt cổ phiếu S&amp;P 500"></div>
+            <p id="heatmap-caption" class="heatmap-caption"></p>
+        </div>
+
+        <aside class="heatmap-detail" id="heatmap-detail">
+            <span class="side-eyebrow">Ô đang chọn</span>
+            <!-- Standing in for the panel before anything has been picked. A panel that is
+                 simply absent leaves a gap the reader has to guess the purpose of. -->
+            <p class="heatmap-detail-empty" id="heatmap-detail-empty">Bấm vào một ô trên bản đồ để xem chi tiết.</p>
+
+            <div class="heatmap-detail-body hidden" id="heatmap-detail-body">
+                <span id="heatmap-detail-name" class="heatmap-detail-name"></span>
+                <div class="heatmap-detail-stats">
+                    <span id="heatmap-detail-price" class="heatmap-detail-price rolling"></span>
+                    <span id="heatmap-detail-delta" class="heatmap-detail-delta rolling"></span>
+                </div>
+                <div id="heatmap-detail-chart" class="heatmap-detail-chart"></div>
+                <p id="heatmap-detail-caption" class="heatmap-caption"></p>
+                <dl class="heatmap-detail-figures" id="heatmap-detail-figures"></dl>
+                <!-- Only for the four pairs the game actually deals. Offering a round on a
+                     coin there is no stored history for is an offer that cannot be kept. -->
+                <button class="side-cta hidden" type="button" id="heatmap-detail-play"></button>
+            </div>
+        </aside>
+    </div>
+</main>
+
+<main id="view-patterns" class="view app app-wide hidden" role="tabpanel" aria-labelledby="tab-patterns">
+    <div class="heatmap-toolbar">
+        <h2>Mẫu Nến</h2>
+    </div>
+
+    <div class="pill pattern-filters" id="pattern-filters">
+        <button class="pill-option active" data-filter="all">Tất cả</button>
+        <button class="pill-option" data-filter="bullish">Tăng</button>
+        <button class="pill-option" data-filter="bearish">Giảm</button>
+        <button class="pill-option" data-filter="reversal">Đảo chiều</button>
+        <button class="pill-option" data-filter="continuation">Tiếp diễn</button>
+    </div>
+
+    <div class="pattern-asset-toggle" id="pattern-asset-toggle">
+        <span class="pattern-asset-label">Tìm ví dụ thật trên:</span>
+        <div class="pill" id="pattern-asset-pill">
+            <button class="pill-option active" data-asset="BTCUSDT">BTC/USDT</button>
+            <button class="pill-option" data-asset="ETHUSDT">ETH/USDT</button>
+            <button class="pill-option" data-asset="BNBUSDT">BNB/USDT</button>
+            <button class="pill-option" data-asset="SOLUSDT">SOL/USDT</button>
+        </div>
+    </div>
+
+    <div id="pattern-grid" class="pattern-grid"></div>
+    <p class="heatmap-caption">Dữ liệu minh họa mang tính mô phỏng để thể hiện rõ hình dạng mẫu nến, không phải giá thị trường thật.</p>
+</main>
+
+<main id="view-technical" class="view app app-wide hidden" role="tabpanel" aria-labelledby="tab-technical">
+    <div class="heatmap-toolbar">
+        <h2>Mẫu Hình Kỹ Thuật</h2>
+    </div>
+
+    <div class="pill pattern-filters" id="technical-filters">
+        <button class="pill-option active" data-filter="all">Tất cả</button>
+        <button class="pill-option" data-filter="bullish">Tăng</button>
+        <button class="pill-option" data-filter="bearish">Giảm</button>
+        <button class="pill-option" data-filter="reversal">Đảo chiều</button>
+        <button class="pill-option" data-filter="continuation">Tiếp diễn</button>
+    </div>
+
+    <div class="pattern-asset-toggle" id="technical-asset-toggle">
+        <span class="pattern-asset-label">Tìm ví dụ thật trên:</span>
+        <div class="pill" id="technical-asset-pill">
+            <button class="pill-option active" data-asset="BTCUSDT">BTC/USDT</button>
+            <button class="pill-option" data-asset="ETHUSDT">ETH/USDT</button>
+            <button class="pill-option" data-asset="BNBUSDT">BNB/USDT</button>
+            <button class="pill-option" data-asset="SOLUSDT">SOL/USDT</button>
+        </div>
+    </div>
+
+    <div id="technical-grid" class="pattern-grid technical-grid"></div>
+    <p class="heatmap-caption">Dữ liệu minh họa mang tính mô phỏng để thể hiện rõ hình dạng mẫu hình biểu đồ, không phải giá thị trường thật.</p>
+</main>
+
+<main id="view-psychology" class="view app app-read hidden" role="tabpanel" aria-labelledby="tab-psychology">
+    <div class="heatmap-toolbar">
+        <h2>Tâm Lý Giao Dịch</h2>
+    </div>
+
+    <div id="psychology-grid" class="psych-grid"></div>
+    <p class="heatmap-caption">Nội dung tổng hợp từ chia sẻ của trader Mizer (<a href="https://x.com/MizerXBT" target="_blank" rel="noopener">@MizerXBT</a>) về tâm lý giao dịch — không phải lời khuyên đầu tư.</p>
+</main>
+
+<main id="view-blog" class="view app app-read hidden" role="tabpanel" aria-labelledby="tab-blog">
+    <div class="heatmap-toolbar">
+        <h2>Blog / Kiến Thức</h2>
+    </div>
+
+    <div id="blog-list" class="blog-list"></div>
+    <p class="heatmap-caption">Tóm tắt bằng lời riêng từ các bài chia sẻ đáng đọc trên X — không phải lời khuyên đầu tư, xem nguồn gốc ở mỗi bài.</p>
+</main>
+
+<main id="view-leaderboard" class="view app app-read hidden" role="tabpanel" aria-labelledby="tab-leaderboard">
+    <div class="view-head">
+        <h2>Bảng Xếp Hạng</h2>
+        <span id="leaderboard-note" class="profile-wallet"></span>
+    </div>
+
+    <!-- Filled by leaderboard.js on first reveal; the notice element doubles as the empty and
+         error state, the same way the other content tabs do. -->
+    <div id="leaderboard-body"></div>
+</main>
+
+<main id="view-profile" class="view app app-profile hidden" role="tabpanel" aria-labelledby="tab-profile">
+    <div class="view-head">
+        <h2>Hồ Sơ</h2>
+        <span id="profile-wallet" class="profile-wallet"></span>
+    </div>
+
+    <!-- Two columns: the record on the left, what it earned on the right. One column meant
+         the badges sat below a list of every recent guess, which is the wrong way round —
+         the trophies are the part worth looking at twice. -->
+    <div class="profile-grid">
+        <div class="profile-col">
+            <div class="scoreboard scoreboard-profile">
+                <div class="stat"><span class="stat-label">Điểm</span><span class="stat-value rolling" id="profile-score">0</span></div>
+                <div class="stat"><span class="stat-label">Lượt đoán</span><span class="stat-value rolling" id="profile-total">0</span></div>
+                <div class="stat"><span class="stat-label">Tỉ lệ đúng</span><span class="stat-value rolling" id="profile-accuracy">–</span></div>
+                <div class="stat"><span class="stat-label">Chuỗi dài nhất</span><span class="stat-value rolling" id="profile-best">0</span></div>
+                <!-- Days in a row, not correct guesses in a row: a different number from the
+                     tile beside it, which is why the label says days and not "chuỗi". Drawn in
+                     the accent because it is the only figure here that can be lost by not
+                     playing — the rest cannot go down. -->
+                <div class="stat is-accent">
+                    <span class="stat-label">Ngày liên tiếp</span>
+                    <span class="stat-row">
+                        <span class="stat-value rolling" id="profile-day-streak">0</span>
+                        <svg class="icon stat-flame" aria-hidden="true" focusable="false"><use href="#i-flame"/></svg>
+                    </span>
+                </div>
+            </div>
+
+            <p id="profile-streak-note" class="profile-note hidden"></p>
+            <p id="profile-legacy-note" class="profile-note hidden"></p>
+
+            <h3 class="profile-section">Theo từng cặp</h3>
+            <div id="profile-by-asset" class="profile-assets"></div>
+
+            <h3 class="profile-section">Gần đây</h3>
+            <div id="profile-recent" class="profile-recent"></div>
+        </div>
+
+        <div class="profile-col">
+            <h3 class="profile-section">Huy hiệu</h3>
+            <div id="profile-badges" class="profile-badges"></div>
+
+            <!-- Standing, not a round: score, accuracy, day streak and the last five calls.
+                 No asset and no dates, the same rule the daily's card follows — except here
+                 there is no puzzle to spoil, only a player's own record to post. -->
+            <section class="profile-share hidden" id="profile-share-card">
+                <span class="side-eyebrow">Chia sẻ</span>
+                <div class="profile-share-squares" id="profile-share-squares" aria-hidden="true"></div>
+                <p class="profile-share-line" id="profile-share-line"></p>
+                <button class="ghost-btn" type="button" id="profile-share">Sao chép kết quả</button>
+                <!-- Shown only when the clipboard refuses, the same fallback the daily uses. -->
+                <textarea class="daily-share-text hidden" id="profile-share-text" readonly rows="4"
+                          aria-label="Kết quả để chia sẻ"></textarea>
+            </section>
+        </div>
+    </div>
+</main>
+
+    </div><!-- /.shell-main -->
+</div><!-- /.shell-body -->
+</div><!-- /.shell -->
+
+<!-- The phone's copy of the rail's first four keys; "Thêm" opens the rail itself as a sheet
+     rather than repeating the other seven here. -->
+<nav class="tabbar" aria-label="Điều hướng nhanh">
+    <button class="tabbar-item active" type="button" data-view="game">
+        <svg class="icon tabbar-icon" aria-hidden="true" focusable="false"><use href="#i-candles"/></svg><span>Chơi</span>
+    </button>
+    <button class="tabbar-item" type="button" data-view="daily">
+        <svg class="icon tabbar-icon" aria-hidden="true" focusable="false"><use href="#i-calendar-check"/></svg><span>Hôm nay</span>
+    </button>
+    <button class="tabbar-item" type="button" data-view="live">
+        <svg class="icon tabbar-icon" aria-hidden="true" focusable="false"><use href="#i-bolt"/></svg><span>Live</span>
+    </button>
+    <button class="tabbar-item" type="button" data-view="leaderboard">
+        <svg class="icon tabbar-icon" aria-hidden="true" focusable="false"><use href="#i-trophy"/></svg><span>Hạng</span>
+    </button>
+    <button class="tabbar-item" type="button" id="tabbar-more" aria-controls="rail" aria-expanded="false">
+        <svg class="icon tabbar-icon" aria-hidden="true" focusable="false"><use href="#i-menu"/></svg><span>Thêm</span>
+    </button>
+</nav>
+</div><!-- /.shell-page -->
+
+<script src="theme.js"></script>
+<script src="pill.js"></script>
+<script src="rolling.js"></script>
+<script src="format.js"></script>
+<script src="sound.js"></script>
+<script src="avatar.js"></script>
+<script src="content.js"></script>
+<script src="auth.js"></script>
+<script src="candle-chart.js"></script>
+<script src="daily.js"></script>
+<script src="pattern-quiz.js"></script>
+<script src="demo-trade.js"></script>
+<script src="live.js"></script>
+<script src="ticker.js"></script>
+<script src="nav.js"></script>
+<script src="live-banner.js"></script>
+<script src="app.js"></script>
+<script src="play-sidebar.js"></script>
+<script src="treemap.js"></script>
+<script src="heatmap.js"></script>
+<script src="heatmap-sp500.js"></script>
+<script src="heatmap-view.js"></script>
+<script src="patterns.js"></script>
+<script src="technical-patterns.js"></script>
+<script src="psychology.js"></script>
+<script src="blog-render.js"></script>
+<script src="blog.js"></script>
+<script src="leaderboard.js"></script>
+<script src="profile.js"></script>
+</body>
+</html>

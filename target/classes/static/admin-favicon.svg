@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="Quản trị Candle Guess">
+    <!--
+      The admin tab's icon: the game's two candles, same silhouette and same offset, on the
+      admin palette's bone ground instead of the game's near-black.
+
+      Value is what separates two icons at 16px — far more reliably than shape detail, which
+      is already spent on the candles. So the tile inverts rather than the marks changing:
+      side by side in a tab strip one is a dark block and one is a light block, while both
+      still read as the same app.
+
+      That inversion is also literally the admin design language — soft ground, hairline
+      border, against the game's near-black. Colours are --adm-bg, --adm-up and --adm-down
+      from style.css (light theme). If those change, change these.
+    -->
+    <rect width="32" height="32" rx="7" fill="#e9e7e4"/>
+    <!-- A dark tab strip would otherwise dissolve the tile's edge into the background. -->
+    <rect x="0.5" y="0.5" width="31" height="31" rx="6.5" fill="none"
+          stroke="#141312" stroke-opacity="0.16"/>
+
+    <g stroke-linecap="round">
+        <path d="M11 4.5v15" stroke="#0f9d70" stroke-width="2"/>
+        <rect x="8" y="7" width="6" height="10" rx="1.5" fill="#0f9d70"/>
+
+        <path d="M21 12.5v15" stroke="#d0402c" stroke-width="2"/>
+        <rect x="18" y="15" width="6" height="10" rx="1.5" fill="#d0402c"/>
+    </g>
+</svg>
