@@ -114,28 +114,12 @@
 
     /* ---- the board ----------------------------------------------------------------------- */
 
-    var AVATARS = ["🦊", "🐼", "🦉", "🐙", "🦁", "🐳", "🦄", "🐢", "🦅", "🐝"];
-
-    /* Hashed from the name so a player keeps the same face every time the board is drawn,
-       on any device, with nothing stored. */
-    function avatarFor(name) {
-        var h = 0;
-        for (var i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
-        return {
-            emoji: AVATARS[h % AVATARS.length],
-            hue: h % 360,
-        };
-    }
-
     function rankRow(entry, isMe) {
         var row = node("div", isMe ? "side-rank-row is-me" : "side-rank-row");
         row.appendChild(node("span", "side-rank-pos", "#" + entry.rank));
-
-        var face = avatarFor(entry.displayName);
-        var avatar = node("span", "side-rank-avatar", face.emoji);
-        avatar.style.background = "hsl(" + face.hue + " 60% 50% / 0.22)";
-        row.appendChild(avatar);
-
+        /* Shared with the leaderboard tab: the same player has to have the same face on both,
+           or the two boards read as two sets of people. */
+        row.appendChild(window.CandleAvatar.node(entry.displayName));
         row.appendChild(node("span", "side-rank-name", entry.displayName));
         row.appendChild(node("span", "side-rank-score", num(entry.score)));
         return row;

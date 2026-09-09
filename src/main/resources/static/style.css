@@ -1270,19 +1270,6 @@ h1, h2, h3 {
     color: var(--muted-2);
 }
 
-/* Emoji on a tinted disc, picked by hashing the name — the same trick the live roster uses,
-   and for the same reason: a board of identical grey circles is a board nobody scans. */
-.side-rank-avatar {
-    width: 22px;
-    height: 22px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 12px;
-    line-height: 1;
-}
-
 .side-rank-name {
     overflow: hidden;
     text-overflow: ellipsis;
@@ -3950,6 +3937,21 @@ body:not(.is-admin) .adm-search {
 
 /* --- leaderboard --- */
 
+/* One face per player, hashed from their name by avatar.js. Shared between this board and
+   the play tab's five-row card, because a player who is a fox on one and an owl on the other
+   reads as two different players. */
+.avatar {
+    width: 22px;
+    height: 22px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    line-height: 1;
+}
+
 .lb-scroller {
     overflow-x: auto;
     border: 1px solid var(--border);
@@ -3959,17 +3961,25 @@ body:not(.is-admin) .adm-search {
 
 .lb-table {
     width: 100%;
-    min-width: 460px;
+    min-width: 560px;
     border-collapse: collapse;
     font-size: 13px;
 }
 
+/* Fixed widths so the four figure columns line up down the whole board — with auto layout
+   they moved with the longest name in the page, and two players' scores read as comparable
+   only when they sit under each other. The name column takes what is left. */
+.lb-table th:nth-child(1), .lb-table td:nth-child(1) { width: 48px; }
+.lb-table th:nth-child(3), .lb-table td:nth-child(3) { width: 90px; }
+.lb-table th:nth-child(4), .lb-table td:nth-child(4) { width: 110px; }
+.lb-table th:nth-child(5), .lb-table td:nth-child(5) { width: 120px; }
+.lb-table th:nth-child(6), .lb-table td:nth-child(6) { width: 80px; }
+
 .lb-table th {
     padding: 12px 14px;
     text-align: left;
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.08em;
+    font: 600 10.5px var(--mono);
+    letter-spacing: 0.12em;
     text-transform: uppercase;
     color: var(--muted-2);
     border-bottom: 1px solid var(--border);
@@ -3977,7 +3987,7 @@ body:not(.is-admin) .adm-search {
 }
 
 .lb-table td {
-    padding: 12px 14px;
+    padding: 11px 14px;
     border-bottom: 1px solid var(--border);
 }
 
@@ -3991,32 +4001,66 @@ body:not(.is-admin) .adm-search {
 }
 
 .lb-rank {
-    width: 1%;
     color: var(--muted);
+    font: 500 12px var(--mono);
     font-variant-numeric: tabular-nums;
 }
 
-.lb-name {
+.lb-who {
     display: flex;
     align-items: center;
-    gap: 8px;
-    font-weight: 500;
+    gap: 10px;
+    min-width: 0;
 }
 
-/* The pinned copy below the table is the same row twice; this is what says which one is you. */
-.lb-you {
-    padding: 1px 7px;
-    border-radius: 999px;
-    background: var(--overlay-strong);
-    color: var(--muted);
-    font-size: 10.5px;
+.lb-who-name {
     font-weight: 600;
-    letter-spacing: 0.04em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Score and streak are the two figures the board is read for, so they are the two drawn in
+   full ink; correct/total is the working behind accuracy and sits back. */
+.lb-score {
+    font: 700 13px var(--mono);
+    font-variant-numeric: tabular-nums;
+}
+
+/* Green because accuracy has a direction — it is the same up-colour the chart calls a
+   winning candle, not a decorative highlight. */
+.lb-accuracy {
+    font: 600 13px var(--mono);
+    font-variant-numeric: tabular-nums;
+    color: var(--up);
+}
+
+.lb-muted {
+    color: var(--muted);
+    font: 500 12.5px var(--mono);
+    font-variant-numeric: tabular-nums;
+}
+
+/* Your row, lifted out of its place in the list and up under the podium. The badge is what
+   explains the jump in the numbering around it. */
+.lb-you {
+    padding: 2px 7px;
+    border-radius: 999px;
+    background: var(--tint-accent-strong);
+    color: var(--accent);
+    font: 600 9.5px var(--mono);
+    letter-spacing: 0.08em;
     text-transform: uppercase;
+    white-space: nowrap;
 }
 
 .lb-row.is-me td {
-    background: color-mix(in srgb, var(--accent) 10%, transparent);
+    background: var(--tint-accent-weak);
+}
+
+.lb-row.is-me .lb-rank {
+    color: var(--accent);
+    font-weight: 700;
 }
 
 .lb-me-label {
