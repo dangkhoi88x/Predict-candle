@@ -105,6 +105,14 @@
                     </svg>
                     <span>Cặp giao dịch</span>
                 </button>
+                <button class="adm-nav-item" type="button" data-pane-link="challenges" title="Thử thách hằng ngày">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                         stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <rect x="3" y="5" width="18" height="16" rx="2"/>
+                        <path d="M3 10h18M8 3v4M16 3v4"/>
+                    </svg>
+                    <span>Thử thách</span>
+                </button>
                 <button class="adm-nav-item" type="button" data-pane-link="live" title="Vòng live">
                     <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                          stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -458,6 +466,64 @@
                             </table>
                         </div>
                     </div>
+                </section>
+
+                <!-- Both the daily chart and the pattern quiz are functions of the date and
+                     neither stores anything, so there is no row to inspect and no midnight job
+                     whose log says what tomorrow will be. Read-only by necessity: changing
+                     tomorrow's chart would mean changing the seed, and the seed is the date. -->
+                <section id="admin-challenges" data-pane="challenges" class="hidden">
+                    <div class="admin-bar">
+                        <h1 class="admin-h1">Thử thách</h1>
+                        <span id="challenge-today" class="ops-generated"></span>
+                        <div class="editor-actions">
+                            <button id="challenge-refresh" class="ghost-btn" type="button">Làm mới</button>
+                        </div>
+                    </div>
+                    <p class="content-note">Cả biểu đồ hằng ngày lẫn câu đố mẫu nến đều suy ra từ ngày tháng, không lưu ở đâu cả. Ngày chưa tới chỉ là <b>dự kiến</b>: kho nến còn dài ra tới nửa đêm hôm đó nên lượt chọn còn dịch. Thứ đáng xem trước là ngày nào <b>không dựng nổi</b> — cả hai bộ chọn đều có thể từ chối, và khi đó cả ngày hỏng cho tới nửa đêm kế tiếp.</p>
+
+                    <div class="adm-table-card">
+                        <div class="scroller">
+                            <table class="ops-table" id="challenge-table">
+                                <thead>
+                                    <tr>
+                                        <th>Ngày</th><th class="num">Vòng</th><th>Biểu đồ ngày</th>
+                                        <th>Câu đố mẫu nến</th><th class="num">Đã chơi</th><th>Trạng thái</th><th></th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <section id="challenge-detail" class="adm-tray hidden" aria-live="polite">
+                        <div class="adm-tray-head">
+                            <span class="adm-kicker" id="challenge-detail-title">Ngày</span>
+                            <span class="adm-kicker-note" id="challenge-detail-sub">—</span>
+                            <button id="challenge-detail-close" class="ghost-btn" type="button">Đóng</button>
+                        </div>
+
+                        <div class="adm-split">
+                            <div class="adm-card adm-chart-card">
+                                <div class="adm-chart-head">
+                                    <span class="adm-kicker">Biểu đồ hằng ngày</span>
+                                    <span class="adm-kicker-note" id="challenge-daily-note">—</span>
+                                </div>
+                                <svg class="adm-chart" id="challenge-daily-chart" viewBox="0 0 640 260"
+                                     preserveAspectRatio="none" aria-hidden="true"></svg>
+                                <p class="adm-chart-foot" id="challenge-daily-answers"></p>
+                            </div>
+                            <div class="adm-card adm-chart-card">
+                                <div class="adm-chart-head">
+                                    <span class="adm-kicker">Câu đố mẫu nến</span>
+                                    <span class="adm-kicker-note" id="challenge-quiz-note">—</span>
+                                </div>
+                                <svg class="adm-chart" id="challenge-quiz-chart" viewBox="0 0 640 260"
+                                     preserveAspectRatio="none" aria-hidden="true"></svg>
+                                <p class="adm-chart-foot" id="challenge-quiz-choices"></p>
+                            </div>
+                        </div>
+                    </section>
                 </section>
 
                 <!-- The live game keeps no rounds, so this is the only place one can be looked at
@@ -854,6 +920,7 @@
 <script src="admin-overview.js"></script>
 <script src="admin-ops.js"></script>
 <script src="admin-assets.js"></script>
+<script src="admin-challenges.js"></script>
 <script src="admin-live.js"></script>
 <script src="admin-demo.js"></script>
 <script src="admin-players.js"></script>

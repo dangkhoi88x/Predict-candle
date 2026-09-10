@@ -196,6 +196,24 @@ public interface GuessResultRepository extends JpaRepository<GuessResult, Long> 
             """, nativeQuery = true)
     List<Object[]> modePlayersBetween(@Param("since") Instant since, @Param("until") Instant until);
 
+    /**
+     * [players, guesses, correct] for one game on one UTC day — how a day's daily challenge
+     * went, for the admin's day-by-day list.
+     *
+     * Filtered by mode as well as by day, because a replay of an archived round lands on the day
+     * it was played rather than the day it was set: counting it here would credit today's
+     * challenge with attempts at somebody else's chart.
+     */
+    @Query("""
+            select count(distinct g.user.id), count(g),
+                   coalesce(sum(case when g.correct then 1 else 0 end), 0)
+            from GuessResult g
+            where g.mode = :mode and g.createdAt >= :since and g.createdAt < :until
+            """)
+    Object[] modeActivityBetween(@Param("mode") GuessMode mode,
+                                 @Param("since") Instant since,
+                                 @Param("until") Instant until);
+
     /** [guesses, correct] between two instants — the numerator and denominator of a delta. */
     @Query(value = "select count(g), coalesce(sum(case when g.correct then 1 else 0 end), 0)"
             + " from GuessResult g where g.createdAt >= :since and g.createdAt < :until")

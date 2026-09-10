@@ -269,7 +269,7 @@ id, which also covers being asked before the fetch lands.
 
 ### Admin frontend
 
-`admin.html` is a second, separate page: a dashboard shell — sidebar, sticky topbar, and seven
+`admin.html` is a second, separate page: a dashboard shell — sidebar, sticky topbar, and ten
 panes of which exactly one shows. It shares `style.css`, `theme.js` and `auth.js` with the game
 and nothing else.
 
@@ -485,6 +485,35 @@ The admin roster carries the wallet address and the account id; the public one d
 never does. Same rule, opposite side of it: a display name defaults to a shortened wallet so a
 page nobody signed in to open cannot be scraped for addresses, and an admin who opened a round
 did so to find an account.
+
+**The challenge preview is the one admin page that answers a question nobody could ask before.**
+The daily chart and the pattern quiz are both functions of the date and neither stores anything,
+so there is no row to inspect and no midnight job whose log says what tomorrow will be. Both
+selectors can also *refuse*: `selectDailyRound` throws when no pair has enough history,
+`PatternQuizService` throws when no pattern in the library has a single unambiguous occurrence
+anywhere. Either one breaks a whole day of the site for everybody until the next midnight, and
+neither said a word in advance. `AdminChallengeService` calls them early and turns the exception
+into a message on a row.
+
+Three things about it are load-bearing:
+
+- **A future day is provisional and today is not.** A day's chart is drawn from the candles that
+  had closed before *its* midnight; for today that count is frozen (which is what
+  `anHourlySyncDoesNotMoveTodaysChart` pins), and for a day still to come it is still rising, so
+  the pick moves as the sync lands. A future row proves the day can be built, not what it will
+  be, and it is labelled that way.
+- **A past day's pattern is read back, not rebuilt.** Every `pattern_quiz_results` row for a day
+  carries the pattern it asked about — that is the question, not the answer — so `askedPatternIds`
+  is one indexed read instead of a scan of every asset's history against every pattern. A past day
+  nobody answered has neither, and says so.
+- **The daily's candles carry their timestamps here, and the answer directions come with them.**
+  The player's copy deliberately has neither, because for that game a date *is* the answer. This
+  is the one screen where reading the date is the point, and "is tomorrow's chart a coin flip" is
+  not a question that can be asked without the answers.
+
+`candle-chart.js` is loaded on demand rather than from a `<script>` tag, the same bargain
+`admin-blog.js` makes with the Tiptap bundle: 28 KB that only an admin who opens a day's detail
+ever needs, on the page whose weight this project spent a release cutting.
 
 ### Demo trading
 
