@@ -13,6 +13,7 @@
     <meta name="theme-color" content="#0a0a0a" media="(prefers-color-scheme: dark)"/>
     <meta name="theme-color" content="#f6f7f9" media="(prefers-color-scheme: light)"/>
     <link rel="stylesheet" href="style.css"/>
+    <link rel="stylesheet" href="candles-enhance.css"/>
     <script>
         // Runs before the first paint on purpose: applying the theme from JS after the body
         // renders would flash the wrong palette on every page load.
@@ -471,6 +472,7 @@
     <p class="daily-intro">Cùng một biểu đồ cho tất cả mọi người, mỗi ngày một lần.</p>
 
     <div class="daily-streak hidden" id="daily-streak">
+        <svg class="icon daily-streak-flame" aria-hidden="true" focusable="false"><use href="#i-flame"/></svg>
         <span class="daily-streak-value rolling" id="daily-streak-current">0</span>
         <span class="daily-streak-label">ngày thử thách liên tiếp</span>
         <span class="daily-streak-best" id="daily-streak-best"></span>
@@ -544,7 +546,7 @@
          why this is an invitation with a way to accept it, rather than a line of grey text
          alone in the width a three-column terminal needs. -->
     <div class="trade-gate hidden" id="trade-signin">
-        <span class="trade-gate-icon" aria-hidden="true">💼</span>
+        <span class="trade-gate-icon" aria-hidden="true"><svg class="icon" focusable="false"><use href="#i-briefcase"/></svg></span>
         <b class="trade-gate-title">Giao dịch demo</b>
         <p class="trade-gate-text">Tiền ảo, giá thật, không đòn bẩy. Kết nối ví để nhận vốn
             demo và bắt đầu đặt lệnh.</p>
