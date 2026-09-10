@@ -2824,6 +2824,30 @@ body:not(.is-admin) .adm-search {
 
 /* admin-players.js marks the wallet cell .num to get the mono face. It is an identifier,
    not a quantity, so it keeps the left edge the rest of the first column reads down. */
+/* One page at a time, with the range spelled out between the two buttons — "51-100 / 214" says
+   both where you are and how much is left, which a bare page number does not. */
+.adm-pager {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+}
+
+.adm-pager-note {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    color: var(--adm-muted);
+}
+
+/* Two tables side by side above 1000px, stacked below it. The guesses and the live calls are
+   two histories of the same account and read best against each other; neither survives being
+   squeezed to half a phone. */
+.adm-split {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(360px, 100%), 1fr));
+    gap: 16px;
+}
+
 /* A wallet is an identifier, not a quantity: it takes the mono column's typeface without its
    right alignment, which would leave the addresses hanging off a left-aligned header. */
 #player-table td:first-child.num,
@@ -2891,15 +2915,20 @@ body:not(.is-admin) .adm-search {
     justify-content: flex-end;
 }
 
-/* ↑ and ↓ are square; the on/off button keeps a floor so the row does not jump when its
-   label flips between "Tắt" and "Bật". */
-.admin-shell .asset-actions button:is(:first-child, :nth-child(2)) {
+/* ↑ and ↓ are square; the on/off button keeps a floor so the row does not jump when its label
+   flips between "Tắt" and "Bật".
+
+   Scoped to #asset-table, which is the table those buttons are in. Unscoped, it pinned the
+   first two buttons of *every* .asset-actions cell to 30px — fine while the pairs table was the
+   only one, and a row of overlapping labels the moment the players table put three worded
+   buttons in one. Position is not a property a shared class can style on. */
+#asset-table .asset-actions button:is(:first-child, :nth-child(2)) {
     width: 30px;
     padding: 6px 0;
     justify-content: center;
 }
 
-.admin-shell .asset-actions button:last-child {
+#asset-table .asset-actions button:last-child {
     min-width: 52px;
     justify-content: center;
 }

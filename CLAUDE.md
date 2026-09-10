@@ -351,6 +351,29 @@ convenience and not the security boundary.
 that has not run it yet holds the older flat block array, and opening one of those must not
 present an empty editor that then saves over the post.
 
+**The player list is a page, and the tally is joined into the query that orders it.** It used
+to be `findAll()` plus a grouped tally, folded and sorted in Java: right at fifty accounts and
+wrong in a way that never announces itself, because the failure is a screen that gets slower
+every week. `UserRepository.playerPage` does the join, the search and the ordering in one
+query; `countPlayers` gives the pager a denominator that means "matching what you typed"
+rather than a headcount that would contradict the rows under it. Search is `like` over the
+lowered address and display name, deliberately *not* the topbar search's diacritic folding —
+that one matches rendered Vietnamese titles, this one matches a name or an address somebody is
+pasting in.
+
+`GET /api/admin/players/{id}` is the drill-down: the account's history split by game and by
+pair, its live calls counted three ways (`calls` / `settled` / `correct` — accuracy on live
+calls is against settled ones, since a round still running is not one the player got wrong),
+the imported browser tally shown apart and never added to anything, and the last 25 guesses and
+live calls. Read-only, like the list it opens from: the same bargain that keeps roles in
+configuration applies to totals.
+
+**`.asset-actions` sized its first two buttons by position, and that was a shared class.** The
+30px square is for the pairs table's ↑/↓; unscoped it pinned the first two buttons of every
+actions cell, which is invisible while one table uses the class and a row of overlapping labels
+the moment another puts three worded buttons in one. It is `#asset-table`-scoped now — position
+is not a property a shared class can style on.
+
 The topbar search (`admin-search.js`) searches the **rendered DOM**, not the modules' data —
 every pane is built and in the document at once, only hidden by CSS, so the rows are all there
 for free and no module has to expose its state. The index is therefore exactly what has

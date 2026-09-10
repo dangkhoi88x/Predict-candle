@@ -505,6 +505,14 @@
                     <div class="admin-bar">
                         <h1 class="admin-h1">Người chơi</h1>
                         <span id="players-count" class="ops-generated"></span>
+                        <div class="editor-actions">
+                            <input id="players-search" class="folder-input" type="search"
+                                   placeholder="Tên hoặc địa chỉ ví" maxlength="60" aria-label="Tìm tài khoản"/>
+                            <div class="pill" id="players-sort">
+                                <button class="pill-option active" type="button" data-sort="active">Chơi nhiều</button>
+                                <button class="pill-option" type="button" data-sort="recent">Mới chơi</button>
+                            </div>
+                        </div>
                     </div>
                     <p class="content-note">Vai trò lấy từ <code>candles.admin.wallets</code> nên không sửa được ở đây.</p>
                     <div class="adm-table-card">
@@ -518,6 +526,48 @@
                             </table>
                         </div>
                     </div>
+
+                    <div class="adm-pager" id="players-pager">
+                        <button id="players-prev" class="ghost-btn" type="button">← Trước</button>
+                        <span class="adm-pager-note" id="players-range">—</span>
+                        <button id="players-next" class="ghost-btn" type="button">Sau →</button>
+                    </div>
+
+                    <!-- Everything recorded against one account, read from the same rows the game
+                         scores on. Nothing here can be edited: the list's two figures had nowhere
+                         to go behind them, which is the whole gap this closes. -->
+                    <section id="player-detail" class="adm-tray hidden" aria-live="polite">
+                        <div class="adm-tray-head">
+                            <span class="adm-kicker" id="player-detail-title">Tài khoản</span>
+                            <span class="adm-kicker-note" id="player-detail-sub">—</span>
+                            <button id="player-detail-close" class="ghost-btn" type="button">Đóng</button>
+                        </div>
+                        <div class="adm-card adm-figures" id="player-detail-figures"></div>
+                        <p class="adm-figures-foot" id="player-detail-legacy"></p>
+
+                        <div class="adm-split">
+                            <div class="adm-table-card">
+                                <div class="scroller">
+                                    <table class="ops-table" id="player-guesses">
+                                        <thead>
+                                            <tr><th>Lúc</th><th>Chế độ</th><th>Cặp</th><th>Gọi</th><th>Thực tế</th></tr>
+                                        </thead>
+                                        <tbody></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <div class="adm-table-card">
+                                <div class="scroller">
+                                    <table class="ops-table" id="player-calls">
+                                        <thead>
+                                            <tr><th>Vòng mở</th><th>Cặp</th><th>Gọi</th><th>Kết quả</th></tr>
+                                        </thead>
+                                        <tbody></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
                 </section>
 
                 <section id="admin-content" data-pane="content" class="hidden">
