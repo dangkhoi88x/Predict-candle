@@ -978,6 +978,17 @@
             <h2 class="pf-name">Hồ Sơ</h2>
             <span id="profile-wallet" class="profile-wallet"></span>
         </div>
+        <!-- The leaderboard's own number, not a second opinion on it: play-sidebar.js publishes
+             `candles:rank` off the board it already fetches, and this only draws. It is a button
+             because the board is where the number came from and where the next question about it
+             gets answered. Hidden until there is a rank — signed out, or nothing recorded yet —
+             the same bargain the rail's tag makes. -->
+        <button class="pf-rank hidden" type="button" id="profile-rank" data-nav-view="leaderboard">
+            <span class="pf-medal" id="profile-rank-medal" aria-hidden="true">
+                <span class="pf-shine"></span><b id="profile-rank-value">#–</b>
+            </span>
+            <span class="pf-medal-cap" aria-hidden="true">Bảng xếp hạng</span>
+        </button>
     </div>
 
     <!-- The record itself, across the full width rather than down one column: these five are
