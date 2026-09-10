@@ -23,6 +23,7 @@
     var SOURCES = [
         { pane: "ops", label: "Vận hành", rows: "#ops-assets tbody tr", primary: "td" },
         { pane: "assets", label: "Cặp giao dịch", rows: "#asset-table tbody tr", primary: "td" },
+        { pane: "live", label: "Vòng live", rows: "#live-table tbody tr", primary: "td:nth-child(1)" },
         { pane: "players", label: "Người chơi", rows: "#player-table tbody tr", primary: "td:nth-child(2)" },
         { pane: "content", label: "Thư viện nội dung", rows: "#content-list .blog-admin-row", primary: ".blog-admin-title" },
         { pane: "blog", label: "Bài viết", rows: "#blog-list-admin .blog-admin-row", primary: ".blog-admin-title" },

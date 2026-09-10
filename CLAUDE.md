@@ -290,6 +290,14 @@ has confirmed the role.
 `CandleAdminNav.go(pane)` is the way to move between panes from code — `admin-media.js` uses it
 to take the blog editor's image picker to the library and back.
 
+**Adding an admin pane is five edits**, and the two easy ones to miss fail silently in
+different ways: the sidebar item, the `<section data-pane="…">`, the `PANES` array in
+`admin-nav.js` (miss it and `go()` quietly falls back to overview — the nav item does nothing,
+with no error), the pane's own line in the `.admin-panes[data-pane=…]` rule in `style.css`
+(that list is enumerated, not generic, so a missing line leaves the section `display: none`
+however right the attribute is), and an entry in `admin-search.js`'s `SOURCES` so the topbar
+search can see its rows.
+
 Overview charts come from `GET /api/admin/stats?range=week|month|year` (`AdminStatsService`,
 cached 60s, bucketed in UTC; `&fresh=true` is the refresh button skipping that cache). The four
 KPI figures do **not**: they come off the `candles:ops` snapshot, because two panes asking the
@@ -431,6 +439,29 @@ second line when an admin has renamed the account and the two have diverged — 
 "0xef00…4d45" pairing rekto.fun's own roster shows. The avatar is an emoji plus a background
 color, both chosen by hashing `walletShort` rather than the display name, so a renamed account
 keeps the same avatar it always had.
+
+**The admin's copy of the live round is a separate pane, and the reason it exists is the one
+thing that cannot be fixed from anywhere else.** A live result is not stored: it is recomputed
+from the exchange's candle on every read, by the same join `SETTLED_LIVE_FLAGS` makes. So a
+round that settled on a bad price has no wrong answer written down to correct — the wrong
+answer is derived fresh each time anyone asks. The only thing that can change is whether the
+calls exist, which is why `DELETE /api/admin/live/rounds/{n}` is a delete and not a `voided`
+flag: five separate readers already fold `live_predictions` (score, the leaderboard, retention,
+the day streak, the ops panel), and a flag would have to be remembered in every one of them and
+in every query written afterwards. A row that is gone cannot be forgotten. What that costs is
+stated in the confirmation the pane shows: the calls leave no trace, so a player whose only
+play that day was this round loses the day off their streak with it.
+
+`roundsWithCalls` drives the list from `live_predictions` rather than from `candles` — there is
+a round every hour whether or not anyone was looking, and a round belongs on an admin's list
+exactly when there is something on it to manage. Its left join is the point of the page: a
+round whose candle never arrived still shows its calls and reads "thiếu nến", and those calls
+score nothing anywhere until the gap in candle history is filled.
+
+The admin roster carries the wallet address and the account id; the public one deliberately
+never does. Same rule, opposite side of it: a display name defaults to a shortened wallet so a
+page nobody signed in to open cannot be scraped for addresses, and an admin who opened a round
+did so to find an account.
 
 ### Demo trading
 

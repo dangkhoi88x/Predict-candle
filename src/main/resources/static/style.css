@@ -2451,6 +2451,7 @@ h1, h2, h3 {
 .admin-panes[data-pane="overview"] > section[data-pane="overview"]:not(.hidden),
 .admin-panes[data-pane="ops"] > section[data-pane="ops"]:not(.hidden),
 .admin-panes[data-pane="assets"] > section[data-pane="assets"]:not(.hidden),
+.admin-panes[data-pane="live"] > section[data-pane="live"]:not(.hidden),
 .admin-panes[data-pane="players"] > section[data-pane="players"]:not(.hidden),
 .admin-panes[data-pane="content"] > section[data-pane="content"]:not(.hidden),
 .admin-panes[data-pane="media"] > section[data-pane="media"]:not(.hidden),
@@ -2823,7 +2824,10 @@ body:not(.is-admin) .adm-search {
 
 /* admin-players.js marks the wallet cell .num to get the mono face. It is an identifier,
    not a quantity, so it keeps the left edge the rest of the first column reads down. */
-#player-table td:first-child.num {
+/* A wallet is an identifier, not a quantity: it takes the mono column's typeface without its
+   right alignment, which would leave the addresses hanging off a left-aligned header. */
+#player-table td:first-child.num,
+#live-calls td:first-child.num {
     text-align: left;
 }
 
@@ -2850,6 +2854,26 @@ body:not(.is-admin) .adm-search {
 .ops-badge.is-off {
     background: var(--adm-panel-3);
     color: var(--adm-muted);
+}
+
+/* Named for the call rather than for the colour it borrows. A SHORT is not "bad" — it is one
+   of the two answers — so these do not reuse .is-good / .is-bad even though the up and down
+   tokens are exactly what they paint with. */
+.ops-badge.is-long {
+    background: color-mix(in oklch, var(--adm-up) 16%, transparent);
+    color: var(--adm-up);
+}
+
+.ops-badge.is-short {
+    background: color-mix(in oklch, var(--adm-down) 16%, transparent);
+    color: var(--adm-down);
+}
+
+/* A round that closed with no candle to settle it: not an error and not a normal state, which
+   is what the warn tone is for. */
+.ops-badge.is-stale {
+    background: color-mix(in oklch, var(--adm-warn) 18%, transparent);
+    color: var(--adm-warn);
 }
 
 .ops-badge.is-admin {

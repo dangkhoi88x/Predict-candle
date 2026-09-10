@@ -105,6 +105,14 @@
                     </svg>
                     <span>Cặp giao dịch</span>
                 </button>
+                <button class="adm-nav-item" type="button" data-pane-link="live" title="Vòng live">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                         stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <circle cx="12" cy="12" r="3"/>
+                        <path d="M5.6 5.6a9 9 0 0 0 0 12.8M18.4 5.6a9 9 0 0 1 0 12.8"/>
+                    </svg>
+                    <span>Vòng live</span>
+                </button>
                 <button class="adm-nav-item" type="button" data-pane-link="players" title="Người chơi">
                     <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                          stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -444,6 +452,55 @@
                     </div>
                 </section>
 
+                <!-- The live game keeps no rounds, so this is the only place one can be looked at
+                     after the fact — and the only place one can be undone. A live result is
+                     recomputed from the exchange's candle on every read, so a round that settled
+                     on a bad price cannot be corrected, only cleared. -->
+                <section id="admin-live" data-pane="live" class="hidden">
+                    <div class="admin-bar">
+                        <h1 class="admin-h1">Vòng live</h1>
+                        <div class="editor-actions">
+                            <div class="pill" id="live-asset-pill"></div>
+                            <button id="live-refresh" class="ghost-btn" type="button">Làm mới</button>
+                        </div>
+                    </div>
+                    <p class="content-note" id="live-note">Chỉ hiện những vòng đã có người dự đoán — mỗi giờ đều có một vòng, nhưng vòng không ai chơi thì không có gì để xử lý.</p>
+
+                    <div class="adm-table-card">
+                        <div class="scroller">
+                            <table class="ops-table" id="live-table">
+                                <thead>
+                                    <tr>
+                                        <th>Vòng</th><th>Mở lúc</th><th>Kết quả</th>
+                                        <th class="num">Giá mở → đóng</th>
+                                        <th class="num">LONG</th><th class="num">SHORT</th><th class="num">Đúng</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <section id="live-detail" class="adm-tray hidden" aria-live="polite">
+                        <div class="adm-tray-head">
+                            <span class="adm-kicker" id="live-detail-title">Vòng</span>
+                            <span class="adm-kicker-note" id="live-detail-sub">—</span>
+                            <button id="live-detail-close" class="ghost-btn" type="button">Đóng</button>
+                        </div>
+                        <div class="adm-table-card">
+                            <div class="scroller">
+                                <table class="ops-table" id="live-calls">
+                                    <thead>
+                                        <tr><th>Ví</th><th>Tên hiển thị</th><th>Gọi</th><th>Lúc</th><th>Kết quả</th></tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </section>
+                </section>
+
                 <section id="admin-players" data-pane="players" class="hidden">
                     <div class="admin-bar">
                         <h1 class="admin-h1">Người chơi</h1>
@@ -664,6 +721,7 @@
 <script src="admin-overview.js"></script>
 <script src="admin-ops.js"></script>
 <script src="admin-assets.js"></script>
+<script src="admin-live.js"></script>
 <script src="admin-players.js"></script>
 <script src="admin-content.js"></script>
 <script src="admin-media.js"></script>

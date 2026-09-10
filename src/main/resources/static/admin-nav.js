@@ -1,5 +1,5 @@
 /**
- * Sidebar navigation: which of the seven panes is on screen.
+ * Sidebar navigation: which of the eight panes is on screen.
  *
  * The switch is an attribute on the container, never `.hidden` on a section. Each
  * admin-*.js module already owns `.hidden` on its own section and re-asserts it every time
@@ -12,7 +12,7 @@
 (function () {
     "use strict";
 
-    var PANES = ["overview", "ops", "blog", "content", "media", "assets", "players"];
+    var PANES = ["overview", "ops", "blog", "content", "media", "assets", "live", "players"];
 
     var panes = document.getElementById("admin-panes");
     var crumb = document.getElementById("adm-crumb-pane");
