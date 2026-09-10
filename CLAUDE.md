@@ -1024,6 +1024,14 @@ and S&P 500 (`/api/market/sp500` → `YahooFinanceClient`). `treemap.js` does th
   Retarget the next PR **before** merging the current one where you can: a PR already pointing
   at `main` cannot be orphaned by anything that happens underneath it.
 
+- **A branch named `assets/*` is not part of any stack, and the cleanup pass must skip it.**
+  These are orphan branches holding the screenshots a pull request embeds — they exist so
+  `main` never carries PNGs no build reads and no reviewer diffs. `raw.githubusercontent.com`
+  resolves by ref rather than by object, so deleting or renaming one turns every image in the
+  pull request it illustrates into a 404, including after that PR has merged, which is exactly
+  when somebody reading back through the history wants to see them. Each carries a README
+  saying so. `assets/rail-groups-screenshots` is the first.
+
 - **CI is red on `main` only when it is really broken.** It used to be red permanently because
   three test classes read whatever the first-run Binance backfill had left in the database, and
   GitHub's runners are geo-blocked by Binance (HTTP 451) — so the suite was quietly asserting
