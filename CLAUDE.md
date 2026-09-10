@@ -303,6 +303,20 @@ is `correct / guesses`; reading `correct / answered` instead runs about nine poi
 current data. `AdminStatsTest` pins both the split and the JSON field names the pane reads —
 there is no shared schema, so a renamed record component would silently draw zeroes.
 
+**A third partition of the same rows: `practice` / `daily` / `archive` on every bucket, and
+`AdminStats.Modes` over the twelve weeks the accuracy headline covers.** The counts are summed
+out of the weekly buckets rather than asked for again, so the split reaches `totals.guesses()`
+by construction instead of by two queries happening to agree about which weeks they cover. The
+*player* figures cannot be: distinct players do not sum across buckets — one person who
+practised on two days is one player and two bucket entries — so `modePlayersBetween` counts
+them over the window, and they are the one pair on that card that does not add up, since
+somebody who plays both games is one player of each.
+
+This exists because `/api/admin/retention` is meant to be read before and after the daily
+challenge shipped, and a retention number that moved says nothing about the daily unless
+somebody can see how much of the play *was* the daily. It sits directly above the retention
+card for that reason.
+
 The blog body is **Tiptap in the admin, a ProseMirror document in `body`, and a hand-written
 walker on the public page**. That split is the load-bearing decision:
 

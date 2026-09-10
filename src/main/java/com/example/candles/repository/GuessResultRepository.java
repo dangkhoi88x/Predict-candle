@@ -107,7 +107,7 @@ public interface GuessResultRepository extends JpaRepository<GuessResult, Long> 
 
     /**
      * Guesses bucketed by calendar unit for the admin overview charts. Rows of
-     * [bucketStart, guesses, long, short, correct, activePlayers].
+     * [bucketStart, guesses, long, short, correct, activePlayers, practice, daily, archive].
      *
      * Native because JPQL has no portable date truncation, and because the counts want
      * FILTER — four passes with CASE would read worse and run no faster. {@code unit} is not
@@ -122,6 +122,11 @@ public interface GuessResultRepository extends JpaRepository<GuessResult, Long> 
      * on, timed-out guesses included, since PlayerScore counts one of those against you.
      * long + short is the smaller subset that has a direction to stack on the chart. On the
      * current data the two differ by about a fifth, so picking the wrong one is visible.
+     *
+     * The three mode counts are a third partition of the same rows, and they do add up to
+     * {@code count(*)} — every guess came from exactly one of the three games. They are
+     * counted here rather than in a query of their own so the split cannot drift from the
+     * total it is a split of: one scan, one set of rows, one bucket boundary.
      */
     @Query(value = """
             select date_trunc(cast(:unit as text), g.created_at at time zone 'UTC') as bucket,
@@ -129,7 +134,10 @@ public interface GuessResultRepository extends JpaRepository<GuessResult, Long> 
                    count(*) filter (where g.guessed_direction = 'LONG'),
                    count(*) filter (where g.guessed_direction = 'SHORT'),
                    count(*) filter (where g.correct),
-                   count(distinct g.user_id)
+                   count(distinct g.user_id),
+                   count(*) filter (where g.mode = 'PRACTICE'),
+                   count(*) filter (where g.mode = 'DAILY'),
+                   count(*) filter (where g.mode = 'ARCHIVE')
             from guess_results g
             where g.created_at >= :since and g.created_at < :until
             group by bucket
@@ -138,6 +146,26 @@ public interface GuessResultRepository extends JpaRepository<GuessResult, Long> 
     List<Object[]> bucketed(@Param("unit") String unit,
                             @Param("since") Instant since,
                             @Param("until") Instant until);
+
+    /**
+     * How many distinct players touched each game mode in a window, as rows of [mode, players].
+     *
+     * Separate from {@link #bucketed} because it cannot be summed out of it: a player who
+     * practised on Monday and again on Friday is one player over the window and two across
+     * the buckets, and adding bucket figures up would report the second number under a label
+     * promising the first.
+     *
+     * Modes nobody played are absent rather than zero, the way a {@code group by} leaves
+     * them; the caller fills the gap, because "nobody played the daily this week" is a
+     * figure the pane has to draw rather than a row it can wait for.
+     */
+    @Query(value = """
+            select g.mode, count(distinct g.user_id)
+            from guess_results g
+            where g.created_at >= :since and g.created_at < :until
+            group by g.mode
+            """, nativeQuery = true)
+    List<Object[]> modePlayersBetween(@Param("since") Instant since, @Param("until") Instant until);
 
     /** [guesses, correct] between two instants — the numerator and denominator of a delta. */
     @Query(value = "select count(g), coalesce(sum(case when g.correct then 1 else 0 end), 0)"

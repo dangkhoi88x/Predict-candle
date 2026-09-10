@@ -3223,28 +3223,32 @@ body:not(.is-admin) .adm-search {
     color: var(--adm-muted);
 }
 
-/* Three figures side by side, wrapping rather than shrinking — a retention rate squeezed to
-   two characters is worse than one on its own row. */
-.adm-retention {
+/* A card of labelled figures side by side, wrapping rather than shrinking — a retention rate
+   squeezed to two characters is worse than one on its own row.
+
+   Named for the shape rather than for retention, which was its only user until the mode split
+   arrived wanting exactly the same card. The alternative was a second copy of this grid under
+   a different prefix, which is how two panels in one pane start drifting apart. */
+.adm-figures {
     padding: 18px 20px;
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
     gap: 18px;
 }
 
-.adm-retention-figure {
+.adm-figure {
     display: flex;
     flex-direction: column;
     gap: 4px;
 }
 
-.adm-retention-base {
+.adm-figure-base {
     font-family: var(--mono);
     font-size: 12px;
     color: var(--adm-muted);
 }
 
-.adm-retention-foot {
+.adm-figures-foot {
     margin: 10px 2px 0;
     font-size: 12.5px;
     line-height: 1.5;

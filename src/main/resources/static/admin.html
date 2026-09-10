@@ -328,6 +328,35 @@
                         </div>
                     </div>
 
+                    <!-- Sits directly above retention on purpose: that panel says whether people
+                         came back, this one says which game they came back to. A retention number
+                         that moved is only attributable to the daily challenge if somebody can
+                         see how much of the play was the daily. -->
+                    <div class="adm-tray">
+                        <div class="adm-tray-head">
+                            <span class="adm-kicker">Chế độ chơi</span>
+                            <span class="adm-kicker-note" id="ov-modes-span">—</span>
+                        </div>
+                        <div class="adm-card adm-figures">
+                            <div class="adm-figure">
+                                <b class="adm-mini-value" id="ov-mode-practice">—</b>
+                                <span class="adm-mini-note">luyện tập</span>
+                                <span class="adm-figure-base" id="ov-mode-practice-base">—</span>
+                            </div>
+                            <div class="adm-figure">
+                                <b class="adm-mini-value" id="ov-mode-daily">—</b>
+                                <span class="adm-mini-note">thử thách hằng ngày</span>
+                                <span class="adm-figure-base" id="ov-mode-daily-base">—</span>
+                            </div>
+                            <div class="adm-figure">
+                                <b class="adm-mini-value" id="ov-mode-archive">—</b>
+                                <span class="adm-mini-note">chơi lại kho ngày cũ</span>
+                                <span class="adm-figure-base" id="ov-mode-archive-base">—</span>
+                            </div>
+                        </div>
+                        <p class="adm-figures-foot" id="ov-modes-foot"></p>
+                    </div>
+
                     <!-- The baseline to compare against after the daily challenge ships. Three
                          numbers on purpose: /api/admin/retention carries the per-cohort and
                          per-day detail for anyone who wants to go further than a glance. -->
@@ -336,24 +365,24 @@
                             <span class="adm-kicker">Người chơi quay lại</span>
                             <span class="adm-kicker-note" id="ov-retention-span">—</span>
                         </div>
-                        <div class="adm-card adm-retention">
-                            <div class="adm-retention-figure">
+                        <div class="adm-card adm-figures">
+                            <div class="adm-figure">
                                 <b class="adm-mini-value" id="ov-retention-d1">—</b>
                                 <span class="adm-mini-note">quay lại ngày hôm sau</span>
-                                <span class="adm-retention-base" id="ov-retention-d1-base">—</span>
+                                <span class="adm-figure-base" id="ov-retention-d1-base">—</span>
                             </div>
-                            <div class="adm-retention-figure">
+                            <div class="adm-figure">
                                 <b class="adm-mini-value" id="ov-retention-d7">—</b>
                                 <span class="adm-mini-note">quay lại trong 7 ngày</span>
-                                <span class="adm-retention-base" id="ov-retention-d7-base">—</span>
+                                <span class="adm-figure-base" id="ov-retention-d7-base">—</span>
                             </div>
-                            <div class="adm-retention-figure">
+                            <div class="adm-figure">
                                 <b class="adm-mini-value" id="ov-retention-intensity">—</b>
                                 <span class="adm-mini-note">lượt / người / ngày chơi</span>
-                                <span class="adm-retention-base" id="ov-retention-intensity-base">—</span>
+                                <span class="adm-figure-base" id="ov-retention-intensity-base">—</span>
                             </div>
                         </div>
-                        <p class="adm-retention-foot" id="ov-retention-foot"></p>
+                        <p class="adm-figures-foot" id="ov-retention-foot"></p>
                     </div>
                 </section>
 
