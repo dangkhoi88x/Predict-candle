@@ -928,33 +928,6 @@ h1, h2, h3 {
     margin-top: 0;
 }
 
-/* The one figure here that can be lost by not playing — the rest cannot go down — so it is
-   the one drawn in the accent. */
-.stat.is-accent {
-    border-color: var(--accent);
-    background: var(--panel-2);
-}
-
-.stat.is-accent .stat-label {
-    color: var(--accent);
-}
-
-.stat-row {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-}
-
-/* Outside .rolling on purpose: that class clips a strip of digits to one line, and a mark
-   inside it renders the whole strip. The trade tab's account figures learned this the hard
-   way. */
-.stat-flame {
-    width: 16px;
-    height: 16px;
-    color: var(--warn);
-}
-
 .profile-share {
     margin-top: 16px;
     padding: 14px;
@@ -1221,13 +1194,6 @@ h1, h2, h3 {
     grid-template-columns: repeat(4, 1fr);
     gap: 10px;
     margin-bottom: 16px;
-}
-
-/* One tile more than the game's board: the day streak, which only a signed-in account has.
-   Five fixed columns is one too many for a phone — the fifth ran off the edge — so these wrap
-   on width instead, five across on a desktop and three then two on a narrow screen. */
-.scoreboard-profile {
-    grid-template-columns: repeat(auto-fit, minmax(88px, 1fr));
 }
 
 .stat {

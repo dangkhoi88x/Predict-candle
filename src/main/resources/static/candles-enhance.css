@@ -9,6 +9,108 @@
    ============================================================================ */
 
 /* ============================================================================
+   The profile. Every class here carries a pf- prefix rather than reusing .stat and
+   .scoreboard: the game's board and this page had drifted into needing different things
+   from the same names, and one of them had to stop.
+   ========================================================================== */
+
+/* ---- who: avatar, heading, wallet ---- */
+.pf-head {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 24px;
+    align-items: center;
+    padding: 22px;
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    background: var(--panel);
+    margin-bottom: 18px;
+}
+@media (max-width: 720px) {
+    .pf-head { grid-template-columns: 1fr; justify-items: center; text-align: center; }
+}
+
+.pf-avatar {
+    position: relative;
+    width: 96px;
+    height: 96px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    isolation: isolate;
+}
+.pf-avatar::before {  /* the ring, turning */
+    content: "";
+    position: absolute;
+    inset: -4px;
+    border-radius: 50%;
+    z-index: -1;
+    background: conic-gradient(from 0deg, transparent 0 22%, var(--accent) 50%, transparent 78% 100%);
+    animation: pf-spin 4s linear infinite;
+}
+/* The face, not the parent's own background: `isolation: isolate` makes the parent a
+   stacking context, so a z-index:-1 child paints *above* the parent's background and the
+   ring below would have washed over the whole disc instead of showing as a 4px halo. Both
+   pseudos sit at -1, and the later one wins, which is what leaves the ring outside the face. */
+.pf-avatar::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    z-index: -1;
+    background: radial-gradient(circle at 32% 26%, #2f5bd0, #14204a);
+    box-shadow: inset 0 2px 0 rgba(255,255,255,.22),
+                0 0 24px color-mix(in oklab, var(--accent) 45%, transparent);
+}
+.pf-avatar svg { width: 46px; height: 46px; stroke: #dbe4ff; fill: none;
+                 stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+
+.pf-name { margin: 0; font-size: 26px; letter-spacing: var(--tracking-tight); }
+
+/* ---- the record: five tiles, each with its mark in its own colour ---- */
+.pf-tiles {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr));
+    gap: 12px;
+    margin-bottom: 18px;
+}
+.pf-tile {
+    --c: var(--accent);
+    padding: 16px;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: var(--panel);
+    transition: transform var(--duration-fast) var(--ease-out),
+                border-color var(--duration-fast) var(--ease-out);
+}
+.pf-tile:hover {
+    transform: translateY(-3px);
+    border-color: color-mix(in oklab, var(--c) 55%, var(--border));
+}
+.pf-chip {
+    width: 40px; height: 40px; border-radius: 11px;
+    display: grid; place-items: center;
+    background: color-mix(in oklab, var(--c) 18%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--c) 30%, transparent);
+}
+.pf-chip svg { width: 21px; height: 21px; stroke: var(--c); fill: none;
+               stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.pf-tile .stat-value { display: block; margin-top: 14px; font: 700 24px var(--mono);
+                       font-variant-numeric: tabular-nums; }
+.pf-tile .pf-tile-lbl { display: block; margin-top: 2px; font-size: 12px; color: var(--muted); }
+.pf-tile.is-up .stat-value { color: var(--up); }
+.pf-tile.is-accent .stat-value { color: var(--accent); }
+.pf-tile.is-warn .stat-value { color: var(--warn); }
+
+@keyframes pf-spin  { to { transform: rotate(360deg); } }
+
+/* Matches the reduced-motion block style.css already keeps. */
+@media (prefers-reduced-motion: reduce) {
+    .pf-avatar::before { animation: none; }
+}
+
+
+/* ============================================================================
    The game tab.
    ========================================================================== */
 
