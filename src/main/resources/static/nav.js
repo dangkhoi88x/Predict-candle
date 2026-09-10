@@ -9,6 +9,7 @@
        whatever carries data-view, and nothing has to know what else points where. */
     var railItems = Array.prototype.slice.call(document.querySelectorAll(".rail-item"));
     var barItems = Array.prototype.slice.call(document.querySelectorAll(".tabbar-item[data-view]"));
+    var railGroups = Array.prototype.slice.call(document.querySelectorAll(".rail-group"));
     var rail = document.getElementById("rail");
     var railBackdrop = document.getElementById("rail-backdrop");
     var moreBtn = document.getElementById("tabbar-more");
@@ -56,6 +57,26 @@
         leaderboard: function () { window.__initLeaderboardView && window.__initLeaderboardView(); },
     };
 
+    /* Roving tabindex: the whole tablist is a single stop in the page's tab order and the
+       arrow keys move within it. That is the contract role="tab" advertises, and leaving it
+       out is worse than never claiming the role — a screen reader announces "tab, 1 of 11"
+       and the keys it tells the user to press do nothing.
+
+       The stop is normally the selected tab. It is not when a player has closed the group
+       they are standing in: the selected tab is then not rendered, so it cannot be tabbed to
+       and the tablist would have no way in at all. In that one case the first tab still on
+       screen holds the stop. */
+    function syncTabStop() {
+        var ring = visibleRailItems();
+        var selectedIsVisible = ring.some(function (item) { return item.classList.contains("active"); });
+        railItems.forEach(function (item) {
+            item.tabIndex = -1;
+        });
+        ring.forEach(function (item, index) {
+            if (item.classList.contains("active") || (!selectedIsVisible && index === 0)) item.tabIndex = 0;
+        });
+    }
+
     function current() {
         for (var i = 0; i < railItems.length; i++) {
             if (railItems[i].classList.contains("active")) return railItems[i].dataset.view;
@@ -69,16 +90,18 @@
             return;
         }
 
+        /* Before the selection moves: a tab inside a closed group would leave the tablist
+           with no visible selected stop and the roving tabindex with nowhere to put its 0.
+           Deep links reach the blog and the pattern libraries from inside the views, so this
+           is the ordinary path, not an edge case. */
+        openGroupOf(target);
+
         railItems.forEach(function (item) {
             var active = item.dataset.view === target;
             item.classList.toggle("active", active);
             item.setAttribute("aria-selected", active ? "true" : "false");
-            /* Roving tabindex: the whole tablist is a single stop in the page's tab order
-               and the arrow keys move within it. That is the contract role="tab" advertises,
-               and leaving it out is worse than never claiming the role — a screen reader
-               announces "tab, 1 of 11" and the keys it tells the user to press do nothing. */
-            item.tabIndex = active ? 0 : -1;
         });
+        syncTabStop();
         /* The bottom bar lists four of the eleven, so opening any of the other seven leaves
            it with nothing marked — which is right: none of its keys is where you are. */
         barItems.forEach(function (item) {
@@ -98,6 +121,96 @@
            recording misses against a player who is reading, not playing. */
         document.dispatchEvent(new CustomEvent("candles:view", { detail: { view: target } }));
     }
+
+    /* ---- disclosure groups ----------------------------------------------------------- */
+
+    /* Grouping the eleven views did not make the rail short — they are still eleven rows, and
+       four of them are reference pages somebody opens twice a year sitting at the same weight
+       as the game. So a group closes, and Học ships closed.
+
+       The state is remembered per group rather than reset each visit: a player who opened Học
+       to read a pattern page did not ask to be shown it again tomorrow, and one who never
+       opens it did not ask to be shown it at all. A group missing from storage keeps whatever
+       the markup shipped, so adding a group later does not need a migration. */
+    var GROUP_KEY = "candles-rail-groups";
+
+    function readGroupState() {
+        try {
+            return JSON.parse(localStorage.getItem(GROUP_KEY)) || {};
+        } catch (e) {
+            return {}; // storage blocked, or something else wrote nonsense under the key
+        }
+    }
+
+    function writeGroupState() {
+        var state = {};
+        railGroups.forEach(function (group) {
+            state[groupId(group)] = group.dataset.open === "true";
+        });
+        try {
+            localStorage.setItem(GROUP_KEY, JSON.stringify(state));
+        } catch (e) {
+            // Unsaved, so it lasts the visit — better than refusing to open the group.
+        }
+    }
+
+    function groupId(group) {
+        return group.querySelector(".rail-group-items").id;
+    }
+
+    function setGroupOpen(group, open) {
+        group.dataset.open = open ? "true" : "false";
+        group.querySelector(".rail-group-toggle").setAttribute("aria-expanded", open ? "true" : "false");
+        paintGroupFlag(group);
+        syncTabStop();
+    }
+
+    function openGroupOf(view) {
+        var item = null;
+        for (var i = 0; i < railItems.length; i++) {
+            if (railItems[i].dataset.view === view) item = railItems[i];
+        }
+        if (!item) return;
+        var group = item.closest(".rail-group");
+        if (group && group.dataset.open !== "true") {
+            setGroupOpen(group, true);
+            writeGroupState();
+        }
+    }
+
+    /* A closed group must not swallow a signal. The live countdown and the caller's rank are
+       drawn on items, so a shut group shows a dot in their place — otherwise collapsing
+       "Bạn & cộng đồng" quietly hides the rank it was collapsed to make room for. The view
+       currently on screen counts as a signal too: closing the group you are standing in is
+       allowed, and the dot is then the only thing left saying where you are. */
+    function paintGroupFlag(group) {
+        var closed = group.dataset.open !== "true";
+        var carries = group.querySelector(".rail-tag:not(.hidden)") || group.querySelector(".rail-item.active");
+        group.querySelector(".rail-group-flag").classList.toggle("hidden", !(closed && carries));
+    }
+
+    var storedGroups = readGroupState();
+    railGroups.forEach(function (group) {
+        var stored = storedGroups[groupId(group)];
+        setGroupOpen(group, typeof stored === "boolean" ? stored : group.dataset.open === "true");
+
+        group.querySelector(".rail-group-toggle").addEventListener("click", function () {
+            setGroupOpen(group, group.dataset.open !== "true");
+            writeGroupState();
+        });
+
+        /* The tags are written by other modules on their own schedule — live-banner.js ticks
+           its countdown every second, play-sidebar.js publishes a rank once a board lands.
+           Watching the class is how CandlePill already stays in step with callers that know
+           nothing about it, and it means neither module has to learn the rail exists. */
+        var tags = group.querySelectorAll(".rail-tag");
+        if (tags.length && window.MutationObserver) {
+            var observer = new MutationObserver(function () { paintGroupFlag(group); });
+            Array.prototype.forEach.call(tags, function (tag) {
+                observer.observe(tag, { attributes: true, attributeFilter: ["class"] });
+            });
+        }
+    });
 
     /* ---- the rail as a phone sheet -------------------------------------------------- */
 
@@ -127,13 +240,19 @@
 
     /* Visible rail items only: the arrow keys walk what is on screen, so the profile tab
        must drop out of the ring while signed out rather than being a stop that focuses
-       nothing. Recomputed per press because that list changes on sign-in. */
+       nothing, and so must the four inside a closed group. Recomputed per press because that
+       list changes on sign-in and on every disclosure. */
     function visibleRailItems() {
-        return railItems.filter(function (item) { return !item.classList.contains("hidden"); });
+        return railItems.filter(function (item) {
+            if (item.classList.contains("hidden")) return false;
+            var group = item.closest(".rail-group");
+            return !group || group.dataset.open === "true";
+        });
     }
 
+    syncTabStop();
+
     railItems.forEach(function (item) {
-        item.tabIndex = item.classList.contains("active") ? 0 : -1;
         item.addEventListener("click", function () { activate(item.dataset.view); });
 
         item.addEventListener("keydown", function (event) {
