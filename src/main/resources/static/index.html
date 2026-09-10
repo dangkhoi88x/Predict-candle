@@ -147,6 +147,14 @@
         <path d="M11 4.5 6.5 8.5H3.5v7h3l4.5 4z"/>
         <path d="M16 9.5l5 5M21 9.5l-5 5"/>
     </symbol>
+    <symbol id="i-star" viewBox="0 0 24 24">
+        <path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.7-5.2-2.7-5.2 2.7 1-5.7-4.3-4.1 5.9-.9z"/>
+    </symbol>
+    <symbol id="i-target" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="8"/>
+        <circle cx="12" cy="12" r="3.4"/>
+        <path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5"/>
+    </symbol>
 </svg>
 
 <div class="shell-page">
@@ -960,37 +968,61 @@
 </main>
 
 <main id="view-profile" class="view app app-profile hidden" role="tabpanel" aria-labelledby="tab-profile">
-    <div class="view-head">
-        <h2>Hồ Sơ</h2>
-        <span id="profile-wallet" class="profile-wallet"></span>
+    <!-- The one view whose subject is a person rather than a chart, so it opens with who —
+         avatar, heading, wallet — instead of with a row of figures. -->
+    <div class="pf-head">
+        <div class="pf-avatar" aria-hidden="true">
+            <svg class="icon" focusable="false"><use href="#i-user"/></svg>
+        </div>
+        <div>
+            <h2 class="pf-name">Hồ Sơ</h2>
+            <span id="profile-wallet" class="profile-wallet"></span>
+        </div>
     </div>
+
+    <!-- The record itself, across the full width rather than down one column: these five are
+         what the page is about, and the two notes under them explain two of the five. -->
+    <div class="pf-tiles">
+        <div class="pf-tile is-accent" style="--c: var(--accent)">
+            <span class="pf-chip" aria-hidden="true"><svg class="icon" focusable="false"><use href="#i-star"/></svg></span>
+            <span class="stat-value rolling" id="profile-score">0</span>
+            <span class="pf-tile-lbl">Điểm</span>
+        </div>
+        <div class="pf-tile" style="--c: var(--accent)">
+            <span class="pf-chip" aria-hidden="true"><svg class="icon" focusable="false"><use href="#i-candles"/></svg></span>
+            <span class="stat-value rolling" id="profile-total">0</span>
+            <span class="pf-tile-lbl">Lượt đoán</span>
+        </div>
+        <div class="pf-tile is-up" style="--c: var(--up)">
+            <span class="pf-chip" aria-hidden="true"><svg class="icon" focusable="false"><use href="#i-target"/></svg></span>
+            <span class="stat-value rolling" id="profile-accuracy">–</span>
+            <span class="pf-tile-lbl">Tỉ lệ đúng</span>
+        </div>
+        <div class="pf-tile" style="--c: var(--accent)">
+            <span class="pf-chip" aria-hidden="true"><svg class="icon" focusable="false"><use href="#i-trophy"/></svg></span>
+            <span class="stat-value rolling" id="profile-best">0</span>
+            <span class="pf-tile-lbl">Chuỗi dài nhất</span>
+        </div>
+        <!-- Days in a row, not correct guesses in a row: a different number from the tile
+             beside it, which is why the label says days and not "chuỗi". Drawn in --warn
+             because it is the only figure here that can be lost by not playing — the rest
+             cannot go down — and because that is the colour the flame already carries on the
+             topbar chip and the daily tab. -->
+        <div class="pf-tile is-warn" style="--c: var(--warn)">
+            <span class="pf-chip" aria-hidden="true"><svg class="icon" focusable="false"><use href="#i-flame"/></svg></span>
+            <span class="stat-value rolling" id="profile-day-streak">0</span>
+            <span class="pf-tile-lbl">Ngày liên tiếp</span>
+        </div>
+    </div>
+
+    <p id="profile-streak-note" class="profile-note hidden"></p>
+    <p id="profile-legacy-note" class="profile-note hidden"></p>
 
     <!-- Two columns: the record on the left, what it earned on the right. One column meant
          the badges sat below a list of every recent guess, which is the wrong way round —
          the trophies are the part worth looking at twice. -->
     <div class="profile-grid">
         <div class="profile-col">
-            <div class="scoreboard scoreboard-profile">
-                <div class="stat"><span class="stat-label">Điểm</span><span class="stat-value rolling" id="profile-score">0</span></div>
-                <div class="stat"><span class="stat-label">Lượt đoán</span><span class="stat-value rolling" id="profile-total">0</span></div>
-                <div class="stat"><span class="stat-label">Tỉ lệ đúng</span><span class="stat-value rolling" id="profile-accuracy">–</span></div>
-                <div class="stat"><span class="stat-label">Chuỗi dài nhất</span><span class="stat-value rolling" id="profile-best">0</span></div>
-                <!-- Days in a row, not correct guesses in a row: a different number from the
-                     tile beside it, which is why the label says days and not "chuỗi". Drawn in
-                     the accent because it is the only figure here that can be lost by not
-                     playing — the rest cannot go down. -->
-                <div class="stat is-accent">
-                    <span class="stat-label">Ngày liên tiếp</span>
-                    <span class="stat-row">
-                        <span class="stat-value rolling" id="profile-day-streak">0</span>
-                        <svg class="icon stat-flame" aria-hidden="true" focusable="false"><use href="#i-flame"/></svg>
-                    </span>
-                </div>
-            </div>
-
-            <p id="profile-streak-note" class="profile-note hidden"></p>
-            <p id="profile-legacy-note" class="profile-note hidden"></p>
-
             <h3 class="profile-section">Theo từng cặp</h3>
             <div id="profile-by-asset" class="profile-assets"></div>
 
