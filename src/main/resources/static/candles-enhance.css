@@ -1,0 +1,229 @@
+/* ============================================================================
+   A layer of motion and depth over the shapes style.css already draws — hover states,
+   entrances, the profile's own header. Loaded after style.css so the few rules that
+   restate a selector win, and separate from it so the whole layer can be taken off by
+   deleting one <link> without touching what it sits on.
+
+   Every colour is a token from :root, so nothing here knows which theme is running, and
+   every animation is switched off in the reduced-motion block that closes each section.
+   ============================================================================ */
+
+/* ============================================================================
+   The game tab.
+   ========================================================================== */
+
+/* The result banner: app.js rewrites the className every round, which is what replays
+   the animation without anything having to reset it. */
+.result-banner.correct,
+.result-banner.wrong,
+.result-banner.summary {
+    animation: rb-pop var(--duration-enter) var(--ease-out);
+}
+.result-banner.correct {
+    box-shadow: 0 0 22px color-mix(in oklab, var(--up) 30%, transparent);
+}
+.result-banner.wrong {
+    animation: rb-pop var(--duration-enter) var(--ease-out), rb-shake .32s var(--ease-out);
+}
+@keyframes rb-pop   { from { transform: scale(.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@keyframes rb-shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+
+/* LONG / SHORT: a sweep across the face on hover, and a press that sinks. */
+.guess-btn {
+    position: relative;
+    overflow: hidden;
+    transition: transform var(--duration-fast) var(--ease-out),
+                box-shadow var(--duration-fast) var(--ease-out),
+                filter var(--duration-fast) var(--ease-out);
+}
+.guess-btn::before {
+    content: "";
+    position: absolute;
+    top: 0; left: -120%;
+    width: 55%; height: 100%;
+    background: linear-gradient(100deg, transparent, rgba(255,255,255,.45), transparent);
+    transform: skewX(-18deg);
+    transition: left var(--duration-normal) var(--ease-out);
+    pointer-events: none;
+}
+.guess-btn:not(:disabled):hover { transform: translateY(-2px); filter: brightness(1.05); }
+.guess-btn:not(:disabled):hover::before { left: 130%; }
+.guess-btn.long:not(:disabled):hover  { box-shadow: 0 6px 20px color-mix(in oklab, var(--up) 40%, transparent); }
+.guess-btn.short:not(:disabled):hover { box-shadow: 0 6px 20px color-mix(in oklab, var(--down) 40%, transparent); }
+.guess-btn:not(:disabled):active { transform: translateY(0) scale(.97); }
+
+/* The dot in the topbar's live banner, pulsing out. */
+.live-banner-dot { position: relative; }
+.live-banner-dot::after {
+    content: "";
+    position: absolute; inset: 0;
+    border-radius: 50%;
+    background: var(--warn);
+    animation: lb-ripple 1.6s var(--ease-out) infinite;
+}
+@keyframes lb-ripple { 0% { transform: scale(1); opacity: .55; } 100% { transform: scale(3); opacity: 0; } }
+
+/* A newly added dot in the last-ten strip. Nothing sets .just-in yet; the rule is here
+   so play-sidebar.js only has to add the class. */
+.side-dot.just-in { animation: rb-pop var(--duration-enter) var(--ease-out); }
+
+@media (prefers-reduced-motion: reduce) {
+    .result-banner.correct, .result-banner.wrong, .result-banner.summary,
+    .guess-btn::before, .live-banner-dot::after, .side-dot.just-in { animation: none; }
+}
+
+
+/* ============================================================================
+   Leaderboard, daily challenge, live round.
+   ========================================================================== */
+
+/* Gold, silver and bronze on the top three. The first three tbody rows are always ranks
+   1-2-3: leaderboard.js pins the caller's own row after the fifth, never before it. */
+.lb-rank { position: relative; }
+.lb-row:nth-of-type(-n+3) .lb-rank {
+    color: #1b1400;
+    font-weight: 800;
+    text-align: center;
+    background-repeat: no-repeat;
+    background-position: 50% 50%;
+}
+.lb-row:nth-of-type(1) .lb-rank {
+    background-image: radial-gradient(circle 13px at 50% 50%,
+        #ffe9a8 0 5px, #e7ad2b 6px 12px, transparent 12px);
+    filter: drop-shadow(0 0 6px color-mix(in oklab, var(--warn) 55%, transparent));
+}
+.lb-row:nth-of-type(2) .lb-rank {
+    background-image: radial-gradient(circle 13px at 50% 50%,
+        #f4f6fa 0 5px, #b6bcc8 6px 12px, transparent 12px);
+}
+.lb-row:nth-of-type(3) .lb-rank {
+    background-image: radial-gradient(circle 13px at 50% 50%,
+        #f2cfa0 0 5px, #c07d3f 6px 12px, transparent 12px);
+}
+
+/* The caller's own row, lifted by a tint and a rule down its left edge. */
+.lb-row.is-me td { background: var(--tint-accent-strong); }
+.lb-row.is-me td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
+.lb-row.is-me .lb-who-name { color: var(--accent); font-weight: 700; }
+
+/* The daily's streak figure and the dots under it. */
+.daily-streak-value {
+    color: var(--warn);
+    text-shadow: 0 0 14px color-mix(in oklab, var(--warn) 40%, transparent);
+    animation: ds-glow 2.4s var(--ease-out) infinite;
+}
+@keyframes ds-glow {
+    0%,100% { text-shadow: 0 0 10px color-mix(in oklab, var(--warn) 25%, transparent); }
+    50%     { text-shadow: 0 0 18px color-mix(in oklab, var(--warn) 55%, transparent); }
+}
+.daily-streak-flame {
+    /* .daily-streak aligns on the baseline, which an svg answers with its bottom edge — beside
+       a 26px figure that left the flame floating above the digits. */
+    align-self: center;
+    width: 20px; height: 22px; color: var(--warn);
+    transform-origin: 50% 90%;
+    animation: ds-flick 1.1s var(--ease-out) infinite;
+}
+@keyframes ds-flick {
+    0%,100% { transform: scale(1) rotate(-2deg); }
+    50%     { transform: scale(1.12) rotate(2deg); }
+}
+.daily-dot.is-correct, .daily-dot.is-wrong { animation: db-pop var(--duration-enter) var(--ease-out); }
+@keyframes db-pop { from { transform: scale(.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+/* The live round's detail popup and its pool bar. */
+.live-round-modal:not(.hidden) .live-round-modal-card {
+    animation: lm-in var(--duration-enter) var(--ease-out);
+}
+@keyframes lm-in { from { transform: translateY(14px) scale(.97); opacity: 0; } to { transform: none; opacity: 1; } }
+
+.live-round-modal-badge-icon { animation: lm-badge 2.2s var(--ease-out) infinite; }
+@keyframes lm-badge { 0%,100% { transform: scale(1); } 50% { transform: scale(1.12); } }
+
+.live-round-modal-badge-result { animation: db-pop var(--duration-enter) var(--ease-out); }
+.live-round-modal-badge-result.outcome-up   { text-shadow: 0 0 16px color-mix(in oklab, var(--up) 45%, transparent); }
+.live-round-modal-badge-result.outcome-down { text-shadow: 0 0 16px color-mix(in oklab, var(--down) 45%, transparent); }
+
+/* The bar already transitions its width; the sweep is what says it is still running. */
+.live-pool-long { position: relative; overflow: hidden; }
+.live-pool-long::after {
+    content: "";
+    position: absolute; inset: 0;
+    background: linear-gradient(100deg, transparent, rgba(255,255,255,.35), transparent);
+    transform: translateX(-100%);
+    animation: lp-shimmer 2.4s var(--ease-out) infinite;
+}
+@keyframes lp-shimmer { 0% { transform: translateX(-100%); } 60%,100% { transform: translateX(320%); } }
+
+@media (prefers-reduced-motion: reduce) {
+    .daily-streak-value, .daily-streak-flame, .daily-dot.is-correct, .daily-dot.is-wrong,
+    .live-round-modal:not(.hidden) .live-round-modal-card, .live-round-modal-badge-icon,
+    .live-round-modal-badge-result, .live-pool-long::after { animation: none; }
+    .lb-row:nth-of-type(1) .lb-rank { filter: none; }
+}
+
+
+/* ============================================================================
+   Demo trading, heatmap, blog.
+   ========================================================================== */
+
+/* A market row lifts on hover and takes a rule down its edge when selected — the same
+   selection language the holdings list beneath it uses. */
+.trade-market { transition: transform var(--duration-fast) var(--ease-out),
+                            background var(--duration-fast) var(--ease-out),
+                            box-shadow var(--duration-fast) var(--ease-out); }
+.trade-market:hover { transform: translateX(2px); }
+.trade-market.is-selected { box-shadow: inset 3px 0 0 var(--accent); }
+
+/* A holding is a control, so it answers the pointer like one. */
+.trade-position { transition: transform var(--duration-fast) var(--ease-out),
+                              border-color var(--duration-fast) var(--ease-out),
+                              box-shadow var(--duration-fast) var(--ease-out); }
+.trade-position:hover { transform: translateY(-2px); box-shadow: 0 6px 18px var(--shadow); }
+
+/* The "demo money" badge, breathing just enough to be read as a label rather than a figure. */
+.trade-demo-badge { animation: tm-demo 3s var(--ease-out) infinite; }
+@keyframes tm-demo {
+    0%,100% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--warn) 0%, transparent); }
+    50%     { box-shadow: 0 0 0 3px color-mix(in oklab, var(--warn) 22%, transparent); }
+}
+
+/* The signed-out gate's mark. */
+.trade-gate-icon svg { width: 30px; height: 30px; color: var(--accent); }
+
+.heatmap-tile { transition: filter var(--duration-fast) var(--ease-out),
+                            transform var(--duration-fast) var(--ease-out),
+                            box-shadow var(--duration-fast) var(--ease-out); }
+.heatmap-tile.clickable:hover {
+    transform: scale(1.045);
+    box-shadow: 0 8px 22px rgba(0,0,0,.45);
+    outline: 1px solid rgba(255,255,255,.35);
+    outline-offset: -1px;
+}
+/* The detail panel arrives rather than appearing, so it is clear which tile opened it. */
+.heatmap-detail-body:not(.hidden) { animation: hm-in var(--duration-enter) var(--ease-out); }
+@keyframes hm-in { from { transform: translateY(10px); opacity: 0; } to { transform: none; opacity: 1; } }
+.heatmap-detail-delta.outcome-up   { text-shadow: 0 0 14px color-mix(in oklab, var(--up) 40%, transparent); }
+.heatmap-detail-delta.outcome-down { text-shadow: 0 0 14px color-mix(in oklab, var(--down) 40%, transparent); }
+
+.blog-post { transition: transform var(--duration-fast) var(--ease-out),
+                         border-color var(--duration-fast) var(--ease-out),
+                         box-shadow var(--duration-fast) var(--ease-out); }
+.blog-post:hover {
+    transform: translateY(-3px);
+    border-color: color-mix(in oklab, var(--accent) 45%, var(--border));
+    box-shadow: 0 10px 28px var(--shadow);
+}
+.blog-post-cover img { transition: transform var(--duration-normal) var(--ease-out); }
+.blog-post:hover .blog-post-cover img { transform: scale(1.05); }
+.blog-tag { transition: background var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out); }
+.blog-tag:hover { background: var(--tint-accent-weak); color: var(--accent); }
+
+@media (prefers-reduced-motion: reduce) {
+    .trade-market, .trade-position, .trade-demo-badge, .heatmap-tile,
+    .heatmap-detail-body:not(.hidden), .blog-post, .blog-post-cover img { animation: none; transition: none; }
+    .trade-market:hover, .trade-position:hover, .heatmap-tile.clickable:hover,
+    .blog-post:hover, .blog-post:hover .blog-post-cover img { transform: none; }
+}
+
+
