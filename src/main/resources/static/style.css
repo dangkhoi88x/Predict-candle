@@ -290,6 +290,31 @@ h1, h2, h3 {
     max-width: 900px;
 }
 
+/* Every mark on this page is one <use> of the sprite at the top of index.html, and this is
+   the whole of its drawing convention: no fill, a currentColor stroke at 1.7, round caps.
+   Colour is inherited, so a mark takes the colour of the control it sits in and needs no
+   rule of its own in either theme — which is exactly what emoji could not do.
+   These properties inherit through the <use> shadow tree, so they only need saying here. */
+.icon {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.7;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+}
+
+/* The sprite itself. Measured out of the layout rather than display:none: a <use> whose
+   target sits inside a display:none subtree has a history of drawing nothing. */
+.icon-defs {
+    position: absolute;
+    width: 0;
+    height: 0;
+    overflow: hidden;
+}
+
 /* ---- app shell ---------------------------------------------------------------------
    Topbar across the top, a grouped navigation rail down the left, views in what is left.
    This replaced a single row of eleven tabs: eleven peers in one strip say nothing about
@@ -324,9 +349,20 @@ h1, h2, h3 {
 }
 
 .brand {
+    display: flex;
+    align-items: center;
+    gap: 8px;
     font-weight: 800;
     font-size: 15px;
     white-space: nowrap;
+    flex-shrink: 0;
+}
+
+/* The favicon's mark. Filled in --up/--down rather than stroked, so it is the one icon on
+   the page that does not read currentColor — the pair of colours is the identity. */
+.brand-mark {
+    width: 19px;
+    height: 19px;
     flex-shrink: 0;
 }
 
@@ -448,10 +484,8 @@ h1, h2, h3 {
 }
 
 .rail-icon {
-    font-size: 14px;
-    width: 18px;
-    text-align: center;
-    flex-shrink: 0;
+    width: 17px;
+    height: 17px;
 }
 
 .rail-label {
@@ -598,8 +632,8 @@ h1, h2, h3 {
     }
 
     .tabbar-icon {
-        font-size: 17px;
-        line-height: 1;
+        width: 20px;
+        height: 20px;
     }
 }
 
@@ -830,12 +864,13 @@ h1, h2, h3 {
     gap: 6px;
 }
 
-/* Outside .rolling on purpose: that class clips a strip of digits to one line, and an emoji
+/* Outside .rolling on purpose: that class clips a strip of digits to one line, and a mark
    inside it renders the whole strip. The trade tab's account figures learned this the hard
    way. */
 .stat-flame {
-    font-size: 15px;
-    line-height: 1;
+    width: 16px;
+    height: 16px;
+    color: var(--warn);
 }
 
 .profile-share {
@@ -1095,8 +1130,7 @@ h1, h2, h3 {
 }
 
 .sound-toggle {
-    font-size: 15px;
-    padding: 7px 10px;
+    padding: 7px 9px;
     line-height: 1;
 }
 
@@ -3991,7 +4025,10 @@ body:not(.is-admin) .adm-search {
 }
 
 .next-btn {
-    display: block;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
     width: 100%;
     margin-top: 10px;
     padding: 11px;
@@ -4193,7 +4230,12 @@ body:not(.is-admin) .adm-search {
     font-variant-numeric: tabular-nums;
 }
 
+/* inline-flex so the marks these now carry sit on the text's centre line rather than its
+   baseline; a text-only .ghost-btn is unchanged by it. */
 .ghost-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
     background: transparent;
     border: 1px solid var(--border);
     color: var(--muted);
@@ -5189,8 +5231,10 @@ body:not(.is-admin) .adm-search {
 
 .live-round-modal-badge-icon {
     display: block;
-    font-size: 28px;
-    margin-bottom: 4px;
+    width: 26px;
+    height: 26px;
+    margin: 0 auto 6px;
+    color: var(--warn);
 }
 
 .live-round-modal-badge-state {
@@ -5669,9 +5713,13 @@ body:not(.is-admin) .adm-search {
     display: none;
 }
 
+/* Warn-coloured rather than inheriting the chip's text: the flame is the only part of this
+   readout that is decoration, and a grey one says nothing. .is-at-risk below recolours the
+   figures beside it, not this — the mark is already the right colour for that state. */
 .game-streak-flame {
-    font-size: 13px;
-    line-height: 1;
+    width: 14px;
+    height: 14px;
+    color: var(--warn);
 }
 
 .game-streak-value {

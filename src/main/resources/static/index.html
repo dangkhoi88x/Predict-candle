@@ -29,6 +29,117 @@
     </script>
 </head>
 <body>
+<!-- ---- icon set -----------------------------------------------------------------------
+     One monoline set for every mark on this page: the rail, the phone's bottom bar, the
+     brand and the topbar's readouts. Emoji were doing that job, and emoji are drawn by the
+     operating system — the same rail is a flat Noto glyph on Android, a glossy Apple one on
+     a Mac and a Segoe one on Windows, which is the one thing a set of navigation marks
+     cannot afford. It also read as a toy beside a candlestick chart.
+
+     Same drawing convention as admin.html, which already had a monoline set: a 24x24 box,
+     no fill, currentColor stroke at 1.7, round caps and joins. Colour comes from whatever
+     the mark sits in, so an icon needs no theme rule of its own.
+
+     Defined once and referenced with <use> rather than inlined at each site: four of these
+     appear in both the rail and the bottom bar, and this page counts its elements. The
+     sprite is measured out of the layout rather than display:none, because a <use> target
+     inside a display:none subtree has a history of not rendering. -->
+<svg class="icon-defs" aria-hidden="true" focusable="false" width="0" height="0">
+    <!-- The game: the favicon's two candles, one up and one down, offset so the pair reads
+         as movement rather than as two matching bars. -->
+    <symbol id="i-candles" viewBox="0 0 24 24">
+        <path d="M8 3v3.4M8 16.6v3"/>
+        <rect x="5.2" y="6.4" width="5.6" height="10.2" rx="1.4"/>
+        <path d="M16 7.4v2.7M16 17.6v3"/>
+        <rect x="13.2" y="10.1" width="5.6" height="7.5" rx="1.4"/>
+    </symbol>
+    <!-- The daily challenge: a calendar with the day ticked off. -->
+    <symbol id="i-calendar-check" viewBox="0 0 24 24">
+        <rect x="3" y="5" width="18" height="16" rx="2"/>
+        <path d="M8 3v4M16 3v4M3 10h18"/>
+        <path d="M9 15.2l2 2 4-4"/>
+    </symbol>
+    <symbol id="i-bolt" viewBox="0 0 24 24">
+        <path d="M13 2.5 4.5 14H11l-1 7.5L19.5 10H13z"/>
+    </symbol>
+    <!-- Demo trading: a portfolio, not a chart — the chart is the game's mark. -->
+    <symbol id="i-briefcase" viewBox="0 0 24 24">
+        <rect x="3" y="7" width="18" height="13" rx="2"/>
+        <path d="M8.5 7V5.5a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2V7"/>
+        <path d="M3 12.5h18"/>
+    </symbol>
+    <!-- The candlestick library: a reference to read, so a book rather than more candles —
+         the game already owns the candle silhouette. -->
+    <symbol id="i-book" viewBox="0 0 24 24">
+        <path d="M12 6.8C10.6 5.2 8.6 4.5 4.5 4.5v13c4.1 0 6.1.7 7.5 2.3 1.4-1.6 3.4-2.3 7.5-2.3v-13c-4.1 0-6.1.7-7.5 2.3z"/>
+        <path d="M12 6.8v13"/>
+    </symbol>
+    <!-- Chart-shape patterns: a trend line through its swing pivots, which is literally what
+         SwingPivotDetector hands the matcher. -->
+    <symbol id="i-wedge" viewBox="0 0 24 24">
+        <path d="M3.5 4.8 14.5 11.5M3.5 18.2 14.5 11.5"/>
+        <path d="M14.5 11.5 20.5 5.5"/>
+        <path d="M20.5 9.5v-4h-4"/>
+    </symbol>
+    <!-- Psychology: a head with the question inside it. -->
+    <symbol id="i-mind" viewBox="0 0 24 24">
+        <path d="M16 21v-3.4c2.3-1.3 3.8-3.6 3.8-6.2 0-4.1-3.5-7.4-7.8-7.4S4.2 7.3 4.2 11.4c0 2 .8 3.8 2.2 5.1V21"/>
+        <path d="M9.8 10.9a2.3 2.3 0 0 1 4.5.5c0 1.2-1 1.8-1.6 2.3-.4.4-.7.8-.7 1.5"/>
+        <path d="M12 18.2v.1"/>
+    </symbol>
+    <symbol id="i-news" viewBox="0 0 24 24">
+        <path d="M4 5h13a1 1 0 0 1 1 1v13H5a1 1 0 0 1-1-1z"/>
+        <path d="M18 9h1.5A1.5 1.5 0 0 1 21 10.5V17a2 2 0 0 1-2 2"/>
+        <path d="M7.5 8.5h6M7.5 12h6M7.5 15.5h4"/>
+    </symbol>
+    <symbol id="i-trophy" viewBox="0 0 24 24">
+        <path d="M7.5 4h9v4.5a4.5 4.5 0 0 1-9 0z"/>
+        <path d="M7.5 5.5H5A2.5 2.5 0 0 0 7.7 10M16.5 5.5H19a2.5 2.5 0 0 1-2.7 4.5"/>
+        <path d="M12 13v3.4M8.7 20h6.6l-.8-3.6H9.5z"/>
+    </symbol>
+    <!-- The heatmap: the treemap's own split, not a generic grid. -->
+    <symbol id="i-treemap" viewBox="0 0 24 24">
+        <rect x="3" y="3" width="18" height="18" rx="2"/>
+        <path d="M13 3v18M3 13.5h10M13 9.5h8"/>
+    </symbol>
+    <symbol id="i-user" viewBox="0 0 24 24">
+        <circle cx="12" cy="8.2" r="3.6"/>
+        <path d="M4.8 20c0-3.8 3.2-6.2 7.2-6.2s7.2 2.4 7.2 6.2"/>
+    </symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24">
+        <path d="M4 7h16M4 12h16M4 17h16"/>
+    </symbol>
+    <symbol id="i-flame" viewBox="0 0 24 24">
+        <path d="M12 2.5c.4 3.5-1.4 5.2-2.5 6.4C8.2 10.3 7 11.8 7 14.2A5 5 0 0 0 17 14.4c0-4.3-3.4-6.5-5-11.9z"/>
+        <path d="M12 20.5a2.6 2.6 0 0 1-2.6-2.6c0-1.7 1.6-2.3 2.6-4.2 1 1.9 2.6 2.5 2.6 4.2a2.6 2.6 0 0 1-2.6 2.6z"/>
+    </symbol>
+    <symbol id="i-sliders" viewBox="0 0 24 24">
+        <path d="M3.5 7.5h10M18.5 7.5h2M3.5 16.5h2M10.5 16.5h10"/>
+        <circle cx="16" cy="7.5" r="2.3"/>
+        <circle cx="8" cy="16.5" r="2.3"/>
+    </symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24">
+        <path d="M20 14.5A8 8 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/>
+    </symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="4"/>
+        <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>
+    </symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24">
+        <path d="M20 11.5A8 8 0 0 0 6.3 6.3L3.5 9"/>
+        <path d="M4 12.5a8 8 0 0 0 13.7 5.2L20.5 15"/>
+        <path d="M3.5 4.5V9H8M20.5 19.5V15H16"/>
+    </symbol>
+    <symbol id="i-sound-on" viewBox="0 0 24 24">
+        <path d="M11 4.5 6.5 8.5H3.5v7h3l4.5 4z"/>
+        <path d="M15 9.2a4 4 0 0 1 0 5.6M17.8 6.4a8 8 0 0 1 0 11.2"/>
+    </symbol>
+    <symbol id="i-sound-off" viewBox="0 0 24 24">
+        <path d="M11 4.5 6.5 8.5H3.5v7h3l4.5 4z"/>
+        <path d="M16 9.5l5 5M21 9.5l-5 5"/>
+    </symbol>
+</svg>
+
 <div class="shell-page">
 <div class="ticker hidden" id="ticker" aria-label="Giá các đồng coin vốn hóa lớn">
     <div class="ticker-track" id="ticker-track"></div>
@@ -36,7 +147,18 @@
 
 <div class="shell">
 <header class="topbar">
-    <span class="brand">🕯️ Candle Guess</span>
+    <!-- The favicon's own mark, redrawn centred: up candle high, down candle low. Inline
+         rather than in the sprite above because it is the one mark that is filled, and filled
+         in --up/--down rather than taking the colour it sits in. -->
+    <span class="brand">
+        <svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M8 3v14" stroke="var(--up)" stroke-width="2" stroke-linecap="round"/>
+            <rect x="5" y="5" width="6" height="9" rx="1.5" fill="var(--up)"/>
+            <path d="M16 7v14" stroke="var(--down)" stroke-width="2" stroke-linecap="round"/>
+            <rect x="13" y="9" width="6" height="9" rx="1.5" fill="var(--down)"/>
+        </svg>
+        <span class="brand-text">Candle Guess</span>
+    </span>
     <!-- Hidden until live.js knows there is a round to point at: a banner counting down to
          nothing is worse than no banner. -->
     <button id="live-banner" class="live-banner hidden" type="button" data-nav-view="live">
@@ -50,19 +172,22 @@
              Signed-in only: nothing is recorded for anonymous play, so a streak here would be
              a promise the server never made. -->
         <span id="game-streak" class="game-streak hidden" aria-live="polite">
-            <span class="game-streak-flame" aria-hidden="true">🔥</span>
+            <svg class="icon game-streak-flame" aria-hidden="true" focusable="false"><use href="#i-flame"/></svg>
             <span class="game-streak-value" id="game-streak-value"></span>
             <span class="game-streak-unit">ngày</span>
         </span>
         <div class="auth-area" id="auth-area">
             <span id="auth-error-msg" class="auth-error-msg hidden"></span>
             <button id="theme-toggle" class="theme-toggle" type="button"
-                    aria-label="Chuyển giao diện sáng/tối" title="Chuyển giao diện sáng/tối"></button>
+                    aria-label="Chuyển giao diện sáng/tối" title="Chuyển giao diện sáng/tối">
+                <svg data-theme-icon="moon" class="icon" aria-hidden="true" focusable="false"><use href="#i-moon"/></svg>
+                <svg data-theme-icon="sun" class="icon hidden" aria-hidden="true" focusable="false"><use href="#i-sun"/></svg>
+            </button>
             <button id="auth-login-btn" class="ghost-btn" type="button">Kết nối ví</button>
             <div id="auth-user" class="auth-user hidden">
                 <button id="auth-display-name" class="auth-display-name" type="button"
                         title="Xem chi tiết ví"></button>
-                    <a id="admin-link" class="ghost-btn admin-link hidden" href="/admin.html">⚙ Quản trị</a>
+                    <a id="admin-link" class="ghost-btn admin-link hidden" href="/admin.html"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-sliders"/></svg>Quản trị</a>
                 <button id="auth-logout-btn" class="ghost-btn" type="button">Ngắt kết nối</button>
             </div>
         </div>
@@ -79,57 +204,57 @@
             <div class="rail-group" role="presentation">
                 <span class="rail-group-title">Chơi</span>
                 <button class="rail-item active" role="tab" id="tab-game" aria-controls="view-game" aria-selected="true" data-view="game">
-                    <span class="rail-icon" aria-hidden="true">🕯</span>
+                    <svg class="icon rail-icon" aria-hidden="true" focusable="false"><use href="#i-candles"/></svg>
                     <span class="rail-label">Đoán Nến</span>
                 </button>
                 <button class="rail-item" role="tab" id="tab-daily" aria-controls="view-daily" aria-selected="false" data-view="daily">
-                    <span class="rail-icon" aria-hidden="true">📅</span>
+                    <svg class="icon rail-icon" aria-hidden="true" focusable="false"><use href="#i-calendar-check"/></svg>
                     <span class="rail-label">Thử Thách</span>
                     <span class="rail-tag is-new">MỚI</span>
                 </button>
                 <button class="rail-item" role="tab" id="tab-live" aria-controls="view-live" aria-selected="false" data-view="live">
-                    <span class="rail-icon" aria-hidden="true">⚡</span>
+                    <svg class="icon rail-icon" aria-hidden="true" focusable="false"><use href="#i-bolt"/></svg>
                     <span class="rail-label">Trực Tiếp</span>
                     <span class="rail-tag is-live hidden" id="rail-tag-live"></span>
                 </button>
                 <button class="rail-item" role="tab" id="tab-trade" aria-controls="view-trade" aria-selected="false" data-view="trade">
-                    <span class="rail-icon" aria-hidden="true">💼</span>
+                    <svg class="icon rail-icon" aria-hidden="true" focusable="false"><use href="#i-briefcase"/></svg>
                     <span class="rail-label">Giao Dịch Demo</span>
                 </button>
             </div>
             <div class="rail-group" role="presentation">
                 <span class="rail-group-title">Học</span>
                 <button class="rail-item" role="tab" id="tab-patterns" aria-controls="view-patterns" aria-selected="false" data-view="patterns">
-                    <span class="rail-icon" aria-hidden="true">📈</span>
+                    <svg class="icon rail-icon" aria-hidden="true" focusable="false"><use href="#i-book"/></svg>
                     <span class="rail-label">Mẫu Nến</span>
                 </button>
                 <button class="rail-item" role="tab" id="tab-technical" aria-controls="view-technical" aria-selected="false" data-view="technical">
-                    <span class="rail-icon" aria-hidden="true">📐</span>
+                    <svg class="icon rail-icon" aria-hidden="true" focusable="false"><use href="#i-wedge"/></svg>
                     <span class="rail-label">Mẫu Hình Kỹ Thuật</span>
                 </button>
                 <button class="rail-item" role="tab" id="tab-psychology" aria-controls="view-psychology" aria-selected="false" data-view="psychology">
-                    <span class="rail-icon" aria-hidden="true">🧠</span>
+                    <svg class="icon rail-icon" aria-hidden="true" focusable="false"><use href="#i-mind"/></svg>
                     <span class="rail-label">Tâm Lý</span>
                 </button>
                 <button class="rail-item" role="tab" id="tab-blog" aria-controls="view-blog" aria-selected="false" data-view="blog">
-                    <span class="rail-icon" aria-hidden="true">📰</span>
+                    <svg class="icon rail-icon" aria-hidden="true" focusable="false"><use href="#i-news"/></svg>
                     <span class="rail-label">Blog / Kiến Thức</span>
                 </button>
             </div>
             <div class="rail-group" role="presentation">
                 <span class="rail-group-title">Bạn &amp; cộng đồng</span>
                 <button class="rail-item" role="tab" id="tab-leaderboard" aria-controls="view-leaderboard" aria-selected="false" data-view="leaderboard">
-                    <span class="rail-icon" aria-hidden="true">🏆</span>
+                    <svg class="icon rail-icon" aria-hidden="true" focusable="false"><use href="#i-trophy"/></svg>
                     <span class="rail-label">Bảng Xếp Hạng</span>
                     <span class="rail-tag hidden" id="rail-tag-rank"></span>
                 </button>
                 <button class="rail-item" role="tab" id="tab-heatmap" aria-controls="view-heatmap" aria-selected="false" data-view="heatmap">
-                    <span class="rail-icon" aria-hidden="true">🗺</span>
+                    <svg class="icon rail-icon" aria-hidden="true" focusable="false"><use href="#i-treemap"/></svg>
                     <span class="rail-label">Market Heatmap</span>
                 </button>
                 <!-- Shown only while signed in; nav.js toggles it on the session event. -->
                 <button class="rail-item hidden" role="tab" id="tab-profile" aria-controls="view-profile" aria-selected="false" data-view="profile">
-                    <span class="rail-icon" aria-hidden="true">👤</span>
+                    <svg class="icon rail-icon" aria-hidden="true" focusable="false"><use href="#i-user"/></svg>
                     <span class="rail-label">Hồ Sơ</span>
                 </button>
             </div>
@@ -150,7 +275,7 @@
         </div>
         <div class="game-toolbar-end">
             <span id="guess-progress" class="guess-progress hidden"></span>
-            <button id="sound-toggle" class="ghost-btn sound-toggle" type="button" aria-label="Bật/tắt âm thanh và rung">🔊</button>
+            <button id="sound-toggle" class="ghost-btn sound-toggle" type="button" aria-label="Bật/tắt âm thanh và rung"><svg data-sound-icon="on" class="icon" aria-hidden="true" focusable="false"><use href="#i-sound-on"/></svg><svg data-sound-icon="off" class="icon hidden" aria-hidden="true" focusable="false"><use href="#i-sound-off"/></svg></button>
         </div>
     </div>
 
@@ -235,7 +360,7 @@
         <button id="guess-short" class="guess-btn short" disabled>▼ SHORT</button>
     </div>
 
-    <button id="next-chart" class="next-btn hidden">🔄 Biểu đồ mới</button>
+    <button id="next-chart" class="next-btn hidden"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-refresh"/></svg>Biểu đồ mới</button>
 
     <p id="status" class="status"></p>
 </div><!-- /.play-main -->
@@ -618,7 +743,7 @@
         </div>
 
         <div class="live-round-modal-badge" id="live-round-modal-badge">
-            <span class="live-round-modal-badge-icon">🏆</span>
+            <svg class="icon live-round-modal-badge-icon" aria-hidden="true" focusable="false"><use href="#i-trophy"/></svg>
             <p class="live-round-modal-badge-state" id="live-round-modal-badge-state"></p>
             <p class="live-round-modal-badge-result" id="live-round-modal-badge-result"></p>
         </div>
@@ -663,7 +788,7 @@
         </div>
         <div class="heatmap-meta">
             <span id="heatmap-updated"></span>
-            <button id="heatmap-refresh" class="ghost-btn" type="button">🔄 Làm mới</button>
+            <button id="heatmap-refresh" class="ghost-btn" type="button"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-refresh"/></svg>Làm mới</button>
         </div>
     </div>
 
@@ -812,7 +937,7 @@
                     <span class="stat-label">Ngày liên tiếp</span>
                     <span class="stat-row">
                         <span class="stat-value rolling" id="profile-day-streak">0</span>
-                        <span class="stat-flame" aria-hidden="true">🔥</span>
+                        <svg class="icon stat-flame" aria-hidden="true" focusable="false"><use href="#i-flame"/></svg>
                     </span>
                 </div>
             </div>
@@ -855,19 +980,19 @@
      rather than repeating the other seven here. -->
 <nav class="tabbar" aria-label="Điều hướng nhanh">
     <button class="tabbar-item active" type="button" data-view="game">
-        <span class="tabbar-icon" aria-hidden="true">🕯</span><span>Chơi</span>
+        <svg class="icon tabbar-icon" aria-hidden="true" focusable="false"><use href="#i-candles"/></svg><span>Chơi</span>
     </button>
     <button class="tabbar-item" type="button" data-view="daily">
-        <span class="tabbar-icon" aria-hidden="true">📅</span><span>Hôm nay</span>
+        <svg class="icon tabbar-icon" aria-hidden="true" focusable="false"><use href="#i-calendar-check"/></svg><span>Hôm nay</span>
     </button>
     <button class="tabbar-item" type="button" data-view="live">
-        <span class="tabbar-icon" aria-hidden="true">⚡</span><span>Live</span>
+        <svg class="icon tabbar-icon" aria-hidden="true" focusable="false"><use href="#i-bolt"/></svg><span>Live</span>
     </button>
     <button class="tabbar-item" type="button" data-view="leaderboard">
-        <span class="tabbar-icon" aria-hidden="true">🏆</span><span>Hạng</span>
+        <svg class="icon tabbar-icon" aria-hidden="true" focusable="false"><use href="#i-trophy"/></svg><span>Hạng</span>
     </button>
     <button class="tabbar-item" type="button" id="tabbar-more" aria-controls="rail" aria-expanded="false">
-        <span class="tabbar-icon" aria-hidden="true">☰</span><span>Thêm</span>
+        <svg class="icon tabbar-icon" aria-hidden="true" focusable="false"><use href="#i-menu"/></svg><span>Thêm</span>
     </button>
 </nav>
 </div><!-- /.shell-page -->
