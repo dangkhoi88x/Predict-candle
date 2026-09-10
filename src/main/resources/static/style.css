@@ -1685,12 +1685,21 @@ h1, h2, h3 {
     gap: 12px;
 }
 
+/* The primary action, and deliberately no longer the loudest thing on screen. At 16px/800
+   across a 52px slab in full --up/--down, the pair pulled the eye off the chart they are an
+   answer to — the chart is the question, and the buttons were outranking it.
+
+   The fill is mixed 16% toward the page's own ground rather than made translucent or given a
+   lighter token: one rule then holds in both themes, and it takes the saturation down without
+   touching the up/down hue the whole site is read by. It costs no contrast against the dark
+   labels — in the light theme it gains some, where #d92643 under #200608 was the tightest
+   pair on the page. */
 .guess-btn {
-    padding: 16px;
+    padding: 13px;
     border-radius: 12px;
     border: none;
-    font-size: 16px;
-    font-weight: 800;
+    font-size: 15px;
+    font-weight: 700;
     letter-spacing: 0.03em;
     cursor: pointer;
     color: #06110f;
@@ -1702,11 +1711,11 @@ h1, h2, h3 {
 }
 
 .guess-btn.long {
-    background: var(--up);
+    background: color-mix(in oklab, var(--up) 84%, var(--bg));
 }
 
 .guess-btn.short {
-    background: var(--down);
+    background: color-mix(in oklab, var(--down) 84%, var(--bg));
     color: #200608;
 }
 
