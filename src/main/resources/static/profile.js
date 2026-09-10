@@ -26,7 +26,41 @@
         shareLine: document.getElementById("profile-share-line"),
         share: document.getElementById("profile-share"),
         shareText: document.getElementById("profile-share-text"),
+        rank: document.getElementById("profile-rank"),
+        rankMedal: document.getElementById("profile-rank-medal"),
+        rankValue: document.getElementById("profile-rank-value"),
     };
+
+    /* ---- the rank medallion --------------------------------------------------------------- */
+
+    /* Not fetched here. play-sidebar.js already asks /api/leaderboard for the column beside the
+       chart and publishes what it found, the same bargain `candles:stats` makes — two callers
+       reading one figure out of two responses can only end up disagreeing about it. Held in a
+       variable because the event fires whenever the board reloads and this tab is usually not
+       on screen when it does; without the last value a reveal would draw an empty disc. */
+    var lastRank = null;
+
+    var PODIUM = ["is-first", "is-second", "is-third"];
+
+    function renderRank(rank) {
+        el.rank.classList.remove("hidden", "is-first", "is-second", "is-third");
+        /* No rank at all — signed out, or nothing recorded yet — is drawn as no medallion. An
+           empty disc reads as something that failed to load, which is why the rail's tag makes
+           the same choice with the same number. */
+        if (!rank) {
+            el.rank.classList.add("hidden");
+            return;
+        }
+        if (rank <= PODIUM.length) el.rank.classList.add(PODIUM[rank - 1]);
+        el.rankValue.textContent = "#" + rank;
+        el.rankMedal.classList.toggle("is-wide", rank >= 100);
+        el.rank.setAttribute("aria-label", "Hạng " + rank + " trên bảng xếp hạng. Mở bảng xếp hạng.");
+    }
+
+    document.addEventListener("candles:rank", function (event) {
+        lastRank = event.detail.rank;
+        renderRank(lastRank);
+    });
 
     function pct(correct, total) {
         return total === 0 ? "–" : Math.round((correct / total) * 100) + "%";
@@ -244,6 +278,9 @@
         window.CandleRolling.update(el.best, data.bestStreak);
 
         renderDayStreak(data.dayStreak);
+        /* Redrawn on every reveal from the value already in hand: the board may have last
+           reported while this tab was hidden, and the class list survives nothing else here. */
+        renderRank(lastRank);
 
         /* Say plainly which part of the total the server watched happen. Without this the
            carried-over figures look like they were all earned on this account. */

@@ -17,7 +17,7 @@
 /* ---- who: avatar, heading, wallet ---- */
 .pf-head {
     display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-columns: auto minmax(0, 1fr) auto;
     gap: 24px;
     align-items: center;
     padding: 22px;
@@ -67,6 +67,61 @@
 
 .pf-name { margin: 0; font-size: 26px; letter-spacing: var(--tracking-tight); }
 
+/* ---- medallion: the caller's rank on the leaderboard ---- */
+
+/* Gold, silver and bronze are the three the board itself hands out, and the medal takes one
+   only when the player has actually got it — past the podium it is the accent with no sweep
+   across it, because a gold disc under rank 47 says something the board does not. */
+.pf-rank {
+    --c: var(--accent);
+    display: block;
+    padding: 6px;
+    border: 0;
+    border-radius: 14px;
+    background: none;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+}
+.pf-rank:hover { background: var(--overlay-soft); }
+.pf-rank:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.pf-rank.is-first  { --c: #e7ad2b; }
+.pf-rank.is-second { --c: #b6bcc8; }
+.pf-rank.is-third  { --c: #c07d3f; }
+
+.pf-medal {
+    position: relative; width: 88px; height: 88px; border-radius: 50%;
+    display: grid; place-items: center; isolation: isolate;
+}
+.pf-medal::before {
+    content: ""; position: absolute; inset: -3px; border-radius: 50%; z-index: -2;
+    background: conic-gradient(from 0deg, transparent 0 25%, var(--c) 50%, transparent 75% 100%);
+    animation: pf-spin 3.4s linear infinite;
+}
+.pf-medal::after {
+    content: ""; position: absolute; inset: 0; border-radius: 50%; z-index: -1;
+    background: radial-gradient(circle at 30% 25%,
+        color-mix(in oklab, var(--c) 55%, #000),
+        color-mix(in oklab, var(--c) 20%, #0a0a0a));
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.25),
+                0 0 22px color-mix(in oklab, var(--c) 45%, transparent);
+}
+.pf-medal b { font: 700 26px var(--mono); color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,.5); }
+/* Four glyphs of mono at 26px overflow an 88px disc, and ranks go past 99. */
+.pf-medal.is-wide b { font-size: 19px; }
+
+.pf-shine { position: absolute; inset: 0; border-radius: 50%; overflow: hidden; z-index: 1; }
+.pf-shine::after {
+    content: ""; position: absolute; top: -60%; left: -30%; width: 40%; height: 220%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,.5), transparent);
+    transform: rotate(20deg); animation: pf-sweep 3.4s var(--ease-out) infinite;
+}
+/* The sweep is the podium's, so off the podium there is nothing to sweep. */
+.pf-rank:not(.is-first):not(.is-second):not(.is-third) .pf-shine { display: none; }
+
+.pf-medal-cap { display: block; margin-top: 8px; text-align: center;
+    font: 500 10.5px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+
 /* ---- the record: five tiles, each with its mark in its own colour ---- */
 .pf-tiles {
     display: grid;
@@ -103,10 +158,11 @@
 .pf-tile.is-warn .stat-value { color: var(--warn); }
 
 @keyframes pf-spin  { to { transform: rotate(360deg); } }
+@keyframes pf-sweep { 0%,55% { left: -40%; } 80%,100% { left: 130%; } }
 
 /* Matches the reduced-motion block style.css already keeps. */
 @media (prefers-reduced-motion: reduce) {
-    .pf-avatar::before { animation: none; }
+    .pf-avatar::before, .pf-medal::before, .pf-shine::after { animation: none; }
 }
 
 
