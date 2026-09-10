@@ -113,6 +113,14 @@
                     </svg>
                     <span>Vòng live</span>
                 </button>
+                <button class="adm-nav-item" type="button" data-pane-link="demo" title="Sàn demo">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                         stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M3 17l5-6 4 3.5L21 6"/>
+                        <path d="M3 21h18"/>
+                    </svg>
+                    <span>Sàn demo</span>
+                </button>
                 <button class="adm-nav-item" type="button" data-pane-link="players" title="Người chơi">
                     <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                          stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -501,6 +509,81 @@
                     </section>
                 </section>
 
+                <!-- Paper trading had no admin surface at all: an immutable trade log, a table
+                     that holds no money, and nothing anywhere saying how much of it was used.
+                     Every figure here is folded from those rows through the same DemoPortfolio
+                     the player's own terminal uses — two ways of computing one balance is how a
+                     page like this ends up disagreeing with the player about their money. -->
+                <section id="admin-demo" data-pane="demo" class="hidden">
+                    <div class="admin-bar">
+                        <h1 class="admin-h1">Sàn demo</h1>
+                        <span id="demo-count" class="ops-generated"></span>
+                        <div class="editor-actions">
+                            <button id="demo-refresh" class="ghost-btn" type="button">Làm mới</button>
+                        </div>
+                    </div>
+
+                    <div class="adm-card adm-figures" id="demo-figures"></div>
+                    <p class="adm-figures-foot" id="demo-foot"></p>
+
+                    <div class="adm-table-card">
+                        <div class="scroller">
+                            <table class="ops-table" id="demo-table">
+                                <thead>
+                                    <tr>
+                                        <th>Ví</th><th>Tên hiển thị</th><th class="num">Lệnh</th>
+                                        <th class="num">Tiền mặt</th><th class="num">Tài sản</th>
+                                        <th class="num">Đã chốt</th>
+                                        <th>Giao dịch gần nhất</th><th></th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="adm-pager" id="demo-pager">
+                        <button id="demo-prev" class="ghost-btn" type="button">← Trước</button>
+                        <span class="adm-pager-note" id="demo-range">—</span>
+                        <button id="demo-next" class="ghost-btn" type="button">Sau →</button>
+                    </div>
+
+                    <section id="demo-detail" class="adm-tray hidden" aria-live="polite">
+                        <div class="adm-tray-head">
+                            <span class="adm-kicker" id="demo-detail-title">Tài khoản</span>
+                            <span class="adm-kicker-note" id="demo-detail-sub">—</span>
+                            <button id="demo-detail-reset" class="danger-btn" type="button">Đặt lại</button>
+                            <button id="demo-detail-close" class="ghost-btn" type="button">Đóng</button>
+                        </div>
+                        <p class="adm-figures-foot" id="demo-detail-note"></p>
+
+                        <div class="adm-split">
+                            <div class="adm-table-card">
+                                <div class="scroller">
+                                    <table class="ops-table" id="demo-positions">
+                                        <thead>
+                                            <tr><th>Cặp</th><th class="num">Số lượng</th><th class="num">Giá vốn</th>
+                                                <th class="num">Giá hiện tại</th><th class="num">Lãi/lỗ mở</th></tr>
+                                        </thead>
+                                        <tbody></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <div class="adm-table-card">
+                                <div class="scroller">
+                                    <table class="ops-table" id="demo-fills">
+                                        <thead>
+                                            <tr><th>Lúc</th><th>Cặp</th><th>Lệnh</th>
+                                                <th class="num">Số lượng</th><th class="num">Giá</th><th class="num">Phí</th></tr>
+                                        </thead>
+                                        <tbody></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </section>
+
                 <section id="admin-players" data-pane="players" class="hidden">
                     <div class="admin-bar">
                         <h1 class="admin-h1">Người chơi</h1>
@@ -772,6 +855,7 @@
 <script src="admin-ops.js"></script>
 <script src="admin-assets.js"></script>
 <script src="admin-live.js"></script>
+<script src="admin-demo.js"></script>
 <script src="admin-players.js"></script>
 <script src="admin-content.js"></script>
 <script src="admin-media.js"></script>

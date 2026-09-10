@@ -543,6 +543,34 @@ balance plus a leaderboard means retrying until a lucky run, and the alternative
 forbidding resets — both cost more than the board is worth. `resets` is still counted on the
 account in case that is ever revisited.
 
+**The admin's copy folds through the same `DemoPortfolio`, and that is the whole design of
+`AdminDemoService`.** Two ways of computing one balance is how an admin page ends up disagreeing
+with a player about their money — and the player would be right, because theirs is the number
+the trades produced. `fillsForAccounts` supplies a whole page of accounts in one query rather
+than one fold per row; the mark a reset moved is different for every account, so it comes from
+the join to `demo_accounts` instead of a parameter, which is what keeps a reset meaning the same
+thing on both screens.
+
+Three things there are worth knowing before extending it:
+
+- **`accounts` and `tradingAccounts` are different numbers on purpose.** Opening the terminal
+  creates the row, so the gap between them is how many people looked at paper trading and never
+  placed a trade — the question the header exists to answer.
+- **Cash and realised P&L need no prices and are always exact; holdings value, unrealised and
+  equity go null together when any held position has no price.** The player's own view decides
+  that per position, which is right for a list of their positions; a whole-account figure that
+  quietly dropped a holding would be worse than a gap on a page somebody is comparing accounts
+  across.
+- **`tradesBeforeReset` is the one figure no player can see, and it exists to stop a reset
+  looking like data loss.** A reset moves `opened_at` and deletes nothing, so an account can
+  hold hundreds of rows while showing three trades — invisible from inside the game, and the
+  first thing that reads as corruption from outside it.
+
+The only write is the player's own `reset`, called rather than reimplemented. There is
+deliberately nothing that credits an account, edits a fill or sets a balance: the balance is not
+a column, and a screen that could adjust one would be inventing the second source of truth V17
+was written to avoid.
+
 The terminal is the one view that is not a reading column: `.app` caps at 760px, which is right
 for a chart with two buttons under it and far too narrow for a market list, a chart and an order
 ticket side by side — at 760 the middle track collapsed to about 120px. `.app-wide` gives the

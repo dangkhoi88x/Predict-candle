@@ -2452,6 +2452,7 @@ h1, h2, h3 {
 .admin-panes[data-pane="ops"] > section[data-pane="ops"]:not(.hidden),
 .admin-panes[data-pane="assets"] > section[data-pane="assets"]:not(.hidden),
 .admin-panes[data-pane="live"] > section[data-pane="live"]:not(.hidden),
+.admin-panes[data-pane="demo"] > section[data-pane="demo"]:not(.hidden),
 .admin-panes[data-pane="players"] > section[data-pane="players"]:not(.hidden),
 .admin-panes[data-pane="content"] > section[data-pane="content"]:not(.hidden),
 .admin-panes[data-pane="media"] > section[data-pane="media"]:not(.hidden),
@@ -2842,17 +2843,48 @@ body:not(.is-admin) .adm-search {
 /* Two tables side by side above 1000px, stacked below it. The guesses and the live calls are
    two histories of the same account and read best against each other; neither survives being
    squeezed to half a phone. */
+/* Two tables side by side, stacked when they will not both fit. The minimum is what a
+   five-column table of figures actually needs, not the narrowest it can be squeezed to: below
+   that the two halves both scroll sideways permanently, which is worse than reading them one
+   under the other. */
 .adm-split {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(360px, 100%), 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(520px, 100%), 1fr));
     gap: 16px;
+}
+
+/* .ops-table's 760px floor is sized for the full-width tables it was written for; in a split
+   column it would be wider than the column can ever be. The tighter cell padding is the other
+   half of the same fix — 36px of padding per column is most of why these tables are wide. */
+.adm-split .ops-table {
+    min-width: 420px;
+}
+
+.adm-split .ops-table :is(th, td) {
+    padding-left: 12px;
+    padding-right: 12px;
+}
+
+/* .is-up / .is-down are the game's tokens, and the admin page has a palette of its own: the
+   same green on a near-black ground and on a soft grey one are not the same green. Scoped
+   rather than renamed, so a P&L figure keeps one class name wherever it is drawn. */
+.admin-shell .is-up {
+    color: var(--adm-up);
+}
+
+.admin-shell .is-down {
+    color: var(--adm-down);
 }
 
 /* A wallet is an identifier, not a quantity: it takes the mono column's typeface without its
    right alignment, which would leave the addresses hanging off a left-aligned header. */
 #player-table td:first-child.num,
-#live-calls td:first-child.num {
+#live-calls td:first-child.num,
+#demo-table td:first-child.num {
     text-align: left;
+    /* An abbreviated address is one token; wrapping it after the ellipsis makes two half
+       addresses, neither of which is one. */
+    white-space: nowrap;
 }
 
 .ops-badge {
