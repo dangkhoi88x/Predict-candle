@@ -577,6 +577,31 @@ h1, h2, h3 {
     display: none;
 }
 
+/* The topbar holds five things when a wallet is connected — brand, the live banner, the day
+   streak, the wallet with its two buttons, and the theme switch — and they do not all fit on
+   a laptop. It used to wrap to two rows and grow 40px, on every page of the site, for as long
+   as a round was running.
+
+   So the row sheds identity before it sheds function, in that order: the brand's wordmark
+   first (the mark still says which product this is), then the two button labels (each keeps
+   its title and aria-label, and the logout door is the mark admin.html already uses). Nothing
+   here is removed — a label is dropped from something whose icon is unambiguous. */
+@media (max-width: 1180px) {
+    .brand-text {
+        display: none;
+    }
+}
+
+@media (max-width: 1040px) {
+    .topbar-btn-label {
+        display: none;
+    }
+
+    .auth-display-name {
+        max-width: 110px;
+    }
+}
+
 /* Below this the topbar cannot hold brand, banner and wallet on one line — the banner broke
    mid-sentence and shoved the wallet button onto a row of its own. It takes a full row instead,
    which is a layout rather than an accident. */
