@@ -1,5 +1,6 @@
 package com.example.candles.exception;
 
+import com.example.candles.client.ExchangeCoolingDownException;
 import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,6 +11,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestClientResponseException;
+import java.time.temporal.ChronoUnit;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -77,6 +79,9 @@ public class GlobalExceptionHandler {
     }
 
     static String upstreamReason(RestClientException e) {
+        if (e instanceof ExchangeCoolingDownException coolingDown) {
+            return "sàn đang tạm chặn, thử lại sau " + coolingDown.until().truncatedTo(ChronoUnit.SECONDS);
+        }
         if (e instanceof RestClientResponseException response) {
             return "HTTP " + response.getStatusCode().value();
         }

@@ -1,5 +1,6 @@
 package com.example.candles.exception;
 
+import com.example.candles.client.ExchangeCoolingDownException;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -9,6 +10,7 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.ResourceAccessException;
 import java.io.IOException;
 import java.net.UnknownHostException;
+import java.time.Instant;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -49,5 +51,16 @@ class GlobalExceptionHandlerTest {
 
         assertFalse(message.contains("secret upstream detail"));
         assertFalse(message.contains("Forbidden"));
+    }
+
+    @Test
+    void aBackOffNamesWhenTheExchangeWillBeAskedAgain() {
+        ExchangeCoolingDownException coolingDown = new ExchangeCoolingDownException(Instant.parse("2026-09-13T14:05:00.123Z"));
+
+        ResponseEntity<GlobalExceptionHandler.ErrorResponse> response = handler.handleUpstreamFailure(coolingDown);
+
+        assertEquals(HttpStatus.BAD_GATEWAY, response.getStatusCode());
+        assertEquals("Không lấy được dữ liệu từ sàn (sàn đang tạm chặn, thử lại sau 2026-09-13T14:05:00Z).",
+                response.getBody().message());
     }
 }
