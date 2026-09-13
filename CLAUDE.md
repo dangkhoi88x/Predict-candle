@@ -1002,6 +1002,12 @@ and S&P 500 (`/api/market/sp500` → `YahooFinanceClient`). `treemap.js` does th
 
 ## Notes
 
+- **The demo runs on Render (`render.yaml`) against Neon Postgres, both in Singapore** —
+  `docs/DEPLOY_PLAN.md` is the walkthrough. The region is not a latency choice: Binance
+  answers US addresses with 451, and both providers default to the US, so a wrong region boots
+  cleanly and stores no candles. Not Vercel: there is no Java runtime there, and the hourly
+  sync needs a process that stays alive.
+
 - **Commits carry no `Co-Authored-By` trailer.** GitHub renders that trailer as a second author
   ("dangkhoi88x and claude committed") and counts it in the repo's contributor list, which
   misrepresents who owns this work. Author and committer have always been the repo owner alone;
