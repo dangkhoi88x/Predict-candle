@@ -1,5 +1,6 @@
 package com.example.candles.client;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
@@ -13,6 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Component
+@ConditionalOnProperty(prefix = "candles", name = "price-source", havingValue = "binance", matchIfMissing = true)
 public class BinanceProvider implements PriceDataProvider {
 
     private static final int PAGE_LIMIT = 1000;

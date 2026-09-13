@@ -40,6 +40,12 @@ CLAUDE.md).
 → Neon: **AWS Asia Pacific (Singapore)**. DB đặt cùng region với app để mỗi truy vấn không
 phải đi vòng qua Thái Bình Dương.
 
+**Cập nhật 2026-09-13: bản demo lấy nến từ OKX, không phải Binance.** Đã chọn Singapore rồi mà
+Binance vẫn trả **HTTP 418**, tức cấm theo IP: lần đầu 45 phút, lần sau 2 tiếng, và mỗi lần tái
+phạm lại dài hơn, tối đa 3 ngày. IP gọi ra ngoài của Render được nhiều service dùng chung, và bot
+crypto chạy trên Render rất nhiều. App này chỉ gửi vài chục request, không thể tự gây ra lệnh cấm.
+`render.yaml` đặt `CANDLES_PRICE_SOURCE=okx`; chạy local vẫn dùng Binance như cũ.
+
 ## 3. Neon — hướng dẫn từng bước
 
 ### 3.1 Tạo project
