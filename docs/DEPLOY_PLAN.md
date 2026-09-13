@@ -79,22 +79,33 @@ DB_PASSWORD=AbC123xyz
 
 Nhớ thêm tiền tố `jdbc:` và giữ `sslmode=require`. `channel_binding` bỏ đi được.
 
-### 3.3 Nạp dữ liệu từ máy mình trước (khuyên làm)
+### 3.3 Để Render nạp nến, đừng nạp từ máy local
 
-Lần khởi động đầu tiên phải backfill nến từ Binance. Trên instance free của Render (CPU yếu,
-512 MB) bước này chậm. Chạy nó từ máy local vào thẳng Neon thì Render lên là có dữ liệu ngay:
+Lần khởi động đầu tiên phải backfill nến từ Binance, khoảng 58 nghìn dòng nếu tính từ 2025.
+**Việc này nên để Render làm**, dù instance free của nó yếu hơn máy bạn.
+
+Lý do là độ trễ mạng, không phải CPU. `Candle` sinh id bằng `IDENTITY`, nên Hibernate không gộp
+được các lệnh insert: mỗi nến là một lượt đi về tới database. Từ Việt Nam tới Neon Singapore mỗi
+lượt mất khoảng 70 ms, tức hơn một tiếng cho 58 nghìn dòng. Render ở cùng region với Neon nên
+mỗi lượt chỉ vài ms, và cùng khối lượng đó xong trong vài phút. Thử thật ngày 2026-09-13: chạy
+local vào Neon, riêng 17 migration đã mất 14 giây.
+
+Chạy app local trỏ vào Neon vẫn có ích để **kiểm tra kết nối và tạo schema** trước khi deploy.
+Thấy `Successfully applied … migrations` và `Started CandlesApplication` là đủ, bấm `Ctrl+C`:
 
 ```bash
 DB_URL='jdbc:postgresql://ep-…ap-southeast-1.aws.neon.tech/neondb?sslmode=require' DB_USERNAME=neondb_owner DB_PASSWORD='…' CANDLES_BACKFILL_START=2025-01-01T00:00:00Z ./mvnw spring-boot:run
 ```
 
 - Biến môi trường ưu tiên hơn `.env`, nên `.env` local không ghi đè được chúng.
-- `CANDLES_BACKFILL_START` phải **giống giá trị trong `render.yaml`**. Sync chỉ lấy tiếp từ nến
-  mới nhất, không bao giờ quay ngược về trước, nên backfill local từ 2022 thì Neon sẽ giữ lịch
-  sử từ 2022.
-- Đợi đủ các dòng `Synced N candles for …` (BTC, ETH, BNB, SOL) rồi `Ctrl+C`.
+- Giữ `CANDLES_BACKFILL_START` **giống giá trị trong `render.yaml`**. Sync chỉ lấy tiếp từ nến
+  mới nhất, không bao giờ quay ngược về trước, nên nếu một cặp kịp lưu xong từ 2022 thì Neon sẽ
+  giữ lịch sử từ 2022.
+- Dừng giữa chừng không làm hỏng gì. Mỗi cặp tiền được lưu trong một transaction
+  (`saveAll`), nên cặp đang nạp dở sẽ rollback, còn cặp đã xong thì Render bỏ qua.
 
-Kiểm tra trong **SQL Editor** của Neon:
+Sau khi Render deploy xong và log có đủ 4 dòng `Synced N candles for …`, kiểm tra trong
+**SQL Editor** của Neon:
 
 ```sql
 select version, description, success from flyway_schema_history order by installed_rank desc limit 3;
