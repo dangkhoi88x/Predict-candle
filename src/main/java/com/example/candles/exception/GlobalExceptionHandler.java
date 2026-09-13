@@ -1,13 +1,20 @@
 package com.example.candles.exception;
 
 import jakarta.validation.ConstraintViolationException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.core.NestedExceptionUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.client.RestClientException;
+import org.springframework.web.client.RestClientResponseException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     @ExceptionHandler(InvalidRoundTokenException.class)
     public ResponseEntity<ErrorResponse> handleInvalidToken(InvalidRoundTokenException e) {
@@ -48,6 +55,32 @@ public class GlobalExceptionHandler {
                 .map(v -> v.getPropertyPath() + " " + v.getMessage())
                 .orElse("Tham số không hợp lệ.");
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErrorResponse(detail));
+    }
+
+    /**
+     * An exchange or market-data call that failed is not this server's bug, and a bare 500 said
+     * nothing about which of the two it was. The first deploy made that concrete: every candle
+     * sync and the live round failed on a host that could not reach the exchange, and the log
+     * viewer showed a hundred lines of filter chain with the one line naming the cause scrolled
+     * out of reach. So the reason travels in two places a person can actually find — a single
+     * log line, and the response body.
+     *
+     * The body carries only the upstream status or the failure's type, never the upstream's
+     * own message, which is not ours to republish.
+     */
+    @ExceptionHandler(RestClientException.class)
+    public ResponseEntity<ErrorResponse> handleUpstreamFailure(RestClientException e) {
+        String reason = upstreamReason(e);
+        log.warn("Upstream request failed: {} ({})", reason, NestedExceptionUtils.getMostSpecificCause(e).toString());
+        return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
+                .body(new ErrorResponse("Không lấy được dữ liệu từ sàn (" + reason + ")."));
+    }
+
+    static String upstreamReason(RestClientException e) {
+        if (e instanceof RestClientResponseException response) {
+            return "HTTP " + response.getStatusCode().value();
+        }
+        return NestedExceptionUtils.getMostSpecificCause(e).getClass().getSimpleName();
     }
 
     public record ErrorResponse(String message) {
