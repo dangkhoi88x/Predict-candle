@@ -3,6 +3,7 @@ package com.example.candles.service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationArguments;
+import org.springframework.core.NestedExceptionUtils;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -57,7 +58,10 @@ public class CandleSyncScheduler implements ApplicationRunner {
             try {
                 candleSyncService.sync(asset);
             } catch (Exception e) {
-                log.error("Failed to sync candles for {}", asset.getSymbol(), e);
+                // The cause goes on the first line too: this trace is long, and a log viewer
+                // that shows its tail shows everything except what went wrong.
+                log.error("Failed to sync candles for {}: {}", asset.getSymbol(),
+                        NestedExceptionUtils.getMostSpecificCause(e).toString(), e);
             }
         }
     }
