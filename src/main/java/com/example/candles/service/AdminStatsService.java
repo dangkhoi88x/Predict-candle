@@ -111,7 +111,7 @@ public class AdminStatsService {
         List<AdminStats.AccountPoint> accounts = accountCurve(utcNow);
 
         return new AdminStats(range.name().toLowerCase(), now, main, daily, weekly, accounts,
-                totals(weekly, accounts, now), deltas(accounts, now));
+                totals(weekly, accounts, now), deltas(accounts, now), modes(weekly, utcNow));
     }
 
     /**
@@ -143,7 +143,10 @@ public class AdminStatsService {
                     row == null ? 0 : asLong(row[1]),
                     longCount, shortCount, longCount + shortCount,
                     row == null ? 0 : asLong(row[4]),
-                    row == null ? 0 : asLong(row[5])));
+                    row == null ? 0 : asLong(row[5]),
+                    row == null ? 0 : asLong(row[6]),
+                    row == null ? 0 : asLong(row[7]),
+                    row == null ? 0 : asLong(row[8])));
         }
         return buckets;
     }
@@ -190,6 +193,35 @@ public class AdminStatsService {
                 guesses == 0 ? null : (double) correct / guesses,
                 guessResults.activePlayersBetween(midnight, now),
                 accounts.getLast().total());
+    }
+
+    /**
+     * The mode split over the same twelve weeks the accuracy headline covers.
+     *
+     * Counts are folded out of the weekly buckets already in hand, so the three of them add
+     * up to {@code totals().guesses()} by construction rather than by two queries happening
+     * to agree. Only the player figures are asked for separately, because distinct players
+     * cannot be summed across buckets without turning visits into people.
+     *
+     * The window is taken off the buckets themselves rather than recomputed, for the same
+     * reason: the query and the sum then cannot be looking at different weeks.
+     */
+    private AdminStats.Modes modes(List<AdminStats.Bucket> weekly, ZonedDateTime now) {
+        Instant since = weekly.getFirst().start();
+        Instant until = next(truncate(now, "week"), "week").toInstant();
+
+        Map<String, Long> players = new HashMap<>();
+        for (Object[] row : guessResults.modePlayersBetween(since, until)) {
+            players.put(String.valueOf(row[0]), asLong(row[1]));
+        }
+
+        return new AdminStats.Modes(
+                weekly.stream().mapToLong(AdminStats.Bucket::practice).sum(),
+                weekly.stream().mapToLong(AdminStats.Bucket::daily).sum(),
+                weekly.stream().mapToLong(AdminStats.Bucket::archive).sum(),
+                players.getOrDefault("PRACTICE", 0L),
+                players.getOrDefault("DAILY", 0L),
+                players.getOrDefault("ARCHIVE", 0L));
     }
 
     private AdminStats.Deltas deltas(List<AdminStats.AccountPoint> accounts, Instant now) {

@@ -152,6 +152,63 @@ class AdminStatsTest {
     }
 
     /**
+     * The mode split is a partition of the same rows the accuracy headline is computed over,
+     * so the three counts have to add up to that headline's denominator exactly. They are
+     * summed out of the weekly buckets for that reason; a second query over "the last twelve
+     * weeks" would agree until one of the two windows moved.
+     */
+    @Test
+    void theModeSplitAddsUpToTheGuessTotalItSplits() {
+        User player = save(Role.USER);
+        Asset asset = assetRepository.findAll().getFirst();
+        guessResults.saveAll(List.of(
+                new GuessResult(player, asset, "1h", 21, 1, Direction.LONG, Direction.LONG, GuessMode.PRACTICE),
+                new GuessResult(player, asset, "1h", 22, 1, Direction.SHORT, Direction.LONG, GuessMode.DAILY),
+                new GuessResult(player, asset, "1h", 23, 1, Direction.LONG, Direction.LONG, GuessMode.ARCHIVE),
+                // Timed out, and still one of the three games: a guess with no direction is
+                // in `guesses` and must be in exactly one mode column too, or the split stops
+                // reaching the total.
+                new GuessResult(player, asset, "1h", 24, 1, null, Direction.LONG, GuessMode.DAILY)));
+        guessResults.flush();
+
+        AdminStats stats = statsService.stats("month");
+        AdminStats.Modes modes = stats.modes();
+
+        assertThat(modes.practice() + modes.daily() + modes.archive())
+                .isEqualTo(stats.totals().guesses());
+        assertThat(modes.daily()).isGreaterThanOrEqualTo(2);
+        assertThat(modes.archive()).isGreaterThanOrEqualTo(1);
+
+        // Per bucket as well, which is what the columns are drawn from.
+        AdminStats.Bucket today = statsService.stats("week").buckets().getLast();
+        assertThat(today.practice() + today.daily() + today.archive()).isEqualTo(today.guesses());
+    }
+
+    /**
+     * Players are counted per mode over the window, not summed across buckets. The two come
+     * apart the moment somebody plays on two different days, and summing would report visits
+     * under a label saying people.
+     */
+    @Test
+    void aPlayerWhoPlaysTwiceIsStillOnePlayerOfThatMode() {
+        User player = save(Role.USER);
+        Asset asset = assetRepository.findAll().getFirst();
+        guessResults.saveAll(List.of(
+                new GuessResult(player, asset, "1h", 31, 1, Direction.LONG, Direction.LONG, GuessMode.DAILY),
+                new GuessResult(player, asset, "1h", 32, 1, Direction.LONG, Direction.LONG, GuessMode.DAILY),
+                new GuessResult(player, asset, "1h", 33, 1, Direction.LONG, Direction.LONG, GuessMode.DAILY)));
+        guessResults.flush();
+
+        AdminStats.Modes modes = statsService.stats("month").modes();
+
+        assertThat(modes.daily()).isGreaterThanOrEqualTo(3);
+        // Three guesses, one player. The figure is smaller than the count it sits under, and
+        // that is the point of it being its own query.
+        assertThat(modes.dailyPlayers()).isPositive();
+        assertThat(modes.dailyPlayers()).isLessThan(modes.daily());
+    }
+
+    /**
      * The overview pane reads these paths by name out of the JSON and there is no shared
      * schema between the two, so renaming a record component is a silent break: the chart
      * just draws zeroes. This is the contract.
@@ -169,6 +226,9 @@ class AdminStatsTest {
                 .andExpect(jsonPath("$.buckets[0].shortCount").exists())
                 .andExpect(jsonPath("$.buckets[0].answered").exists())
                 .andExpect(jsonPath("$.buckets[0].correct").exists())
+                .andExpect(jsonPath("$.buckets[0].practice").exists())
+                .andExpect(jsonPath("$.buckets[0].daily").exists())
+                .andExpect(jsonPath("$.buckets[0].archive").exists())
                 .andExpect(jsonPath("$.daily[0].guesses").exists())
                 .andExpect(jsonPath("$.daily[0].activePlayers").exists())
                 .andExpect(jsonPath("$.weekly[0].guesses").exists())
@@ -177,6 +237,12 @@ class AdminStatsTest {
                 .andExpect(jsonPath("$.accounts[0].added").exists())
                 .andExpect(jsonPath("$.totals.activePlayersToday").exists())
                 .andExpect(jsonPath("$.totals.accounts").exists())
+                .andExpect(jsonPath("$.modes.practice").exists())
+                .andExpect(jsonPath("$.modes.daily").exists())
+                .andExpect(jsonPath("$.modes.archive").exists())
+                .andExpect(jsonPath("$.modes.practicePlayers").exists())
+                .andExpect(jsonPath("$.modes.dailyPlayers").exists())
+                .andExpect(jsonPath("$.modes.archivePlayers").exists())
                 // The four delta keys are nullable, so assert the object carries them rather
                 // than that they hold a value.
                 .andExpect(jsonPath("$.deltas").exists())

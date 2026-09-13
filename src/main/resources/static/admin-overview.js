@@ -47,6 +47,14 @@
         retIntensity: document.getElementById("ov-retention-intensity"),
         retIntensityBase: document.getElementById("ov-retention-intensity-base"),
         retFoot: document.getElementById("ov-retention-foot"),
+        modesSpan: document.getElementById("ov-modes-span"),
+        modePractice: document.getElementById("ov-mode-practice"),
+        modePracticeBase: document.getElementById("ov-mode-practice-base"),
+        modeDaily: document.getElementById("ov-mode-daily"),
+        modeDailyBase: document.getElementById("ov-mode-daily-base"),
+        modeArchive: document.getElementById("ov-mode-archive"),
+        modeArchiveBase: document.getElementById("ov-mode-archive-base"),
+        modesFoot: document.getElementById("ov-modes-foot"),
         status: document.getElementById("admin-status"),
     };
     if (!el.section) return;
@@ -403,6 +411,43 @@
 
     /* ---- loading ---- */
 
+    /**
+     * Which game the last twelve weeks of play came from.
+     *
+     * The share of the total is the figure this panel exists for — a count on its own says
+     * nothing about whether the daily challenge is being played, only that it was played.
+     * The window is the accuracy panel's, because these counts are summed out of the same
+     * weekly buckets the server built that headline from.
+     *
+     * Player counts sit underneath as the base rather than beside as a fourth figure: they
+     * are the same three modes counted a second way, and unlike the shares they do not add
+     * up — somebody who plays both the daily and practice is one player of each.
+     */
+    function renderModes() {
+        var modes = (stats && stats.modes) || null;
+        var weekly = (stats && stats.weekly) || [];
+        el.modesSpan.textContent = weekly.length + " tuần";
+
+        if (!modes) return;
+        var total = modes.practice + modes.daily + modes.archive;
+
+        function figure(value, valueEl, baseEl, players) {
+            valueEl.textContent = num(value);
+            baseEl.textContent = total === 0
+                ? "chưa có lượt chơi"
+                : percent(value / total, 0) + " · " + num(players) + " người";
+        }
+
+        figure(modes.practice, el.modePractice, el.modePracticeBase, modes.practicePlayers);
+        figure(modes.daily, el.modeDaily, el.modeDailyBase, modes.dailyPlayers);
+        figure(modes.archive, el.modeArchive, el.modeArchiveBase, modes.archivePlayers);
+
+        el.modesFoot.textContent = total === 0
+            ? "Chưa có lượt đoán nào trong kỳ."
+            : num(total) + " lượt đoán trong kỳ, đúng bằng mẫu số của tỉ lệ đúng ở trên."
+              + " Một người chơi cả hai chế độ được tính ở cả hai cột.";
+    }
+
     /* Rates are divided out here and nowhere else. The endpoint deliberately sends counts:
        two places rounding the same ratio is how a dashboard starts disagreeing with itself,
        and this one exists to be compared against its own past readings. */
@@ -465,6 +510,7 @@
             renderChart();
             renderAccuracy();
             renderPlayers();
+            renderModes();
         } catch (e) {
             el.status.textContent = "Không đọc được thống kê: " + e.message;
         }

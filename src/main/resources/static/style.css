@@ -2451,6 +2451,9 @@ h1, h2, h3 {
 .admin-panes[data-pane="overview"] > section[data-pane="overview"]:not(.hidden),
 .admin-panes[data-pane="ops"] > section[data-pane="ops"]:not(.hidden),
 .admin-panes[data-pane="assets"] > section[data-pane="assets"]:not(.hidden),
+.admin-panes[data-pane="challenges"] > section[data-pane="challenges"]:not(.hidden),
+.admin-panes[data-pane="live"] > section[data-pane="live"]:not(.hidden),
+.admin-panes[data-pane="demo"] > section[data-pane="demo"]:not(.hidden),
 .admin-panes[data-pane="players"] > section[data-pane="players"]:not(.hidden),
 .admin-panes[data-pane="content"] > section[data-pane="content"]:not(.hidden),
 .admin-panes[data-pane="media"] > section[data-pane="media"]:not(.hidden),
@@ -2803,6 +2806,13 @@ body:not(.is-admin) .adm-search {
     vertical-align: middle;
 }
 
+/* A figure broken across two lines is never what was wanted, and these columns are narrow
+   enough that it happens: "31 · 22" wrapped after the separator. The card scrolls sideways
+   instead, which is what .scroller is already there for. */
+.ops-table td.num {
+    white-space: nowrap;
+}
+
 .ops-table tbody tr {
     transition: background var(--duration-fast) var(--ease-out);
 }
@@ -2823,8 +2833,104 @@ body:not(.is-admin) .adm-search {
 
 /* admin-players.js marks the wallet cell .num to get the mono face. It is an identifier,
    not a quantity, so it keeps the left edge the rest of the first column reads down. */
-#player-table td:first-child.num {
+/* One page at a time, with the range spelled out between the two buttons — "51-100 / 214" says
+   both where you are and how much is left, which a bare page number does not. */
+.adm-pager {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+}
+
+.adm-pager-note {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    color: var(--adm-muted);
+}
+
+/* Two tables side by side above 1000px, stacked below it. The guesses and the live calls are
+   two histories of the same account and read best against each other; neither survives being
+   squeezed to half a phone. */
+/* Two tables side by side, stacked when they will not both fit. The minimum is what a
+   five-column table of figures actually needs, not the narrowest it can be squeezed to: below
+   that the two halves both scroll sideways permanently, which is worse than reading them one
+   under the other. */
+.adm-split {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(520px, 100%), 1fr));
+    gap: 16px;
+}
+
+/* Today's row, in a list that runs from a few days ahead to a few days behind. Without a mark
+   the only thing separating "the chart people are playing right now" from a rehearsal of next
+   Tuesday is reading the dates. A ground tint rather than the accent: the row is where you are,
+   not something selected. */
+#challenge-table tbody tr.is-today td {
+    background: color-mix(in oklch, var(--adm-ink) 4%, transparent);
+}
+
+/* A chart inside a split column. The svg is given a fixed viewBox by the markup and stretched
+   to whatever width the column is, which is why every chart on this site is drawn with
+   preserveAspectRatio="none" — the renderer fits what it is handed rather than keeping a ratio. */
+.adm-chart-card {
+    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.adm-chart-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.adm-chart {
+    width: 100%;
+    height: 240px;
+    display: block;
+}
+
+.adm-chart-foot {
+    margin: 0;
+    font-size: 12.5px;
+    line-height: 1.6;
+    color: var(--adm-muted);
+}
+
+/* .ops-table's 760px floor is sized for the full-width tables it was written for; in a split
+   column it would be wider than the column can ever be. The tighter cell padding is the other
+   half of the same fix — 36px of padding per column is most of why these tables are wide. */
+.adm-split .ops-table {
+    min-width: 420px;
+}
+
+.adm-split .ops-table :is(th, td) {
+    padding-left: 12px;
+    padding-right: 12px;
+}
+
+/* .is-up / .is-down are the game's tokens, and the admin page has a palette of its own: the
+   same green on a near-black ground and on a soft grey one are not the same green. Scoped
+   rather than renamed, so a P&L figure keeps one class name wherever it is drawn. */
+.admin-shell .is-up {
+    color: var(--adm-up);
+}
+
+.admin-shell .is-down {
+    color: var(--adm-down);
+}
+
+/* A wallet is an identifier, not a quantity: it takes the mono column's typeface without its
+   right alignment, which would leave the addresses hanging off a left-aligned header. */
+#player-table td:first-child.num,
+#live-calls td:first-child.num,
+#demo-table td:first-child.num {
     text-align: left;
+    /* An abbreviated address is one token; wrapping it after the ellipsis makes two half
+       addresses, neither of which is one. */
+    white-space: nowrap;
 }
 
 .ops-badge {
@@ -2852,6 +2958,26 @@ body:not(.is-admin) .adm-search {
     color: var(--adm-muted);
 }
 
+/* Named for the call rather than for the colour it borrows. A SHORT is not "bad" — it is one
+   of the two answers — so these do not reuse .is-good / .is-bad even though the up and down
+   tokens are exactly what they paint with. */
+.ops-badge.is-long {
+    background: color-mix(in oklch, var(--adm-up) 16%, transparent);
+    color: var(--adm-up);
+}
+
+.ops-badge.is-short {
+    background: color-mix(in oklch, var(--adm-down) 16%, transparent);
+    color: var(--adm-down);
+}
+
+/* A round that closed with no candle to settle it: not an error and not a normal state, which
+   is what the warn tone is for. */
+.ops-badge.is-stale {
+    background: color-mix(in oklch, var(--adm-warn) 18%, transparent);
+    color: var(--adm-warn);
+}
+
 .ops-badge.is-admin {
     background: var(--adm-ink);
     color: var(--adm-panel);
@@ -2867,15 +2993,20 @@ body:not(.is-admin) .adm-search {
     justify-content: flex-end;
 }
 
-/* ↑ and ↓ are square; the on/off button keeps a floor so the row does not jump when its
-   label flips between "Tắt" and "Bật". */
-.admin-shell .asset-actions button:is(:first-child, :nth-child(2)) {
+/* ↑ and ↓ are square; the on/off button keeps a floor so the row does not jump when its label
+   flips between "Tắt" and "Bật".
+
+   Scoped to #asset-table, which is the table those buttons are in. Unscoped, it pinned the
+   first two buttons of *every* .asset-actions cell to 30px — fine while the pairs table was the
+   only one, and a row of overlapping labels the moment the players table put three worded
+   buttons in one. Position is not a property a shared class can style on. */
+#asset-table .asset-actions button:is(:first-child, :nth-child(2)) {
     width: 30px;
     padding: 6px 0;
     justify-content: center;
 }
 
-.admin-shell .asset-actions button:last-child {
+#asset-table .asset-actions button:last-child {
     min-width: 52px;
     justify-content: center;
 }
@@ -3223,28 +3354,32 @@ body:not(.is-admin) .adm-search {
     color: var(--adm-muted);
 }
 
-/* Three figures side by side, wrapping rather than shrinking — a retention rate squeezed to
-   two characters is worse than one on its own row. */
-.adm-retention {
+/* A card of labelled figures side by side, wrapping rather than shrinking — a retention rate
+   squeezed to two characters is worse than one on its own row.
+
+   Named for the shape rather than for retention, which was its only user until the mode split
+   arrived wanting exactly the same card. The alternative was a second copy of this grid under
+   a different prefix, which is how two panels in one pane start drifting apart. */
+.adm-figures {
     padding: 18px 20px;
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
     gap: 18px;
 }
 
-.adm-retention-figure {
+.adm-figure {
     display: flex;
     flex-direction: column;
     gap: 4px;
 }
 
-.adm-retention-base {
+.adm-figure-base {
     font-family: var(--mono);
     font-size: 12px;
     color: var(--adm-muted);
 }
 
-.adm-retention-foot {
+.adm-figures-foot {
     margin: 10px 2px 0;
     font-size: 12.5px;
     line-height: 1.5;

@@ -22,7 +22,8 @@ public record AdminStats(
         List<Bucket> weekly,
         List<AccountPoint> accounts,
         Totals totals,
-        Deltas deltas
+        Deltas deltas,
+        Modes modes
 ) {
 
     /**
@@ -45,7 +46,33 @@ public record AdminStats(
      * high on the current data, so the distinction is not academic.
      */
     public record Bucket(Instant start, long guesses, long longCount, long shortCount,
-                          long answered, long correct, long activePlayers) {
+                          long answered, long correct, long activePlayers,
+                          long practice, long daily, long archive) {
+    }
+
+    /**
+     * Which of the three games the guesses came from, over the same twelve weeks
+     * {@link Totals} covers.
+     *
+     * The counts are summed out of the weekly buckets rather than queried again, for the
+     * reason the accuracy headline is: a split and the total it splits have to be one
+     * measurement over one window. A second query over "the last twelve weeks" would agree
+     * with this one until the two windows drifted by a bucket, and then the shares drawn
+     * beside the accuracy figure would be shares of a different number than the one above
+     * them.
+     *
+     * The player figures cannot come from the same place and are their own query. A player
+     * who practised on two days is one player over the window and two across the buckets, so
+     * summing them would quietly report visits under a label saying people. That also makes
+     * them the one pair here that does not add up: somebody who played both the daily and
+     * practice is counted in both, because they are one player of each.
+     *
+     * Why this is on the page at all: {@code /api/admin/retention} exists to be read before
+     * and after the daily challenge shipped, and a retention figure that moved is only
+     * attributable to the daily if somebody can see how much of the play was the daily.
+     */
+    public record Modes(long practice, long daily, long archive,
+                         long practicePlayers, long dailyPlayers, long archivePlayers) {
     }
 
     /** One day of the account curve: how many accounts existed at its end, and how many arrived. */

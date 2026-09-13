@@ -4,6 +4,7 @@ import com.example.candles.entity.Asset;
 import com.example.candles.entity.LivePrediction;
 import com.example.candles.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -66,6 +67,122 @@ public interface LivePredictionRepository extends JpaRepository<LivePrediction, 
 
     /** A player's own calls, newest first, for scoring their live-round record. */
     List<LivePrediction> findByUserOrderByOpenTimeDesc(User user);
+
+    /**
+     * One player's most recent live calls with their verdicts, newest first, as rows of
+     * [openTime, createdAt, symbol, direction, correct].
+     *
+     * A projection rather than the entities, because the verdict is not on the entity: it is the
+     * comparison against the candle, made here by the same left join every other reader makes.
+     * {@code correct} is null on a call whose round has no candle yet — neither right nor wrong,
+     * which is a third state the two-valued alternative would have had to round off.
+     */
+    @Query(value = """
+            select p.open_time, p.created_at, a.symbol, p.direction,
+                   case when c.open_time is null then null
+                        when (p.direction = 'LONG' and c.close >= c.open)
+                          or (p.direction = 'SHORT' and c.close < c.open) then true
+                        else false end
+            from live_predictions p
+            join assets a on a.id = p.asset_id
+            left join candles c on c.asset_id = p.asset_id
+                                and c.timeframe = p.timeframe
+                                and c.open_time = p.open_time
+            where p.user_id = :userId
+            order by p.open_time desc
+            limit :limit
+            """, nativeQuery = true)
+    List<Object[]> recentCallsForUser(@Param("userId") Long userId, @Param("limit") int limit);
+
+    /**
+     * [calls, settled, correct] for one player — the same left join {@link #liveActivitySince}
+     * makes, asked about an account instead of a window.
+     *
+     * Three numbers rather than two because an open round is real activity with no verdict yet,
+     * not activity that has not happened. An account read as "3 of 10 right" when six of those
+     * ten are still running would be a figure about the wrong denominator.
+     */
+    @Query(value = """
+            select count(*),
+                   count(c.open_time),
+                   count(*) filter (
+                       where c.open_time is not null
+                         and ((p.direction = 'LONG' and c.close >= c.open)
+                           or (p.direction = 'SHORT' and c.close < c.open))
+                   )
+            from live_predictions p
+            left join candles c on c.asset_id = p.asset_id
+                                and c.timeframe = p.timeframe
+                                and c.open_time = p.open_time
+            where p.user_id = :userId
+            """, nativeQuery = true)
+    Object[] liveTallyForUser(@Param("userId") Long userId);
+
+    /**
+     * Every round of one pair that somebody actually called, newest first, as rows of
+     * [openTime, calls, long, short, open, close, correct] — the admin pane's whole list in one
+     * query.
+     *
+     * Driven from {@code live_predictions} rather than from {@code candles} on purpose. There is
+     * a round every hour whether or not anyone was looking, so a list built from candles would be
+     * mostly empty rows with nothing to do about them; a round belongs on an admin's list exactly
+     * when there is something on it to manage.
+     *
+     * The join is left, and that is the point of the page. A round whose candle never arrived
+     * still has its calls, still shows them here, and reads as unsettled — those calls score
+     * nothing anywhere else either, because {@link #SETTLED_LIVE_FLAGS} makes the same join an
+     * inner one. Filling that gap in candle history is the fix; seeing that it exists is what
+     * this row is for.
+     *
+     * {@code correct} counts nobody on an unsettled round, since the filter requires the candle.
+     */
+    @Query(value = """
+            select p.open_time,
+                   count(*),
+                   count(*) filter (where p.direction = 'LONG'),
+                   count(*) filter (where p.direction = 'SHORT'),
+                   c.open,
+                   c.close,
+                   count(*) filter (
+                       where c.open_time is not null
+                         and ((p.direction = 'LONG' and c.close >= c.open)
+                           or (p.direction = 'SHORT' and c.close < c.open))
+                   )
+            from live_predictions p
+            left join candles c on c.asset_id = p.asset_id
+                                and c.timeframe = p.timeframe
+                                and c.open_time = p.open_time
+            where p.asset_id = :assetId and p.timeframe = :timeframe
+            group by p.open_time, c.open, c.close
+            order by p.open_time desc
+            limit :limit
+            """, nativeQuery = true)
+    List<Object[]> roundsWithCalls(@Param("assetId") Long assetId,
+                                   @Param("timeframe") String timeframe,
+                                   @Param("limit") int limit);
+
+    /**
+     * Drops every call on one round.
+     *
+     * The only lever an admin has over a round that settled on a bad price, and it is a delete
+     * rather than a flag for the reason the pattern quiz cascades rather than being cleaned up
+     * by hand: a row that is gone cannot be forgotten by a query. Five separate places already
+     * read {@code live_predictions} — score, the leaderboard, retention, the day streak, the ops
+     * panel — and a {@code voided} column would have to be remembered in each of them, in every
+     * query written after this one, and silently miscount wherever it was not.
+     *
+     * What that costs is real and the pane says so: the calls are gone, not annotated, so the
+     * round leaves no trace and a player whose only play that day was this round loses the day
+     * off their streak with it.
+     */
+    @Modifying
+    @Query("""
+            delete from LivePrediction p
+            where p.asset.id = :assetId and p.timeframe = :timeframe and p.openTime = :openTime
+            """)
+    int deleteRound(@Param("assetId") Long assetId,
+                    @Param("timeframe") String timeframe,
+                    @Param("openTime") Instant openTime);
 
     /**
      * Fragment shared by both queries below: a settled live call, as [createdAt, correct],
