@@ -8,9 +8,9 @@ services:
     name: candles
     runtime: docker
     dockerfilePath: ./Dockerfile
-    # Singapore, and this is not a latency preference. Binance answers US addresses with HTTP
-    # 451, and Render's default region is Oregon — the app would boot, pass its health check and
-    # never store a single candle. Keep the Neon project in the same region.
+    # Singapore: next to the Neon database, which matters because every stored candle is its own
+    # insert. It is also outside the US, where Binance answers 451 — though the demo now reads OKX
+    # (CANDLES_PRICE_SOURCE below), so that no longer decides it.
     region: singapore
     plan: free
     branch: main
@@ -39,6 +39,11 @@ services:
         generateValue: true
 
       # --- fixed ---
+      # OKX, not Binance. Binance bans by address, Render's outbound addresses are shared, and the
+      # Singapore range was banned twice in the first evening — 45 minutes, then two hours — for
+      # traffic this app did not send. Region alone does not fix that; a different exchange does.
+      - key: CANDLES_PRICE_SOURCE
+        value: okx
       # The site is https-only on Render, so the refresh cookie can and must be Secure.
       - key: AUTH_COOKIE_SECURE
         value: "true"

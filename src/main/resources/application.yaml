@@ -87,8 +87,15 @@ candles:
       api-key: ${CLOUDINARY_API_KEY:}
       api-secret: ${CLOUDINARY_API_SECRET:}
   timeframe: 1h
+  # Where candles and live prices come from: binance or okx. Binance locally; the Render demo
+  # sets okx, because Binance bans by address and kept banning Render's shared Singapore range
+  # for traffic this app did not send. Switching on a database that already holds candles mixes
+  # two exchanges' prices in one history — fine for a demo, worth knowing anywhere else.
+  price-source: binance
   binance:
     base-url: https://api.binance.com
+  okx:
+    base-url: https://www.okx.com
   backfill:
     start: 2022-01-01T00:00:00Z
   assets:

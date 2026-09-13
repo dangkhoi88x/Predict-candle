@@ -1133,6 +1133,16 @@ and S&P 500 (`/api/market/sp500` → `YahooFinanceClient`). `treemap.js` does th
   cleanly and stores no candles. Not Vercel: there is no Java runtime there, and the hourly
   sync needs a process that stays alive.
 
+- **The demo reads OKX, not Binance: `candles.price-source`, `binance` by default.** Binance
+  bans by IP (HTTP 418, 2 minutes growing to 3 days), Render's outbound addresses are shared, and
+  the Singapore range was banned twice on the first evening for traffic this app did not send.
+  `OkxProvider` and `BinanceProvider` are the two `PriceDataProvider`s, one bean by
+  `@ConditionalOnProperty`; OKX pages newest first, dashes its instruments (`BTC-USDT`) and
+  reports errors as HTTP 200 with a non-zero `code`, which is what the class hides. Volume is in
+  the base asset on both, so nothing downstream knows which one it is reading.
+  `BinanceProvider` also stops calling for the `Retry-After` of any 418/429, because every page
+  polls the live round and each request sent into a ban is what lengthens it.
+
 - **Commits carry no `Co-Authored-By` trailer.** GitHub renders that trailer as a second author
   ("dangkhoi88x and claude committed") and counts it in the repo's contributor list, which
   misrepresents who owns this work. Author and committer have always been the repo owner alone;
