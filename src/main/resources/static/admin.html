@@ -105,6 +105,14 @@
                     </svg>
                     <span>Cặp giao dịch</span>
                 </button>
+                <button class="adm-nav-item" type="button" data-pane-link="challenges" title="Thử thách hằng ngày">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                         stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <rect x="3" y="5" width="18" height="16" rx="2"/>
+                        <path d="M3 10h18M8 3v4M16 3v4"/>
+                    </svg>
+                    <span>Thử thách</span>
+                </button>
                 <button class="adm-nav-item" type="button" data-pane-link="live" title="Vòng live">
                     <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                          stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -112,6 +120,14 @@
                         <path d="M5.6 5.6a9 9 0 0 0 0 12.8M18.4 5.6a9 9 0 0 1 0 12.8"/>
                     </svg>
                     <span>Vòng live</span>
+                </button>
+                <button class="adm-nav-item" type="button" data-pane-link="demo" title="Sàn demo">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                         stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M3 17l5-6 4 3.5L21 6"/>
+                        <path d="M3 21h18"/>
+                    </svg>
+                    <span>Sàn demo</span>
                 </button>
                 <button class="adm-nav-item" type="button" data-pane-link="players" title="Người chơi">
                     <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -452,6 +468,64 @@
                     </div>
                 </section>
 
+                <!-- Both the daily chart and the pattern quiz are functions of the date and
+                     neither stores anything, so there is no row to inspect and no midnight job
+                     whose log says what tomorrow will be. Read-only by necessity: changing
+                     tomorrow's chart would mean changing the seed, and the seed is the date. -->
+                <section id="admin-challenges" data-pane="challenges" class="hidden">
+                    <div class="admin-bar">
+                        <h1 class="admin-h1">Thử thách</h1>
+                        <span id="challenge-today" class="ops-generated"></span>
+                        <div class="editor-actions">
+                            <button id="challenge-refresh" class="ghost-btn" type="button">Làm mới</button>
+                        </div>
+                    </div>
+                    <p class="content-note">Cả biểu đồ hằng ngày lẫn câu đố mẫu nến đều suy ra từ ngày tháng, không lưu ở đâu cả. Ngày chưa tới chỉ là <b>dự kiến</b>: kho nến còn dài ra tới nửa đêm hôm đó nên lượt chọn còn dịch. Thứ đáng xem trước là ngày nào <b>không dựng nổi</b> — cả hai bộ chọn đều có thể từ chối, và khi đó cả ngày hỏng cho tới nửa đêm kế tiếp.</p>
+
+                    <div class="adm-table-card">
+                        <div class="scroller">
+                            <table class="ops-table" id="challenge-table">
+                                <thead>
+                                    <tr>
+                                        <th>Ngày</th><th class="num">Vòng</th><th>Biểu đồ ngày</th>
+                                        <th>Câu đố mẫu nến</th><th class="num">Đã chơi</th><th>Trạng thái</th><th></th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <section id="challenge-detail" class="adm-tray hidden" aria-live="polite">
+                        <div class="adm-tray-head">
+                            <span class="adm-kicker" id="challenge-detail-title">Ngày</span>
+                            <span class="adm-kicker-note" id="challenge-detail-sub">—</span>
+                            <button id="challenge-detail-close" class="ghost-btn" type="button">Đóng</button>
+                        </div>
+
+                        <div class="adm-split">
+                            <div class="adm-card adm-chart-card">
+                                <div class="adm-chart-head">
+                                    <span class="adm-kicker">Biểu đồ hằng ngày</span>
+                                    <span class="adm-kicker-note" id="challenge-daily-note">—</span>
+                                </div>
+                                <svg class="adm-chart" id="challenge-daily-chart" viewBox="0 0 640 260"
+                                     preserveAspectRatio="none" aria-hidden="true"></svg>
+                                <p class="adm-chart-foot" id="challenge-daily-answers"></p>
+                            </div>
+                            <div class="adm-card adm-chart-card">
+                                <div class="adm-chart-head">
+                                    <span class="adm-kicker">Câu đố mẫu nến</span>
+                                    <span class="adm-kicker-note" id="challenge-quiz-note">—</span>
+                                </div>
+                                <svg class="adm-chart" id="challenge-quiz-chart" viewBox="0 0 640 260"
+                                     preserveAspectRatio="none" aria-hidden="true"></svg>
+                                <p class="adm-chart-foot" id="challenge-quiz-choices"></p>
+                            </div>
+                        </div>
+                    </section>
+                </section>
+
                 <!-- The live game keeps no rounds, so this is the only place one can be looked at
                      after the fact — and the only place one can be undone. A live result is
                      recomputed from the exchange's candle on every read, so a round that settled
@@ -501,10 +575,93 @@
                     </section>
                 </section>
 
+                <!-- Paper trading had no admin surface at all: an immutable trade log, a table
+                     that holds no money, and nothing anywhere saying how much of it was used.
+                     Every figure here is folded from those rows through the same DemoPortfolio
+                     the player's own terminal uses — two ways of computing one balance is how a
+                     page like this ends up disagreeing with the player about their money. -->
+                <section id="admin-demo" data-pane="demo" class="hidden">
+                    <div class="admin-bar">
+                        <h1 class="admin-h1">Sàn demo</h1>
+                        <span id="demo-count" class="ops-generated"></span>
+                        <div class="editor-actions">
+                            <button id="demo-refresh" class="ghost-btn" type="button">Làm mới</button>
+                        </div>
+                    </div>
+
+                    <div class="adm-card adm-figures" id="demo-figures"></div>
+                    <p class="adm-figures-foot" id="demo-foot"></p>
+
+                    <div class="adm-table-card">
+                        <div class="scroller">
+                            <table class="ops-table" id="demo-table">
+                                <thead>
+                                    <tr>
+                                        <th>Ví</th><th>Tên hiển thị</th><th class="num">Lệnh</th>
+                                        <th class="num">Tiền mặt</th><th class="num">Tài sản</th>
+                                        <th class="num">Đã chốt</th>
+                                        <th>Giao dịch gần nhất</th><th></th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="adm-pager" id="demo-pager">
+                        <button id="demo-prev" class="ghost-btn" type="button">← Trước</button>
+                        <span class="adm-pager-note" id="demo-range">—</span>
+                        <button id="demo-next" class="ghost-btn" type="button">Sau →</button>
+                    </div>
+
+                    <section id="demo-detail" class="adm-tray hidden" aria-live="polite">
+                        <div class="adm-tray-head">
+                            <span class="adm-kicker" id="demo-detail-title">Tài khoản</span>
+                            <span class="adm-kicker-note" id="demo-detail-sub">—</span>
+                            <button id="demo-detail-reset" class="danger-btn" type="button">Đặt lại</button>
+                            <button id="demo-detail-close" class="ghost-btn" type="button">Đóng</button>
+                        </div>
+                        <p class="adm-figures-foot" id="demo-detail-note"></p>
+
+                        <div class="adm-split">
+                            <div class="adm-table-card">
+                                <div class="scroller">
+                                    <table class="ops-table" id="demo-positions">
+                                        <thead>
+                                            <tr><th>Cặp</th><th class="num">Số lượng</th><th class="num">Giá vốn</th>
+                                                <th class="num">Giá hiện tại</th><th class="num">Lãi/lỗ mở</th></tr>
+                                        </thead>
+                                        <tbody></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <div class="adm-table-card">
+                                <div class="scroller">
+                                    <table class="ops-table" id="demo-fills">
+                                        <thead>
+                                            <tr><th>Lúc</th><th>Cặp</th><th>Lệnh</th>
+                                                <th class="num">Số lượng</th><th class="num">Giá</th><th class="num">Phí</th></tr>
+                                        </thead>
+                                        <tbody></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </section>
+
                 <section id="admin-players" data-pane="players" class="hidden">
                     <div class="admin-bar">
                         <h1 class="admin-h1">Người chơi</h1>
                         <span id="players-count" class="ops-generated"></span>
+                        <div class="editor-actions">
+                            <input id="players-search" class="folder-input" type="search"
+                                   placeholder="Tên hoặc địa chỉ ví" maxlength="60" aria-label="Tìm tài khoản"/>
+                            <div class="pill" id="players-sort">
+                                <button class="pill-option active" type="button" data-sort="active">Chơi nhiều</button>
+                                <button class="pill-option" type="button" data-sort="recent">Mới chơi</button>
+                            </div>
+                        </div>
                     </div>
                     <p class="content-note">Vai trò lấy từ <code>candles.admin.wallets</code> nên không sửa được ở đây.</p>
                     <div class="adm-table-card">
@@ -518,6 +675,48 @@
                             </table>
                         </div>
                     </div>
+
+                    <div class="adm-pager" id="players-pager">
+                        <button id="players-prev" class="ghost-btn" type="button">← Trước</button>
+                        <span class="adm-pager-note" id="players-range">—</span>
+                        <button id="players-next" class="ghost-btn" type="button">Sau →</button>
+                    </div>
+
+                    <!-- Everything recorded against one account, read from the same rows the game
+                         scores on. Nothing here can be edited: the list's two figures had nowhere
+                         to go behind them, which is the whole gap this closes. -->
+                    <section id="player-detail" class="adm-tray hidden" aria-live="polite">
+                        <div class="adm-tray-head">
+                            <span class="adm-kicker" id="player-detail-title">Tài khoản</span>
+                            <span class="adm-kicker-note" id="player-detail-sub">—</span>
+                            <button id="player-detail-close" class="ghost-btn" type="button">Đóng</button>
+                        </div>
+                        <div class="adm-card adm-figures" id="player-detail-figures"></div>
+                        <p class="adm-figures-foot" id="player-detail-legacy"></p>
+
+                        <div class="adm-split">
+                            <div class="adm-table-card">
+                                <div class="scroller">
+                                    <table class="ops-table" id="player-guesses">
+                                        <thead>
+                                            <tr><th>Lúc</th><th>Chế độ</th><th>Cặp</th><th>Gọi</th><th>Thực tế</th></tr>
+                                        </thead>
+                                        <tbody></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <div class="adm-table-card">
+                                <div class="scroller">
+                                    <table class="ops-table" id="player-calls">
+                                        <thead>
+                                            <tr><th>Vòng mở</th><th>Cặp</th><th>Gọi</th><th>Kết quả</th></tr>
+                                        </thead>
+                                        <tbody></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
                 </section>
 
                 <section id="admin-content" data-pane="content" class="hidden">
@@ -721,7 +920,9 @@
 <script src="admin-overview.js"></script>
 <script src="admin-ops.js"></script>
 <script src="admin-assets.js"></script>
+<script src="admin-challenges.js"></script>
 <script src="admin-live.js"></script>
+<script src="admin-demo.js"></script>
 <script src="admin-players.js"></script>
 <script src="admin-content.js"></script>
 <script src="admin-media.js"></script>

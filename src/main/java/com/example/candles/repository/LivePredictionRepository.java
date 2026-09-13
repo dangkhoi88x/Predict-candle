@@ -69,6 +69,56 @@ public interface LivePredictionRepository extends JpaRepository<LivePrediction, 
     List<LivePrediction> findByUserOrderByOpenTimeDesc(User user);
 
     /**
+     * One player's most recent live calls with their verdicts, newest first, as rows of
+     * [openTime, createdAt, symbol, direction, correct].
+     *
+     * A projection rather than the entities, because the verdict is not on the entity: it is the
+     * comparison against the candle, made here by the same left join every other reader makes.
+     * {@code correct} is null on a call whose round has no candle yet — neither right nor wrong,
+     * which is a third state the two-valued alternative would have had to round off.
+     */
+    @Query(value = """
+            select p.open_time, p.created_at, a.symbol, p.direction,
+                   case when c.open_time is null then null
+                        when (p.direction = 'LONG' and c.close >= c.open)
+                          or (p.direction = 'SHORT' and c.close < c.open) then true
+                        else false end
+            from live_predictions p
+            join assets a on a.id = p.asset_id
+            left join candles c on c.asset_id = p.asset_id
+                                and c.timeframe = p.timeframe
+                                and c.open_time = p.open_time
+            where p.user_id = :userId
+            order by p.open_time desc
+            limit :limit
+            """, nativeQuery = true)
+    List<Object[]> recentCallsForUser(@Param("userId") Long userId, @Param("limit") int limit);
+
+    /**
+     * [calls, settled, correct] for one player — the same left join {@link #liveActivitySince}
+     * makes, asked about an account instead of a window.
+     *
+     * Three numbers rather than two because an open round is real activity with no verdict yet,
+     * not activity that has not happened. An account read as "3 of 10 right" when six of those
+     * ten are still running would be a figure about the wrong denominator.
+     */
+    @Query(value = """
+            select count(*),
+                   count(c.open_time),
+                   count(*) filter (
+                       where c.open_time is not null
+                         and ((p.direction = 'LONG' and c.close >= c.open)
+                           or (p.direction = 'SHORT' and c.close < c.open))
+                   )
+            from live_predictions p
+            left join candles c on c.asset_id = p.asset_id
+                                and c.timeframe = p.timeframe
+                                and c.open_time = p.open_time
+            where p.user_id = :userId
+            """, nativeQuery = true)
+    Object[] liveTallyForUser(@Param("userId") Long userId);
+
+    /**
      * Every round of one pair that somebody actually called, newest first, as rows of
      * [openTime, calls, long, short, open, close, correct] — the admin pane's whole list in one
      * query.
