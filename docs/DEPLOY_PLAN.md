@@ -50,14 +50,14 @@ phải đi vòng qua Thái Bình Dương.
    - *Postgres version*: **16**, cho khớp `docker-compose.yml` và CI. Dev chạy 16, test chạy 16
      thì demo cũng nên chạy 16.
    - *Cloud provider / Region*: **AWS · Asia Pacific (Singapore)**
-3. Neon tự tạo sẵn database `neondb`, role `neondb_owner` và branch `main`. Dùng luôn `neondb`,
+3. Neon tự tạo sẵn database `neondb`, role `neondb_owner` và branch `production`. Dùng luôn `neondb`,
    không cần tạo database riêng: Flyway tự dựng toàn bộ schema từ V1 ở lần chạy đầu.
 
 ### 3.2 Lấy connection string và đổi sang JDBC
 
 Ở trang project bấm **Connect**:
 
-- *Branch*: `main`, *Database*: `neondb`, *Role*: `neondb_owner`
+- *Branch*: `production`, *Database*: `neondb`, *Role*: `neondb_owner`
 - **Tắt "Connection pooling"** để lấy endpoint direct, tức host **không** có `-pooler`. Demo
   chỉ có một instance với pool Hikari mặc định 10 kết nối, nên không cần PgBouncer. Bỏ nó đi
   cũng bỏ luôn một lớp có thể gây rắc rối với lock của Flyway và prepared statement.
@@ -123,7 +123,7 @@ Kết quả đúng là 4 cặp tiền, mỗi cặp khoảng 14–15 nghìn nến
 
 Neon cho **branch database** như branch git: một bản copy tức thì, không tốn thêm dung lượng
 cho phần chưa đổi. Trước khi thử một migration mới lên dữ liệu demo, tạo branch `test-vXX` từ
-`main`, trỏ local vào connection string của branch đó để chạy thử, xong thì xoá. Dữ liệu demo
+`production`, trỏ local vào connection string của branch đó để chạy thử, xong thì xoá. Dữ liệu demo
 không bị ảnh hưởng.
 
 ## 4. Render
