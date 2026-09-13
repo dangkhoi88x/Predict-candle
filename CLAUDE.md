@@ -269,7 +269,7 @@ id, which also covers being asked before the fetch lands.
 
 ### Admin frontend
 
-`admin.html` is a second, separate page: a dashboard shell — sidebar, sticky topbar, and seven
+`admin.html` is a second, separate page: a dashboard shell — sidebar, sticky topbar, and ten
 panes of which exactly one shows. It shares `style.css`, `theme.js` and `auth.js` with the game
 and nothing else.
 
@@ -486,6 +486,35 @@ never does. Same rule, opposite side of it: a display name defaults to a shorten
 page nobody signed in to open cannot be scraped for addresses, and an admin who opened a round
 did so to find an account.
 
+**The challenge preview is the one admin page that answers a question nobody could ask before.**
+The daily chart and the pattern quiz are both functions of the date and neither stores anything,
+so there is no row to inspect and no midnight job whose log says what tomorrow will be. Both
+selectors can also *refuse*: `selectDailyRound` throws when no pair has enough history,
+`PatternQuizService` throws when no pattern in the library has a single unambiguous occurrence
+anywhere. Either one breaks a whole day of the site for everybody until the next midnight, and
+neither said a word in advance. `AdminChallengeService` calls them early and turns the exception
+into a message on a row.
+
+Three things about it are load-bearing:
+
+- **A future day is provisional and today is not.** A day's chart is drawn from the candles that
+  had closed before *its* midnight; for today that count is frozen (which is what
+  `anHourlySyncDoesNotMoveTodaysChart` pins), and for a day still to come it is still rising, so
+  the pick moves as the sync lands. A future row proves the day can be built, not what it will
+  be, and it is labelled that way.
+- **A past day's pattern is read back, not rebuilt.** Every `pattern_quiz_results` row for a day
+  carries the pattern it asked about — that is the question, not the answer — so `askedPatternIds`
+  is one indexed read instead of a scan of every asset's history against every pattern. A past day
+  nobody answered has neither, and says so.
+- **The daily's candles carry their timestamps here, and the answer directions come with them.**
+  The player's copy deliberately has neither, because for that game a date *is* the answer. This
+  is the one screen where reading the date is the point, and "is tomorrow's chart a coin flip" is
+  not a question that can be asked without the answers.
+
+`candle-chart.js` is loaded on demand rather than from a `<script>` tag, the same bargain
+`admin-blog.js` makes with the Tiptap bundle: 28 KB that only an admin who opens a day's detail
+ever needs, on the page whose weight this project spent a release cutting.
+
 ### Demo trading
 
 Paper trading on live prices: play money, real quotes, **no leverage and therefore no
@@ -542,6 +571,34 @@ database rather than the response the browser keeps.
 balance plus a leaderboard means retrying until a lucky run, and the alternatives — seasons, or
 forbidding resets — both cost more than the board is worth. `resets` is still counted on the
 account in case that is ever revisited.
+
+**The admin's copy folds through the same `DemoPortfolio`, and that is the whole design of
+`AdminDemoService`.** Two ways of computing one balance is how an admin page ends up disagreeing
+with a player about their money — and the player would be right, because theirs is the number
+the trades produced. `fillsForAccounts` supplies a whole page of accounts in one query rather
+than one fold per row; the mark a reset moved is different for every account, so it comes from
+the join to `demo_accounts` instead of a parameter, which is what keeps a reset meaning the same
+thing on both screens.
+
+Three things there are worth knowing before extending it:
+
+- **`accounts` and `tradingAccounts` are different numbers on purpose.** Opening the terminal
+  creates the row, so the gap between them is how many people looked at paper trading and never
+  placed a trade — the question the header exists to answer.
+- **Cash and realised P&L need no prices and are always exact; holdings value, unrealised and
+  equity go null together when any held position has no price.** The player's own view decides
+  that per position, which is right for a list of their positions; a whole-account figure that
+  quietly dropped a holding would be worse than a gap on a page somebody is comparing accounts
+  across.
+- **`tradesBeforeReset` is the one figure no player can see, and it exists to stop a reset
+  looking like data loss.** A reset moves `opened_at` and deletes nothing, so an account can
+  hold hundreds of rows while showing three trades — invisible from inside the game, and the
+  first thing that reads as corruption from outside it.
+
+The only write is the player's own `reset`, called rather than reimplemented. There is
+deliberately nothing that credits an account, edits a fill or sets a balance: the balance is not
+a column, and a screen that could adjust one would be inventing the second source of truth V17
+was written to avoid.
 
 The terminal is the one view that is not a reading column: `.app` caps at 760px, which is right
 for a chart with two buttons under it and far too narrow for a market list, a chart and an order
