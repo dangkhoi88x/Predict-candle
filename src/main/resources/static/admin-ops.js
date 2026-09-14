@@ -135,7 +135,7 @@
 
         var s = snapshot.settings;
         el.settings.innerHTML = "";
-        [["Khung thời gian", s.timeframe], ["Nến hiển thị", s.visibleCandles],
+        [["Nguồn giá", s.priceSource === "okx" ? "OKX" : "Binance"], ["Khung thời gian", s.timeframe], ["Nến hiển thị", s.visibleCandles],
          ["Lượt đoán / chart", s.guessesPerChart], ["Nến reveal", s.revealCandles],
          ["Nến bối cảnh", s.contextPadding], ["Giây mỗi lượt", s.guessSeconds],
          ["Round / phút", s.roundsPerMinute], ["Lượt đoán / phút", s.guessesPerMinute]
