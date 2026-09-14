@@ -234,9 +234,10 @@ goes through the inner function and is not a sign-in.
 **A first visit gets a three-step tour, and the game's first chart waits for it.** Both the
 game and the daily deal a round the moment they are shown, and a round's clock starts from the
 server's token — so a tour laid *over* a running round spends the newcomer's first guess while
-they read how to make one. `app.js` therefore chains `CandleOnboarding.gameReady()` before its
-first `loadRound`, which resolves once the tour is closed **and** the game view is on screen:
-ending the tour on "Thử thách hôm nay" must not deal a practice round behind the daily tab.
+they read how to make one. `app.js` therefore waits on `CandleOnboarding.gameReady()`, which resolves once the tour is closed
+**and** the game view is on screen, to whether the player just asked to play: closing the tour
+towards the game deals a chart at once, anything else leaves the start button up. Ending the tour on
+"Thử thách hôm nay" must not deal a practice round behind the daily tab.
 `onboarding.js` loads after `nav.js` (it moves views through `CandleNav`) and before `app.js`.
 
 "First visit" means no `candles-onboarded` flag **and** none of the keys the page already wrote
@@ -266,6 +267,21 @@ questions at once and `app.js` is already asking it after every recorded guess, 
 `candles:stats` and the play tab's column listens; `play-sidebar.js` publishes `candles:rank`
 off the board it fetches and the rail draws the tag. Two callers reading one figure out of two
 responses can only end up disagreeing about it.
+
+**Nothing deals a chart unless the player asks for one** — the start button in the chart's place
+(`showStartGate` in `app.js`, `showGate` in `daily.js`), "Biểu đồ mới", picking a pair, the tour's
+"Chơi thử ngay", or auto-advance after a chart the player actually finished. A chart's clock starts
+when the server mints its token and cannot be paused, so dealing on page load or on opening the
+daily tab spent the player's time before they had started; the demo's first six recorded calls
+were all timeouts from one player who had not begun to play. The daily reads its round on reveal
+to know its state but draws nothing, and pressing start reads it again for a fresh token.
+
+**And a chain of timeouts stops.** Each expired guess mints the next guess's token, so an
+unattended chart used to run itself out to five recorded misses. A timeout while the view is not
+on screen, or a second in a row (`IDLE_TIMEOUT_STREAK`), records that call and shows the button
+again. The recorded timeout is what still stops a round being parked; what ends is the rest of the
+chart being asked of nobody. Practice abandons the chart; the daily resumes at the next guess when
+signed in (signed out nothing was recorded, so it starts the day again, as a reload always did).
 
 `nav.js` fires `candles:view` (`detail.view`) on every switch, mirroring `candles:pane` on the
 admin page. The game listens for it: **auto-advance stops dealing charts when nobody is
@@ -477,6 +493,22 @@ detail popup: the candle it closed on, plus `candles.live.context-candles` eithe
 clicked on back to its `openTime`, pinned by a round-trip test over 50 rounds. Reading the
 in-progress round's own detail is refused (400): that round has no settled candle yet, and
 `GET /api/live/round` already covers it.
+
+**Chart labels are counter-scaled so they stay readable** (`CandleChart.fitLabels`, run at the
+end of every `draw`, `drawIndicator` and crosshair move, and on resize). With
+`preserveAspectRatio="none"` text stretched with the candles, and a 1000-unit practice chart in a
+360px phone squeezed every label to a third of its width. Each `text` is scaled around its anchor
+so it renders at its font size in CSS pixels, never smaller, with natural proportions; a tag's
+background (`rect` just before it, `data-label-bg` or `data-part="*-bg"`) gets the same transform,
+and anything pushed past the edge is nudged back in. Because labels no longer shrink with the chart,
+**a tag must be sized from its text, not from the padding** — a badge as wide as the price column
+gets scaled up with its text and spans the chart. `options.padRight` (viewBox units) lets a caller
+keep ~62px for the price column on a narrow box; `app.js`'s `roomFor` computes it.
+
+The practice chart's time axis reads **hours back from the newest candle** ("−19h … 0h"). It used
+to print clock times counted back from *now*, so a chart from last winter read as today's trading
+beside a live ticker tens of thousands of dollars away; the candles carry no timestamp on purpose,
+and an invented one is worse than none.
 
 Frontend draws that candle context with `candle-chart.js`
 (`window.CandleChart.draw(svg, candles, options)`), which every candlestick chart on the site

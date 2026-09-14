@@ -378,6 +378,24 @@
         </div>
 
         <div class="chart" id="chart"></div>
+        <!-- Shown instead of the chart until the player asks for one: a chart's clock starts when
+             it is dealt, so nothing is dealt unasked. Same height as the chart, so pressing it
+             moves nothing. See showStartGate in app.js. -->
+        <div class="game-start" id="game-start">
+            <svg class="game-start-art" viewBox="0 0 120 48" aria-hidden="true" focusable="false">
+                <g stroke-linecap="round" stroke-width="2">
+                    <path d="M12 12v26" stroke="var(--down)"/><rect x="7" y="17" width="10" height="14" rx="2" fill="var(--down)"/>
+                    <path d="M34 8v28" stroke="var(--up)"/><rect x="29" y="12" width="10" height="17" rx="2" fill="var(--up)"/>
+                    <path d="M56 4v26" stroke="var(--up)"/><rect x="51" y="8" width="10" height="15" rx="2" fill="var(--up)"/>
+                    <path d="M78 10v22" stroke="var(--down)"/><rect x="73" y="14" width="10" height="11" rx="2" fill="var(--down)"/>
+                    <rect x="95" y="4" width="14" height="36" rx="3" fill="none" stroke="var(--accent)" stroke-dasharray="4 3"/>
+                    <text x="102" y="27" text-anchor="middle" font-size="15" font-weight="700" fill="var(--accent)">?</text>
+                </g>
+            </svg>
+            <p class="game-start-title" id="game-start-title">Sẵn sàng đoán nến?</p>
+            <p class="game-start-note" id="game-start-note"></p>
+            <button class="game-start-button" type="button" id="game-start-button">Bắt đầu</button>
+        </div>
         <div class="chart-skeleton" aria-hidden="true">
             <span class="skeleton"></span>
             <span class="skeleton"></span>
@@ -523,6 +541,13 @@
         <div class="daily-chart-wrap">
             <svg id="daily-chart" class="daily-chart" viewBox="0 0 720 300" preserveAspectRatio="none"
                  role="img" aria-label="Biểu đồ nến của thử thách hôm nay"></svg>
+            <!-- In the chart's place until the player starts: the day's only attempt must not
+                 begin because somebody opened the tab. See showGate in daily.js. -->
+            <div class="daily-start hidden" id="daily-start">
+                <p class="game-start-title" id="daily-start-title">Sẵn sàng?</p>
+                <p class="game-start-note" id="daily-start-note"></p>
+                <button class="game-start-button" type="button" id="daily-start-button">Bắt đầu thử thách</button>
+            </div>
         </div>
 
         <p class="daily-status" id="daily-status">Đang tải…</p>

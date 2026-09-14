@@ -38,6 +38,11 @@
         back: document.getElementById("daily-back"),
         archive: document.getElementById("daily-archive"),
         shareText: document.getElementById("daily-share-text"),
+        board: document.querySelector("#view-daily .daily-board"),
+        start: document.getElementById("daily-start"),
+        startTitle: document.getElementById("daily-start-title"),
+        startNote: document.getElementById("daily-start-note"),
+        startButton: document.getElementById("daily-start-button"),
     };
 
     var state = null;
@@ -51,6 +56,67 @@
     var lastArchive = [];
     var timerId = null;
     var deadline = 0;
+    var timeoutsInARow = 0;
+
+    /* ---- the start button ------------------------------------------------------------------
+
+       Opening this tab used to deal the day's chart and start its clock at once, so a player who
+       only came to look spent their one attempt of the day watching it expire. The clock itself
+       stays unpausable — the server measures it from the token, and a pausable clock on a chart
+       you get one go at is an invitation to park it — so the answer is not to pause it but not to
+       start it: the chart and its clock appear together, when the player presses start.
+
+       The board reads the round on reveal to know which state it is in, but draws nothing until
+       then, and pressing start reads it again for a fresh token.
+
+       A chain of timeouts stops the same way the practice game's does (see app.js): a timeout
+       while this tab is not on screen, or a second in a row, records that call and shows the
+       button again rather than dealing the next guess to nobody. Signed in, "Tiếp tục" resumes at
+       the next guess, because the recorded guesses are the attempt. Signed out nothing was
+       recorded, so it starts the day again — which anonymous play could always do by reloading. */
+    var IDLE_TIMEOUT_STREAK = 2;
+
+    function away() {
+        return document.visibilityState === "hidden" || document.getElementById("view-daily").classList.contains("hidden");
+    }
+
+    function showGate(guessesMade, reason) {
+        stopTimer();
+        token = null;
+        setPlaying(false);
+        el.board.classList.add("is-gated");
+        el.start.classList.remove("hidden");
+        el.hint.classList.add("hidden");
+        el.done.classList.add("hidden");
+        hideLesson();
+        while (el.chart.firstChild) el.chart.removeChild(el.chart.firstChild);
+
+        var total = state ? state.totalGuesses : 5;
+        var seconds = state ? state.guessSeconds : 20;
+        if (reason === "idle" || reason === "away") {
+            el.startTitle.textContent = "Tạm dừng";
+            el.startNote.textContent = (reason === "idle"
+                ? "Bạn đã để hết giờ " + IDLE_TIMEOUT_STREAK + " nến liền"
+                : "Hết giờ trong lúc bạn rời tab này") + ", nên thử thách tạm dừng ở đây.";
+            el.startButton.textContent = "Tiếp tục";
+        } else if (guessesMade > 0) {
+            el.startTitle.textContent = "Tiếp tục thử thách";
+            el.startNote.textContent = "Bạn đã đoán " + guessesMade + "/" + total + " nến. Đồng hồ "
+                + seconds + " giây chạy lại khi bạn bấm.";
+            el.startButton.textContent = "Tiếp tục từ nến " + (guessesMade + 1);
+        } else {
+            el.startTitle.textContent = archiveDay ? "Chơi lại ngày này?" : "Sẵn sàng?";
+            el.startNote.textContent = total + " nến, " + seconds + " giây mỗi nến"
+                + (archiveDay ? "." : ", mỗi ngày một lượt.") + " Biểu đồ và đồng hồ chỉ bắt đầu khi bạn bấm.";
+            el.startButton.textContent = archiveDay ? "Bắt đầu chơi lại" : "Bắt đầu thử thách";
+        }
+        el.status.textContent = "";
+    }
+
+    function hideGate() {
+        el.board.classList.remove("is-gated");
+        el.start.classList.add("hidden");
+    }
 
     function toChartCandle(c) {
         // CandleChart wants numbers; the API sends decimals as JSON numbers already, but the
@@ -318,6 +384,7 @@
 
             candles.push(payload.actualCandle);
             results.push(payload.correct);
+            timeoutsInARow = direction ? 0 : timeoutsInARow + 1;
             token = payload.nextRoundToken;
             hints = payload.hints;
             drawChart();
@@ -342,6 +409,10 @@
                 }
                 // The day just moved from unplayed to finished, and the list says so.
                 if (archiveDay) await loadArchive();
+                return;
+            }
+            if (!direction && (away() || timeoutsInARow >= IDLE_TIMEOUT_STREAK)) {
+                showGate(results.length, away() ? "away" : "idle");
                 return;
             }
             el.status.textContent = "Nến tiếp theo: đoán hướng.";
@@ -424,7 +495,8 @@
         }
     }
 
-    async function load() {
+    /** @param play true when the player pressed start — only then is the chart drawn and timed. */
+    async function load(play) {
         stopTimer();
         try {
             var res = await window.CandleAuth.authFetch(roundUrl());
@@ -442,6 +514,7 @@
             renderReplayBanner();
 
             if (payload.completed) {
+                hideGate();
                 // Drawing the answer candles is the payoff — the chart finishes in front of
                 // them instead of staying frozen where they left off.
                 // The chart resolves in front of them; the hints go, since there is nothing
@@ -455,10 +528,17 @@
                 return;
             }
 
+            renderDots();
+            if (!play) {
+                showGate(payload.guessesMade);
+                return;
+            }
+
+            hideGate();
+            timeoutsInARow = 0;
             el.done.classList.add("hidden");
             hideLesson();
             drawChart();
-            renderDots();
             renderHint();
             el.status.textContent = payload.guessesMade > 0
                 ? "Tiếp tục từ nến thứ " + (payload.guessesMade + 1) + "."
@@ -470,6 +550,11 @@
             setPlaying(false);
         }
     }
+
+    el.startButton.addEventListener("click", function () {
+        el.startButton.disabled = true;
+        load(true).finally(function () { el.startButton.disabled = false; });
+    });
 
     el.long.addEventListener("click", function () { submit("LONG"); });
     el.short.addEventListener("click", function () { submit("SHORT"); });
