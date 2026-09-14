@@ -45,6 +45,7 @@ public class OpsService {
     private final CandleSyncService candleSyncService;
     private final CandlesProperties properties;
     private final ObjectProvider<Flyway> flyway;
+    private final RecentErrors recentErrors;
 
     public OpsService(AssetRepository assetRepository,
                       CandleRepository candleRepository,
@@ -55,7 +56,8 @@ public class OpsService {
                       ContentItemRepository contentItemRepository,
                       CandleSyncService candleSyncService,
                       CandlesProperties properties,
-                      ObjectProvider<Flyway> flyway) {
+                      ObjectProvider<Flyway> flyway,
+                      RecentErrors recentErrors) {
         this.assetRepository = assetRepository;
         this.candleRepository = candleRepository;
         this.guessResultRepository = guessResultRepository;
@@ -66,12 +68,13 @@ public class OpsService {
         this.candleSyncService = candleSyncService;
         this.properties = properties;
         this.flyway = flyway;
+        this.recentErrors = recentErrors;
     }
 
     @Transactional(readOnly = true)
     public OpsSnapshot snapshot() {
         Instant now = Instant.now();
-        return new OpsSnapshot(assetHealth(now), schema(), settings(), activity(now), now);
+        return new OpsSnapshot(assetHealth(now), schema(), settings(), activity(now), recentErrors.snapshot(), now);
     }
 
     /** Runs the same delta fetch the hourly job runs, for one asset, now. */

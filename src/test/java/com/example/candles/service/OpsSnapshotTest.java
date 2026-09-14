@@ -121,6 +121,30 @@ class OpsSnapshotTest {
                 .andExpect(jsonPath("$.schema.currentVersion").exists());
     }
 
+    @Autowired
+    private RecentErrors recentErrors;
+
+    /**
+     * Pins the field names {@code admin-ops.js} reads off {@code recentErrors}. Same reason as the
+     * activity test below: there is no shared schema, so a renamed component would compile and
+     * the table would quietly draw empty cells.
+     */
+    @Test
+    void recordedFailuresReachThePanelUnderTheNamesThePageReads() throws Exception {
+        String where = "GET /api/test/" + UUID.randomUUID();
+        recentErrors.record("upstream", where, "HTTP 418");
+        recentErrors.record("upstream", where, "HTTP 418");
+
+        mockMvc.perform(get("/api/admin/ops").header("Authorization", tokenFor(Role.ADMIN)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.recentErrors[0].source").value("upstream"))
+                .andExpect(jsonPath("$.recentErrors[0].where").value(where))
+                .andExpect(jsonPath("$.recentErrors[0].summary").value("HTTP 418"))
+                .andExpect(jsonPath("$.recentErrors[0].count").value(2))
+                .andExpect(jsonPath("$.recentErrors[0].firstAt").exists())
+                .andExpect(jsonPath("$.recentErrors[0].lastAt").exists());
+    }
+
     @Test
     void syncingAnAssetThatDoesNotExistIsRejected() throws Exception {
         mockMvc.perform(post("/api/admin/ops/sync/NOPEUSDT").header("Authorization", tokenFor(Role.ADMIN)))

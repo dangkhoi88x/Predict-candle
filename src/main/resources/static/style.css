@@ -2611,6 +2611,20 @@ body:not(.is-admin) .adm-search {
 
 /* ---- buttons and inputs ---- */
 
+/* A failure's text is the one cell on the ops tables that runs long; let it wrap rather than
+   widen the table past the pane. */
+.admin-shell #ops-errors td:not(.ops-error-summary) {
+    white-space: nowrap;
+}
+
+.admin-shell .ops-error-summary {
+    min-width: min(360px, 60vw);
+    white-space: normal;
+    word-break: break-word;
+    font-family: var(--mono);
+    font-size: 12px;
+}
+
 .admin-shell .ghost-btn {
     display: inline-flex;
     align-items: center;

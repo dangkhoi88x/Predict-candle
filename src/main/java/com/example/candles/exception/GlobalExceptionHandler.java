@@ -1,6 +1,8 @@
 package com.example.candles.exception;
 
 import com.example.candles.client.ExchangeCoolingDownException;
+import com.example.candles.service.RecentErrors;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,6 +19,12 @@ import java.time.temporal.ChronoUnit;
 public class GlobalExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
+    private final RecentErrors recentErrors;
+
+    public GlobalExceptionHandler(RecentErrors recentErrors) {
+        this.recentErrors = recentErrors;
+    }
 
     @ExceptionHandler(InvalidRoundTokenException.class)
     public ResponseEntity<ErrorResponse> handleInvalidToken(InvalidRoundTokenException e) {
@@ -71,9 +79,11 @@ public class GlobalExceptionHandler {
      * own message, which is not ours to republish.
      */
     @ExceptionHandler(RestClientException.class)
-    public ResponseEntity<ErrorResponse> handleUpstreamFailure(RestClientException e) {
+    public ResponseEntity<ErrorResponse> handleUpstreamFailure(RestClientException e, HttpServletRequest request) {
         String reason = upstreamReason(e);
-        log.warn("Upstream request failed: {} ({})", reason, NestedExceptionUtils.getMostSpecificCause(e).toString());
+        String cause = NestedExceptionUtils.getMostSpecificCause(e).toString();
+        log.warn("Upstream request failed: {} ({})", reason, cause);
+        recentErrors.record("upstream", request.getMethod() + " " + request.getRequestURI(), reason + " — " + cause);
         return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
                 .body(new ErrorResponse("Không lấy được dữ liệu từ sàn (" + reason + ")."));
     }
