@@ -56,14 +56,14 @@ crypto chạy trên Render rất nhiều. App này chỉ gửi vài chục reque
    - *Postgres version*: **16**, cho khớp `docker-compose.yml` và CI. Dev chạy 16, test chạy 16
      thì demo cũng nên chạy 16.
    - *Cloud provider / Region*: **AWS · Asia Pacific (Singapore)**
-3. Neon tự tạo sẵn database `neondb`, role `neondb_owner` và branch `main`. Dùng luôn `neondb`,
+3. Neon tự tạo sẵn database `neondb`, role `neondb_owner` và branch `production`. Dùng luôn `neondb`,
    không cần tạo database riêng: Flyway tự dựng toàn bộ schema từ V1 ở lần chạy đầu.
 
 ### 3.2 Lấy connection string và đổi sang JDBC
 
 Ở trang project bấm **Connect**:
 
-- *Branch*: `main`, *Database*: `neondb`, *Role*: `neondb_owner`
+- *Branch*: `production`, *Database*: `neondb`, *Role*: `neondb_owner`
 - **Tắt "Connection pooling"** để lấy endpoint direct, tức host **không** có `-pooler`. Demo
   chỉ có một instance với pool Hikari mặc định 10 kết nối, nên không cần PgBouncer. Bỏ nó đi
   cũng bỏ luôn một lớp có thể gây rắc rối với lock của Flyway và prepared statement.
@@ -85,22 +85,33 @@ DB_PASSWORD=AbC123xyz
 
 Nhớ thêm tiền tố `jdbc:` và giữ `sslmode=require`. `channel_binding` bỏ đi được.
 
-### 3.3 Nạp dữ liệu từ máy mình trước (khuyên làm)
+### 3.3 Để Render nạp nến, đừng nạp từ máy local
 
-Lần khởi động đầu tiên phải backfill nến từ Binance. Trên instance free của Render (CPU yếu,
-512 MB) bước này chậm. Chạy nó từ máy local vào thẳng Neon thì Render lên là có dữ liệu ngay:
+Lần khởi động đầu tiên phải backfill nến từ Binance, khoảng 58 nghìn dòng nếu tính từ 2025.
+**Việc này nên để Render làm**, dù instance free của nó yếu hơn máy bạn.
+
+Lý do là độ trễ mạng, không phải CPU. `Candle` sinh id bằng `IDENTITY`, nên Hibernate không gộp
+được các lệnh insert: mỗi nến là một lượt đi về tới database. Từ Việt Nam tới Neon Singapore mỗi
+lượt mất khoảng 70 ms, tức hơn một tiếng cho 58 nghìn dòng. Render ở cùng region với Neon nên
+mỗi lượt chỉ vài ms, và cùng khối lượng đó xong trong vài phút. Thử thật ngày 2026-09-13: chạy
+local vào Neon, riêng 17 migration đã mất 14 giây.
+
+Chạy app local trỏ vào Neon vẫn có ích để **kiểm tra kết nối và tạo schema** trước khi deploy.
+Thấy `Successfully applied … migrations` và `Started CandlesApplication` là đủ, bấm `Ctrl+C`:
 
 ```bash
 DB_URL='jdbc:postgresql://ep-…ap-southeast-1.aws.neon.tech/neondb?sslmode=require' DB_USERNAME=neondb_owner DB_PASSWORD='…' CANDLES_BACKFILL_START=2025-01-01T00:00:00Z ./mvnw spring-boot:run
 ```
 
 - Biến môi trường ưu tiên hơn `.env`, nên `.env` local không ghi đè được chúng.
-- `CANDLES_BACKFILL_START` phải **giống giá trị trong `render.yaml`**. Sync chỉ lấy tiếp từ nến
-  mới nhất, không bao giờ quay ngược về trước, nên backfill local từ 2022 thì Neon sẽ giữ lịch
-  sử từ 2022.
-- Đợi đủ các dòng `Synced N candles for …` (BTC, ETH, BNB, SOL) rồi `Ctrl+C`.
+- Giữ `CANDLES_BACKFILL_START` **giống giá trị trong `render.yaml`**. Sync chỉ lấy tiếp từ nến
+  mới nhất, không bao giờ quay ngược về trước, nên nếu một cặp kịp lưu xong từ 2022 thì Neon sẽ
+  giữ lịch sử từ 2022.
+- Dừng giữa chừng không làm hỏng gì. Mỗi cặp tiền được lưu trong một transaction
+  (`saveAll`), nên cặp đang nạp dở sẽ rollback, còn cặp đã xong thì Render bỏ qua.
 
-Kiểm tra trong **SQL Editor** của Neon:
+Sau khi Render deploy xong và log có đủ 4 dòng `Synced N candles for …`, kiểm tra trong
+**SQL Editor** của Neon:
 
 ```sql
 select version, description, success from flyway_schema_history order by installed_rank desc limit 3;
@@ -129,7 +140,7 @@ Kết quả đúng là 4 cặp tiền, mỗi cặp khoảng 14–15 nghìn nến
 
 Neon cho **branch database** như branch git: một bản copy tức thì, không tốn thêm dung lượng
 cho phần chưa đổi. Trước khi thử một migration mới lên dữ liệu demo, tạo branch `test-vXX` từ
-`main`, trỏ local vào connection string của branch đó để chạy thử, xong thì xoá. Dữ liệu demo
+`production`, trỏ local vào connection string của branch đó để chạy thử, xong thì xoá. Dữ liệu demo
 không bị ảnh hưởng.
 
 ## 4. Render
