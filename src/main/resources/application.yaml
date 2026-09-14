@@ -87,6 +87,10 @@ candles:
       api-key: ${CLOUDINARY_API_KEY:}
       api-secret: ${CLOUDINARY_API_SECRET:}
   timeframe: 1h
+  analytics:
+    # GoatCounter site code (the part before .goatcounter.com). Empty counts nothing, which is
+    # every checkout — only the deployment sets it. See SiteConfigController and analytics.js.
+    goatcounter: ${ANALYTICS_GOATCOUNTER:}
   # Where candles and live prices come from: binance or okx. Binance locally; the Render demo
   # sets okx, because Binance bans by address and kept banning Render's shared Singapore range
   # for traffic this app did not send. Switching on a database that already holds candles mixes

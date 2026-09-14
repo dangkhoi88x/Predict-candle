@@ -75,9 +75,10 @@
         show(0);
     }
 
-    /** @param destination "game" or "daily" */
-    function close(destination) {
+    /** @param destination "game" or "daily"; @param how the analytics step name, if any */
+    function close(destination, how) {
         if (modal.classList.contains("hidden")) return;
+        if (how && window.CandleAnalytics) window.CandleAnalytics.track(how);
         modal.classList.add("hidden");
         document.body.classList.remove("onboarding-open");
         markSeen();
@@ -90,14 +91,14 @@
 
     nextBtn.addEventListener("click", function () { show(index + 1); });
     backBtn.addEventListener("click", function () { show(index - 1); });
-    playBtn.addEventListener("click", function () { close("game"); });
-    dailyBtn.addEventListener("click", function () { close("daily"); });
-    skipBtn.addEventListener("click", function () { close("game"); });
+    playBtn.addEventListener("click", function () { close("game", "onboarding-play"); });
+    dailyBtn.addEventListener("click", function () { close("daily", "onboarding-daily"); });
+    skipBtn.addEventListener("click", function () { close("game", "onboarding-skip"); });
 
     modal.addEventListener("keydown", function (event) {
         if (event.key === "Escape") {
             event.preventDefault();
-            close("game");
+            close("game", "onboarding-skip");
             return;
         }
         if (event.key !== "Tab") return;
@@ -120,7 +121,12 @@
     /* Reopened by hand from the game toolbar. Nothing waits on it then: a round may already be
        running, and the tour is a reminder rather than a gate — which is also why the clock
        warning is on its first step. */
-    if (helpBtn) helpBtn.addEventListener("click", open);
+    if (helpBtn) {
+        helpBtn.addEventListener("click", function () {
+            if (window.CandleAnalytics) window.CandleAnalytics.track("onboarding-help");
+            open();
+        });
+    }
 
     function whenFinished() {
         return new Promise(function (resolve) {
@@ -146,7 +152,10 @@
         });
     }
 
-    if (isFirstVisit()) open();
+    if (isFirstVisit()) {
+        if (window.CandleAnalytics) window.CandleAnalytics.track("onboarding-shown");
+        open();
+    }
 
     window.CandleOnboarding = { open: open, gameReady: gameReady };
 })();

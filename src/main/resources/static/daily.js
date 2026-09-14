@@ -152,6 +152,7 @@
     }
 
     async function copyShare() {
+        if (window.CandleAnalytics) window.CandleAnalytics.track("daily-share");
         var text = shareText();
         try {
             await navigator.clipboard.writeText(text);
@@ -200,6 +201,8 @@
             });
             var payload = await res.json();
             if (!res.ok) throw new Error(payload.message || ("Máy chủ trả về " + res.status));
+            // Today's challenge only: an archive replay is a different step of a different funnel.
+            if (direction && !archiveDay && window.CandleAnalytics) window.CandleAnalytics.trackOnce("daily-first-guess");
 
             candles.push(payload.actualCandle);
             results.push(payload.correct);
@@ -210,6 +213,7 @@
             renderHint();
 
             if (payload.sessionComplete) {
+                if (!archiveDay && window.CandleAnalytics) window.CandleAnalytics.track("daily-complete");
                 /* Signed in, re-read: the streak only moves once the day is finished and the
                    server is the one that knows what it moved to.
 

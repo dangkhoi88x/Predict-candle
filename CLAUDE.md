@@ -215,6 +215,22 @@ and a label only goes from a control whose icon is unambiguous alone.
 Script order in `index.html` matters: `pill.js`, `rolling.js` and `avatar.js` define shared
 globals that later files call at load time.
 
+**The funnel before the first recorded guess is measured by GoatCounter, not by the database.**
+Retention starts at a player's first *recorded* call, and an anonymous guess is never recorded,
+so nobody who opened the page and left — or played signed out — was visible anywhere. An events
+table was the alternative and is the wrong trade here: it would duplicate what `guess_results`
+already says for signed-in play, and page views are exactly the thing this app has no business
+storing. `analytics.js` names the steps (`onboarding-*`, `first-guess`, `chart-complete`,
+`daily-first-guess`, `daily-complete`, `daily-share`, `sign-in`) and GoatCounter counts them with
+no cookies.
+
+It is off unless `ANALYTICS_GOATCOUNTER` names a site code, which `SiteConfigController` turns
+into the endpoint — a code and not a URL, so a mistyped variable cannot become a script source.
+`/api/site-config` is cached five minutes, which is also why switching it locally seems not to
+take until the browser's copy expires. `sign-in` is counted in the *exported*
+`CandleAuth.applySession`, the wallet bundle's entry point: a session restored from the cookie
+goes through the inner function and is not a sign-in.
+
 **A first visit gets a three-step tour, and the game's first chart waits for it.** Both the
 game and the daily deal a round the moment they are shown, and a round's clock starts from the
 server's token — so a tour laid *over* a running round spends the newcomer's first guess while

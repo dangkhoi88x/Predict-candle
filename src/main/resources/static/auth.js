@@ -167,7 +167,14 @@
     tryRestoreSession();
 
     window.CandleAuth = {
-        applySession: applySession,
+        /* The wallet bundle's way in, and only its way in — tryRestoreSession and the renewal
+           timer call the inner function. So a sign-in counted here is a real one, not a page
+           load that found a cookie. */
+        applySession: function (response) {
+            var wasSignedIn = !!state.user;
+            applySession(response);
+            if (!wasSignedIn && window.CandleAnalytics) window.CandleAnalytics.track("sign-in");
+        },
         clearSession: clearSession,
         showError: showError,
         getAccessToken: function () { return state.accessToken; },

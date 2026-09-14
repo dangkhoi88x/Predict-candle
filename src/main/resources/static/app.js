@@ -1012,6 +1012,7 @@
             }
             if (!res.ok) throw new Error((await res.json()).message || "Không gửi được kết quả");
             var result = await res.json();
+            if (direction && window.CandleAnalytics) window.CandleAnalytics.trackOnce("first-guess");
             // Before the reveal animation, not after: the server started the next token's
             // clock when it wrote this response.
             var tokenArrivedAt = Date.now();
@@ -1040,6 +1041,7 @@
             var missedIt = !direction;
 
             if (result.sessionComplete) {
+                if (window.CandleAnalytics) window.CandleAnalytics.trackOnce("chart-complete");
                 var summary = summarizeSession(state.sessionCorrect, result.totalGuesses);
                 el.resultBanner.textContent = summary.text;
                 el.resultBanner.className = "result-banner summary " + summary.cls;
