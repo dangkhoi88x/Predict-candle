@@ -49,7 +49,8 @@ deploy đầu tiên, 2026-09-13:
    mỗi lần tái phạm lại dài hơn, tối đa 3 ngày. IP gọi ra ngoài của Render được nhiều service
    dùng chung, và bot crypto chạy trên Render rất nhiều. App này chỉ gửi vài chục request,
    không thể tự gây ra lệnh cấm, nên cũng không có cách nào tự gỡ.
-3. Đổi region chỉ là đổi sang một dải IP chung khác, không có gì đảm bảo. Đổi sàn thì chắc chắn.
+3. Đổi region chỉ là đổi sang một dải IP chung khác, không có gì đảm bảo. Đổi sàn thì giải quyết
+   được: OKX chạy ổn trên Render từ lần deploy 2026-09-14.
 
 `render.yaml` đặt `CANDLES_PRICE_SOURCE=okx`. Hai provider (`BinanceProvider`, `OkxProvider`)
 trả nến theo cùng một hợp đồng, nên phần còn lại của app không biết mình đang đọc sàn nào.
