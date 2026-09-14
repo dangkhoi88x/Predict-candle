@@ -12,8 +12,17 @@ public record OpsSnapshot(
         Schema schema,
         GameSettings settings,
         Activity activity,
+        List<RecentError> recentErrors,
         Instant generatedAt
 ) {
+
+    /**
+     * One failure, or a run of the same failure folded together — {@code count} of them between
+     * {@code firstAt} and {@code lastAt}. Newest first in the list. See {@code RecentErrors}.
+     */
+    public record RecentError(String source, String where, String summary, Instant firstAt,
+                              Instant lastAt, int count) {
+    }
 
     /**
      * {@code lagMinutes} is the number that matters. A stalled ingest looks exactly like a

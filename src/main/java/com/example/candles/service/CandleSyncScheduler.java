@@ -28,10 +28,13 @@ public class CandleSyncScheduler implements ApplicationRunner {
     private final AssetRepository assetRepository;
     private final CandleSyncService candleSyncService;
     private final CandlesProperties properties;
+    private final RecentErrors recentErrors;
 
     public CandleSyncScheduler(AssetRepository assetRepository,
                                 CandleSyncService candleSyncService,
-                                CandlesProperties properties) {
+                                CandlesProperties properties,
+                                RecentErrors recentErrors) {
+        this.recentErrors = recentErrors;
         this.assetRepository = assetRepository;
         this.candleSyncService = candleSyncService;
         this.properties = properties;
@@ -60,8 +63,9 @@ public class CandleSyncScheduler implements ApplicationRunner {
             } catch (Exception e) {
                 // The cause goes on the first line too: this trace is long, and a log viewer
                 // that shows its tail shows everything except what went wrong.
-                log.error("Failed to sync candles for {}: {}", asset.getSymbol(),
-                        NestedExceptionUtils.getMostSpecificCause(e).toString(), e);
+                String cause = NestedExceptionUtils.getMostSpecificCause(e).toString();
+                log.error("Failed to sync candles for {}: {}", asset.getSymbol(), cause, e);
+                recentErrors.record("sync", asset.getSymbol(), cause);
             }
         }
     }

@@ -16,6 +16,8 @@
         cards: document.getElementById("ops-cards"),
         assets: document.querySelector("#ops-assets tbody"),
         settings: document.getElementById("ops-settings"),
+        errors: document.querySelector("#ops-errors tbody"),
+        errorsEmpty: document.getElementById("ops-errors-empty"),
         status: document.getElementById("admin-status"),
         navBadge: document.getElementById("nav-stale-count"),
     };
@@ -84,6 +86,16 @@
         el.cards.appendChild(card("Vòng trực tiếp hôm nay", act.liveCallsToday.toLocaleString("vi-VN"),
             "đúng " + liveAccuracy + " (" + act.liveSettledToday + "/" + act.liveCallsToday + " đã chốt)"
             + " · 7 ngày: " + act.liveCallsWeek.toLocaleString("vi-VN")));
+        /* Counted over the last hour, not the whole list: an error from this morning that has
+           not happened since is history, and a red card for it would train people to ignore red. */
+        var errors = snapshot.recentErrors || [];
+        var hourAgo = Date.now() - 60 * 60 * 1000;
+        var recent = errors.filter(function (e) { return Date.parse(e.lastAt) >= hourAgo; });
+        var recentCount = recent.reduce(function (sum, e) { return sum + e.count; }, 0);
+        el.cards.appendChild(card("Lỗi trong 1 giờ",
+            recentCount ? recentCount.toLocaleString("vi-VN") : "Không có",
+            errors.length ? "gần nhất: " + clock(errors[0].lastAt) : "từ lần khởi động",
+            recentCount ? "bad" : "good"));
         el.cards.appendChild(card("Tài khoản", act.players.toLocaleString("vi-VN"),
             act.admins + " admin"));
         el.cards.appendChild(card("Nội dung", act.contentItems + " mục",
@@ -119,6 +131,8 @@
             el.assets.appendChild(tr);
         });
 
+        renderErrors(errors);
+
         var s = snapshot.settings;
         el.settings.innerHTML = "";
         [["Khung thời gian", s.timeframe], ["Nến hiển thị", s.visibleCandles],
@@ -135,6 +149,33 @@
             row.appendChild(k);
             row.appendChild(v);
             el.settings.appendChild(row);
+        });
+    }
+
+    var SOURCE_LABELS = { upstream: "Sàn / nguồn ngoài", server: "Server", sync: "Sync nến" };
+
+    function renderErrors(errors) {
+        el.errors.innerHTML = "";
+        el.errorsEmpty.classList.toggle("hidden", errors.length > 0);
+        errors.forEach(function (error) {
+            var tr = document.createElement("tr");
+            var cells = [
+                clock(error.lastAt),
+                SOURCE_LABELS[error.source] || error.source,
+                error.where,
+                error.summary,
+                error.count.toLocaleString("vi-VN"),
+            ];
+            cells.forEach(function (value, i) {
+                var td = document.createElement("td");
+                if (i === 4) td.className = "num";
+                if (i === 3) td.className = "ops-error-summary";
+                td.textContent = value;
+                // The full span of a folded run, for anyone asking how long it has been going on.
+                if (i === 0 && error.count > 1) td.title = "Từ " + clock(error.firstAt);
+                tr.appendChild(td);
+            });
+            el.errors.appendChild(tr);
         });
     }
 

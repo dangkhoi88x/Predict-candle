@@ -437,6 +437,24 @@
                         </div>
                     </div>
 
+                    <!-- What has failed on this instance lately — upstream calls, unhandled exceptions,
+                         candle syncs. In memory, so a restart empties it; see RecentErrors. -->
+                    <div class="adm-table-card">
+                        <div class="adm-table-head">
+                            <b>Lỗi gần đây</b>
+                            <span>50 lỗi mới nhất trên instance này, lỗi giống nhau liên tiếp gộp làm một. Khởi động lại thì xoá sạch.</span>
+                        </div>
+                        <div class="scroller">
+                            <table class="ops-table" id="ops-errors">
+                                <thead>
+                                    <tr><th>Lần cuối</th><th>Nguồn</th><th>Ở đâu</th><th>Lỗi</th><th class="num">Số lần</th></tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                        <p class="content-note hidden" id="ops-errors-empty">Chưa có lỗi nào kể từ lần khởi động gần nhất.</p>
+                    </div>
+
                     <div class="admin-bar">
                         <h2 class="admin-h2">Cấu hình đang chạy</h2>
                     </div>

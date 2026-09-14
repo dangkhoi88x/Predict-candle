@@ -298,6 +298,19 @@ with no error), the pane's own line in the `.admin-panes[data-pane=…]` rule in
 however right the attribute is), and an entry in `admin-search.js`'s `SOURCES` so the topbar
 search can see its rows.
 
+**The ops pane lists what has failed lately, from memory.** `RecentErrors` keeps the newest 50
+failures on this instance from three places: `GlobalExceptionHandler` (an upstream call it turned
+into a 502, with the reason), `ErrorRecordingFilter` (an exception nothing handled — outermost
+filter, records and rethrows), and `CandleSyncScheduler` (a pair that failed to sync).
+Consecutive repeats of one failure fold into a row with a count, because an exchange ban raises
+the same error on every poll of every open tab and fifty copies would push out the one different
+error worth seeing. It rides on the ops snapshot as `recentErrors`, pinned by `OpsSnapshotTest`.
+
+In memory on purpose: it answers "is something failing right now", which the first night on
+Render needed and the log viewer could not give, and it needs no account or network. A restart
+empties it, and that is the trade — it is not a log. The card counts the last hour only, so a
+morning's error that has stopped does not keep a card red.
+
 Overview charts come from `GET /api/admin/stats?range=week|month|year` (`AdminStatsService`,
 cached 60s, bucketed in UTC; `&fresh=true` is the refresh button skipping that cache). The four
 KPI figures do **not**: they come off the `candles:ops` snapshot, because two panes asking the
