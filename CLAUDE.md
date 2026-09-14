@@ -479,6 +479,10 @@ cached `candles.live.price-cache-ttl` (2s) so concurrent viewers share one upstr
 round has closed, the settled row is authoritative and cheaper, so the exchange is only asked
 while a round is still open.
 
+An empty pool is drawn as a neutral bar reading "Chưa ai dự đoán" (`drawPool`, shared with the
+history popup), not the 50/50 split an empty pool used to show — that read as two players having
+called it opposite ways. With calls, each side shows its count beside its share.
+
 `live_predictions` carries the same integrity story as `guess_results`: one row per (user,
 asset, timeframe, open_time), a unique constraint rather than a check the application could
 forget. Recording checks first and inserts second — an insert that fails its constraint leaves
@@ -1215,6 +1219,13 @@ no drawing code knows which theme is active (SVG presentation attributes take `v
   faster); switch it off explicitly in that block, as `.ticker-track` and `.skeleton::after` do.
 - `.rolling` (odometer digits), `.skeleton`, `.pill` are the shared primitives.
 - Numbers get `font-variant-numeric: tabular-nums`.
+- **Text tokens clear WCAG AA (4.5:1) on every surface they sit on**, including `--muted-2`, which
+  sets 10-11px eyebrows and table heads (dark `#838389`, light `#666d79`; the old values were
+  2.6-3.2:1) and the light theme's `--warn`, which the live banner writes its countdown in. Check
+  a new token value against `--bg`, `--panel` and `--panel-2` before shipping it.
+- **A label on an accent-filled button is `var(--bg)`, never white** (`.side-cta`, the start and
+  tour buttons): white on the dark theme's `#4f8cff` is 3.2:1, the ground colour on it is 6.2:1.
+  Hover mixes the accent towards `--text`, which moves away from the label in both themes.
 - Selection and hover are **tints, not new colours**: `--tint-accent` / `--tint-accent-strong`
   are `color-mix(in oklab, var(--accent) 12%/18%, transparent)`, so one rule works in both
   themes and over whatever ground it lands on. `--overlay-soft` is the neutral equivalent.
@@ -1246,6 +1257,18 @@ scan real stored history for a genuine occurrence.
 
 Heatmap has two sources behind one view: crypto (CoinGecko, called straight from the browser)
 and S&P 500 (`/api/market/sp500` → `YahooFinanceClient`). `treemap.js` does the layout for both.
+
+**The ticker and the crypto heatmap drop stablecoins and derivative copies** through
+`CandleCoins.tradable` (`coins.js`, loaded before both). CoinGecko's market-cap order is a third
+dollar-pegged products on any given day, each at $1.00 and 0.00%, so both ask for more rows than
+they show (40 → 14, 50 → 24). Three tests: a known stablecoin symbol, a name saying wrapped /
+staked / bridged / tokenised, or a price pinned within 1.5% of a dollar that moved under 0.5% —
+the last catches pegged products whose names say nothing.
+
+**Nothing above the views appears late.** The ticker and the live banner ship visible and hide
+only on failure; appearing after their fetches pushed the whole shell down on every load (CLS
+0.10 on a phone, where the banner has a row of its own). For the same reason the banner no longer
+vanishes during the eight locked minutes of each hour — it says when the next round opens.
 
 ## Notes
 

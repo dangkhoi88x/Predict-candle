@@ -145,7 +145,10 @@
        the thing being scanned, but only one of them is where you are. */
     --text-2: #c9c9cd;
     --muted: #7d7d82;
-    --muted-2: #58585d;
+    /* The dimmest text on the page, and it sets eyebrows and table heads at 10-11px, so it has
+       to clear WCAG AA's 4.5:1 on every surface it sits on — it was #58585d, 2.6:1 on a panel.
+       Still dimmer than --muted on the page ground, which is the hierarchy it exists for. */
+    --muted-2: #838389;
     --up: #34d399;
     --down: #fb7185;
     --accent: #4f8cff;
@@ -188,13 +191,16 @@
     --text: #14161a;
     --text-2: #3d434e;
     --muted: #5f6672;
-    --muted-2: #8a909c;
+    /* 4.6-5.2:1 on bg, panel and panel-2; #8a909c was 3.0:1. */
+    --muted-2: #666d79;
     /* Darker than the dark-theme greens/reds: the originals are tuned for glowing on black
        and drop below readable contrast once they sit on white. */
     --up: #0f9d70;
     --down: #d92643;
     --accent: #2563eb;
-    --warn: #a8730a;
+    /* Darkened for text: the live banner writes its countdown in this on a warn tint, where
+       #a8730a read at 3.6:1. */
+    --warn: #8f6200;
     --overlay-soft: rgba(0, 0, 0, 0.04);
     --overlay-strong: rgba(0, 0, 0, 0.08);
     --shadow: rgba(0, 0, 0, 0.14);
@@ -914,12 +920,15 @@ h1, h2, h3 {
     font-size: 15px;
     font-weight: 700;
     cursor: pointer;
-    color: #fff;
+    /* --bg, not white, the same as .side-cta: white on the dark theme's blue is 3.2:1, the
+       page ground on it is 6.2:1, and on the light theme the ground is near-white anyway. */
+    color: var(--bg);
     background: var(--accent);
 }
 
 .game-start-button:hover {
-    background: color-mix(in oklab, var(--accent) 88%, white);
+    /* Towards --text, so it moves away from the label in both themes rather than towards it. */
+    background: color-mix(in oklab, var(--accent) 88%, var(--text));
 }
 
 /* Sized to the real readouts: 26px mono price, 12px delta pill. */
@@ -4548,6 +4557,33 @@ body:not(.is-admin) .adm-search {
 
 /* --- leaderboard --- */
 
+.lb-empty {
+    display: grid;
+    justify-items: center;
+    gap: 8px;
+    padding: 36px 16px;
+    text-align: center;
+}
+
+.lb-empty-title {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--text);
+}
+
+.lb-empty-text {
+    margin: 0 0 6px;
+    max-width: 420px;
+    font-size: 13.5px;
+    line-height: 1.6;
+    color: var(--text-2);
+}
+
+.lb-empty-cta {
+    padding: 10px 26px;
+}
+
 /* One face per player, hashed from their name by avatar.js. Shared between this board and
    the play tab's five-row card, because a player who is a fox on one and an owl on the other
    reads as two different players. */
@@ -5574,6 +5610,16 @@ body:not(.is-admin) .adm-search {
     transition: width var(--duration-normal) var(--ease-out);
 }
 
+/* Nobody has called the round: no split to show. A neutral bar rather than the 50/50 an empty
+   pool used to draw, which read as two players having called it opposite ways. */
+.live-pool-track.is-empty {
+    background: var(--overlay-strong);
+}
+
+.live-pool-track.is-empty .live-pool-long {
+    width: 0 !important;
+}
+
 .live-pool-labels {
     display: flex;
     justify-content: space-between;
@@ -5782,12 +5828,14 @@ body.onboarding-open {
     font-size: 13px;
     font-weight: 700;
     cursor: pointer;
-    color: #fff;
+    /* --bg, not white, the same as .side-cta: white on the dark theme's blue is 3.2:1, the
+       page ground on it is 6.2:1, and on the light theme the ground is near-white anyway. */
+    color: var(--bg);
     background: var(--accent);
 }
 
 .onboarding-primary:hover {
-    background: color-mix(in oklab, var(--accent) 88%, white);
+    background: color-mix(in oklab, var(--accent) 88%, var(--text));
 }
 
 .onboarding-actions button {

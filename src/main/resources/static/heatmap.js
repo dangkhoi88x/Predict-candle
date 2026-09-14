@@ -2,7 +2,9 @@
     "use strict";
 
     var API_URL = "https://api.coingecko.com/api/v3/coins/markets" +
-        "?vs_currency=usd&order=market_cap_desc&per_page=24&page=1&price_change_percentage=24h&sparkline=true";
+        "?vs_currency=usd&order=market_cap_desc&per_page=50&page=1&price_change_percentage=24h&sparkline=true";
+    // Fifty asked for, twenty-four drawn once stablecoins and wrapped copies are out (coins.js).
+    var SHOWN = 24;
 
     /* The four pairs the game has stored candles for. Anything else on the map is a coin you
        can read about here and not a round you can play, and the detail panel hides its play
@@ -20,9 +22,10 @@
             var coins = await res.json();
             if (!Array.isArray(coins) || !coins.length) throw new Error("Không có dữ liệu");
 
-            var priced = coins.filter(function (c) { return c.market_cap > 0; });
+            var priced = window.CandleCoins.tradable(
+                coins.filter(function (c) { return c.market_cap > 0; }), SHOWN);
             /* Share of what is on the map, not of the whole market — the map is the top 24
-               by cap and nothing here knows the total. The label says "trên bản đồ" for that
+               by cap, less stablecoins and wrapped copies, and nothing here knows the total. The label says "trên bản đồ" for that
                reason: a figure called market dominance would be wrong by whatever the tail
                weighs. */
             var mappedCap = priced.reduce(function (sum, c) { return sum + c.market_cap; }, 0);
