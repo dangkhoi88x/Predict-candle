@@ -79,6 +79,7 @@ ghi đè bằng biến môi trường.
 | `ADMIN_WALLETS` | rỗng | Ví có quyền admin, cách nhau dấu phẩy. Rỗng thì trang admin đóng hoàn toàn |
 | `CANDLES_PRICE_SOURCE` | `binance` | `binance` hoặc `okx` |
 | `CANDLES_BACKFILL_START` | `2022-01-01T00:00:00Z` | Lấy nến từ ngày nào |
+| `ANALYTICS_GOATCOUNTER` | rỗng | Mã site GoatCounter để đo phễu (ví dụ `candle-guess`, không phải URL). Rỗng thì không đếm gì |
 | `CLOUDINARY_*` | rỗng | Upload ảnh cho blog |
 
 ## Kiểm thử
@@ -89,6 +90,18 @@ ghi đè bằng biến môi trường.
 
 Hơn 260 test, gồm các luồng đầy đủ trên Postgres thật. CI chạy trên mọi push; test tự tạo dữ liệu
 nến nên không cần gọi sàn.
+
+## Sao lưu
+
+`.github/workflows/backup.yml` chạy mỗi đêm: dump database, kiểm tra các bảng không thể lấy lại
+(tài khoản, lượt đoán, live, demo) đều có dữ liệu, mã hoá AES-256 rồi lưu làm artifact 30 ngày.
+Cần hai secret `NEON_BACKUP_URL` và `BACKUP_PASSPHRASE`; thiếu thì job tự bỏ qua.
+
+Khôi phục vào một database **trống** (trên Neon: một branch mới), cần Docker:
+
+```bash
+DATABASE_URL='postgresql://…' BACKUP_PASSPHRASE='…' scripts/restore-db.sh candles-….dump.gpg
+```
 
 ## Tài liệu
 

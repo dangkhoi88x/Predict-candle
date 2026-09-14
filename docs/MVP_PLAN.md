@@ -1,5 +1,8 @@
 # Candles — review tổng thể và kế hoạch MVP
 
+> **Tiến độ (cập nhật 2026-09-14): MVP 0 đã xong và đang chạy trên bản live** (PR #60–#63),
+> kèm backup database (§6). Đang ở bước mời người chơi thật; MVP 1 chờ đủ điều kiện ở cuối §5 MVP 0.
+>
 > Viết 2026-09-14, ngay sau khi bản demo lên <https://candles-oj1q.onrender.com>. Thay mục 7
 > ("Thứ tự đề xuất") của `SPEC.md`: phần lớn backlog ở đó đã làm xong, và câu hỏi bây giờ không
 > còn là *làm thêm gì* mà là *làm gì để có người chơi thật và biết họ có quay lại không*.
@@ -156,13 +159,32 @@ Không thêm chế độ chơi nào. Làm cho những gì đã có hoạt độn
 
 | # | Việc | Effort | Xong khi |
 |---|---|---|---|
-| M0.1 | **Đo phễu.** Ghi các mốc *mở trang / đoán lượt đầu / hết chart / bấm chia sẻ / đăng nhập*. Hai cách: thêm GoatCounter hoặc Umami (một thẻ script, miễn phí, không cookie), hoặc tự ghi vào bảng `events` rồi hiện trên pane Tổng quan. **Nghiêng về công cụ ngoài:** CLAUDE.md phản đối bảng events vì dữ liệu chơi đã có sẵn, nhưng lượt *mở trang* thì không nằm ở bảng nào | S | Admin trả lời được "hôm qua bao nhiêu người mở trang, bao nhiêu đoán" |
-| M0.2 | **Thẻ meta chia sẻ.** `description`, `og:title/description/image`, `twitter:card`, ảnh 1200×630 tĩnh | S | Dán link vào Zalo và Telegram hiện được thẻ có ảnh |
-| M0.3 | **Onboarding 3 bước** cho lượt truy cập đầu (cờ trong localStorage): luật chơi, điểm và streak, vì sao nên đăng nhập. Bỏ qua được, không chặn chart | M | Người chưa từng nghe về game chơi được mà không phải hỏi |
-| M0.4 | **Mặc định vào Daily cho người mới**, thay cho Practice. Daily có đích rõ (5 lượt, một lần mỗi ngày, có nút chia sẻ); Practice vô tận không có điểm dừng | S | Lượt vào đầu tiên hạ cánh ở tab Hôm nay |
-| M0.5 | **Rút gọn rail cho khách chưa đăng nhập:** giấu Trade và Hồ sơ, dồn các tab học vào nhóm đóng sẵn (đã có). Người đã đăng nhập vẫn thấy đủ | S | Người lạ thấy tối đa 6 mục |
-| M0.6 | **Sửa README** cho khớp thực tế, kèm link demo | S | — |
-| M0.7 | **Error monitoring.** Sentry free cho Java và JS, hoặc tối thiểu một pane admin hiện 50 lỗi gần nhất | S | Lỗi 5xx trên bản live tự báo, không cần ai đọc log |
+| M0.1 ✅ | **Đo phễu.** Ghi các mốc *mở trang / đoán lượt đầu / hết chart / bấm chia sẻ / đăng nhập*. Hai cách: thêm GoatCounter hoặc Umami (một thẻ script, miễn phí, không cookie), hoặc tự ghi vào bảng `events` rồi hiện trên pane Tổng quan. **Nghiêng về công cụ ngoài:** CLAUDE.md phản đối bảng events vì dữ liệu chơi đã có sẵn, nhưng lượt *mở trang* thì không nằm ở bảng nào | S | Admin trả lời được "hôm qua bao nhiêu người mở trang, bao nhiêu đoán" |
+| M0.2 ✅ | **Thẻ meta chia sẻ.** `description`, `og:title/description/image`, `twitter:card`, ảnh 1200×630 tĩnh | S | Dán link vào Zalo và Telegram hiện được thẻ có ảnh |
+| M0.3 ✅ | **Onboarding 3 bước** cho lượt truy cập đầu (cờ trong localStorage): luật chơi, điểm và streak, vì sao nên đăng nhập. Bỏ qua được, không chặn chart | M | Người chưa từng nghe về game chơi được mà không phải hỏi |
+| M0.4 ↺ | **Mặc định vào Daily cho người mới**, thay cho Practice. Daily có đích rõ (5 lượt, một lần mỗi ngày, có nút chia sẻ); Practice vô tận không có điểm dừng | S | Lượt vào đầu tiên hạ cánh ở tab Hôm nay |
+| M0.5 ✓ | **Rút gọn rail cho khách chưa đăng nhập:** giấu Trade và Hồ sơ, dồn các tab học vào nhóm đóng sẵn (đã có). Người đã đăng nhập vẫn thấy đủ | S | Người lạ thấy tối đa 6 mục |
+| M0.6 ✅ | **Sửa README** cho khớp thực tế, kèm link demo | S | — |
+| M0.7 ✅ | **Error monitoring.** Sentry free cho Java và JS, hoặc tối thiểu một pane admin hiện 50 lỗi gần nhất | S | Lỗi 5xx trên bản live tự báo, không cần ai đọc log |
+
+**Đã làm thế nào, và chỗ nào khác plan** (✅ xong như plan · ↺ đổi cách làm · ✓ không cần làm):
+
+- **M0.1** — GoatCounter, không cookie. `analytics.js` gửi các mốc `onboarding-*`, `first-guess`,
+  `chart-complete`, `daily-first-guess`, `daily-complete`, `daily-share`, `sign-in`; bật bằng
+  biến `ANALYTICS_GOATCOUNTER` (mã site, không phải URL). Đọc phễu bằng cách chia số lượt của
+  bước sau cho bước trước trên dashboard GoatCounter.
+- **M0.2** — ảnh `og-image.png` được dựng từ `web/og/og-image.html` bằng Chrome headless, dùng
+  font và màu của app.
+- **M0.3** — onboarding hiện **trước** khi chia chart đầu tiên, không đè lên chart. Đồng hồ 20
+  giây bắt đầu từ lúc server phát token, nên đè lên chart là đốt mất lượt đầu của người đang đọc
+  hướng dẫn.
+- **M0.4 ↺** — không đưa người mới thẳng vào Daily. Daily cũng chạy đồng hồ ngay khi mở, và mỗi
+  ngày chỉ có một lượt: vào thẳng đó là tiêu lượt duy nhất trong ngày của người còn đang làm quen.
+  Thay vào đó bước cuối của onboarding cho chọn "Chơi thử ngay" (nút chính) hoặc "Thử thách hôm
+  nay".
+- **M0.5 ✓** — khách chưa đăng nhập vốn chỉ thấy 6 mục trên rail (nhóm Học đóng sẵn, Hồ sơ ẩn).
+- **M0.7** — không dùng Sentry. Bảng "Lỗi gần đây" trên pane Vận hành, giữ 50 lỗi mới nhất trong
+  bộ nhớ: không cần tài khoản ngoài, hợp với mục tiêu học và làm portfolio.
 
 **Chưa làm MVP 1 cho tới khi** có ít nhất 50 người chơi thật (mời bạn bè, một nhóm Telegram, một
 bài Facebook) và một tuần số liệu.
@@ -218,9 +240,9 @@ chưa xem.
 
 | Việc | Khi nào |
 |---|---|
-| Export Neon định kỳ (`pg_dump` qua GitHub Action, lưu artifact) | Trước khi mời người chơi thật: tài khoản mất là mất |
+| ✅ Export Neon định kỳ: `.github/workflows/backup.yml`, dump mã hoá mỗi đêm, giữ 30 ngày | Trước khi mời người chơi thật: tài khoản mất là mất |
 | Theo dõi compute hours Neon và giờ free Render | Mỗi tuần một lần trong tháng đầu |
-| Ghi chú trên admin rằng giá demo là OKX, không phải Binance | Cùng M0.6 |
+| ✅ Ghi chú trên admin rằng giá đang lấy từ OKX hay Binance (pane Vận hành) | Cùng M0.6 |
 | Giữ CI xanh, không merge đỏ (`autoDeployTrigger: checksPass` đang dựa vào điều này) | Luôn luôn |
 
 ---
