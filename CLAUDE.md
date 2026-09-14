@@ -1133,6 +1133,11 @@ and S&P 500 (`/api/market/sp500` → `YahooFinanceClient`). `treemap.js` does th
   cleanly and stores no candles. Not Vercel: there is no Java runtime there, and the hourly
   sync needs a process that stays alive.
 
+- **`index.html`'s `og:url` and `og:image` are absolute and name the Render address**, because
+  Facebook and Zalo ignore relative ones. Moving the site means changing both. The image is
+  rendered from `web/og/og-image.html` with headless Chrome (the command is in that file), so it
+  is re-rendered rather than redrawn when the brand or copy changes.
+
 - **The demo reads OKX, not Binance: `candles.price-source`, `binance` by default.** Binance
   bans by IP (HTTP 418, 2 minutes growing to 3 days), Render's outbound addresses are shared, and
   the Singapore range was banned twice on the first evening for traffic this app did not send.
