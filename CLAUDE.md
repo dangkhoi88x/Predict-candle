@@ -908,6 +908,35 @@ is the copy that does. Unearned badges are returned too, with progress — a bad
 themselves approaching is not a goal, and goals in reach are the thing that still works when a
 streak breaks. The profile sorts earned first, then unearned by how close they are.
 
+### Habits (player insights)
+
+The profile's "Thói quen khi đoán" section answers where a player's calls go wrong rather than how
+often they are right: `GET /api/stats/me/insights` (`InsightsService` → `PlayerInsights`, a pure
+fold like `PlayStreak`). Nothing is stored.
+
+It reads the **last 500** recorded calls, not the whole history — a habit is how somebody plays
+now, and the cost stays bounded at one query for the calls and one per pair for the candles. Each
+call is joined back to the candles it was made on: the last visible candle is
+`start_index + visible + guess_number - 2`, and `CandleRepository.candlesAtIndexes` numbers
+candles with `row_number() over (order by open_time) - 1`, the same position `findWindow`'s
+OFFSET means. `InsightsFlowTest.candlesAreAddressedByTheSameIndexThatDealtTheChart` pins that
+equivalence; if the two ever numbered differently every trend would be read off the wrong candles
+and nothing would look broken.
+
+What the chart had just done (`trendOf`) is the net move over the last 5 visible candles against
+their **average range**, not a percentage — a 1% hour is quiet for SOL and violent for BTC.
+
+Three thresholds keep it honest, all in `PlayerInsights`: no finding under 30 answered calls, no
+bucket compared under 10, no gap under 10 points reported. **The timeout finding is the one
+exception and counts every call** — found on a real account with 71 timeouts in 89 calls, whose 18
+answered calls were too few for anything else, so gating it on answered calls hid the one habit
+that was plainly true. Sessions are Vietnam hours, deliberately not UTC like every day boundary
+elsewhere: a habit belongs to somebody's evening.
+
+A finding carries only its kind, which bucket, and the gap; `profile.js` reads the figures out of
+the bucket and writes the sentence. So a finding and the table under it cannot disagree, and the
+response stays counts, never rates, like the retention pane.
+
 ### Progressive hints
 
 The chart gives ground as a player misses on it: 1 miss unlocks volume, 2 the 5-candle moving

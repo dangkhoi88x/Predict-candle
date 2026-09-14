@@ -1055,6 +1055,17 @@
     <p id="profile-streak-note" class="profile-note hidden"></p>
     <p id="profile-legacy-note" class="profile-note hidden"></p>
 
+    <!-- Habits, not totals: where this player's calls go wrong. Figures from
+         /api/stats/me/insights, sentences written in profile.js. Above the columns because it is
+         the one part of the page that says what to do differently. -->
+    <section class="pf-insights" id="profile-insights" aria-labelledby="profile-insights-title">
+        <div class="pf-insights-head">
+            <h3 class="profile-section" id="profile-insights-title">Thói quen khi đoán</h3>
+            <span class="pf-insights-scope" id="profile-insights-scope"></span>
+        </div>
+        <div id="profile-insights-body"></div>
+    </section>
+
     <!-- Two columns: the record on the left, what it earned on the right. One column meant
          the badges sat below a list of every recent guess, which is the wrong way round —
          the trophies are the part worth looking at twice. -->

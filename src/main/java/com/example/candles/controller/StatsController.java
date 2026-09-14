@@ -9,8 +9,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.candles.dto.request.LegacyStatsRequest;
+import com.example.candles.dto.response.InsightsResponse;
 import com.example.candles.dto.response.StatsResponse;
 import com.example.candles.exception.InvalidCredentialsException;
+import com.example.candles.service.InsightsService;
 import com.example.candles.service.StatsService;
 
 /**
@@ -22,14 +24,22 @@ import com.example.candles.service.StatsService;
 public class StatsController {
 
     private final StatsService statsService;
+    private final InsightsService insightsService;
 
-    public StatsController(StatsService statsService) {
+    public StatsController(StatsService statsService, InsightsService insightsService) {
         this.statsService = statsService;
+        this.insightsService = insightsService;
     }
 
     @GetMapping("/me")
     public StatsResponse me(Authentication authentication) {
         return statsService.forUser(requireUserId(authentication));
+    }
+
+    /** Habits in the player's recent calls — see {@code PlayerInsights}. */
+    @GetMapping("/me/insights")
+    public InsightsResponse insights(Authentication authentication) {
+        return insightsService.forUser(requireUserId(authentication));
     }
 
     /**

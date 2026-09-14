@@ -29,6 +29,8 @@
         rank: document.getElementById("profile-rank"),
         rankMedal: document.getElementById("profile-rank-medal"),
         rankValue: document.getElementById("profile-rank-value"),
+        insightsScope: document.getElementById("profile-insights-scope"),
+        insightsBody: document.getElementById("profile-insights-body"),
     };
 
     /* ---- the rank medallion --------------------------------------------------------------- */
@@ -298,6 +300,178 @@
         renderShare(data);
     }
 
+    /* ---- habits ------------------------------------------------------------------------------
+
+       The server decides what counts as a finding and orders them; this only turns each one into
+       a sentence. Every rate is divided here from counts, once — the same rule the retention pane
+       follows — and a finding carries no figures of its own, only which bucket to read, so the
+       sentence and the table under it cannot disagree. */
+
+    var TREND_LABEL = { RISING: "Sau nhịp tăng", FALLING: "Sau nhịp giảm", FLAT: "Chart đi ngang" };
+    var TREND_PHRASE = { RISING: "sau một nhịp tăng", FALLING: "sau một nhịp giảm", FLAT: "khi chart đi ngang" };
+    var SESSION_LABEL = { NIGHT: "Đêm (0–6h)", MORNING: "Sáng (6–12h)", AFTERNOON: "Chiều (12–18h)", EVENING: "Tối (18–24h)" };
+    var SESSION_PHRASE = { NIGHT: "ban đêm", MORNING: "buổi sáng", AFTERNOON: "buổi chiều", EVENING: "buổi tối" };
+    var SESSION_ORDER = ["MORNING", "AFTERNOON", "EVENING", "NIGHT"];
+    var TREND_ORDER = ["RISING", "FALLING", "FLAT"];
+
+    function share(part, whole) {
+        return whole ? Math.round((part / whole) * 100) : 0;
+    }
+
+    function findBucket(list, field, key) {
+        for (var i = 0; i < list.length; i++) if (list[i][field] === key) return list[i];
+        return null;
+    }
+
+    function sentence(finding, data) {
+        var c = data.calls;
+        var answered = c.longCalls + c.shortCalls;
+        var overall = share(c.correctLong + c.correctShort, answered);
+        var b;
+        switch (finding.kind) {
+            case "LONG_BIAS":
+                return "Bạn nghiêng về LONG: chọn LONG " + share(c.longCalls, answered) + "% số lượt, trong khi nến thật chỉ tăng "
+                    + share(c.marketUp, answered) + "%. Trước khi bấm, thử tự hỏi chart có thật sự đang yếu đi không.";
+            case "SHORT_BIAS":
+                return "Bạn nghiêng về SHORT: chọn SHORT " + share(c.shortCalls, answered) + "% số lượt, trong khi nến thật chỉ giảm "
+                    + share(c.marketDown, answered) + "%. Thị trường không giảm thường xuyên như bạn nghĩ.";
+            case "WEAK_TREND":
+                b = findBucket(data.trends, "trend", finding.key);
+                return "Bạn đoán kém nhất " + TREND_PHRASE[finding.key] + ": đúng " + share(b.correct, b.total) + "% ("
+                    + b.correct + "/" + b.total + "), thấp hơn mức chung " + overall + "%, và chọn LONG "
+                    + share(b.longCalls, b.total) + "% số lần." + trendAdvice(finding.key, share(b.longCalls, b.total));
+            case "WEAK_SESSION":
+                b = findBucket(data.sessions, "session", finding.key);
+                return "Chơi " + SESSION_PHRASE[finding.key] + " bạn chỉ đúng " + share(b.correct, b.total) + "% ("
+                    + b.correct + "/" + b.total + "), thấp hơn mức chung " + overall + "%.";
+            case "TIMEOUTS":
+                return finding.gapPoints + "% số lượt bạn để hết giờ. Hết giờ tính là sai, nên chọn một hướng vẫn tốt hơn bỏ trống.";
+        }
+        return null;
+    }
+
+    /* Only said where the direction split makes it true: "chasing the move" needs the calls to
+       actually lean with the move, not merely to be wrong after one. */
+    function trendAdvice(trend, longShare) {
+        if (trend === "RISING" && longShare >= 65) return " Có thể bạn đang đuổi theo đà tăng khi nó sắp hết.";
+        if (trend === "FALLING" && longShare <= 35) return " Có thể bạn đang bán theo khi đà giảm sắp hết.";
+        if (trend === "FALLING" && longShare >= 65) return " Có thể bạn đang bắt đáy quá sớm.";
+        return "";
+    }
+
+    function node(tag, className, text) {
+        var el = document.createElement(tag);
+        if (className) el.className = className;
+        if (text !== undefined) el.textContent = text;
+        return el;
+    }
+
+    function splitBar(label, leftLabel, leftShare, rightLabel) {
+        var row = node("div", "pf-split");
+        row.appendChild(node("span", "pf-split-label", label));
+        var track = node("span", "pf-split-track");
+        var fill = node("span", "pf-split-fill");
+        fill.style.width = leftShare + "%";
+        track.appendChild(fill);
+        row.appendChild(track);
+        row.appendChild(node("span", "pf-split-value", leftLabel + " " + leftShare + "% · " + rightLabel + " " + (100 - leftShare) + "%"));
+        return row;
+    }
+
+    function bucketTable(caption, rows) {
+        var wrap = node("div", "pf-buckets");
+        wrap.appendChild(node("span", "side-eyebrow", caption));
+        var table = node("table", "pf-bucket-table");
+        var head = node("tr");
+        ["", "Lượt", "Chọn LONG", "Đúng"].forEach(function (h, i) {
+            head.appendChild(node("th", i ? "num" : "", h));
+        });
+        table.appendChild(head);
+        rows.forEach(function (r) {
+            var tr = node("tr");
+            tr.appendChild(node("td", "", r.label));
+            tr.appendChild(node("td", "num", String(r.total)));
+            tr.appendChild(node("td", "num", r.total ? share(r.longCalls, r.total) + "%" : "–"));
+            var correct = node("td", "num", r.total ? share(r.correct, r.total) + "%" : "–");
+            if (r.weak) correct.classList.add("is-weak");
+            tr.appendChild(correct);
+            table.appendChild(tr);
+        });
+        wrap.appendChild(table);
+        return wrap;
+    }
+
+    function renderInsights(data) {
+        var body = el.insightsBody;
+        body.innerHTML = "";
+        var answered = data.calls.longCalls + data.calls.shortCalls;
+        el.insightsScope.textContent = data.analysed
+            ? data.analysed + " lượt gần nhất" + (data.analysed >= data.window ? " (tối đa " + data.window + ")" : "")
+            : "";
+
+        /* Findings first even when there are too few answered calls for the rest: the server only
+           lets one through then — letting the clock run out — and that is exactly the player who
+           most needs to read it. */
+        var list = node("ul", "pf-findings");
+        data.findings.slice(0, 3).forEach(function (f) {
+            var text = sentence(f, data);
+            if (text) list.appendChild(node("li", "pf-finding", text));
+        });
+        if (list.children.length) body.appendChild(list);
+
+        if (!data.enough) {
+            var need = data.minSample - answered;
+            body.appendChild(node("p", "profile-empty",
+                "Cần thêm " + need + " lượt đoán nữa để phân tích thói quen của bạn (" + answered + "/" + data.minSample
+                + "). Ít hơn thế thì mọi \"thiên kiến\" đều có thể chỉ là may rủi."));
+            var progress = node("span", "pf-split-track pf-insights-progress");
+            var fill = node("span", "pf-split-fill");
+            fill.style.width = share(answered, data.minSample) + "%";
+            progress.appendChild(fill);
+            body.appendChild(progress);
+            return;
+        }
+
+        if (!list.children.length) {
+            body.appendChild(node("p", "pf-findings-none",
+                "Chưa thấy thói quen lệch rõ rệt nào trong " + answered + " lượt gần nhất. Cách bạn đọc chart đang khá cân bằng."));
+        }
+
+        var c = data.calls;
+        var bars = node("div", "pf-splits");
+        bars.appendChild(splitBar("Bạn chọn", "LONG", share(c.longCalls, answered), "SHORT"));
+        bars.appendChild(splitBar("Nến thật", "Tăng", share(c.marketUp, answered), "Giảm"));
+        body.appendChild(bars);
+
+        var weakKeys = {};
+        data.findings.forEach(function (f) { if (f.key) weakKeys[f.kind + ":" + f.key] = true; });
+
+        var grid = node("div", "pf-bucket-grid");
+        grid.appendChild(bucketTable("Theo diễn biến trước lượt đoán", TREND_ORDER.map(function (key) {
+            var b = findBucket(data.trends, "trend", key);
+            return { label: TREND_LABEL[key], total: b.total, correct: b.correct, longCalls: b.longCalls, weak: weakKeys["WEAK_TREND:" + key] };
+        })));
+        grid.appendChild(bucketTable("Theo buổi (giờ Việt Nam)", SESSION_ORDER.map(function (key) {
+            var b = findBucket(data.sessions, "session", key);
+            return { label: SESSION_LABEL[key], total: b.total, correct: b.correct, longCalls: b.longCalls, weak: weakKeys["WEAK_SESSION:" + key] };
+        })));
+        body.appendChild(grid);
+    }
+
+    /* Separate from the totals on purpose: a slow or failed read of habits must not hold up or
+       blank the numbers above it, which are the part a player opened the tab for. */
+    async function loadInsights() {
+        try {
+            var res = await window.CandleAuth.authFetch("/api/stats/me/insights");
+            if (!res.ok) throw new Error(String(res.status));
+            renderInsights(await res.json());
+        } catch (e) {
+            if (!el.insightsBody.children.length) {
+                el.insightsBody.innerHTML = '<p class="profile-empty">Không tải được phần thói quen. Mở lại tab này để thử lại.</p>';
+            }
+        }
+    }
+
     var loaded = false;
 
     /* On a first open that fails there is nothing on screen to fall back to, and the two
@@ -311,6 +485,7 @@
 
     async function load() {
         if (!window.CandleAuth.getUser()) return;
+        loadInsights();
         try {
             var res = await window.CandleAuth.authFetch("/api/stats/me");
             if (res.ok) {

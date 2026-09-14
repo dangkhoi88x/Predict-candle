@@ -911,6 +911,156 @@ h1, h2, h3 {
 /* min(320px, 100%) rather than a bare 320px: a bare minimum is a floor the track holds even
    when the container is narrower than it, so on a 300px phone the columns came out 320 wide
    and the shell — which clips, that being what rounds its corners — simply cut them off. */
+/* ---- habits (profile.js renderInsights) ------------------------------------------------ */
+.pf-insights {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 16px 16px;
+    margin: 4px 0 18px;
+}
+
+.pf-insights-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.pf-insights-head .profile-section {
+    margin-top: 0;
+}
+
+.pf-insights-scope {
+    font: 500 11.5px var(--mono);
+    color: var(--muted);
+}
+
+.pf-insights-progress {
+    display: block;
+    margin-top: 8px;
+}
+
+.pf-findings {
+    margin: 4px 0 14px;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 8px;
+}
+
+/* A finding is the thing to act on, so it reads as a callout: the accent rule down its edge is
+   the same tint language selection uses, not a warning colour — a habit is not an error. */
+.pf-finding {
+    font-size: 14px;
+    line-height: 1.55;
+    color: var(--text);
+    padding: 9px 12px;
+    border-left: 3px solid var(--accent);
+    border-radius: 0 8px 8px 0;
+    background: var(--tint-accent);
+}
+
+.pf-findings-none {
+    font-size: 14px;
+    color: var(--text-2);
+    margin: 4px 0 14px;
+}
+
+.pf-splits {
+    display: grid;
+    gap: 8px;
+    margin-bottom: 14px;
+}
+
+.pf-split {
+    display: grid;
+    grid-template-columns: 72px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+    font-size: 12.5px;
+}
+
+.pf-split-label {
+    color: var(--muted);
+}
+
+.pf-split-track {
+    height: 8px;
+    border-radius: 999px;
+    background: color-mix(in oklab, var(--down) 70%, var(--panel));
+    overflow: hidden;
+}
+
+.pf-split-fill {
+    display: block;
+    height: 100%;
+    background: color-mix(in oklab, var(--up) 80%, var(--panel));
+    transition: width var(--duration-normal) var(--ease-out);
+}
+
+.pf-insights-progress {
+    background: var(--overlay-strong);
+}
+
+.pf-insights-progress .pf-split-fill {
+    background: var(--accent);
+}
+
+.pf-split-value {
+    font: 500 12px var(--mono);
+    font-variant-numeric: tabular-nums;
+    color: var(--text-2);
+    white-space: nowrap;
+}
+
+.pf-bucket-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
+    gap: 14px 24px;
+}
+
+.pf-bucket-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 6px;
+    font-size: 13px;
+}
+
+.pf-bucket-table th {
+    font: 600 10.5px var(--mono);
+    color: var(--muted-2);
+    text-align: left;
+    padding: 4px 0;
+}
+
+.pf-bucket-table td {
+    padding: 5px 0;
+    border-top: 1px solid var(--border);
+}
+
+.pf-bucket-table .num {
+    text-align: right;
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+}
+
+.pf-bucket-table td.is-weak {
+    color: var(--down);
+    font-weight: 700;
+}
+
+@media (max-width: 520px) {
+    .pf-split {
+        grid-template-columns: 60px minmax(0, 1fr);
+    }
+
+    .pf-split-value {
+        grid-column: 1 / -1;
+    }
+}
+
 .profile-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
