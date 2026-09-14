@@ -1,7 +1,8 @@
 # Deploy bản demo — kế hoạch
 
-> Nháp 2026-09-13. Mục tiêu: **một đường link chạy thật** để đưa người khác chơi thử,
-> không phải hạ tầng production. Chi phí 0 đ, đổi lại là cold start và giới hạn gói free.
+> Viết 2026-09-13, **đang chạy** từ 2026-09-14 tại <https://candles-oj1q.onrender.com>.
+> Mục tiêu: một đường link chạy thật để đưa người khác chơi thử, không phải hạ tầng
+> production. Chi phí 0 đ, đổi lại là giới hạn của các gói free.
 
 ## 1. Chọn gì, và vì sao không phải Vercel
 
@@ -9,6 +10,7 @@
 |---|---|---|
 | App (Spring Boot + frontend) | **Render**, Web Service chạy `Dockerfile` | Free |
 | Postgres | **Neon** | Free |
+| Nguồn giá | **OKX**, API công khai | Free |
 | Giữ app thức | **cron-job.org** | Free |
 
 **Vercel không chạy được app này.** Nó dành cho frontend tĩnh và hàm serverless ngắn, còn
@@ -29,22 +31,43 @@ Render.
 **Postgres để ở Neon chứ không dùng của Render**, vì Postgres free của Render bị xoá sau 30
 ngày, kéo theo toàn bộ tài khoản và lịch sử.
 
-## 2. Ràng buộc quan trọng nhất: region Singapore
+## 2. Region Singapore, nguồn giá OKX
 
-**Binance trả HTTP 451 cho IP ở Mỹ**, mà region mặc định của cả Render (Oregon) lẫn Neon đều
-ở Mỹ. Chọn sai thì app vẫn khởi động, vẫn qua health check, nhưng không lưu được nến nào: tab
-chơi trống và log đầy lỗi 451. CI trên GitHub từng dính đúng lỗi này (xem `CandleFixture` trong
-CLAUDE.md).
+**Render và Neon cùng ở Singapore** để app và database nằm cạnh nhau: mỗi nến lưu vào là một
+lệnh insert riêng (§3.3), nên độ trễ giữa hai bên quyết định lần backfill đầu mất vài phút hay
+vài tiếng.
 
 → Render: `region: singapore` (đã ghi sẵn trong `render.yaml`).
-→ Neon: **AWS Asia Pacific (Singapore)**. DB đặt cùng region với app để mỗi truy vấn không
-phải đi vòng qua Thái Bình Dương.
+→ Neon: **AWS Asia Pacific (Singapore)**.
 
-**Cập nhật 2026-09-13: bản demo lấy nến từ OKX, không phải Binance.** Đã chọn Singapore rồi mà
-Binance vẫn trả **HTTP 418**, tức cấm theo IP: lần đầu 45 phút, lần sau 2 tiếng, và mỗi lần tái
-phạm lại dài hơn, tối đa 3 ngày. IP gọi ra ngoài của Render được nhiều service dùng chung, và bot
-crypto chạy trên Render rất nhiều. App này chỉ gửi vài chục request, không thể tự gây ra lệnh cấm.
-`render.yaml` đặt `CANDLES_PRICE_SOURCE=okx`; chạy local vẫn dùng Binance như cũ.
+**Bản demo lấy giá từ OKX, không phải Binance**; chạy local vẫn dùng Binance. Lý do là đêm
+deploy đầu tiên, 2026-09-13:
+
+1. Trên Render Singapore, `api.binance.com` không trả được nến nào. Chuyển sang
+   `data-api.binance.vision` cũng vậy.
+2. Lỗi thật hoá ra là **HTTP 418**: Binance cấm theo IP, lần đầu 45 phút, sau đó 2 tiếng, và
+   mỗi lần tái phạm lại dài hơn, tối đa 3 ngày. IP gọi ra ngoài của Render được nhiều service
+   dùng chung, và bot crypto chạy trên Render rất nhiều. App này chỉ gửi vài chục request,
+   không thể tự gây ra lệnh cấm, nên cũng không có cách nào tự gỡ.
+3. Đổi region chỉ là đổi sang một dải IP chung khác, không có gì đảm bảo. Đổi sàn thì giải quyết
+   được: OKX chạy ổn trên Render từ lần deploy 2026-09-14.
+
+`render.yaml` đặt `CANDLES_PRICE_SOURCE=okx`. Hai provider (`BinanceProvider`, `OkxProvider`)
+trả nến theo cùng một hợp đồng, nên phần còn lại của app không biết mình đang đọc sàn nào.
+Binance vẫn trả **HTTP 451 cho IP ở Mỹ** (lý do CI không gọi sàn thật, xem `CandleFixture`), nên
+nếu có lúc quay lại Binance thì đừng để region mặc định Oregon.
+
+**Khi bản live không có giá, hỏi thẳng API thay vì tìm trong log.** Log trên Render chỉ hiện
+phần đuôi stack trace, dòng nêu nguyên nhân bị cuộn mất. Mỗi lần gọi sàn thất bại, app trả
+**502** kèm lý do:
+
+```bash
+curl -s https://candles-oj1q.onrender.com/api/live/round?asset=BTCUSDT
+```
+
+Ví dụ `Không lấy được dữ liệu từ sàn (HTTP 418).` hoặc
+`… (sàn đang tạm chặn, thử lại sau 2026-09-13T14:40:42Z)`. Endpoint này gọi sàn nhưng không đọc
+nến trong database, nên nó tách được lỗi của sàn khỏi lỗi của dữ liệu.
 
 ## 3. Neon — hướng dẫn từng bước
 
@@ -87,7 +110,7 @@ Nhớ thêm tiền tố `jdbc:` và giữ `sslmode=require`. `channel_binding` b
 
 ### 3.3 Để Render nạp nến, đừng nạp từ máy local
 
-Lần khởi động đầu tiên phải backfill nến từ Binance, khoảng 58 nghìn dòng nếu tính từ 2025.
+Lần khởi động đầu tiên phải backfill nến từ sàn, khoảng 58 nghìn dòng nếu tính từ 2025.
 **Việc này nên để Render làm**, dù instance free của nó yếu hơn máy bạn.
 
 Lý do là độ trễ mạng, không phải CPU. `Candle` sinh id bằng `IDENTITY`, nên Hibernate không gộp
@@ -166,6 +189,7 @@ Những gì `render.yaml` đã lo sẵn, giải thích chi tiết nằm trong co
 | `JAVA_TOOL_OPTIONS` | JVM tự co heap theo 512 MB |
 | `SPRING_DATASOURCE_HIKARI_*` | Pool đóng kết nối khi rảnh để Neon được scale to zero (§3.4) |
 | `CANDLES_BACKFILL_START` | Backfill từ 2025 |
+| `CANDLES_PRICE_SOURCE=okx` | Lấy nến và giá live từ OKX thay vì Binance (§2) |
 | `autoDeployTrigger: checksPass` | Chỉ deploy khi CI trên `main` xanh |
 
 Có thể thêm `CLOUDINARY_CLOUD_NAME` / `CLOUDINARY_API_KEY` / `CLOUDINARY_API_SECRET` ở tab
@@ -175,8 +199,8 @@ không chạy.
 ### 4.2 Reown (đăng nhập bằng ví) — dễ quên nhất
 
 `web/src/wallet-auth.js` dùng project Reown `2c3bd10f…`. Vào dashboard Reown (WalletConnect
-Cloud) → project đó → **allowlist domain** → thêm `https://candles.onrender.com` (hoặc domain
-Render thực tế cấp). Thiếu bước này thì nút kết nối ví chạy trên localhost nhưng lỗi trên bản
+Cloud) → project đó → **allowlist domain** → thêm `https://candles-oj1q.onrender.com`, đúng
+domain Render cấp, không có `/` ở cuối. Thiếu bước này thì nút kết nối ví chạy trên localhost nhưng lỗi trên bản
 live. Không cần build lại bundle, vì `metadata.url` đọc từ `window.location.origin`.
 
 ### 4.3 Giữ app thức
@@ -187,15 +211,25 @@ Service free của Render **ngủ sau 15 phút không có request**. Hậu quả
 - Job sync mỗi giờ không chạy trong lúc ngủ. Dữ liệu không mất: lần thức dậy sau, sync tự lấy
   bù từ nến mới nhất đã lưu.
 
-Cách xử lý: tạo cron trên <https://cron-job.org> gọi `GET https://candles.onrender.com/` mỗi
-**10 phút**. Gọi `/` vì đó là file tĩnh, không chạm DB hay Binance, nên không tốn compute hours
-của Neon. Giờ free của Render mỗi tháng đủ cho một service chạy 24/7.
+Cách xử lý: tạo cron trên <https://cron-job.org> gọi `GET https://candles-oj1q.onrender.com/`
+mỗi **10 phút** (đã làm, *Test run* trả 200). Gọi `/` vì đó là file tĩnh, không chạm database
+hay sàn, nên không tốn compute hours của Neon và không gửi thêm request tới OKX.
+
+- **Timeout:** giữ 30 giây mặc định. Lượt gọi trúng lúc app vừa thức có thể quá thời gian và bị
+  ghi *failed*, nhưng nó vẫn đánh thức được app.
+- **Notifications:** bật báo lỗi sau vài lần thất bại liên tiếp.
+- **Giờ free:** Render cho 750 giờ mỗi tháng cho cả workspace, một service chạy 24/7 dùng khoảng
+  720–744 giờ. Thêm một web service free thứ hai cũng giữ thức thì sẽ hết giờ trước cuối
+  tháng.
 
 ## 5. Kiểm tra sau deploy
 
 - [ ] Log Render có `Started CandlesApplication`, không có `Refusing to run with development
       secrets`
-- [ ] Log **không** có HTTP 451. Nếu có thì region sai (§2)
+- [ ] `curl …/api/live/round?asset=BTCUSDT` trả 200 có `livePrice`. Nếu ra 502 thì đọc lý do
+      trong `message` (§2)
+- [ ] `curl …/api/practice/round?asset=<cặp>` trả 200 cho cả 4 cặp. `Not enough candle history`
+      nghĩa là backfill chưa xong hoặc đã thất bại
 - [ ] Trang chủ mở được và chơi hết một round practice
 - [ ] Kết nối ví → đăng nhập → **reload** trang vẫn còn đăng nhập (refresh cookie `Secure`
       chạy được)
@@ -210,6 +244,7 @@ của Neon. Giờ free của Render mỗi tháng đủ cho một service chạy 
 | Render báo out of memory, instance restart liên tục | Lên gói trả phí có nhiều RAM hơn trên Render, hoặc chuyển sang Railway Hobby (khoảng 5 USD/tháng), region `asia-southeast1` |
 | Cold start làm người thử bỏ đi | Gói trả phí của Render không ngủ, bỏ luôn cron-job.org |
 | Neon báo gần hết storage | Xoá bớt nến cũ, hoặc để `CANDLES_BACKFILL_START` muộn hơn trước khi nạp |
+| API trả 502 `HTTP 418` / `HTTP 429` hoặc `sàn đang tạm chặn` | Sàn đang cấm IP của Render. App tự ngừng gọi tới mốc thử lại, không cần làm gì. Nếu lặp lại liên tục thì đổi `CANDLES_PRICE_SOURCE` (§2) |
 | Muốn domain riêng | Render → **Settings → Custom Domains**, rồi thêm domain đó vào allowlist Reown (§4.2) |
 
 ## 7. Chưa làm, và cố ý chưa làm
@@ -218,5 +253,6 @@ của Neon. Giờ free của Render mỗi tháng đủ cho một service chạy 
   bộ nhớ từng instance, còn job sync sẽ chạy trùng trên mỗi instance. Scale ngang cần giải
   quyết mấy thứ đó trước. Với demo, một instance là đúng.
 - **Backup riêng.** Neon có restore theo thời điểm trong một khoảng ngắn. Dữ liệu demo lấy lại
-  được từ Binance, còn tài khoản thì mất cũng không sao.
-- **Monitoring / alerting.** Log trên dashboard Render là đủ cho quy mô này.
+  được từ sàn, còn tài khoản thì mất cũng không sao.
+- **Monitoring / alerting.** cron-job.org báo khi trang chủ không lên, và lỗi gọi sàn tự nói lý do
+  qua API (§2). Với quy mô này như vậy là đủ.
