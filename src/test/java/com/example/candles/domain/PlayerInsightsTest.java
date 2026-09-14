@@ -28,7 +28,7 @@ class PlayerInsightsTest {
     private static final Instant EVENING = Instant.parse("2026-09-14T13:00:00Z");
 
     private static PlayerInsights.Observation call(Direction guessed, Direction actual, PlayerInsights.Trend trend, Instant at) {
-        return new PlayerInsights.Observation(guessed, actual, trend, at);
+        return new PlayerInsights.Observation(guessed, actual, trend, List.of(), at);
     }
 
     private static void repeat(List<PlayerInsights.Observation> into, int times, PlayerInsights.Observation o) {
@@ -201,6 +201,30 @@ class PlayerInsightsTest {
         assertThat(PlayerInsights.trendOf(candles(1, 0.03, 0.1))).isEqualTo(PlayerInsights.Trend.RISING);
         // Too few candles to judge.
         assertThat(PlayerInsights.trendOf(candles(100, 3, 10).subList(0, 4))).isNull();
+    }
+
+    @Test
+    void aPatternWhereTheCallsGoWrongIsNamedAndOverlappingPatternsCountTowardsEach() {
+        List<PlayerInsights.Observation> obs = new ArrayList<>();
+        repeat(obs, 20, call(LONG, LONG, null, MORNING));
+        repeat(obs, 20, call(SHORT, SHORT, null, MORNING));
+        // Twelve calls on charts ending in a hammer that was also a doji; three right.
+        List<String> both = List.of("hammer", "doji");
+        for (int i = 0; i < 12; i++) {
+            obs.add(new PlayerInsights.Observation(i < 3 ? LONG : SHORT, LONG, null, both, MORNING));
+        }
+        // Two calls on a marubozu: too few to judge, but still listed.
+        repeat(obs, 2, new PlayerInsights.Observation(LONG, LONG, null, List.of("marubozu"), MORNING));
+
+        PlayerInsights.Summary s = PlayerInsights.fold(obs, VN);
+
+        assertThat(s.patterns().keySet()).containsExactly("doji", "hammer", "marubozu");
+        assertThat(s.patterns().get("hammer").total()).isEqualTo(12);
+        assertThat(s.patterns().get("hammer").correct()).isEqualTo(3);
+        assertThat(s.patterns().get("doji").total()).isEqualTo(12);
+        assertThat(s.findings()).filteredOn(f -> f.kind() == PlayerInsights.Kind.WEAK_PATTERN)
+                .extracting(PlayerInsights.Finding::key).containsExactlyInAnyOrder("hammer", "doji");
+        assertThat(s.findings()).filteredOn(f -> "marubozu".equals(f.key())).isEmpty();
     }
 
     /** Five candles opening at {@code start}, each closing {@code step} above its open, each {@code range} tall. */

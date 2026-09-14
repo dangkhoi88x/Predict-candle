@@ -19,6 +19,7 @@ public record InsightsResponse(
         Calls calls,
         List<TrendBucket> trends,
         List<SessionBucket> sessions,
+        List<PatternBucket> patterns,
         List<Finding> findings
 ) {
 
@@ -34,7 +35,14 @@ public record InsightsResponse(
     public record SessionBucket(String session, long total, long correct, long longCalls) {
     }
 
-    /** {@code kind} is LONG_BIAS / SHORT_BIAS / WEAK_TREND / WEAK_SESSION / TIMEOUTS. */
+    /**
+     * A candlestick pattern that was on screen for at least one answered call, by its library id.
+     * Most frequent first.
+     */
+    public record PatternBucket(String pattern, long total, long correct, long longCalls) {
+    }
+
+    /** {@code kind} is LONG_BIAS / SHORT_BIAS / WEAK_TREND / WEAK_SESSION / WEAK_PATTERN / TIMEOUTS. */
     public record Finding(String kind, String key, int gapPoints) {
     }
 }

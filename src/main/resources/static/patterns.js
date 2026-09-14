@@ -349,6 +349,13 @@
             return id;
         },
 
+        /* Names are fetched once at load; a caller drawing a list of them waits on this rather
+           than rendering raw ids and hoping the fetch has landed. Resolves either way — a failed
+           fetch still leaves nameOf falling back to the id. */
+        whenLoaded: function () {
+            return loadOnce().catch(function () { });
+        },
+
         reveal: function (id) {
             /* Clicking the tab is what builds the grid now, and that waits on the fetch. The
                render callback was registered against the same promise first, so by the time

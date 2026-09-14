@@ -344,6 +344,10 @@
                 b = findBucket(data.sessions, "session", finding.key);
                 return "Chơi " + SESSION_PHRASE[finding.key] + " bạn chỉ đúng " + share(b.correct, b.total) + "% ("
                     + b.correct + "/" + b.total + "), thấp hơn mức chung " + overall + "%.";
+            case "WEAK_PATTERN":
+                b = findBucket(data.patterns, "pattern", finding.key);
+                return "Khi chart vừa có mẫu " + patternName(finding.key) + ", bạn chỉ đúng " + share(b.correct, b.total)
+                    + "% (" + b.correct + "/" + b.total + "), thấp hơn mức chung " + overall + "%. Nên xem lại mẫu này.";
             case "TIMEOUTS":
                 return finding.gapPoints + "% số lượt bạn để hết giờ. Hết giờ tính là sai, nên chọn một hướng vẫn tốt hơn bỏ trống.";
         }
@@ -357,6 +361,55 @@
         if (trend === "FALLING" && longShare <= 35) return " Có thể bạn đang bán theo khi đà giảm sắp hết.";
         if (trend === "FALLING" && longShare >= 65) return " Có thể bạn đang bắt đáy quá sớm.";
         return "";
+    }
+
+    function patternName(id) {
+        return window.CandlePatterns ? window.CandlePatterns.nameOf(id) : id;
+    }
+
+    /* Rates under the bucket floor are still shown — a player wants to see the pattern was there —
+       but muted, so a 2/3 is not read as a skill. The floor is the server's MIN_BUCKET. */
+    var PATTERN_FLOOR = 10;
+    var PATTERN_ROWS = 8;
+
+    function patternTable(data, weakKeys) {
+        var wrap = node("div", "pf-buckets pf-patterns");
+        wrap.appendChild(node("span", "side-eyebrow", "Theo mẫu nến ngay trước lượt đoán"));
+        if (!data.patterns.length) {
+            wrap.appendChild(node("p", "profile-empty", "Chưa có lượt đoán nào ngay sau một mẫu nến trong thư viện."));
+            return wrap;
+        }
+        var table = node("table", "pf-bucket-table");
+        var head = node("tr");
+        ["", "Lượt", "Chọn LONG", "Đúng"].forEach(function (h, i) {
+            head.appendChild(node("th", i ? "num" : "", h));
+        });
+        table.appendChild(head);
+        data.patterns.slice(0, PATTERN_ROWS).forEach(function (p) {
+            var tr = node("tr");
+            if (p.total < PATTERN_FLOOR) tr.className = "is-thin";
+            var nameCell = node("td");
+            /* A button, not a label: the shortest route from "I get these wrong" to the card that
+               explains them, the same thing the round summary's pattern chips do. */
+            var link = node("button", "pf-pattern-link", patternName(p.pattern));
+            link.type = "button";
+            link.addEventListener("click", function () {
+                if (window.CandlePatterns) window.CandlePatterns.reveal(p.pattern);
+            });
+            nameCell.appendChild(link);
+            tr.appendChild(nameCell);
+            tr.appendChild(node("td", "num", String(p.total)));
+            tr.appendChild(node("td", "num", share(p.longCalls, p.total) + "%"));
+            var correct = node("td", "num", share(p.correct, p.total) + "%");
+            if (weakKeys["WEAK_PATTERN:" + p.pattern]) correct.classList.add("is-weak");
+            tr.appendChild(correct);
+            table.appendChild(tr);
+        });
+        wrap.appendChild(table);
+        if (data.patterns.some(function (p) { return p.total < PATTERN_FLOOR; })) {
+            wrap.appendChild(node("p", "pf-thin-note", "Dòng mờ: dưới " + PATTERN_FLOOR + " lượt, chỉ để tham khảo."));
+        }
+        return wrap;
     }
 
     function node(tag, className, text) {
@@ -455,6 +508,7 @@
             var b = findBucket(data.sessions, "session", key);
             return { label: SESSION_LABEL[key], total: b.total, correct: b.correct, longCalls: b.longCalls, weak: weakKeys["WEAK_SESSION:" + key] };
         })));
+        grid.appendChild(patternTable(data, weakKeys));
         body.appendChild(grid);
     }
 
@@ -464,7 +518,10 @@
         try {
             var res = await window.CandleAuth.authFetch("/api/stats/me/insights");
             if (!res.ok) throw new Error(String(res.status));
-            renderInsights(await res.json());
+            var data = await res.json();
+            // Pattern names come from the library fetch, which the page starts at load.
+            if (window.CandlePatterns) await window.CandlePatterns.whenLoaded();
+            renderInsights(data);
         } catch (e) {
             if (!el.insightsBody.children.length) {
                 el.insightsBody.innerHTML = '<p class="profile-empty">Không tải được phần thói quen. Mở lại tab này để thử lại.</p>';

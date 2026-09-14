@@ -50,13 +50,16 @@ public class InsightsService {
     private final CandleRepository candles;
     private final UserRepository users;
     private final CandlesProperties properties;
+    private final RoundPatternScanner patternScanner;
 
     public InsightsService(GuessResultRepository guessResults, CandleRepository candles,
-                           UserRepository users, CandlesProperties properties) {
+                           UserRepository users, CandlesProperties properties,
+                           RoundPatternScanner patternScanner) {
         this.guessResults = guessResults;
         this.candles = candles;
         this.users = users;
         this.properties = properties;
+        this.patternScanner = patternScanner;
     }
 
     @Transactional(readOnly = true)
@@ -71,9 +74,23 @@ public class InsightsService {
         for (GuessResult guess : recent) {
             List<Candle> seen = lastSeen(guess, trailing.get(ChartKey.of(guess)));
             observations.add(new PlayerInsights.Observation(guess.getGuessedDirection(),
-                    guess.getActualDirection(), PlayerInsights.trendOf(seen), guess.getCreatedAt()));
+                    guess.getActualDirection(), PlayerInsights.trendOf(seen), patternsOnLastCandle(seen),
+                    guess.getCreatedAt()));
         }
         return toResponse(PlayerInsights.fold(observations, PLAYER_ZONE));
+    }
+
+    /**
+     * Patterns completing on the last candle the player could see — the same scan that names the
+     * patterns in a finished round, pointed at the one candle a call was made after. The library's
+     * longest pattern is three candles and five are loaded, so every pattern has room.
+     */
+    private List<String> patternsOnLastCandle(List<Candle> seen) {
+        if (seen.isEmpty()) return List.of();
+        return patternScanner.scan(seen, seen.size() - 1, seen.size()).stream()
+                .map(RoundPatternScanner.PatternHit::patternId)
+                .distinct()
+                .toList();
     }
 
     /** Index of the last candle a player could see when making {@code guess}. */
@@ -130,6 +147,10 @@ public class InsightsService {
                         .toList(),
                 s.sessions().entrySet().stream()
                         .map(e -> new InsightsResponse.SessionBucket(e.getKey().name(), e.getValue().total(),
+                                e.getValue().correct(), e.getValue().longCalls()))
+                        .toList(),
+                s.patterns().entrySet().stream()
+                        .map(e -> new InsightsResponse.PatternBucket(e.getKey(), e.getValue().total(),
                                 e.getValue().correct(), e.getValue().longCalls()))
                         .toList(),
                 s.findings().stream()

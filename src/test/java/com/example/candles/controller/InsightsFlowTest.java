@@ -16,6 +16,8 @@ import java.util.stream.LongStream;
 import com.example.candles.CandleFixture;
 import com.example.candles.config.CandlesProperties;
 import com.example.candles.domain.PlayerInsights;
+import com.example.candles.pattern.PatternDefinition;
+import com.example.candles.pattern.PatternLibrary;
 import com.example.candles.entity.Asset;
 import com.example.candles.entity.Candle;
 import com.example.candles.entity.Direction;
@@ -95,6 +97,7 @@ class InsightsFlowTest {
         // 36 calls, every one LONG, on 36 charts spread through the history, each the third guess
         // of its chart. What each chart had just done is worked out independently from findWindow.
         Map<PlayerInsights.Trend, Integer> expected = new EnumMap<>(PlayerInsights.Trend.class);
+        Map<String, Integer> expectedPatterns = new java.util.TreeMap<>();
         int ups = 0;
         for (int i = 0; i < 36; i++) {
             int start = 10 + i * 25;
@@ -102,6 +105,13 @@ class InsightsFlowTest {
             int lastVisible = start + visible + guessNumber - 2;
             List<Candle> seen = candles.findWindow(asset.getId(), "1h", lastVisible - 4, 5);
             expected.merge(PlayerInsights.trendOf(seen), 1, Integer::sum);
+            // Matched straight against the library on the same candles, not through the scanner.
+            for (Map.Entry<String, PatternDefinition> p : PatternLibrary.all().entrySet()) {
+                int size = p.getValue().windowSize();
+                if (p.getValue().matcher().matches(seen.subList(seen.size() - size, seen.size()))) {
+                    expectedPatterns.merge(p.getKey(), 1, Integer::sum);
+                }
+            }
 
             Candle answer = candles.findWindow(asset.getId(), "1h", lastVisible + 1, 1).getFirst();
             Direction actual = answer.getClose().compareTo(answer.getOpen()) >= 0 ? Direction.LONG : Direction.SHORT;
@@ -129,6 +139,10 @@ class InsightsFlowTest {
         for (PlayerInsights.Trend trend : PlayerInsights.Trend.values()) {
             result.andExpect(jsonPath("$.trends[?(@.trend == '" + trend.name() + "')].total")
                     .value(expected.getOrDefault(trend, 0)));
+        }
+        result.andExpect(jsonPath("$.patterns.length()").value(expectedPatterns.size()));
+        for (Map.Entry<String, Integer> p : expectedPatterns.entrySet()) {
+            result.andExpect(jsonPath("$.patterns[?(@.pattern == '" + p.getKey() + "')].total").value(p.getValue()));
         }
         // Calling LONG every time is a LONG bias unless the market happened to rise nine times in ten.
         if (ups * 100 / 36 <= 90 - PlayerInsights.GAP_POINTS) {

@@ -6,6 +6,7 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.EnumMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -75,13 +76,19 @@ public final class PlayerInsights {
         }
     }
 
-    public enum Kind { LONG_BIAS, SHORT_BIAS, WEAK_TREND, WEAK_SESSION, TIMEOUTS }
+    public enum Kind { LONG_BIAS, SHORT_BIAS, WEAK_TREND, WEAK_SESSION, WEAK_PATTERN, TIMEOUTS }
 
     /**
      * One call. {@code guessed} is null for a timeout; {@code trend} is null when the candles it was
      * made on could not be read back, which leaves it out of the trend buckets and nothing else.
+     * {@code patterns} are the candlestick patterns completing on the last candle the player could
+     * see — more than one when they overlap, and a call then counts towards each.
      */
-    public record Observation(Direction guessed, Direction actual, Trend trend, Instant at) {
+    public record Observation(Direction guessed, Direction actual, Trend trend, List<String> patterns, Instant at) {
+
+        public Observation {
+            patterns = patterns == null ? List.of() : List.copyOf(patterns);
+        }
     }
 
     public record Calls(long longCalls, long shortCalls, long marketUp, long marketDown,
@@ -107,8 +114,12 @@ public final class PlayerInsights {
     public record Finding(Kind kind, String key, int gapPoints) {
     }
 
+    /**
+     * {@code patterns} holds only patterns that were on screen for at least one answered call,
+     * most frequent first — a library of thirteen with eleven zeroes is not information.
+     */
     public record Summary(int analysed, long timedOut, Calls calls, Map<Trend, Bucket> trends,
-                          Map<Session, Bucket> sessions, List<Finding> findings) {
+                          Map<Session, Bucket> sessions, Map<String, Bucket> patterns, List<Finding> findings) {
 
         public boolean enough() {
             return calls.answered() >= MIN_SAMPLE;
@@ -121,6 +132,7 @@ public final class PlayerInsights {
         long correctLong = 0, correctShort = 0, correctUp = 0, correctDown = 0;
         Map<Trend, long[]> trends = new EnumMap<>(Trend.class);
         Map<Session, long[]> sessions = new EnumMap<>(Session.class);
+        Map<String, long[]> patterns = new LinkedHashMap<>();
 
         for (Observation o : observations) {
             if (o.guessed() == null) {
@@ -145,13 +157,19 @@ public final class PlayerInsights {
             }
             if (o.trend() != null) add(trends.computeIfAbsent(o.trend(), t -> new long[3]), correct, calledLong);
             add(sessions.computeIfAbsent(Session.at(o.at(), zone), s -> new long[3]), correct, calledLong);
+            for (String pattern : o.patterns()) add(patterns.computeIfAbsent(pattern, p -> new long[3]), correct, calledLong);
         }
 
         Calls calls = new Calls(longCalls, shortCalls, up, down, correctLong, correctShort, correctUp, correctDown);
         Map<Trend, Bucket> trendBuckets = buckets(trends, Trend.class);
         Map<Session, Bucket> sessionBuckets = buckets(sessions, Session.class);
-        return new Summary(observations.size(), timedOut, calls, trendBuckets, sessionBuckets,
-                findings(calls, timedOut, trendBuckets, sessionBuckets));
+        Map<String, Bucket> patternBuckets = new LinkedHashMap<>();
+        patterns.entrySet().stream()
+                .sorted(Map.Entry.<String, long[]>comparingByValue(Comparator.comparingLong(b -> -b[0]))
+                        .thenComparing(Map.Entry.comparingByKey()))
+                .forEach(e -> patternBuckets.put(e.getKey(), new Bucket(e.getValue()[0], e.getValue()[1], e.getValue()[2])));
+        return new Summary(observations.size(), timedOut, calls, trendBuckets, sessionBuckets, patternBuckets,
+                findings(calls, timedOut, trendBuckets, sessionBuckets, patternBuckets));
     }
 
     /**
@@ -196,7 +214,7 @@ public final class PlayerInsights {
     }
 
     private static List<Finding> findings(Calls calls, long timedOut, Map<Trend, Bucket> trends,
-                                          Map<Session, Bucket> sessions) {
+                                          Map<Session, Bucket> sessions, Map<String, Bucket> patterns) {
         List<Finding> out = new ArrayList<>();
         long answered = calls.answered();
 
@@ -217,6 +235,7 @@ public final class PlayerInsights {
         int overall = points(calls.correct(), answered);
         trends.forEach((trend, b) -> weak(b, overall).ifPresent(gap -> out.add(new Finding(Kind.WEAK_TREND, trend.name(), gap))));
         sessions.forEach((session, b) -> weak(b, overall).ifPresent(gap -> out.add(new Finding(Kind.WEAK_SESSION, session.name(), gap))));
+        patterns.forEach((pattern, b) -> weak(b, overall).ifPresent(gap -> out.add(new Finding(Kind.WEAK_PATTERN, pattern, gap))));
 
         out.sort(Comparator.comparingInt(Finding::gapPoints).reversed());
         return List.copyOf(out);

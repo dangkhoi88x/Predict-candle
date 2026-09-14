@@ -933,6 +933,14 @@ answered calls were too few for anything else, so gating it on answered calls hi
 that was plainly true. Sessions are Vietnam hours, deliberately not UTC like every day boundary
 elsewhere: a habit belongs to somebody's evening.
 
+**Patterns are counted per call, on the last candle the player could see** — `RoundPatternScanner`
+pointed at that one candle, the same scan that labels a finished round. Overlapping patterns (a
+hammer that is also a doji) each get the call; that double counts on purpose, because the question
+per row is "how do you do when this is on the chart", and both were. Rows under the bucket floor
+are still listed, muted, since a player wants to see the pattern was there; only `WEAK_PATTERN`
+respects the floor. Each row's name opens its library card through `CandlePatterns.reveal`, and
+`profile.js` waits on `CandlePatterns.whenLoaded()` before drawing so names are never raw ids.
+
 A finding carries only its kind, which bucket, and the gap; `profile.js` reads the figures out of
 the bucket and writes the sentence. So a finding and the table under it cannot disagree, and the
 response stays counts, never rates, like the retention pane.
