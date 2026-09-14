@@ -39,9 +39,14 @@ public record OpsSnapshot(
                           String ddlAuto) {
     }
 
+    /**
+     * {@code priceSource} is {@code binance} or {@code okx}. It is on the panel because the two
+     * disagree by a few dollars on any given candle, and an admin comparing a chart here against
+     * Binance should not have to guess why.
+     */
     public record GameSettings(String timeframe, int visibleCandles, int guessesPerChart,
                                 int revealCandles, int contextPadding, int guessSeconds,
-                                int roundsPerMinute, int guessesPerMinute) {
+                                int roundsPerMinute, int guessesPerMinute, String priceSource) {
     }
 
     /**

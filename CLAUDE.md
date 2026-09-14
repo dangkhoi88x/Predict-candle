@@ -1191,6 +1191,15 @@ and S&P 500 (`/api/market/sp500` → `YahooFinanceClient`). `treemap.js` does th
   `BinanceProvider` also stops calling for the `Retry-After` of any 418/429, because every page
   polls the live round and each request sent into a ban is what lengthens it.
 
+- **The demo database is dumped nightly by `.github/workflows/backup.yml`, encrypted, because
+  the repository is public** — any signed-in GitHub user can download an artifact, and the dump
+  holds every wallet address and play history. `scripts/backup-db.sh` refuses to produce a file
+  unless the tables that cannot be re-fetched (users, guesses, live calls, quiz, demo, Flyway
+  history) all have a data section, since `pg_dump` against the wrong or an empty database exits
+  0. Both scripts run inside `postgres:16`, which carries `pg_dump` and `gpg`, so Docker is the
+  only requirement. `restore-db.sh` targets an empty database — a Neon branch, never the live one.
+  Without the two secrets the job skips instead of failing, so a fork is not red every night.
+
 - **Commits carry no `Co-Authored-By` trailer.** GitHub renders that trailer as a second author
   ("dangkhoi88x and claude committed") and counts it in the repo's contributor list, which
   misrepresents who owns this work. Author and committer have always been the repo owner alone;

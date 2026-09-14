@@ -33,3 +33,6 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# scripts/backup-db.sh default output — encrypted database dumps, never committed
+/backup/

@@ -95,6 +95,8 @@ class OpsSnapshotTest {
         assertThat(snapshot.schema().appliedMigrations()).isPositive();
         assertThat(snapshot.settings().visibleCandles()).isEqualTo(20);
         assertThat(snapshot.settings().guessSeconds()).isEqualTo(20);
+        // The test profile does not set a source, so it is the default a checkout runs on.
+        assertThat(snapshot.settings().priceSource()).isEqualTo("binance");
         assertThat(snapshot.activity().contentItems()).isEqualTo(41);
     }
 

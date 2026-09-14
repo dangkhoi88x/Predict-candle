@@ -4,6 +4,7 @@ import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.MigrationInfo;
 import org.flywaydb.core.api.MigrationInfoService;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.Duration;
@@ -46,6 +47,7 @@ public class OpsService {
     private final CandlesProperties properties;
     private final ObjectProvider<Flyway> flyway;
     private final RecentErrors recentErrors;
+    private final String priceSource;
 
     public OpsService(AssetRepository assetRepository,
                       CandleRepository candleRepository,
@@ -57,7 +59,8 @@ public class OpsService {
                       CandleSyncService candleSyncService,
                       CandlesProperties properties,
                       ObjectProvider<Flyway> flyway,
-                      RecentErrors recentErrors) {
+                      RecentErrors recentErrors,
+                      @Value("${candles.price-source:binance}") String priceSource) {
         this.assetRepository = assetRepository;
         this.candleRepository = candleRepository;
         this.guessResultRepository = guessResultRepository;
@@ -69,6 +72,7 @@ public class OpsService {
         this.properties = properties;
         this.flyway = flyway;
         this.recentErrors = recentErrors;
+        this.priceSource = priceSource;
     }
 
     @Transactional(readOnly = true)
@@ -140,7 +144,7 @@ public class OpsService {
         return new OpsSnapshot.GameSettings(properties.timeframe(), round.visibleCandles(),
                 round.guessesPerChart(), round.revealCandlesAfterComplete(), round.contextPadding(),
                 round.timing().seconds(), round.rateLimit().roundsPerMinute(),
-                round.rateLimit().guessesPerMinute());
+                round.rateLimit().guessesPerMinute(), priceSource);
     }
 
     private OpsSnapshot.Activity activity(Instant now) {
