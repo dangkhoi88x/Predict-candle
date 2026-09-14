@@ -215,6 +215,20 @@ and a label only goes from a control whose icon is unambiguous alone.
 Script order in `index.html` matters: `pill.js`, `rolling.js` and `avatar.js` define shared
 globals that later files call at load time.
 
+**A first visit gets a three-step tour, and the game's first chart waits for it.** Both the
+game and the daily deal a round the moment they are shown, and a round's clock starts from the
+server's token — so a tour laid *over* a running round spends the newcomer's first guess while
+they read how to make one. `app.js` therefore chains `CandleOnboarding.gameReady()` before its
+first `loadRound`, which resolves once the tour is closed **and** the game view is on screen:
+ending the tour on "Thử thách hôm nay" must not deal a practice round behind the daily tab.
+`onboarding.js` loads after `nav.js` (it moves views through `CandleNav`) and before `app.js`.
+
+"First visit" means no `candles-onboarded` flag **and** none of the keys the page already wrote
+before the tour existed (the browser tally, the theme, the rail layout) — a returning player is
+not greeted as a stranger. The copy quotes real configuration (20 candles, 5 guesses, 20 s,
+10 points, the hint order); change `candles.round.*`, `PlayerScore` or `HintLevel` and the tour
+is wrong.
+
 | Shared module | Global | Used by |
 |---|---|---|
 | `pill.js` | `CandlePill.attach(track, sel)` | 6 asset/filter pickers |

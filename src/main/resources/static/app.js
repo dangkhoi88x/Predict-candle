@@ -1178,5 +1178,7 @@
 
     initChart();
     renderStats();
-    loadAssetPicker().then(loadRound);
+    /* The first chart waits for the first-visit tour: a round's clock starts when it is dealt,
+       so dealing it under the tour would spend a newcomer's first guess while they read. */
+    loadAssetPicker().then(window.CandleOnboarding.gameReady).then(loadRound);
 })();
