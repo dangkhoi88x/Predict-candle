@@ -1,0 +1,83 @@
+<!doctype html>
+<!--
+  Source of static/og-image.png — the card a chat app draws when someone pastes a link to the
+  site. Rendered, not hand-drawn, so it uses the game's own fonts and colours and can be
+  changed and re-rendered instead of redrawn:
+
+    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new \
+      --hide-scrollbars --window-size=1200,630 --screenshot=src/main/resources/static/og-image.png \
+      "file://$PWD/web/og/og-image.html"
+
+  (run from the repository root). 1200x630 is the size Facebook, Zalo, Telegram and X all crop
+  to without cutting anything. Colours are --bg / --text / --muted / --up / --down / --accent
+  from style.css; if those change, change these.
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<style>
+  @font-face { font-family: "Inter Variable"; font-weight: 100 900;
+    src: url("../../src/main/resources/static/fonts/inter-vietnamese-wght-normal.woff2") format("woff2-variations");
+    unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB; }
+  @font-face { font-family: "Inter Variable"; font-weight: 100 900;
+    src: url("../../src/main/resources/static/fonts/inter-latin-wght-normal.woff2") format("woff2-variations"); }
+  @font-face { font-family: "IBM Plex Mono"; font-weight: 500;
+    src: url("../../src/main/resources/static/fonts/ibm-plex-mono-vietnamese-500-normal.woff2") format("woff2");
+    unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB; }
+  @font-face { font-family: "IBM Plex Mono"; font-weight: 500;
+    src: url("../../src/main/resources/static/fonts/ibm-plex-mono-latin-500-normal.woff2") format("woff2"); }
+
+  html, body { margin: 0; width: 1200px; height: 630px; overflow: hidden; }
+  body {
+    background: #0a0a0a; color: #f2f2f2; font-family: "Inter Variable", system-ui, sans-serif;
+    display: grid; grid-template-columns: 620px 1fr; align-items: center;
+    padding: 0 72px; box-sizing: border-box; position: relative;
+  }
+  body::before {
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background: radial-gradient(900px 500px at 88% 40%, rgba(79,140,255,.13), transparent 70%);
+  }
+  .brand { display: flex; align-items: center; gap: 14px; font-weight: 650; font-size: 30px; letter-spacing: -.01em; }
+  .brand svg { width: 52px; height: 52px; }
+  h1 { font-size: 66px; line-height: 1.06; letter-spacing: -.03em; font-weight: 750; margin: 40px 0 22px; }
+  h1 .up { color: #34d399; } h1 .down { color: #fb7185; }
+  p { font-size: 27px; line-height: 1.4; color: #b4b4b9; margin: 0; max-width: 600px; }
+  .chips { display: flex; gap: 12px; margin-top: 34px; }
+  .chip { font-family: "IBM Plex Mono", monospace; font-weight: 500; font-size: 19px; color: #f2f2f2;
+    border: 1.5px solid #2a2a2e; border-radius: 999px; padding: 9px 18px; }
+  .chart { justify-self: end; }
+</style>
+</head>
+<body>
+  <div>
+    <div class="brand">
+      <svg viewBox="0 0 32 32" aria-hidden="true">
+        <rect width="32" height="32" rx="7" fill="#161618"/>
+        <g stroke-linecap="round">
+          <path d="M11 4.5v15" stroke="#34d399" stroke-width="2"/><rect x="8" y="7" width="6" height="10" rx="1.5" fill="#34d399"/>
+          <path d="M21 12.5v15" stroke="#fb7185" stroke-width="2"/><rect x="18" y="15" width="6" height="10" rx="1.5" fill="#fb7185"/>
+        </g>
+      </svg>
+      Candle Guess
+    </div>
+    <h1>Nến tiếp theo<br><span class="up">lên</span> hay <span class="down">xuống</span>?</h1>
+    <p>Luyện đọc chart crypto bằng dữ liệu thật.<br>Mỗi ngày một thử thách chung cho mọi người.</p>
+    <div class="chips"><span class="chip">BTC · ETH · BNB · SOL</span><span class="chip">Miễn phí</span></div>
+  </div>
+  <svg class="chart" width="400" height="420" viewBox="0 0 400 420" aria-hidden="true">
+    <g stroke-linecap="round">
+      <!-- x step 44, body width 24: a run that rises, stalls and dips, then the question. -->
+      <path d="M22 250v70" stroke="#fb7185" stroke-width="3"/><rect x="10" y="262" width="24" height="44" rx="4" fill="#fb7185"/>
+      <path d="M66 230v80" stroke="#34d399" stroke-width="3"/><rect x="54" y="244" width="24" height="54" rx="4" fill="#34d399"/>
+      <path d="M110 190v70" stroke="#34d399" stroke-width="3"/><rect x="98" y="202" width="24" height="46" rx="4" fill="#34d399"/>
+      <path d="M154 176v58" stroke="#fb7185" stroke-width="3"/><rect x="142" y="190" width="24" height="30" rx="4" fill="#fb7185"/>
+      <path d="M198 130v80" stroke="#34d399" stroke-width="3"/><rect x="186" y="146" width="24" height="56" rx="4" fill="#34d399"/>
+      <path d="M242 100v70" stroke="#34d399" stroke-width="3"/><rect x="230" y="112" width="24" height="44" rx="4" fill="#34d399"/>
+      <path d="M286 110v62" stroke="#fb7185" stroke-width="3"/><rect x="274" y="120" width="24" height="36" rx="4" fill="#fb7185"/>
+      <rect x="318" y="104" width="32" height="76" rx="6" fill="none" stroke="#4f8cff" stroke-width="3" stroke-dasharray="8 7"/>
+      <text x="334" y="158" text-anchor="middle" font-family="Inter Variable, sans-serif" font-weight="750" font-size="46" fill="#4f8cff">?</text>
+    </g>
+    <path d="M0 340H400" stroke="#2a2a2e" stroke-width="2"/>
+  </svg>
+</body>
+</html>

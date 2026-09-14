@@ -1,109 +1,101 @@
 # Candle Guess
 
-Game đoán hướng nến tiếp theo (Long/Short) trên dữ liệu giá thật (BTC/USDT, SOL/USDT, khung 1H).
-Xem 4 cây nến gần nhất, đoán cây nến thứ 5 sẽ tăng hay giảm.
+Game luyện đọc chart crypto bằng dữ liệu giá thật: nhìn chart, đoán nến tiếp theo **lên hay xuống**,
+biết ngay mình đúng hay sai và sai ở đâu.
 
-MVP hiện tại: chỉ **Practice mode** (random không giới hạn), điểm số/streak lưu ở trình duyệt (chưa có tài khoản).
+**Chơi thử:** <https://candles-oj1q.onrender.com> — bản demo trên gói free, lần mở đầu sau một
+khoảng lặng có thể chậm vài giây.
+
+![Candle Guess](src/main/resources/static/og-image.png)
+
+## Có gì
+
+| | |
+|---|---|
+| **Đoán nến** | Chart thật, 5 lượt đoán mỗi chart, đồng hồ 20 giây. Sai thì được gợi ý dần: volume → đường trung bình → tên mẫu nến. Hết chart thì lộ ngày giờ thật và toàn cảnh trước/sau |
+| **Thử thách mỗi ngày** | Một chart chung cho mọi người, một lượt, chia sẻ kết quả kiểu Wordle, chơi lại 60 ngày trước. Kèm một câu đố mẫu nến mỗi ngày |
+| **Trực tiếp** | Cả cộng đồng cùng đoán cây nến 1h đang chạy, khoá lệnh 8 phút trước khi đóng |
+| **Giao dịch demo** | Tiền ảo trên giá thật, 5 khung thời gian, MA/RSI, phí giao dịch |
+| **Học** | Thư viện mẫu nến và mẫu hình kỹ thuật (có "tìm ví dụ thật" trên dữ liệu đã lưu), tâm lý giao dịch, blog |
+| **Giữ chân** | Chuỗi ngày chơi, 9 huy hiệu, bảng xếp hạng, hồ sơ |
+| **Quản trị** | `/admin.html`: tổng quan, retention, người chơi, live round, preview thử thách ngày mai, CMS blog, thư viện ảnh |
+
+Đăng nhập bằng ví (Reown AppKit, có cả email và Google). Không đăng nhập vẫn chơi được, chỉ không
+lưu kết quả.
 
 ## Kiến trúc
 
 ```
-Binance API (klines) → CandleSyncScheduler (backfill + cron mỗi giờ) → Postgres
-                                                                          │
-                                    RoundSelectionService (random, chống lặp, lọc round "chết")
-                                                                          │
-                                    RoundTokenService (ký JWT chứa đáp án, stateless)
-                                                                          │
-                        REST API (GET /api/practice/round, POST /api/practice/guess)
-                                                                          │
-                            Frontend tĩnh (lightweight-charts + Long/Short) tại "/"
+OKX / Binance ──► CandleSyncService (backfill + mỗi giờ) ──► Postgres
+                                                                │
+                 RoundSelectionService — cửa sổ ngẫu nhiên, hoặc theo ngày cho thử thách
+                                                                │
+                 RoundTokenService — ký JWT chứa đáp án; server không giữ trạng thái vòng
+                                                                │
+                 REST API ◄──► frontend tĩnh (HTML + JS thuần, chart SVG tự vẽ)
 ```
 
-## Yêu cầu
+Vài quyết định đáng chú ý (giải thích đầy đủ trong [CLAUDE.md](CLAUDE.md)):
 
-- Java 25+
-- Docker (chạy Postgres cục bộ) — hoặc tự trỏ tới một Postgres có sẵn
-- Không cần cài Maven, dùng `./mvnw` đi kèm
+- **Đáp án không bao giờ xuống client trước khi đoán.** Nó nằm trong token ký, thời gian trả lời
+  đo từ lúc server phát token, và "một lượt mỗi ngày" là unique constraint trong database.
+- **Không lưu con số nào suy ra được.** Streak, huy hiệu, số dư demo, retention đều tính lại từ
+  lịch sử, nên không bao giờ lệch khỏi thực tế.
+- **Frontend không framework.** Mỗi file một IIFE; chỉ ví và trình soạn blog là bundle (Vite), và
+  cả hai chỉ tải khi cần.
 
-## Chạy lần đầu
+## Stack
 
-**1. Khởi động Postgres:**
+Java 25 · Spring Boot 4.1 · Spring Security · PostgreSQL 16 · Flyway · Jackson 3 · jjwt ·
+JS thuần · Vite (2 bundle) · Reown AppKit · Tiptap · Cloudinary · GitHub Actions ·
+Render + Neon.
+
+## Chạy ở máy
+
+Cần Java 25+ và Docker.
 
 ```bash
 docker compose up -d
 ```
 
-Mặc định expose ở `localhost:5544` (đã tránh cổng `5432`/`5433` phổ biến để không đụng Postgres khác đang chạy trên máy — đổi lại trong [docker-compose.yml](docker-compose.yml) và `DB_URL` bên dưới nếu cần).
-
-**2. Chạy app:**
-
 ```bash
 ./mvnw spring-boot:run
 ```
 
-Lần chạy đầu tiên app sẽ tự:
-- Tạo bảng (Flyway chạy `src/main/resources/db/migration`)
-- Insert 2 asset (BTCUSDT, SOLUSDT)
-- Backfill ~40.000 nến/asset từ Binance (2022-01-01 → hiện tại) — mất khoảng 15-30 giây, xem log `Synced N candles for ...` để biết đã xong.
+Mở <http://localhost:8080>. Lần chạy đầu Flyway dựng schema và app backfill nến từ Binance
+(khoảng 40 nghìn nến mỗi cặp, 15–30 giây); đợi dòng `Synced N candles for …` trong log.
 
-**3. Mở trình duyệt:**
+Postgres chạy ở cổng `5544`, cố ý tránh `5432`/`5433`.
 
-```
-http://localhost:8080
-```
+## Cấu hình chính
 
-Xem 4 nến, bấm LONG/SHORT để đoán, "Vòng tiếp theo" để chơi tiếp.
+Mọi thứ nằm dưới `candles.*` trong [application.yaml](src/main/resources/application.yaml),
+ghi đè bằng biến môi trường.
 
-## Cấu hình
-
-Tất cả nằm trong [application.yaml](src/main/resources/application.yaml), override qua biến môi trường:
-
-| Biến môi trường | Mặc định | Ý nghĩa |
+| Biến | Mặc định | Ý nghĩa |
 |---|---|---|
-| `DB_URL` | `jdbc:postgresql://localhost:5544/candles` | JDBC URL Postgres |
-| `DB_USERNAME` / `DB_PASSWORD` | `candles` / `candles` | Thông tin đăng nhập DB |
-| `ROUND_TOKEN_SECRET` | secret dev mặc định | Khóa ký JWT cho `roundToken` — **bắt buộc đổi khi deploy thật** |
-| `AUTH_JWT_SECRET` | secret dev mặc định | Khóa ký access/refresh token — **bắt buộc đổi khi deploy thật** |
-| `ADMIN_WALLETS` | rỗng | Danh sách ví giữ vai trò ADMIN, ngăn cách bằng dấu phẩy. Rỗng thì `/api/admin/**` và `/api/media/**` đóng hoàn toàn |
+| `DB_URL`, `DB_USERNAME`, `DB_PASSWORD` | Postgres local | Kết nối database |
+| `AUTH_JWT_SECRET`, `ROUND_TOKEN_SECRET` | giá trị dev | Khoá ký. Ngoài profile `dev`, app **từ chối khởi động** nếu vẫn là giá trị mặc định |
+| `ADMIN_WALLETS` | rỗng | Ví có quyền admin, cách nhau dấu phẩy. Rỗng thì trang admin đóng hoàn toàn |
+| `CANDLES_PRICE_SOURCE` | `binance` | `binance` hoặc `okx` |
+| `CANDLES_BACKFILL_START` | `2022-01-01T00:00:00Z` | Lấy nến từ ngày nào |
+| `CLOUDINARY_*` | rỗng | Upload ảnh cho blog |
 
-Các cấu hình khác (asset list, ngày backfill, ngưỡng lọc round "chết", TTL cache chống lặp...) sửa trực tiếp trong `application.yaml` phần `candles.*`.
+## Kiểm thử
 
-## API
-
-**`GET /api/practice/round?asset=BTCUSDT`** (hoặc `SOLUSDT`)
-
-Trả về 4 nến gần nhất + `roundToken` (JWT chứa đáp án đã ký, client không đọc được).
-
-**`POST /api/practice/guess`**
-
-```json
-{ "roundToken": "...", "direction": "LONG" }
+```bash
+./mvnw test
 ```
 
-Trả về `correct`, `actualDirection`, `actualCandle`. Token hết hạn sau 10 phút.
+Hơn 260 test, gồm các luồng đầy đủ trên Postgres thật. CI chạy trên mọi push; test tự tạo dữ liệu
+nến nên không cần gọi sàn.
 
-## Cấu trúc thư mục
+## Tài liệu
 
-```
-src/main/java/com/example/candles/
-├── domain/       Entity (Asset, Candle) + enum (AssetType, Direction)
-├── repository/   Spring Data JPA repository
-├── provider/     PriceDataProvider (interface) + BinanceProvider
-├── ingestion/     Backfill + đồng bộ nến định kỳ (CandleSyncService/Scheduler)
-├── round/         Chọn round ngẫu nhiên + sinh/verify roundToken (JWT)
-├── api/           REST controller + DTO + exception handler
-└── config/        CandlesProperties, RestClient bean
-
-src/main/resources/
-├── application.yaml
-└── static/        Frontend tĩnh: index.html, app.js (lightweight-charts), style.css
-```
-
-## Việc để dành cho giai đoạn sau
-
-Xem phần backlog trong tài liệu thiết kế gốc: thêm vàng (XAU/USD), Daily Challenge + leaderboard, tài khoản người dùng, ẩn/chuẩn hoá chart chống tra cứu, chọn nhiều khung thời gian.
-
-## Ghi chú kỹ thuật
-
-- Dự án dùng **Spring Boot 4.1.1**, đã chuyển sang **Jackson 3** (`tools.jackson.*`), khác với Jackson 2 (`com.fasterxml.jackson.*`) quen thuộc — lưu ý khi thêm code xử lý JSON thủ công.
-- JWT dùng `jjwt` với serializer Gson (`jjwt-gson`) để tránh xung đột với Jackson 3.
+| | |
+|---|---|
+| [CLAUDE.md](CLAUDE.md) | Kiến trúc và lý do đằng sau từng quyết định |
+| [docs/MVP_PLAN.md](docs/MVP_PLAN.md) | Review tổng thể và các MVP tiếp theo |
+| [docs/DEPLOY_PLAN.md](docs/DEPLOY_PLAN.md) | Deploy Render + Neon, và vì sao bản demo lấy giá từ OKX |
+| [docs/SPEC.md](docs/SPEC.md) | Spec và khảo sát đối thủ ban đầu |
+| [docs/ADMIN_PLAN.md](docs/ADMIN_PLAN.md), [docs/LEADERBOARD_PLAN.md](docs/LEADERBOARD_PLAN.md) | Kế hoạch từng mảng |
