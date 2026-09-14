@@ -1,0 +1,65 @@
+name: Backup database
+
+# Nightly encrypted dump of the demo's Neon database, kept as a workflow artifact.
+#
+# Candles can be fetched again from the exchange; accounts, guesses, streaks and demo trades
+# cannot. Neon's own restore window on the free plan is short, and this is the copy that does not
+# depend on it. scripts/backup-db.sh does the work — see it for why the file is encrypted.
+#
+# Needs two repository secrets (Settings → Secrets and variables → Actions):
+#   NEON_BACKUP_URL    postgresql://… direct (not -pooler) connection string
+#   BACKUP_PASSPHRASE  the key the dump is encrypted with; keep a copy outside GitHub, since a
+#                      secret cannot be read back and a dump nobody can decrypt is not a backup
+# Without them the job skips rather than fails, so a fork does not go red every night.
+
+on:
+  schedule:
+    # 19:30 UTC is 02:30 in Vietnam: after the evening's play, and not on the hour, where the
+    # candle sync runs (minute :05) and GitHub's own scheduler is busiest.
+    - cron: '30 19 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check secrets
+        id: secrets
+        env:
+          NEON_BACKUP_URL: ${{ secrets.NEON_BACKUP_URL }}
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          if [ -z "$NEON_BACKUP_URL" ] || [ -z "$BACKUP_PASSPHRASE" ]; then
+            echo "::notice::NEON_BACKUP_URL or BACKUP_PASSPHRASE is not set — skipping backup."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.secrets.outputs.ready == 'true'
+
+      - name: Dump, check and encrypt
+        if: steps.secrets.outputs.ready == 'true'
+        env:
+          DATABASE_URL: ${{ secrets.NEON_BACKUP_URL }}
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: scripts/backup-db.sh backup
+
+      - uses: actions/upload-artifact@v4
+        if: steps.secrets.outputs.ready == 'true'
+        with:
+          name: candles-db-${{ github.run_id }}
+          path: backup/*.dump.gpg
+          if-no-files-found: error
+          # Already compressed by pg_dump and then encrypted; zipping it again only costs time.
+          compression-level: 0
+          retention-days: 30
