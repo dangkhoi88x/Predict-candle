@@ -941,6 +941,16 @@ are still listed, muted, since a player wants to see the pattern was there; only
 respects the floor. Each row's name opens its library card through `CandlePatterns.reveal`, and
 `profile.js` waits on `CandlePatterns.whenLoaded()` before drawing so names are never raw ids.
 
+**The lesson card after the daily picks one thing, in a fixed order** (`daily.js`): a pattern that
+completed on the last candle before a guess the player *missed*; else the top finding from the
+insights endpoint; else any pattern the chart held; else why signing in and playing on will make
+the card say something. The pattern part comes from the finishing guess's `context` — the only
+response that carries a round's pattern marks — so it is taken at that moment and held in
+`chartLesson`; a finished day read back later has no marks and falls to the finding. Guess *k*'s
+last visible candle in context coordinates is `guessFrom + k − 2`. Sentences for findings live in
+`insights.js` (`CandleInsights`), shared with the profile, so a habit is phrased the same wherever
+it is named; it loads before `daily.js` and `profile.js`.
+
 A finding carries only its kind, which bucket, and the gap; `profile.js` reads the figures out of
 the bucket and writes the sentence. So a finding and the table under it cannot disagree, and the
 response stays counts, never rates, like the retention pane.

@@ -6090,6 +6090,29 @@ body.onboarding-open {
     font-weight: 700;
 }
 
+/* The lesson reads as the round's takeaway, between the score and the share button: the same
+   accent callout the profile's findings use, so a habit looks the same wherever it is named. */
+.daily-lesson {
+    display: grid;
+    gap: 6px;
+    margin: 4px 0 14px;
+    padding: 10px 12px;
+    border-left: 3px solid var(--accent);
+    border-radius: 0 8px 8px 0;
+    background: var(--tint-accent);
+}
+
+.daily-lesson-text {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.55;
+    color: var(--text);
+}
+
+.daily-lesson-action {
+    justify-self: start;
+}
+
 .daily-next {
     margin: 0 0 12px;
     font-size: 13px;

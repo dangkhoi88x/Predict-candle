@@ -551,6 +551,14 @@
         <div class="daily-done hidden" id="daily-done">
             <p class="daily-done-line" id="daily-done-line"></p>
             <p class="daily-next" id="daily-next"></p>
+            <!-- The lesson: one thing to take away from the round just played, chosen in daily.js —
+                 a pattern that was on the chart right before a miss, else the player's biggest
+                 habit, else a pattern the chart held. -->
+            <div class="daily-lesson hidden" id="daily-lesson">
+                <span class="side-eyebrow is-accent">Bài học hôm nay</span>
+                <p class="daily-lesson-text" id="daily-lesson-text"></p>
+                <button class="ghost-btn daily-lesson-action hidden" type="button" id="daily-lesson-action"></button>
+            </div>
             <button class="ghost-btn" type="button" id="daily-share">Sao chép kết quả</button>
         <!-- Shown only when the clipboard refuses. A share button that can fail silently is a
              share button that does not work, so the text has to become reachable by hand. -->
@@ -1202,6 +1210,8 @@
 <script src="content.js"></script>
 <script src="auth.js"></script>
 <script src="candle-chart.js"></script>
+<!-- Before daily.js and profile.js, which both write findings as sentences through it. -->
+<script src="insights.js"></script>
 <script src="daily.js"></script>
 <script src="pattern-quiz.js"></script>
 <script src="demo-trade.js"></script>

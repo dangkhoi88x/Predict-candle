@@ -30,6 +30,9 @@
         doneLine: document.getElementById("daily-done-line"),
         next: document.getElementById("daily-next"),
         share: document.getElementById("daily-share"),
+        lesson: document.getElementById("daily-lesson"),
+        lessonText: document.getElementById("daily-lesson-text"),
+        lessonAction: document.getElementById("daily-lesson-action"),
         replay: document.getElementById("daily-replay"),
         replayLabel: document.getElementById("daily-replay-label"),
         back: document.getElementById("daily-back"),
@@ -169,6 +172,113 @@
         }
     }
 
+    /* ---- the lesson ---------------------------------------------------------------------------
+
+       One thing to take away from the round just finished. In order:
+
+       1. A candlestick pattern that completed on the last candle before a guess the player missed —
+          the most specific lesson there is: this was on the chart, and it was read wrong.
+       2. The player's biggest habit from /api/stats/me/insights, when signed in and there is one.
+       3. A pattern the chart held anywhere in the played stretch, to go and look at.
+       4. Otherwise, why signing in and playing more will make this card say something.
+
+       Patterns come from the finishing guess's `context`, which only that response carries — a
+       completed round read back later has none. So the pattern is picked at the moment of finishing
+       and held in `chartLesson`; a player reopening a finished day still gets 2 or 4. */
+    var chartLesson = null;
+    var lessonToken = 0;
+
+    /** @return {missed: boolean, patternId, guessNumber} or null */
+    function lessonFromContext(context, outcomes) {
+        if (!context || !context.patterns || !context.patterns.length) return null;
+        var seen = null;
+        for (var k = 1; k <= outcomes.length; k++) {
+            // Last candle the player could see before guess k, in the context's own coordinates.
+            var lastVisible = context.guessFrom + k - 2;
+            for (var i = 0; i < context.patterns.length; i++) {
+                var mark = context.patterns[i];
+                if (mark.startIndex + mark.length - 1 !== lastVisible) continue;
+                if (!outcomes[k - 1]) return { missed: true, patternId: mark.patternId, guessNumber: k };
+                if (!seen) seen = { missed: false, patternId: mark.patternId, guessNumber: k };
+            }
+        }
+        if (seen) return seen;
+        // A pattern elsewhere in what they looked at still names something worth reading; the
+        // marks come sorted by where they end, so the last is the nearest the guessing.
+        var latest = context.patterns[context.patterns.length - 1];
+        return { missed: false, patternId: latest.patternId, guessNumber: null };
+    }
+
+    function setLessonAction(label, onClick) {
+        el.lessonAction.classList.toggle("hidden", !label);
+        el.lessonAction.textContent = label || "";
+        el.lessonAction.onclick = label ? function () {
+            if (window.CandleAnalytics) window.CandleAnalytics.track("daily-lesson-click");
+            onClick();
+        } : null;
+    }
+
+    function showPatternLesson(lesson) {
+        var name = window.CandleInsights.patternName(lesson.patternId);
+        if (lesson.missed) {
+            el.lessonText.textContent = "Ngay trước nến thứ " + lesson.guessNumber + ", chart có mẫu " + name
+                + " và bạn đã đoán sai ở nến đó. Xem lại mẫu này báo hiệu điều gì trước khi gặp nó lần sau.";
+        } else if (lesson.guessNumber) {
+            el.lessonText.textContent = "Ngay trước nến thứ " + lesson.guessNumber + ", chart có mẫu " + name
+                + ". Bạn đã đọc đúng lần này; xem lại để nhận ra nó nhanh hơn.";
+        } else {
+            el.lessonText.textContent = "Chart hôm nay có mẫu " + name + ". Xem lại cách nhận diện nó.";
+        }
+        setLessonAction("Xem mẫu " + name, function () { window.CandlePatterns.reveal(lesson.patternId); });
+    }
+
+    async function renderLesson() {
+        var token = ++lessonToken;
+        el.lesson.classList.remove("hidden");
+
+        if (chartLesson && chartLesson.missed) {
+            showPatternLesson(chartLesson);
+            return;
+        }
+
+        el.lessonText.textContent = "Đang chọn bài học…";
+        setLessonAction(null);
+        var insights = await window.CandleInsights.load();
+        if (token !== lessonToken) return; // a newer round replaced this one while it loaded
+
+        var finding = insights && insights.findings.length ? insights.findings[0] : null;
+        var text = finding ? window.CandleInsights.sentence(finding, insights) : null;
+        if (text) {
+            el.lessonText.textContent = text;
+            setLessonAction("Xem thói quen của bạn", function () { window.CandleNav.go("profile"); });
+            return;
+        }
+        if (chartLesson) {
+            if (window.CandlePatterns) await window.CandlePatterns.whenLoaded();
+            if (token !== lessonToken) return;
+            showPatternLesson(chartLesson);
+            return;
+        }
+        if (!window.CandleAuth.getUser()) {
+            // 30 is the server's PlayerInsights.MIN_SAMPLE; signed out there is no response to read it from.
+            el.lessonText.textContent = "Kết nối ví hoặc email để lưu kết quả. Sau 30 lượt đoán, "
+                + "game sẽ chỉ ra thói quen khiến bạn hay đoán sai.";
+        } else if (insights && !insights.enough) {
+            var answered = insights.calls.longCalls + insights.calls.shortCalls;
+            el.lessonText.textContent = "Còn " + (insights.minSample - answered)
+                + " lượt đoán nữa là game phân tích được thói quen của bạn.";
+        } else {
+            el.lessonText.textContent = "Chưa thấy thói quen lệch rõ rệt nào. Giữ nhịp đó cho ngày mai.";
+        }
+        setLessonAction(null);
+    }
+
+    function hideLesson() {
+        lessonToken++;
+        chartLesson = null;
+        el.lesson.classList.add("hidden");
+    }
+
     function showDone() {
         stopTimer();
         setPlaying(false);
@@ -182,6 +292,8 @@
         el.next.textContent = "Thử thách tiếp theo mở lúc "
             + next.toLocaleString("vi-VN", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit" })
             + " (giờ của bạn).";
+
+        renderLesson();
     }
 
     async function submit(direction) {
@@ -214,6 +326,8 @@
 
             if (payload.sessionComplete) {
                 if (!archiveDay && window.CandleAnalytics) window.CandleAnalytics.track("daily-complete");
+                // Only this response carries the chart's patterns; take the lesson from it now.
+                chartLesson = lessonFromContext(payload.context, results);
                 /* Signed in, re-read: the streak only moves once the day is finished and the
                    server is the one that knows what it moved to.
 
@@ -297,6 +411,7 @@
     }
 
     async function openDay(day) {
+        hideLesson();
         archiveDay = day;
         await load();
         renderArchive(lastArchive);
@@ -341,6 +456,7 @@
             }
 
             el.done.classList.add("hidden");
+            hideLesson();
             drawChart();
             renderDots();
             renderHint();
@@ -360,6 +476,7 @@
     el.share.addEventListener("click", copyShare);
 
     el.back.addEventListener("click", async function () {
+        hideLesson();
         archiveDay = null;
         await load();
         renderArchive(lastArchive);
@@ -376,6 +493,8 @@
        daily is the thing this tab is for, and a player returning to find yesterday on screen
        would think they had already played. */
     window.__initDailyView = function () {
+        // A lesson taken from a replayed day does not belong on today.
+        if (archiveDay) hideLesson();
         archiveDay = null;
         loadArchive();
         return load();

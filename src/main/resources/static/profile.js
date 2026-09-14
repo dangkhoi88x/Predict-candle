@@ -307,65 +307,15 @@
        follows — and a finding carries no figures of its own, only which bucket to read, so the
        sentence and the table under it cannot disagree. */
 
+    var share = window.CandleInsights.share;
+    var findBucket = window.CandleInsights.findBucket;
+    var sentence = window.CandleInsights.sentence;
+    var patternName = window.CandleInsights.patternName;
+
     var TREND_LABEL = { RISING: "Sau nhịp tăng", FALLING: "Sau nhịp giảm", FLAT: "Chart đi ngang" };
-    var TREND_PHRASE = { RISING: "sau một nhịp tăng", FALLING: "sau một nhịp giảm", FLAT: "khi chart đi ngang" };
     var SESSION_LABEL = { NIGHT: "Đêm (0–6h)", MORNING: "Sáng (6–12h)", AFTERNOON: "Chiều (12–18h)", EVENING: "Tối (18–24h)" };
-    var SESSION_PHRASE = { NIGHT: "ban đêm", MORNING: "buổi sáng", AFTERNOON: "buổi chiều", EVENING: "buổi tối" };
     var SESSION_ORDER = ["MORNING", "AFTERNOON", "EVENING", "NIGHT"];
     var TREND_ORDER = ["RISING", "FALLING", "FLAT"];
-
-    function share(part, whole) {
-        return whole ? Math.round((part / whole) * 100) : 0;
-    }
-
-    function findBucket(list, field, key) {
-        for (var i = 0; i < list.length; i++) if (list[i][field] === key) return list[i];
-        return null;
-    }
-
-    function sentence(finding, data) {
-        var c = data.calls;
-        var answered = c.longCalls + c.shortCalls;
-        var overall = share(c.correctLong + c.correctShort, answered);
-        var b;
-        switch (finding.kind) {
-            case "LONG_BIAS":
-                return "Bạn nghiêng về LONG: chọn LONG " + share(c.longCalls, answered) + "% số lượt, trong khi nến thật chỉ tăng "
-                    + share(c.marketUp, answered) + "%. Trước khi bấm, thử tự hỏi chart có thật sự đang yếu đi không.";
-            case "SHORT_BIAS":
-                return "Bạn nghiêng về SHORT: chọn SHORT " + share(c.shortCalls, answered) + "% số lượt, trong khi nến thật chỉ giảm "
-                    + share(c.marketDown, answered) + "%. Thị trường không giảm thường xuyên như bạn nghĩ.";
-            case "WEAK_TREND":
-                b = findBucket(data.trends, "trend", finding.key);
-                return "Bạn đoán kém nhất " + TREND_PHRASE[finding.key] + ": đúng " + share(b.correct, b.total) + "% ("
-                    + b.correct + "/" + b.total + "), thấp hơn mức chung " + overall + "%, và chọn LONG "
-                    + share(b.longCalls, b.total) + "% số lần." + trendAdvice(finding.key, share(b.longCalls, b.total));
-            case "WEAK_SESSION":
-                b = findBucket(data.sessions, "session", finding.key);
-                return "Chơi " + SESSION_PHRASE[finding.key] + " bạn chỉ đúng " + share(b.correct, b.total) + "% ("
-                    + b.correct + "/" + b.total + "), thấp hơn mức chung " + overall + "%.";
-            case "WEAK_PATTERN":
-                b = findBucket(data.patterns, "pattern", finding.key);
-                return "Khi chart vừa có mẫu " + patternName(finding.key) + ", bạn chỉ đúng " + share(b.correct, b.total)
-                    + "% (" + b.correct + "/" + b.total + "), thấp hơn mức chung " + overall + "%. Nên xem lại mẫu này.";
-            case "TIMEOUTS":
-                return finding.gapPoints + "% số lượt bạn để hết giờ. Hết giờ tính là sai, nên chọn một hướng vẫn tốt hơn bỏ trống.";
-        }
-        return null;
-    }
-
-    /* Only said where the direction split makes it true: "chasing the move" needs the calls to
-       actually lean with the move, not merely to be wrong after one. */
-    function trendAdvice(trend, longShare) {
-        if (trend === "RISING" && longShare >= 65) return " Có thể bạn đang đuổi theo đà tăng khi nó sắp hết.";
-        if (trend === "FALLING" && longShare <= 35) return " Có thể bạn đang bán theo khi đà giảm sắp hết.";
-        if (trend === "FALLING" && longShare >= 65) return " Có thể bạn đang bắt đáy quá sớm.";
-        return "";
-    }
-
-    function patternName(id) {
-        return window.CandlePatterns ? window.CandlePatterns.nameOf(id) : id;
-    }
 
     /* Rates under the bucket floor are still shown — a player wants to see the pattern was there —
        but muted, so a 2/3 is not read as a skill. The floor is the server's MIN_BUCKET. */
@@ -515,17 +465,11 @@
     /* Separate from the totals on purpose: a slow or failed read of habits must not hold up or
        blank the numbers above it, which are the part a player opened the tab for. */
     async function loadInsights() {
-        try {
-            var res = await window.CandleAuth.authFetch("/api/stats/me/insights");
-            if (!res.ok) throw new Error(String(res.status));
-            var data = await res.json();
-            // Pattern names come from the library fetch, which the page starts at load.
-            if (window.CandlePatterns) await window.CandlePatterns.whenLoaded();
+        var data = await window.CandleInsights.load();
+        if (data) {
             renderInsights(data);
-        } catch (e) {
-            if (!el.insightsBody.children.length) {
-                el.insightsBody.innerHTML = '<p class="profile-empty">Không tải được phần thói quen. Mở lại tab này để thử lại.</p>';
-            }
+        } else if (!el.insightsBody.children.length) {
+            el.insightsBody.innerHTML = '<p class="profile-empty">Không tải được phần thói quen. Mở lại tab này để thử lại.</p>';
         }
     }
 
