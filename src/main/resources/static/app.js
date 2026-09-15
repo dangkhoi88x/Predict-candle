@@ -1245,7 +1245,12 @@
                 var btn = document.createElement("button");
                 btn.className = "pill-option" + (asset.symbol === state.asset ? " active" : "");
                 btn.dataset.asset = asset.symbol;
-                btn.textContent = asset.shortSymbol + "/USDT";
+                btn.textContent = asset.shortSymbol;
+                // The quote is the part a narrow screen can lose (style.css, .pill-quote).
+                var quote = document.createElement("span");
+                quote.className = "pill-quote";
+                quote.textContent = "/USDT";
+                btn.appendChild(quote);
                 pill.appendChild(btn);
             });
 

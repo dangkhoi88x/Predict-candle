@@ -102,7 +102,22 @@
         return (m < 10 ? "0" : "") + m + ":" + (s < 10 ? "0" : "") + s;
     }
 
+    /* A live round named by when its candle opened, in the reader's own time — "Vòng 21:00", with
+       the date added once it is not today. Rounds are numbered by hours since 1970 on the server
+       (LiveRound), which is right for addressing one and meaningless to read: "#23705" says
+       nothing a player can place. The number stays the id; this is only the label. */
+    function roundLabel(openTime) {
+        if (openTime == null) return "Vòng —";
+        var d = new Date(openTime);
+        var pad = function (n) { return (n < 10 ? "0" : "") + n; };
+        var label = "Vòng " + pad(d.getHours()) + ":" + pad(d.getMinutes());
+        var today = new Date();
+        if (d.toDateString() !== today.toDateString()) label += " · " + pad(d.getDate()) + "/" + pad(d.getMonth() + 1);
+        return label;
+    }
+
     window.CandleFormat = {
+        roundLabel: roundLabel,
         price: price,
         usd: usd,
         compactUsd: compactUsd,

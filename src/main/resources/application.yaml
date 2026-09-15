@@ -29,6 +29,10 @@ spring:
       max-file-size: 10MB
       max-request-size: 10MB
   web:
+    # The site is Vietnamese. Without this every response said "Content-Language: en-US", taken
+    # from the JVM's default locale rather than from anything about the page.
+    locale: vi_VN
+    locale-resolver: fixed
     resources:
       cache:
         cachecontrol:

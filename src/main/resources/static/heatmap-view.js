@@ -1,5 +1,5 @@
 /**
- * Owns the Market Heatmap tab's shared chrome (status line, "updated at", refresh button,
+ * Owns the market map tab's shared chrome (status line, "updated at", refresh button,
  * caption, and the tile detail panel) and switches between the Crypto / S&P 500 sub-tabs,
  * each backed by its own loader module (window.CryptoHeatmap / window.Sp500Heatmap) from
  * heatmap.js / heatmap-sp500.js.

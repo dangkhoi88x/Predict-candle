@@ -479,6 +479,12 @@ cached `candles.live.price-cache-ttl` (2s) so concurrent viewers share one upstr
 round has closed, the settled row is authoritative and cheaper, so the exchange is only asked
 while a round is still open.
 
+**A round is labelled by when its candle opened, not by its number** — "Vòng 21:00", plus the
+date once it is not today (`CandleFormat.roundLabel`), on the live tab, the history strip, the
+popup and the topbar banner. `roundNumber` counts hours since 1970 and stays the id everything is
+addressed by (the popup's fetch, the admin pane, its tooltip); "#23705" was simply never something
+a player could place.
+
 An empty pool is drawn as a neutral bar reading "Chưa ai dự đoán" (`drawPool`, shared with the
 history popup), not the 50/50 split an empty pool used to show — that read as two players having
 called it opposite ways. With calls, each side shows its count beside its share.
@@ -1205,7 +1211,8 @@ Adding a tab means **three** edits, not two: the rail item (inside one group's
 responding to that item entirely, with no error to say why.
 
 The rail draws the caller's rank beside "Bảng Xếp Hạng" from the `candles:rank` event, not from
-a fetch of its own.
+a fetch of its own. The "MỚI" tag beside Thử Thách hides for good once that tab has been opened
+(`candles-seen-daily`) — a badge that never changes stops being read.
 
 ### CSS conventions
 
@@ -1262,7 +1269,7 @@ and S&P 500 (`/api/market/sp500` → `YahooFinanceClient`). `treemap.js` does th
 `CandleCoins.tradable` (`coins.js`, loaded before both). CoinGecko's market-cap order is a third
 dollar-pegged products on any given day, each at $1.00 and 0.00%, so both ask for more rows than
 they show (40 → 14, 50 → 24). Three tests: a known stablecoin symbol, a name saying wrapped /
-staked / bridged / tokenised, or a price pinned within 1.5% of a dollar that moved under 0.5% —
+staked / bridged / tokenised, or a price within 5% of a dollar that moved under 0.5% or reports no 24h change —
 the last catches pegged products whose names say nothing.
 
 **Nothing above the views appears late.** The ticker and the live banner ship visible and hide

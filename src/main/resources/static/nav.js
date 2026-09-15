@@ -84,7 +84,29 @@
         return null;
     }
 
+    /* "MỚI" beside Thử Thách is news only until somebody has opened it; after that it is a label
+       that never changes, which is how a badge stops being read. Remembered per browser. */
+    var NEW_DAILY_KEY = "candles-seen-daily";
+    var newDailyTag = document.getElementById("rail-tag-new-daily");
+
+    function markDailySeen() {
+        if (!newDailyTag) return;
+        newDailyTag.classList.add("hidden");
+        try {
+            localStorage.setItem(NEW_DAILY_KEY, "1");
+        } catch (e) {
+            // Storage blocked: the tag comes back next visit, which is harmless.
+        }
+    }
+
+    try {
+        if (newDailyTag && localStorage.getItem(NEW_DAILY_KEY)) newDailyTag.classList.add("hidden");
+    } catch (e) {
+        // Storage blocked: leave the tag as shipped.
+    }
+
     function activate(target) {
+        if (target === "daily") markDailySeen();
         if (!views[target] || target === current()) {
             closeRail();
             return;
