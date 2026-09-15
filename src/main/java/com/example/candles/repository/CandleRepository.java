@@ -53,4 +53,28 @@ public interface CandleRepository extends JpaRepository<Candle, Long> {
                              @Param("timeframe") String timeframe,
                              @Param("offset") int offset,
                              @Param("limit") int limit);
+
+    /**
+     * The candles at the given positions in an asset's history, as {@code [index, openTimeMillis,
+     * open, high, low, close, volume]} rows.
+     *
+     * Position means the same thing it does to {@link #findWindow}: rank by {@code open_time},
+     * counted from zero — so a round token's {@code startIndex} addresses the same candle here. Used
+     * to read back the candles a player's past calls were made on, a handful of positions spread
+     * across the whole history, which a run of OFFSET queries would cost one round trip each.
+     */
+    @Query(value = """
+            SELECT r.idx, r.open_ms, r.open, r.high, r.low, r.close, r.volume FROM (
+                SELECT row_number() OVER (ORDER BY c.open_time) - 1 AS idx,
+                       CAST(EXTRACT(EPOCH FROM c.open_time) * 1000 AS bigint) AS open_ms,
+                       c.open, c.high, c.low, c.close, c.volume
+                FROM candles c
+                WHERE c.asset_id = :assetId AND c.timeframe = :timeframe
+            ) r
+            WHERE r.idx IN (:indexes)
+            ORDER BY r.idx
+            """, nativeQuery = true)
+    List<Object[]> candlesAtIndexes(@Param("assetId") Long assetId,
+                                    @Param("timeframe") String timeframe,
+                                    @Param("indexes") java.util.Collection<Long> indexes);
 }

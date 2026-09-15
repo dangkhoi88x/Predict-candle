@@ -88,6 +88,24 @@
         return wrap;
     }
 
+    /* An empty board is the first thing a new site's leaderboard shows, so it says what it takes
+       to be on it and offers the way there, rather than only that nobody is. Signed out it also
+       says the part a visitor would not guess: anonymous play is never recorded, so no amount of
+       it reaches the board. */
+    function emptyBoard(container, minGuesses) {
+        container.innerHTML = "";
+        var box = el("div", "lb-empty");
+        box.appendChild(el("p", "lb-empty-title", "Bảng đang chờ người đầu tiên"));
+        box.appendChild(el("p", "lb-empty-text", "Chưa ai đủ " + minGuesses
+            + " lượt đoán được ghi lại. Người đầu tiên đạt " + minGuesses + " lượt sẽ đứng hạng #1."
+            + (window.CandleAuth.getUser() ? "" : " Kết nối ví hoặc email để lượt đoán của bạn được tính.")));
+        var play = el("button", "side-cta lb-empty-cta", "Chơi ngay");
+        play.type = "button";
+        play.setAttribute("data-nav-view", "game");
+        box.appendChild(play);
+        container.appendChild(box);
+    }
+
     async function init() {
         var container = document.getElementById("leaderboard-body");
         var note = document.getElementById("leaderboard-note");
@@ -102,8 +120,7 @@
             container.innerHTML = "";
 
             if (!board.rows.length) {
-                window.CandleContent.notice(container,
-                    "Chưa có ai đủ " + board.minGuesses + " lượt đoán. Chơi thêm để mở bảng.");
+                emptyBoard(container, board.minGuesses);
                 return;
             }
 

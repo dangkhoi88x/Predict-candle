@@ -68,6 +68,10 @@
         marketDelta: document.getElementById("market-delta"),
         marketOhlc: document.getElementById("market-ohlc"),
         marketCard: document.querySelector(".market-card"),
+        gameStart: document.getElementById("game-start"),
+        gameStartTitle: document.getElementById("game-start-title"),
+        gameStartNote: document.getElementById("game-start-note"),
+        gameStartButton: document.getElementById("game-start-button"),
         soundToggle: document.getElementById("sound-toggle"),
         gameStreak: document.getElementById("game-streak"),
         gameStreakValue: document.getElementById("game-streak-value"),
@@ -104,7 +108,6 @@
         hoverIndex: null,
         drawnCount: 0,
         asset: "BTCUSDT",
-        baseTime: 0,
         revealMarkerIndex: null,
         // Progressive hints, unlocked by misses on this chart. Null until the server sends any.
         hints: null,
@@ -152,11 +155,29 @@
             + pad(d.getHours()) + ":" + pad(d.getMinutes());
     }
 
-    function formatClock(epochSeconds) {
-        var d = new Date(epochSeconds * 1000);
-        var hh = String(d.getHours()).padStart(2, "0");
-        var mm = String(d.getMinutes()).padStart(2, "0");
-        return hh + ":" + mm;
+    /* Hours back from the newest candle on the chart: "−19h" … "0h".
+
+       The axis used to print clock times counted back from *now* — so a chart from last winter
+       read "23:59 … 18:59" as if it were the last day of trading, with a price tens of thousands
+       away from the live ticker above it. The candles carry no timestamp on purpose (a date is
+       the answer), and an invented one is worse than none: the only true thing to say is how far
+       each candle is from the latest. */
+    /* Room for the price labels in viewBox units, sized to the box the chart actually has. The
+       labels render at a fixed CSS size (CandleChart.fitLabels), so on a phone — where 1000 units
+       are ~360px — the default right padding is about 19px and "$19.14K" would sit over the last
+       candles. Asks for ~62px whatever the width, and fewer time labels where six would touch. */
+    function roomFor(svg, viewWidth, labels) {
+        var width = svg ? svg.getBoundingClientRect().width : 0;
+        if (!width) return { padRight: 52, timeLabels: labels };
+        return {
+            padRight: Math.max(52, 62 * viewWidth / width),
+            timeLabels: width < 520 ? Math.min(labels, 4) : labels,
+        };
+    }
+
+    function formatHoursBack(index) {
+        var back = (chart.candles.length - 1 - index) * CANDLE_STEP_SECONDS / 3600;
+        return back === 0 ? "0h" : "\u2212" + back + "h";
     }
 
     function initChart() {
@@ -239,23 +260,29 @@
             stroke: c.close >= c.open ? UP : DOWN, "stroke-width": "2",
         }));
 
-        var badgeW = PAD.right - 6;
+        var priceLabel = formatAxisPrice(c.close);
+        /* Sized to its text, like every other tag: fitLabels renders labels at a fixed CSS size,
+           so a badge sized to the padding would be scaled up with its text and span the chart. */
+        var badgeW = Math.max(40, priceLabel.length * 6.4 + 12);
+        var badgeCx = f.plotX1 + (W - f.plotX1) / 2; // centred in the price column, not left-aligned to it
         g.appendChild(svgEl("rect", {
-            x: f.plotX1 + 3, y: hy - 9, width: badgeW, height: 18, rx: 4, fill: HOVER_BADGE_BG,
+            x: badgeCx - badgeW / 2, y: hy - 9, width: badgeW, height: 18, rx: 4, fill: HOVER_BADGE_BG,
+            "data-label-bg": "",
         }));
         var priceText = svgEl("text", {
-            x: f.plotX1 + 3 + badgeW / 2, y: hy, "text-anchor": "middle",
+            x: badgeCx, y: hy, "text-anchor": "middle",
             "dominant-baseline": "middle", "font-size": "10", "font-weight": "700",
             fill: HOVER_BADGE_TEXT, "font-family": "var(--mono)",
         });
-        priceText.textContent = formatAxisPrice(c.close);
+        priceText.textContent = priceLabel;
         g.appendChild(priceText);
 
-        var dateLabel = formatClock(chart.baseTime + chart.hoverIndex * CANDLE_STEP_SECONDS);
+        var dateLabel = formatHoursBack(chart.hoverIndex);
         var dateW = Math.max(38, dateLabel.length * 6.5 + 12);
         var dateX = Math.min(Math.max(hx - dateW / 2, f.plotX0), f.plotX1 - dateW);
         g.appendChild(svgEl("rect", {
             x: dateX, y: H - 17, width: dateW, height: 15, rx: 3, fill: HOVER_BADGE_BG,
+            "data-label-bg": "",
         }));
         var dateText = svgEl("text", {
             x: dateX + dateW / 2, y: H - 9.5, "text-anchor": "middle",
@@ -266,6 +293,7 @@
         g.appendChild(dateText);
 
         chart.svg.appendChild(g);
+        window.CandleChart.fitLabels(chart.svg);
     }
 
     /**
@@ -287,7 +315,9 @@
         }
 
         var last = chart.candles[n - 1];
+        var room = roomFor(chart.svg, W, 6);
         chart.frame = window.CandleChart.draw(chart.svg, chart.candles, {
+            padRight: room.padRight,
             /* Wider bodies than the small charts this module was written for: the practice
                card is the widest chart on the site and shows the fewest candles. */
             body: { min: 4, ratio: 0.55, max: 44 },
@@ -312,10 +342,9 @@
                 : null,
             // Only the candles this draw is adding rise into place.
             enterFrom: n > chart.drawnCount ? chart.drawnCount : null,
-            /* The candles carry no timestamp — a date is the answer — but the window's start
-               and the step between candles are known, so the axis can still say the hour. */
-            timeAt: function (i) { return formatClock(chart.baseTime + i * CANDLE_STEP_SECONDS); },
-            timeLabels: 6,
+            // Hours back from the newest candle — see formatHoursBack.
+            timeAt: formatHoursBack,
+            timeLabels: room.timeLabels,
             timeAxisInset: 6,
             timeFontSize: "10.5",
         });
@@ -409,6 +438,53 @@
     // ---------- game state ----------
 
     var AUTO_NEXT_CHART_DELAY_MS = 4500;
+
+    /* ---- the start button ------------------------------------------------------------------
+
+       A chart's clock starts the moment the server deals it, and nothing can pause it. So a chart
+       must not be dealt until somebody asks for one. It used to be dealt on page load and after
+       every expired chain, which is how the demo's first six recorded calls were all timeouts —
+       from one player who had opened the page and not yet started to play.
+
+       The chart is dealt by: this button, "Biểu đồ mới", picking a pair, the tour's "Chơi thử
+       ngay", and auto-advance after a chart the player actually finished. Nothing else.
+
+       And a chain of timeouts stops. Each expired guess mints the next guess's token, so an
+       unattended chart used to run itself out to five recorded misses. Now a timeout while the
+       game is not on screen, or a second timeout in a row, ends the chart there: that call is still
+       recorded — the clock was running on something the player was dealt, which is what stops a
+       round being parked — but the rest of the chart is never asked. */
+    var IDLE_TIMEOUT_STREAK = 2;
+
+    function showStartGate(reason) {
+        clearTimeout(autoNextChartTimer);
+        autoNextChartTimer = null;
+        stopGuessTimer();
+        state.awaitingGuess = false;
+        state.roundToken = null;
+        el.guessLong.disabled = true;
+        el.guessShort.disabled = true;
+        // The gate's own button is the way on; a second "Biểu đồ mới" beside it says the same thing.
+        el.nextChart.classList.add("hidden");
+        el.guessProgress.classList.add("hidden");
+        el.marketCard.classList.add("is-gated");
+        if (reason === "idle") {
+            el.gameStartTitle.textContent = "Tạm dừng";
+            el.gameStartNote.textContent = "Bạn đã để hết giờ " + IDLE_TIMEOUT_STREAK
+                + " nến liền nên biểu đồ này dừng lại. Bấm để chơi biểu đồ mới khi sẵn sàng.";
+            el.gameStartButton.textContent = "Chơi tiếp";
+        } else if (reason === "away") {
+            el.gameStartTitle.textContent = "Tạm dừng";
+            el.gameStartNote.textContent = "Hết giờ trong lúc bạn rời màn hình chơi, nên biểu đồ này dừng lại.";
+            el.gameStartButton.textContent = "Chơi tiếp";
+        } else {
+            el.gameStartTitle.textContent = "Sẵn sàng đoán nến?";
+            el.gameStartNote.textContent = "Biểu đồ và đồng hồ " + (state.guessSeconds || 20)
+                + " giây mỗi nến chỉ bắt đầu khi bạn bấm.";
+            el.gameStartButton.textContent = "Bắt đầu";
+        }
+        setStatus("");
+    }
 
     var state = {
         asset: "BTCUSDT",
@@ -591,6 +667,8 @@
     async function loadRound() {
         clearTimeout(autoNextChartTimer);
         autoNextChartTimer = null;
+        el.marketCard.classList.remove("is-gated");
+        state.timeoutsInARow = 0;
         stopGuessTimer();
         state.awaitingGuess = false;
         state.roundToken = null;
@@ -621,7 +699,6 @@
             // Set from the data rather than a table: the old hard-coded flag said the same
             // thing about the same four pairs, and this keeps holding for pairs added later.
             metaFor(state.asset).compact = data.candles[data.candles.length - 1].close >= 10000;
-            chart.baseTime = Math.floor(Date.now() / 1000) - data.candles.length * CANDLE_STEP_SECONDS;
             el.marketCard.classList.remove("is-loading");
             setChartData(data.candles.slice());
 
@@ -733,13 +810,15 @@
         el.rcChart.innerHTML = "";
         el.rcChart.appendChild(svg);
 
+        var contextRoom = roomFor(svg, RC.w, 5);
         var frame = window.CandleChart.draw(svg, candles, {
+            padRight: contextRoom.padRight,
             body: { min: 2, ratio: 0.6, max: 18 },
             bodyRadius: 1.5,
             ticks: 4,
             axisFormat: formatAxisPrice,
             axisFontSize: "10",
-            timeLabels: 5,
+            timeLabels: contextRoom.timeLabels,
             timeAxisInset: 5,
             timeFontSize: "9.5",
             /* Two bands behind the candles: the stretch the player was shown, and inside it
@@ -1039,6 +1118,7 @@
                 window.CandleSound.vibrate([25, 40, 25]);
             }
             var missedIt = !direction;
+            state.timeoutsInARow = missedIt ? (state.timeoutsInARow || 0) + 1 : 0;
 
             if (result.sessionComplete) {
                 if (window.CandleAnalytics) window.CandleAnalytics.trackOnce("chart-complete");
@@ -1058,7 +1138,14 @@
                 showRoundIdentity(result.identity);
                 showRoundContext(result.context);
 
-                scheduleNextChart();
+                // A chart that ran out on its last guess was not finished by anyone watching.
+                if (missedIt) {
+                    setStatus("Hết giờ ở nến cuối — bấm “Biểu đồ mới” khi bạn sẵn sàng.");
+                } else {
+                    scheduleNextChart();
+                }
+            } else if (missedIt && (isAway() || state.timeoutsInARow >= IDLE_TIMEOUT_STREAK)) {
+                showStartGate(isAway() ? "away" : "idle");
             } else {
                 state.roundToken = result.nextRoundToken;
                 state.tokenReceivedAt = tokenArrivedAt;
@@ -1182,5 +1269,13 @@
     renderStats();
     /* The first chart waits for the first-visit tour: a round's clock starts when it is dealt,
        so dealing it under the tour would spend a newcomer's first guess while they read. */
-    loadAssetPicker().then(window.CandleOnboarding.gameReady).then(loadRound);
+    el.gameStartButton.addEventListener("click", function () {
+        window.CandleSound.unlock();
+        loadRound();
+    });
+
+    showStartGate();
+    loadAssetPicker().then(window.CandleOnboarding.gameReady).then(function (askedToPlay) {
+        if (askedToPlay) loadRound();
+    });
 })();

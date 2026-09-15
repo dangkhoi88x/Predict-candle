@@ -234,9 +234,10 @@ goes through the inner function and is not a sign-in.
 **A first visit gets a three-step tour, and the game's first chart waits for it.** Both the
 game and the daily deal a round the moment they are shown, and a round's clock starts from the
 server's token — so a tour laid *over* a running round spends the newcomer's first guess while
-they read how to make one. `app.js` therefore chains `CandleOnboarding.gameReady()` before its
-first `loadRound`, which resolves once the tour is closed **and** the game view is on screen:
-ending the tour on "Thử thách hôm nay" must not deal a practice round behind the daily tab.
+they read how to make one. `app.js` therefore waits on `CandleOnboarding.gameReady()`, which resolves once the tour is closed
+**and** the game view is on screen, to whether the player just asked to play: closing the tour
+towards the game deals a chart at once, anything else leaves the start button up. Ending the tour on
+"Thử thách hôm nay" must not deal a practice round behind the daily tab.
 `onboarding.js` loads after `nav.js` (it moves views through `CandleNav`) and before `app.js`.
 
 "First visit" means no `candles-onboarded` flag **and** none of the keys the page already wrote
@@ -266,6 +267,21 @@ questions at once and `app.js` is already asking it after every recorded guess, 
 `candles:stats` and the play tab's column listens; `play-sidebar.js` publishes `candles:rank`
 off the board it fetches and the rail draws the tag. Two callers reading one figure out of two
 responses can only end up disagreeing about it.
+
+**Nothing deals a chart unless the player asks for one** — the start button in the chart's place
+(`showStartGate` in `app.js`, `showGate` in `daily.js`), "Biểu đồ mới", picking a pair, the tour's
+"Chơi thử ngay", or auto-advance after a chart the player actually finished. A chart's clock starts
+when the server mints its token and cannot be paused, so dealing on page load or on opening the
+daily tab spent the player's time before they had started; the demo's first six recorded calls
+were all timeouts from one player who had not begun to play. The daily reads its round on reveal
+to know its state but draws nothing, and pressing start reads it again for a fresh token.
+
+**And a chain of timeouts stops.** Each expired guess mints the next guess's token, so an
+unattended chart used to run itself out to five recorded misses. A timeout while the view is not
+on screen, or a second in a row (`IDLE_TIMEOUT_STREAK`), records that call and shows the button
+again. The recorded timeout is what still stops a round being parked; what ends is the rest of the
+chart being asked of nobody. Practice abandons the chart; the daily resumes at the next guess when
+signed in (signed out nothing was recorded, so it starts the day again, as a reload always did).
 
 `nav.js` fires `candles:view` (`detail.view`) on every switch, mirroring `candles:pane` on the
 admin page. The game listens for it: **auto-advance stops dealing charts when nobody is
@@ -463,6 +479,10 @@ cached `candles.live.price-cache-ttl` (2s) so concurrent viewers share one upstr
 round has closed, the settled row is authoritative and cheaper, so the exchange is only asked
 while a round is still open.
 
+An empty pool is drawn as a neutral bar reading "Chưa ai dự đoán" (`drawPool`, shared with the
+history popup), not the 50/50 split an empty pool used to show — that read as two players having
+called it opposite ways. With calls, each side shows its count beside its share.
+
 `live_predictions` carries the same integrity story as `guess_results`: one row per (user,
 asset, timeframe, open_time), a unique constraint rather than a check the application could
 forget. Recording checks first and inserts second — an insert that fails its constraint leaves
@@ -477,6 +497,22 @@ detail popup: the candle it closed on, plus `candles.live.context-candles` eithe
 clicked on back to its `openTime`, pinned by a round-trip test over 50 rounds. Reading the
 in-progress round's own detail is refused (400): that round has no settled candle yet, and
 `GET /api/live/round` already covers it.
+
+**Chart labels are counter-scaled so they stay readable** (`CandleChart.fitLabels`, run at the
+end of every `draw`, `drawIndicator` and crosshair move, and on resize). With
+`preserveAspectRatio="none"` text stretched with the candles, and a 1000-unit practice chart in a
+360px phone squeezed every label to a third of its width. Each `text` is scaled around its anchor
+so it renders at its font size in CSS pixels, never smaller, with natural proportions; a tag's
+background (`rect` just before it, `data-label-bg` or `data-part="*-bg"`) gets the same transform,
+and anything pushed past the edge is nudged back in. Because labels no longer shrink with the chart,
+**a tag must be sized from its text, not from the padding** — a badge as wide as the price column
+gets scaled up with its text and spans the chart. `options.padRight` (viewBox units) lets a caller
+keep ~62px for the price column on a narrow box; `app.js`'s `roomFor` computes it.
+
+The practice chart's time axis reads **hours back from the newest candle** ("−19h … 0h"). It used
+to print clock times counted back from *now*, so a chart from last winter read as today's trading
+beside a live ticker tens of thousands of dollars away; the candles carry no timestamp on purpose,
+and an invented one is worse than none.
 
 Frontend draws that candle context with `candle-chart.js`
 (`window.CandleChart.draw(svg, candles, options)`), which every candlestick chart on the site
@@ -908,6 +944,53 @@ is the copy that does. Unearned badges are returned too, with progress — a bad
 themselves approaching is not a goal, and goals in reach are the thing that still works when a
 streak breaks. The profile sorts earned first, then unearned by how close they are.
 
+### Habits (player insights)
+
+The profile's "Thói quen khi đoán" section answers where a player's calls go wrong rather than how
+often they are right: `GET /api/stats/me/insights` (`InsightsService` → `PlayerInsights`, a pure
+fold like `PlayStreak`). Nothing is stored.
+
+It reads the **last 500** recorded calls, not the whole history — a habit is how somebody plays
+now, and the cost stays bounded at one query for the calls and one per pair for the candles. Each
+call is joined back to the candles it was made on: the last visible candle is
+`start_index + visible + guess_number - 2`, and `CandleRepository.candlesAtIndexes` numbers
+candles with `row_number() over (order by open_time) - 1`, the same position `findWindow`'s
+OFFSET means. `InsightsFlowTest.candlesAreAddressedByTheSameIndexThatDealtTheChart` pins that
+equivalence; if the two ever numbered differently every trend would be read off the wrong candles
+and nothing would look broken.
+
+What the chart had just done (`trendOf`) is the net move over the last 5 visible candles against
+their **average range**, not a percentage — a 1% hour is quiet for SOL and violent for BTC.
+
+Three thresholds keep it honest, all in `PlayerInsights`: no finding under 30 answered calls, no
+bucket compared under 10, no gap under 10 points reported. **The timeout finding is the one
+exception and counts every call** — found on a real account with 71 timeouts in 89 calls, whose 18
+answered calls were too few for anything else, so gating it on answered calls hid the one habit
+that was plainly true. Sessions are Vietnam hours, deliberately not UTC like every day boundary
+elsewhere: a habit belongs to somebody's evening.
+
+**Patterns are counted per call, on the last candle the player could see** — `RoundPatternScanner`
+pointed at that one candle, the same scan that labels a finished round. Overlapping patterns (a
+hammer that is also a doji) each get the call; that double counts on purpose, because the question
+per row is "how do you do when this is on the chart", and both were. Rows under the bucket floor
+are still listed, muted, since a player wants to see the pattern was there; only `WEAK_PATTERN`
+respects the floor. Each row's name opens its library card through `CandlePatterns.reveal`, and
+`profile.js` waits on `CandlePatterns.whenLoaded()` before drawing so names are never raw ids.
+
+**The lesson card after the daily picks one thing, in a fixed order** (`daily.js`): a pattern that
+completed on the last candle before a guess the player *missed*; else the top finding from the
+insights endpoint; else any pattern the chart held; else why signing in and playing on will make
+the card say something. The pattern part comes from the finishing guess's `context` — the only
+response that carries a round's pattern marks — so it is taken at that moment and held in
+`chartLesson`; a finished day read back later has no marks and falls to the finding. Guess *k*'s
+last visible candle in context coordinates is `guessFrom + k − 2`. Sentences for findings live in
+`insights.js` (`CandleInsights`), shared with the profile, so a habit is phrased the same wherever
+it is named; it loads before `daily.js` and `profile.js`.
+
+A finding carries only its kind, which bucket, and the gap; `profile.js` reads the figures out of
+the bucket and writes the sentence. So a finding and the table under it cannot disagree, and the
+response stays counts, never rates, like the retention pane.
+
 ### Progressive hints
 
 The chart gives ground as a player misses on it: 1 miss unlocks volume, 2 the 5-candle moving
@@ -1136,6 +1219,13 @@ no drawing code knows which theme is active (SVG presentation attributes take `v
   faster); switch it off explicitly in that block, as `.ticker-track` and `.skeleton::after` do.
 - `.rolling` (odometer digits), `.skeleton`, `.pill` are the shared primitives.
 - Numbers get `font-variant-numeric: tabular-nums`.
+- **Text tokens clear WCAG AA (4.5:1) on every surface they sit on**, including `--muted-2`, which
+  sets 10-11px eyebrows and table heads (dark `#838389`, light `#666d79`; the old values were
+  2.6-3.2:1) and the light theme's `--warn`, which the live banner writes its countdown in. Check
+  a new token value against `--bg`, `--panel` and `--panel-2` before shipping it.
+- **A label on an accent-filled button is `var(--bg)`, never white** (`.side-cta`, the start and
+  tour buttons): white on the dark theme's `#4f8cff` is 3.2:1, the ground colour on it is 6.2:1.
+  Hover mixes the accent towards `--text`, which moves away from the label in both themes.
 - Selection and hover are **tints, not new colours**: `--tint-accent` / `--tint-accent-strong`
   are `color-mix(in oklab, var(--accent) 12%/18%, transparent)`, so one rule works in both
   themes and over whatever ground it lands on. `--overlay-soft` is the neutral equivalent.
@@ -1167,6 +1257,18 @@ scan real stored history for a genuine occurrence.
 
 Heatmap has two sources behind one view: crypto (CoinGecko, called straight from the browser)
 and S&P 500 (`/api/market/sp500` → `YahooFinanceClient`). `treemap.js` does the layout for both.
+
+**The ticker and the crypto heatmap drop stablecoins and derivative copies** through
+`CandleCoins.tradable` (`coins.js`, loaded before both). CoinGecko's market-cap order is a third
+dollar-pegged products on any given day, each at $1.00 and 0.00%, so both ask for more rows than
+they show (40 → 14, 50 → 24). Three tests: a known stablecoin symbol, a name saying wrapped /
+staked / bridged / tokenised, or a price pinned within 1.5% of a dollar that moved under 0.5% —
+the last catches pegged products whose names say nothing.
+
+**Nothing above the views appears late.** The ticker and the live banner ship visible and hide
+only on failure; appearing after their fetches pushed the whole shell down on every load (CLS
+0.10 on a phone, where the banner has a row of its own). For the same reason the banner no longer
+vanishes during the eight locked minutes of each hour — it says when the next round opens.
 
 ## Notes
 

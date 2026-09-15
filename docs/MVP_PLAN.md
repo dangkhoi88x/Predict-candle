@@ -1,7 +1,8 @@
 # Candles — review tổng thể và kế hoạch MVP
 
-> **Tiến độ (cập nhật 2026-09-14): MVP 0 đã xong và đang chạy trên bản live** (PR #60–#63),
-> kèm backup database (§6). Đang ở bước mời người chơi thật; MVP 1 chờ đủ điều kiện ở cuối §5 MVP 0.
+> **Tiến độ (cập nhật 2026-09-14):** MVP 0 đã xong và đang chạy trên bản live (PR #60–#63), kèm
+> backup database (§6). **MVP 1** (M1.1–M1.3) đã làm ở PR #65–#67, bắt đầu trước khi đủ điều kiện
+> theo quyết định của chủ project.
 >
 > Viết 2026-09-14, ngay sau khi bản demo lên <https://candles-oj1q.onrender.com>. Thay mục 7
 > ("Thứ tự đề xuất") của `SPEC.md`: phần lớn backlog ở đó đã làm xong, và câu hỏi bây giờ không
@@ -195,10 +196,25 @@ bài Facebook) và một tuần số liệu.
 
 | # | Việc | Effort | Ghi chú |
 |---|---|---|---|
-| M1.1 | **Phân tích thiên kiến (R7).** Trên hồ sơ: "Bạn chọn LONG 68% số lượt, thị trường chỉ tăng 51%", độ chính xác theo cặp, theo giờ, theo tăng/giảm, theo tình huống chart vừa tăng mạnh hay vừa giảm mạnh | M | Suy từ `guess_results` như `PlayStreak`, không lưu thêm. Cần mẫu số tối thiểu (khoảng 30 lượt) trước khi kết luận |
-| M1.2 | **Thống kê theo mẫu nến.** "Khi có Hammer trên chart, bạn đoán đúng 41%", mỗi mẫu có link sang thẻ trong thư viện | M | `RoundPatternScanner` đã quét mẫu cho chart bối cảnh; cần quét cửa sổ từng lượt đoán. ChartGuessr có tính năng này |
-| M1.3 | **Thẻ "Bài học hôm nay" sau daily:** mẫu hoặc thiên kiến lớn nhất vừa lộ ra, một câu và một link | S | Nối daily vào thư viện, khép vòng chơi → sai → học |
-| M1.4 | **Mức tự tin (G4)** 1×/2×/3× | M | *Tuỳ chọn.* Đo được hiệu chỉnh, nhưng thêm một quyết định cho mỗi lượt đoán. Chỉ làm nếu số liệu MVP 0 cho thấy người chơi chơi nhiều lượt mỗi phiên |
+| M1.1 ✅ | **Phân tích thiên kiến (R7).** Trên hồ sơ: "Bạn chọn LONG 68% số lượt, thị trường chỉ tăng 51%", độ chính xác theo cặp, theo giờ, theo tăng/giảm, theo tình huống chart vừa tăng mạnh hay vừa giảm mạnh | M | Suy từ `guess_results` như `PlayStreak`, không lưu thêm. Cần mẫu số tối thiểu (khoảng 30 lượt) trước khi kết luận |
+| M1.2 ✅ | **Thống kê theo mẫu nến.** "Khi có Hammer trên chart, bạn đoán đúng 41%", mỗi mẫu có link sang thẻ trong thư viện | M | `RoundPatternScanner` đã quét mẫu cho chart bối cảnh; cần quét cửa sổ từng lượt đoán. ChartGuessr có tính năng này |
+| M1.3 ✅ | **Thẻ "Bài học hôm nay" sau daily:** mẫu hoặc thiên kiến lớn nhất vừa lộ ra, một câu và một link | S | Nối daily vào thư viện, khép vòng chơi → sai → học |
+| M1.4 — | **Mức tự tin (G4)** 1×/2×/3× | M | *Tuỳ chọn.* Đo được hiệu chỉnh, nhưng thêm một quyết định cho mỗi lượt đoán. Chỉ làm nếu số liệu MVP 0 cho thấy người chơi chơi nhiều lượt mỗi phiên |
+
+**Đã làm thế nào** (bắt đầu 2026-09-14, trước khi đủ điều kiện ở cuối MVP 0, theo quyết định
+của chủ project vì mục tiêu là học và làm portfolio):
+
+- **M1.1** — mục "Thói quen khi đoán" trên Hồ sơ, từ `GET /api/stats/me/insights`. Đọc 500 lượt
+  gần nhất, nối từng lượt với đúng các nến người chơi đã thấy. Nhận xét: nghiêng LONG/SHORT, đoán
+  kém sau nhịp tăng / nhịp giảm / khi đi ngang (nhịp được đo bằng biên độ nến, không bằng %), kém
+  theo buổi (giờ Việt Nam), hay để hết giờ. Không kết luận dưới 30 lượt bấm, trừ nhận xét hết giờ.
+- **M1.2** — bảng theo mẫu nến ngay trước lượt đoán, mỗi tên mẫu mở thẻ trong thư viện; nhận xét
+  `WEAK_PATTERN` khi một mẫu kém hơn mức chung từ 10 điểm trên ít nhất 10 lượt.
+- **M1.3** — thẻ "Bài học hôm nay" sau daily, ưu tiên: mẫu nến ngay trước một nến đoán sai →
+  thói quen lớn nhất → mẫu nến có trên chart → lời mời đăng nhập hoặc chơi thêm. Chạy cả khi chưa
+  đăng nhập; bấm nút trên thẻ được đếm là `daily-lesson-click`.
+- **M1.4** — chưa làm, đúng như plan ghi là tuỳ chọn: thêm một quyết định cho mỗi lượt đoán, và
+  chưa có số liệu cho thấy người chơi chơi nhiều lượt mỗi phiên.
 
 **Chỉ số của MVP 1:** tỉ lệ người quay lại trong tuần ở nhóm đã xem trang thiên kiến so với nhóm
 chưa xem.

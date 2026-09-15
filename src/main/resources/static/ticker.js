@@ -9,7 +9,9 @@
     "use strict";
 
     var API_URL = "https://api.coingecko.com/api/v3/coins/markets" +
-        "?vs_currency=usd&order=market_cap_desc&per_page=14&page=1&price_change_percentage=24h&sparkline=false";
+        "?vs_currency=usd&order=market_cap_desc&per_page=40&page=1&price_change_percentage=24h&sparkline=false";
+    // Forty asked for, fourteen shown: stablecoins and wrapped copies are filtered out (coins.js).
+    var SHOWN = 14;
     var REFRESH_MS = 60000;
     var SCROLL_SPEED_PX_PER_SEC = 45;
 
@@ -117,6 +119,7 @@
             if (!res.ok) throw new Error("HTTP " + res.status);
             var coins = await res.json();
             if (!Array.isArray(coins) || !coins.length) throw new Error("empty payload");
+            coins = window.CandleCoins.tradable(coins, SHOWN);
 
             if (isFirstLoad) render(coins);
             else refresh(coins);

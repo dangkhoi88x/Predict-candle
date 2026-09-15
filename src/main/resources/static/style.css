@@ -145,7 +145,10 @@
        the thing being scanned, but only one of them is where you are. */
     --text-2: #c9c9cd;
     --muted: #7d7d82;
-    --muted-2: #58585d;
+    /* The dimmest text on the page, and it sets eyebrows and table heads at 10-11px, so it has
+       to clear WCAG AA's 4.5:1 on every surface it sits on — it was #58585d, 2.6:1 on a panel.
+       Still dimmer than --muted on the page ground, which is the hierarchy it exists for. */
+    --muted-2: #838389;
     --up: #34d399;
     --down: #fb7185;
     --accent: #4f8cff;
@@ -188,13 +191,16 @@
     --text: #14161a;
     --text-2: #3d434e;
     --muted: #5f6672;
-    --muted-2: #8a909c;
+    /* 4.6-5.2:1 on bg, panel and panel-2; #8a909c was 3.0:1. */
+    --muted-2: #666d79;
     /* Darker than the dark-theme greens/reds: the originals are tuned for glowing on black
        and drop below readable contrast once they sit on white. */
     --up: #0f9d70;
     --down: #d92643;
     --accent: #2563eb;
-    --warn: #a8730a;
+    /* Darkened for text: the live banner writes its countdown in this on a warn tint, where
+       #a8730a read at 3.6:1. */
+    --warn: #8f6200;
     --overlay-soft: rgba(0, 0, 0, 0.04);
     --overlay-strong: rgba(0, 0, 0, 0.08);
     --shadow: rgba(0, 0, 0, 0.14);
@@ -836,6 +842,95 @@ h1, h2, h3 {
     display: none;
 }
 
+/* The start gate stands in for the chart — same box, so dealing one moves nothing. */
+.game-start {
+    display: none;
+}
+
+.market-card.is-gated .chart,
+.market-card.is-gated .chart-skeleton,
+.market-card.is-gated .market-price-row,
+.market-card.is-gated .market-ohlc {
+    display: none;
+}
+
+.market-card.is-gated .game-start {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    height: 300px;
+    margin-top: 10px;
+    padding: 0 16px;
+    text-align: center;
+    border-radius: 10px;
+    background: var(--overlay-soft);
+}
+
+/* The daily's gate sits in its chart's own wrapper, which keeps the chart's height, so the board
+   does not jump when the chart appears. */
+.daily-chart-wrap {
+    position: relative;
+}
+
+.daily-board.is-gated .daily-chart {
+    visibility: hidden;
+}
+
+.daily-start:not(.hidden) {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 0 16px;
+    text-align: center;
+    border-radius: 10px;
+    background: var(--overlay-soft);
+}
+
+.game-start-art {
+    width: 120px;
+    height: 48px;
+    margin-bottom: 6px;
+}
+
+.game-start-title {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text);
+}
+
+.game-start-note {
+    margin: 0 0 6px;
+    max-width: 380px;
+    font-size: 13.5px;
+    line-height: 1.5;
+    color: var(--text-2);
+}
+
+.game-start-button {
+    border: none;
+    border-radius: 10px;
+    padding: 11px 28px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    /* --bg, not white, the same as .side-cta: white on the dark theme's blue is 3.2:1, the
+       page ground on it is 6.2:1, and on the light theme the ground is near-white anyway. */
+    color: var(--bg);
+    background: var(--accent);
+}
+
+.game-start-button:hover {
+    /* Towards --text, so it moves away from the label in both themes rather than towards it. */
+    background: color-mix(in oklab, var(--accent) 88%, var(--text));
+}
+
 /* Sized to the real readouts: 26px mono price, 12px delta pill. */
 .market-price-skeleton {
     display: inline-block;
@@ -911,6 +1006,188 @@ h1, h2, h3 {
 /* min(320px, 100%) rather than a bare 320px: a bare minimum is a floor the track holds even
    when the container is narrower than it, so on a 300px phone the columns came out 320 wide
    and the shell — which clips, that being what rounds its corners — simply cut them off. */
+/* ---- habits (profile.js renderInsights) ------------------------------------------------ */
+.pf-insights {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 16px 16px;
+    margin: 4px 0 18px;
+}
+
+.pf-insights-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.pf-insights-head .profile-section {
+    margin-top: 0;
+}
+
+.pf-insights-scope {
+    font: 500 11.5px var(--mono);
+    color: var(--muted);
+}
+
+.pf-insights-progress {
+    display: block;
+    margin-top: 8px;
+}
+
+.pf-findings {
+    margin: 4px 0 14px;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 8px;
+}
+
+/* A finding is the thing to act on, so it reads as a callout: the accent rule down its edge is
+   the same tint language selection uses, not a warning colour — a habit is not an error. */
+.pf-finding {
+    font-size: 14px;
+    line-height: 1.55;
+    color: var(--text);
+    padding: 9px 12px;
+    border-left: 3px solid var(--accent);
+    border-radius: 0 8px 8px 0;
+    background: var(--tint-accent);
+}
+
+.pf-findings-none {
+    font-size: 14px;
+    color: var(--text-2);
+    margin: 4px 0 14px;
+}
+
+.pf-splits {
+    display: grid;
+    gap: 8px;
+    margin-bottom: 14px;
+}
+
+.pf-split {
+    display: grid;
+    grid-template-columns: 72px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+    font-size: 12.5px;
+}
+
+.pf-split-label {
+    color: var(--muted);
+}
+
+.pf-split-track {
+    height: 8px;
+    border-radius: 999px;
+    background: color-mix(in oklab, var(--down) 70%, var(--panel));
+    overflow: hidden;
+}
+
+.pf-split-fill {
+    display: block;
+    height: 100%;
+    background: color-mix(in oklab, var(--up) 80%, var(--panel));
+    transition: width var(--duration-normal) var(--ease-out);
+}
+
+.pf-insights-progress {
+    background: var(--overlay-strong);
+}
+
+.pf-insights-progress .pf-split-fill {
+    background: var(--accent);
+}
+
+.pf-split-value {
+    font: 500 12px var(--mono);
+    font-variant-numeric: tabular-nums;
+    color: var(--text-2);
+    white-space: nowrap;
+}
+
+.pf-bucket-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
+    gap: 14px 24px;
+}
+
+.pf-bucket-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 6px;
+    font-size: 13px;
+}
+
+.pf-bucket-table th {
+    font: 600 10.5px var(--mono);
+    color: var(--muted-2);
+    text-align: left;
+    padding: 4px 0;
+}
+
+.pf-bucket-table td {
+    padding: 5px 0;
+    border-top: 1px solid var(--border);
+}
+
+.pf-bucket-table .num {
+    text-align: right;
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+}
+
+.pf-bucket-table td.is-weak {
+    color: var(--down);
+    font-weight: 700;
+}
+
+.pf-bucket-table tr.is-thin td {
+    color: var(--muted);
+}
+
+.pf-pattern-link {
+    border: none;
+    background: none;
+    padding: 0;
+    font: inherit;
+    color: var(--text);
+    cursor: pointer;
+    text-align: left;
+    text-decoration: underline;
+    text-decoration-color: var(--border);
+    text-underline-offset: 3px;
+}
+
+.pf-pattern-link:hover {
+    color: var(--accent);
+    text-decoration-color: currentColor;
+}
+
+.is-thin .pf-pattern-link {
+    color: var(--muted);
+}
+
+.pf-thin-note {
+    margin: 6px 0 0;
+    font-size: 11.5px;
+    color: var(--muted);
+}
+
+@media (max-width: 520px) {
+    .pf-split {
+        grid-template-columns: 60px minmax(0, 1fr);
+    }
+
+    .pf-split-value {
+        grid-column: 1 / -1;
+    }
+}
+
 .profile-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
@@ -4280,6 +4557,33 @@ body:not(.is-admin) .adm-search {
 
 /* --- leaderboard --- */
 
+.lb-empty {
+    display: grid;
+    justify-items: center;
+    gap: 8px;
+    padding: 36px 16px;
+    text-align: center;
+}
+
+.lb-empty-title {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--text);
+}
+
+.lb-empty-text {
+    margin: 0 0 6px;
+    max-width: 420px;
+    font-size: 13.5px;
+    line-height: 1.6;
+    color: var(--text-2);
+}
+
+.lb-empty-cta {
+    padding: 10px 26px;
+}
+
 /* One face per player, hashed from their name by avatar.js. Shared between this board and
    the play tab's five-row card, because a player who is a fox on one and an owl on the other
    reads as two different players. */
@@ -5306,6 +5610,16 @@ body:not(.is-admin) .adm-search {
     transition: width var(--duration-normal) var(--ease-out);
 }
 
+/* Nobody has called the round: no split to show. A neutral bar rather than the 50/50 an empty
+   pool used to draw, which read as two players having called it opposite ways. */
+.live-pool-track.is-empty {
+    background: var(--overlay-strong);
+}
+
+.live-pool-track.is-empty .live-pool-long {
+    width: 0 !important;
+}
+
 .live-pool-labels {
     display: flex;
     justify-content: space-between;
@@ -5514,12 +5828,14 @@ body.onboarding-open {
     font-size: 13px;
     font-weight: 700;
     cursor: pointer;
-    color: #fff;
+    /* --bg, not white, the same as .side-cta: white on the dark theme's blue is 3.2:1, the
+       page ground on it is 6.2:1, and on the light theme the ground is near-white anyway. */
+    color: var(--bg);
     background: var(--accent);
 }
 
 .onboarding-primary:hover {
-    background: color-mix(in oklab, var(--accent) 88%, white);
+    background: color-mix(in oklab, var(--accent) 88%, var(--text));
 }
 
 .onboarding-actions button {
@@ -5906,6 +6222,29 @@ body.onboarding-open {
     margin: 0 0 6px;
     font-size: 16px;
     font-weight: 700;
+}
+
+/* The lesson reads as the round's takeaway, between the score and the share button: the same
+   accent callout the profile's findings use, so a habit looks the same wherever it is named. */
+.daily-lesson {
+    display: grid;
+    gap: 6px;
+    margin: 4px 0 14px;
+    padding: 10px 12px;
+    border-left: 3px solid var(--accent);
+    border-radius: 0 8px 8px 0;
+    background: var(--tint-accent);
+}
+
+.daily-lesson-text {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.55;
+    color: var(--text);
+}
+
+.daily-lesson-action {
+    justify-self: start;
 }
 
 .daily-next {

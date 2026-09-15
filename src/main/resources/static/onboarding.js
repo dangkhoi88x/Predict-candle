@@ -31,6 +31,10 @@
     var index = 0;
     var returnFocus = null;
     var finishHooks = [];
+    /* Where the tour sent the player the last time it closed — "game" when they pressed
+       "Chơi thử ngay" or skipped it. The game deals its first chart straight away only then:
+       that press *is* the player asking to start. */
+    var closedTo = null;
 
     function read(key) {
         try {
@@ -82,6 +86,7 @@
         modal.classList.add("hidden");
         document.body.classList.remove("onboarding-open");
         markSeen();
+        closedTo = destination;
         if (destination === "daily" && window.CandleNav) window.CandleNav.go("daily");
         var hooks = finishHooks;
         finishHooks = [];
@@ -137,16 +142,21 @@
 
     /* The game's first chart waits for two things: the tour to be done with, and the game view
        to actually be on screen. The second matters when the tour ends on "Thử thách hôm nay" —
-       dealing a practice round behind the daily tab would start a clock nobody is watching. */
+       dealing a practice round behind the daily tab would start a clock nobody is watching.
+
+       Resolves to whether the player has just asked to play (closed this tour towards the game),
+       in which case the game deals at once; otherwise it shows its start button and waits. */
     function gameReady() {
+        var tourOpen = !modal.classList.contains("hidden");
         return whenFinished().then(function () {
             var game = document.getElementById("view-game");
-            if (!game.classList.contains("hidden")) return;
+            var askedToPlay = tourOpen && closedTo === "game";
+            if (!game.classList.contains("hidden")) return askedToPlay;
             return new Promise(function (resolve) {
                 document.addEventListener("candles:view", function onView(event) {
                     if (event.detail.view !== "game") return;
                     document.removeEventListener("candles:view", onView);
-                    resolve();
+                    resolve(false);
                 });
             });
         });

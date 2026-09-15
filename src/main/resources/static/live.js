@@ -216,12 +216,25 @@
         });
     }
 
-    function renderPool(longCount, shortCount) {
+    /* Shared by the live panel and the history popup. An empty pool says so in words and draws a
+       neutral bar: "LONG 50% · 50% SHORT" over nobody reads as a split that happened. */
+    function drawPool(fill, longLabel, shortLabel, longCount, shortCount) {
         var total = longCount + shortCount;
-        var pct = total === 0 ? 50 : Math.round((longCount / total) * 100);
-        el.poolLong.style.width = pct + "%";
-        el.poolLongLabel.textContent = "LONG " + pct + "%";
-        el.poolShortLabel.textContent = (100 - pct) + "% SHORT";
+        fill.parentElement.classList.toggle("is-empty", total === 0);
+        if (total === 0) {
+            fill.style.width = "0%";
+            longLabel.textContent = "Chưa ai dự đoán";
+            shortLabel.textContent = "";
+            return;
+        }
+        var pct = Math.round((longCount / total) * 100);
+        fill.style.width = pct + "%";
+        longLabel.textContent = "LONG " + pct + "% · " + longCount;
+        shortLabel.textContent = shortCount + " · " + (100 - pct) + "% SHORT";
+    }
+
+    function renderPool(longCount, shortCount) {
+        drawPool(el.poolLong, el.poolLongLabel, el.poolShortLabel, longCount, shortCount);
     }
 
     /* Whether the status line currently holds a message renderButtons itself put there, as
@@ -400,7 +413,8 @@
         el.modalClosePrice.textContent = "–";
         el.modalPoolLongLabel.textContent = "";
         el.modalPoolShortLabel.textContent = "";
-        el.modalPoolLong.style.width = "50%";
+        el.modalPoolLong.style.width = "0%";
+        el.modalPoolLong.parentElement.classList.add("is-empty");
         renderParticipants([], el.modalParticipantsList, el.modalParticipantsEmpty, el.modalParticipantsTitle);
         el.modalStatus.textContent = "Đang tải…";
         while (el.modalChart.firstChild) el.modalChart.removeChild(el.modalChart.firstChild);
@@ -424,11 +438,8 @@
         el.modalOpen.textContent = window.CandleFormat.usd(detail.openPrice);
         el.modalClosePrice.textContent = window.CandleFormat.usd(detail.closePrice);
 
-        var total = detail.longCount + detail.shortCount;
-        var pct = total === 0 ? 50 : Math.round((detail.longCount / total) * 100);
-        el.modalPoolLong.style.width = pct + "%";
-        el.modalPoolLongLabel.textContent = "LONG " + pct + "%";
-        el.modalPoolShortLabel.textContent = (100 - pct) + "% SHORT";
+        drawPool(el.modalPoolLong, el.modalPoolLongLabel, el.modalPoolShortLabel,
+            detail.longCount, detail.shortCount);
         renderParticipants(detail.participants || [],
             el.modalParticipantsList, el.modalParticipantsEmpty, el.modalParticipantsTitle);
 

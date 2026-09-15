@@ -183,7 +183,9 @@
 </svg>
 
 <div class="shell-page">
-<div class="ticker hidden" id="ticker" aria-label="Giá các đồng coin vốn hóa lớn">
+<!-- Ships visible: its 34px is reserved from the first paint rather than inserted when CoinGecko
+     answers, which pushed the whole page down on every load. Hidden only if that fetch fails. -->
+<div class="ticker" id="ticker" aria-label="Giá các đồng coin vốn hóa lớn">
     <div class="ticker-track" id="ticker-track"></div>
 </div>
 
@@ -203,7 +205,9 @@
     </span>
     <!-- Hidden until live.js knows there is a round to point at: a banner counting down to
          nothing is worse than no banner. -->
-    <button id="live-banner" class="live-banner hidden" type="button" data-nav-view="live">
+    <!-- Ships visible, with a loading line, so its row exists before the fetch lands; it hides only
+         if the live round cannot be read at all. See live-banner.js. -->
+    <button id="live-banner" class="live-banner" type="button" data-nav-view="live">
         <span class="live-banner-dot" aria-hidden="true"></span>
         <span class="live-banner-text" id="live-banner-text"></span>
         <span class="live-banner-cta">Vào đặt →</span>
@@ -378,6 +382,24 @@
         </div>
 
         <div class="chart" id="chart"></div>
+        <!-- Shown instead of the chart until the player asks for one: a chart's clock starts when
+             it is dealt, so nothing is dealt unasked. Same height as the chart, so pressing it
+             moves nothing. See showStartGate in app.js. -->
+        <div class="game-start" id="game-start">
+            <svg class="game-start-art" viewBox="0 0 120 48" aria-hidden="true" focusable="false">
+                <g stroke-linecap="round" stroke-width="2">
+                    <path d="M12 12v26" stroke="var(--down)"/><rect x="7" y="17" width="10" height="14" rx="2" fill="var(--down)"/>
+                    <path d="M34 8v28" stroke="var(--up)"/><rect x="29" y="12" width="10" height="17" rx="2" fill="var(--up)"/>
+                    <path d="M56 4v26" stroke="var(--up)"/><rect x="51" y="8" width="10" height="15" rx="2" fill="var(--up)"/>
+                    <path d="M78 10v22" stroke="var(--down)"/><rect x="73" y="14" width="10" height="11" rx="2" fill="var(--down)"/>
+                    <rect x="95" y="4" width="14" height="36" rx="3" fill="none" stroke="var(--accent)" stroke-dasharray="4 3"/>
+                    <text x="102" y="27" text-anchor="middle" font-size="15" font-weight="700" fill="var(--accent)">?</text>
+                </g>
+            </svg>
+            <p class="game-start-title" id="game-start-title">Sẵn sàng đoán nến?</p>
+            <p class="game-start-note" id="game-start-note"></p>
+            <button class="game-start-button" type="button" id="game-start-button">Bắt đầu</button>
+        </div>
         <div class="chart-skeleton" aria-hidden="true">
             <span class="skeleton"></span>
             <span class="skeleton"></span>
@@ -523,6 +545,13 @@
         <div class="daily-chart-wrap">
             <svg id="daily-chart" class="daily-chart" viewBox="0 0 720 300" preserveAspectRatio="none"
                  role="img" aria-label="Biểu đồ nến của thử thách hôm nay"></svg>
+            <!-- In the chart's place until the player starts: the day's only attempt must not
+                 begin because somebody opened the tab. See showGate in daily.js. -->
+            <div class="daily-start hidden" id="daily-start">
+                <p class="game-start-title" id="daily-start-title">Sẵn sàng?</p>
+                <p class="game-start-note" id="daily-start-note"></p>
+                <button class="game-start-button" type="button" id="daily-start-button">Bắt đầu thử thách</button>
+            </div>
         </div>
 
         <p class="daily-status" id="daily-status">Đang tải…</p>
@@ -551,6 +580,14 @@
         <div class="daily-done hidden" id="daily-done">
             <p class="daily-done-line" id="daily-done-line"></p>
             <p class="daily-next" id="daily-next"></p>
+            <!-- The lesson: one thing to take away from the round just played, chosen in daily.js —
+                 a pattern that was on the chart right before a miss, else the player's biggest
+                 habit, else a pattern the chart held. -->
+            <div class="daily-lesson hidden" id="daily-lesson">
+                <span class="side-eyebrow is-accent">Bài học hôm nay</span>
+                <p class="daily-lesson-text" id="daily-lesson-text"></p>
+                <button class="ghost-btn daily-lesson-action hidden" type="button" id="daily-lesson-action"></button>
+            </div>
             <button class="ghost-btn" type="button" id="daily-share">Sao chép kết quả</button>
         <!-- Shown only when the clipboard refuses. A share button that can fail silently is a
              share button that does not work, so the text has to become reachable by hand. -->
@@ -1055,6 +1092,17 @@
     <p id="profile-streak-note" class="profile-note hidden"></p>
     <p id="profile-legacy-note" class="profile-note hidden"></p>
 
+    <!-- Habits, not totals: where this player's calls go wrong. Figures from
+         /api/stats/me/insights, sentences written in profile.js. Above the columns because it is
+         the one part of the page that says what to do differently. -->
+    <section class="pf-insights" id="profile-insights" aria-labelledby="profile-insights-title">
+        <div class="pf-insights-head">
+            <h3 class="profile-section" id="profile-insights-title">Thói quen khi đoán</h3>
+            <span class="pf-insights-scope" id="profile-insights-scope"></span>
+        </div>
+        <div id="profile-insights-body"></div>
+    </section>
+
     <!-- Two columns: the record on the left, what it earned on the right. One column meant
          the badges sat below a list of every recent guess, which is the wrong way round —
          the trophies are the part worth looking at twice. -->
@@ -1191,10 +1239,14 @@
 <script src="content.js"></script>
 <script src="auth.js"></script>
 <script src="candle-chart.js"></script>
+<!-- Before daily.js and profile.js, which both write findings as sentences through it. -->
+<script src="insights.js"></script>
 <script src="daily.js"></script>
 <script src="pattern-quiz.js"></script>
 <script src="demo-trade.js"></script>
 <script src="live.js"></script>
+<!-- Before ticker.js and heatmap.js, which both filter CoinGecko's list through it. -->
+<script src="coins.js"></script>
 <script src="ticker.js"></script>
 <script src="nav.js"></script>
 <!-- After nav.js (it moves to the daily tab through CandleNav), before app.js (whose first chart waits on it). -->

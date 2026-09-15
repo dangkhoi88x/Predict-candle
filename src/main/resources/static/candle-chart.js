@@ -76,6 +76,78 @@ window.CandleChart = (function () {
      * takes its strip out of the plot, and a second copy of that arithmetic somewhere else would
      * be wrong the first time this one changes.
      */
+    /* ---- readable labels on a stretched chart ----------------------------------------------
+
+       Every chart here is drawn with preserveAspectRatio="none": the candles fill whatever box
+       the page gives them, and x and y stretch by different factors. That is right for candles
+       and wrong for text, which stretched with them. On a phone the practice chart's 1000-unit
+       width lands in about 360px while its height barely changes, so every label was squeezed
+       to a third of its width and a price axis read as a grey smear.
+
+       So after anything is drawn, each label is counter-scaled around its own anchor: it renders
+       at its font size in CSS pixels, never smaller, with its natural proportions — and grows with
+       the chart only when the chart is bigger in both directions. A label's background tag (a
+       rect right before it, marked data-label-bg or a data-part ending in "-bg") gets the same
+       transform, and anything pushed past the chart's edge by being wider is nudged back inside.
+       A ResizeObserver re-fits on resize, since the factors are the box's, not the drawing's. */
+    var fittedSvgs = typeof WeakSet === "function" ? new WeakSet() : null;
+    var resizeObserver = typeof ResizeObserver === "function"
+        ? new ResizeObserver(function (entries) {
+            entries.forEach(function (entry) { fitLabels(entry.target); });
+        })
+        : null;
+
+    function isLabelBackground(node) {
+        return !!node && node.tagName === "rect"
+            && (node.hasAttribute("data-label-bg") || /-bg$/.test(node.getAttribute("data-part") || ""));
+    }
+
+    function fitLabels(svg) {
+        if (!svg || svg.getAttribute("preserveAspectRatio") !== "none") return;
+        if (resizeObserver && fittedSvgs && !fittedSvgs.has(svg)) {
+            fittedSvgs.add(svg);
+            resizeObserver.observe(svg);
+        }
+        var view = svg.viewBox && svg.viewBox.baseVal;
+        if (!view || !view.width || !view.height) return;
+        var box = svg.getBoundingClientRect();
+        if (!box.width || !box.height) return; // hidden — the observer fits it once it has a size
+
+        var sx = box.width / view.width;
+        var sy = box.height / view.height;
+        var k = Math.max(1, Math.min(sx, sy));
+        var fx = k / sx, fy = k / sy;
+        var unchanged = Math.abs(fx - 1) < 0.03 && Math.abs(fy - 1) < 0.03;
+
+        Array.prototype.forEach.call(svg.querySelectorAll("text"), function (text) {
+            var bg = isLabelBackground(text.previousElementSibling) ? text.previousElementSibling : null;
+            text.removeAttribute("transform");
+            if (bg) bg.removeAttribute("transform");
+            if (unchanged || text.getAttribute("visibility") === "hidden" || !text.textContent) return;
+
+            var ax = parseFloat(text.getAttribute("x")) || 0;
+            var ay = parseFloat(text.getAttribute("y")) || 0;
+            var b;
+            try {
+                b = (bg || text).getBBox();
+            } catch (e) {
+                return; // not rendered yet
+            }
+            var left = ax + (b.x - ax) * fx, right = ax + (b.x + b.width - ax) * fx;
+            var top = ay + (b.y - ay) * fy, bottom = ay + (b.y + b.height - ay) * fy;
+            var dx = 0, dy = 0;
+            if (right > view.width - 1) dx = view.width - 1 - right;
+            if (left + dx < 1) dx = 1 - left;
+            if (bottom > view.height - 1) dy = view.height - 1 - bottom;
+            if (top + dy < 1) dy = 1 - top;
+
+            var transform = "translate(" + (ax + dx) + " " + (ay + dy) + ") scale(" + fx + " " + fy + ") "
+                + "translate(" + (-ax) + " " + (-ay) + ")";
+            text.setAttribute("transform", transform);
+            if (bg) bg.setAttribute("transform", transform);
+        });
+    }
+
     function draw(svg, candles, options) {
         options = options || {};
         while (svg.firstChild) svg.removeChild(svg.firstChild);
@@ -85,7 +157,10 @@ window.CandleChart = (function () {
         var view = svg.viewBox.baseVal;
         var w = view && view.width ? view.width : 300;
         var h = view && view.height ? view.height : 150;
-        var pad = { top: 10, right: 52, bottom: 18, left: 4 };
+        /* options.padRight is in viewBox units. A caller whose viewBox is much wider than its box
+           on a phone passes more, so the price labels — which fitLabels keeps at a readable size —
+           have room beside the candles instead of being nudged over them. */
+        var pad = { top: 10, right: options.padRight || 52, bottom: 18, left: 4 };
         var plotX0 = pad.left, plotX1 = w - pad.right;
         var plotY0 = pad.top, plotY1 = h - pad.bottom;
         /* Volume takes its strip out of the price plot rather than growing the chart: the
@@ -185,6 +260,7 @@ window.CandleChart = (function () {
             var tagX = Math.min(plotX1 + 2, w - tagW - 2);
             svg.appendChild(svgEl("rect", {
                 x: tagX, y: ry - tagH / 2, width: tagW, height: tagH, rx: 2.5, fill: refColor,
+                "data-label-bg": "",
             }));
             var tag = svgEl("text", {
                 x: tagX + tagW / 2, y: ry, "text-anchor": "middle", "dominant-baseline": "middle",
@@ -306,8 +382,15 @@ window.CandleChart = (function () {
             return candles[i].time == null ? null : formatDayHour(candles[i].time);
         };
         var labelStep = Math.max(1, Math.round(n / (options.timeLabels || 4)));
+        /* Every labelStep-th candle, plus the newest — the one most worth naming. When the newest
+           falls just past a step label the two collide ("−1h0h"), so the step label gives way. */
+        var labelled = {};
+        for (var li = 0; li < n; li += labelStep) labelled[li] = true;
+        var lastStep = Math.floor((n - 1) / labelStep) * labelStep;
+        if (lastStep !== n - 1 && (n - 1) - lastStep < labelStep * 0.75) delete labelled[lastStep];
+        labelled[n - 1] = true;
         candles.forEach(function (c, i) {
-            if (i % labelStep !== 0 && i !== n - 1) return;
+            if (!labelled[i]) return;
             var label = timeAt(i);
             if (label == null) return;
             var t = svgEl("text", {
@@ -317,6 +400,8 @@ window.CandleChart = (function () {
             t.textContent = label;
             svg.appendChild(t);
         });
+
+        fitLabels(svg);
 
         return {
             n: n, step: step, candles: candles, groups: groups, bodyW: bodyW,
@@ -428,6 +513,7 @@ window.CandleChart = (function () {
         tag(part("time-bg"), part("time"),
             showLevel && options.time != null ? formatDayHour(options.time) : "",
             vx, (frame.bottom != null ? frame.bottom : frame.plotY1) + 9, "center");
+        fitLabels(svg);
 
         return index;
     }
@@ -516,6 +602,8 @@ window.CandleChart = (function () {
             }));
         }
 
+        fitLabels(svg);
+
         // Same shape draw() returns, so the crosshair can run the pointer's candle down through
         // this pane as well without knowing which of the two it is drawing into.
         return {
@@ -532,6 +620,7 @@ window.CandleChart = (function () {
     return {
         draw: draw,
         drawIndicator: drawIndicator,
+        fitLabels: fitLabels,
         crosshair: crosshair,
         clearCrosshair: clearCrosshair,
     };
