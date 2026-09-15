@@ -84,6 +84,10 @@ class TelegramLoginFlowTest {
         MvcResult result = login(signed.replace("lan", "admin"));
 
         assertThat(result.getResponse().getStatus()).isEqualTo(401);
+        // A player in Telegram has no wallet; the refusal must not tell them about one.
+        assertThat(mapper.readTree(result.getResponse().getContentAsString()).path("message").asString())
+                .contains("Telegram")
+                .doesNotContain("ví");
         assertThat(users.count()).isEqualTo(before);
     }
 
