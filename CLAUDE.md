@@ -56,7 +56,7 @@ packages where a layer name would lie about the contents.
 | `dto/request/` | the 5 records a client sends in: `GuessRequest`, `WalletVerifyRequest`, `BlogPostRequest`, `ContentItemRequest`, `LegacyStatsRequest` |
 | `dto/response/` | the 17 records the server sends out, including the pieces nested inside them (`CandleDto`, `BlogPostDto`, `PlayerSummary`) |
 | `domain/` | internal value records that never leave the server: `RoundToken`, `RoundSelection`, `AuthSession`, `PlayerScore`, `PlayStreak`, `DailySeed`, `DailyRound`, `HintLevel`, `Achievement`, `PatternQuizPick`, `DemoPortfolio`, `StoredMedia` |
-| `security/` | `JwtService`, the filter, `WalletSignatureVerifier`, `AdminAccess`, `AdminWallets`, `AdminRoleReconciler` |
+| `security/` | `JwtService`, the filter, `WalletSignatureVerifier`, `TelegramInitDataVerifier`, `AdminAccess`, `AdminWallets`, `AdminRoleReconciler` |
 | `client/` | Binance and Yahoo, their DTOs, and `Timeframes` |
 | `pattern/` | the two pattern libraries and their matchers — algorithm, not a layer |
 | `config/` | `@Configuration`, `@ConfigurationProperties`, the rate-limit interceptor |
@@ -961,6 +961,40 @@ switches the URLs, heading, gate text, finish line (you vs the creator) and adds
 opening a challenge reveals the tab (which loads today) and then loads the challenge, and whichever
 answered last used to win. `?thach=` is read on `DOMContentLoaded` and stripped from the address bar.
 `AssetSeedOrderTest` deletes every table pointing at `assets`; `challenges` is on that list.
+
+### Telegram Mini App
+
+The same `index.html`, opened inside Telegram. `telegram.js` does nothing unless the URL carries
+Telegram's launch parameters (`#tgWebAppData=…`, `?tgWebAppStartParam=…`), and only then fetches
+Telegram's script — a browser visitor pays for none of it. Inside, it signs in, follows the
+`startapp` parameter (`thach_<id>`, `daily`, `live`) and routes sharing through Telegram's share
+sheet via `CandleTelegram.share(text, path)`; `app.js` and `daily.js` try that first and fall back to
+the web share sheet or the clipboard.
+
+**Sign-in is `POST /api/auth/telegram {initData}`, verified by `TelegramInitDataVerifier`** the way
+Telegram documents it: HMAC-SHA256 of the sorted `key=value` lines, keyed with
+HMAC-SHA256("WebAppData", bot token), compared in constant time, and `auth_date` no older than
+`candles.telegram.init-data-max-age` (24h) — initData is the same string for a whole launch, and a
+copied one should not be a login forever. Without `TELEGRAM_BOT_TOKEN` the endpoint is a 404 and
+`/api/site-config` carries no `telegram`, so a deployment without a bot advertises nothing.
+
+**A Telegram account is a `users` row keyed `tg:<telegram id>` in `wallet_address`**, with no
+migration. That column is the account's identity and unique; making it nullable for a second kind
+of account would touch every reader that assumes a value. The prefix also means no Telegram account
+can ever equal an address in `candles.admin.wallets` — **admin stays a wallet's role**. A Telegram
+account and a wallet are two separate accounts; linking them is not built. The display name is
+`@username`, else the first and last name, taken at first sign-in and never overwritten.
+
+`telegram.js` waits for `CandleAuth.whenRestored()` and signs in only when that found no session: a
+refresh cookie naming an account wins over a launch naming another. Clicking the name does not
+load the wallet bundle for a `tg:` account (`CandleAuth.isTelegramUser`).
+
+**Framing.** Telegram Web runs a Mini App in an iframe, and Spring Security's default
+`X-Frame-Options: DENY` gave it a blank panel. That header has no allow-list, so it is off and
+`Content-Security-Policy: frame-ancestors 'self' https://web.telegram.org` carries the same
+protection with one exception; `TelegramLoginFlowTest` pins both headers.
+
+Setting up the bot (BotFather, `/newapp`, the three variables) is `docs/DEPLOY_PLAN.md` §4.4.
 
 ### Achievements
 

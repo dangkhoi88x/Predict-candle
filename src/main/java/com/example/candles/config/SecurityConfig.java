@@ -25,10 +25,20 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .formLogin(AbstractHttpConfigurer::disable)
+                /*
+                 * Framing: Telegram Web and Telegram Desktop's web build run a Mini App in an
+                 * iframe, and the default X-Frame-Options: DENY showed them a blank panel.
+                 * X-Frame-Options has no allow-list, so it goes and frame-ancestors carries the
+                 * same protection with one named exception — nothing else can frame the page.
+                 */
+                .headers(headers -> headers
+                        .frameOptions(frame -> frame.disable())
+                        .contentSecurityPolicy(csp -> csp.policyDirectives(
+                                "frame-ancestors 'self' https://web.telegram.org")))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/api/auth/wallet/nonce", "/api/auth/wallet/verify",
-                                "/api/auth/refresh", "/api/auth/logout").permitAll()
+                                "/api/auth/telegram", "/api/auth/refresh", "/api/auth/logout").permitAll()
                         .requestMatchers("/api/auth/me").authenticated()
                         /*
                          * Everything an admin can do. hasRole reads the role out of the access

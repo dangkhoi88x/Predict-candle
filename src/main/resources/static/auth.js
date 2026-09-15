@@ -160,11 +160,19 @@
         withWallet(loginBtn, function (wallet) { wallet.connect(); });
     });
     displayNameEl.addEventListener("click", function () {
+        // A Telegram account has no wallet behind it, and 4 MB of one would open on nothing.
+        if (isTelegramUser()) return;
         withWallet(displayNameEl, function (wallet) { wallet.openAccount(); });
     });
     logoutBtn.addEventListener("click", logout);
 
-    tryRestoreSession();
+    function isTelegramUser() {
+        return !!state.user && /^tg:/.test(state.user.walletAddress || "");
+    }
+
+    /* Held so telegram.js can wait for it: signing in with Telegram before a restored session
+       lands would log a player out of the account the cookie already named. */
+    var restoring = tryRestoreSession();
 
     window.CandleAuth = {
         /* The wallet bundle's way in, and only its way in — tryRestoreSession and the renewal
@@ -179,6 +187,8 @@
         showError: showError,
         getAccessToken: function () { return state.accessToken; },
         getUser: function () { return state.user; },
+        isTelegramUser: isTelegramUser,
+        whenRestored: function () { return restoring; },
         isAdmin: function () { return !!state.user && state.user.role === "ADMIN"; },
 
         /**

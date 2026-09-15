@@ -222,6 +222,30 @@ hay sàn, nên không tốn compute hours của Neon và không gửi thêm requ
   720–744 giờ. Thêm một web service free thứ hai cũng giữ thức thì sẽ hết giờ trước cuối
   tháng.
 
+### 4.4 Telegram Mini App (tuỳ chọn)
+
+Không có ba biến dưới đây thì app chạy như web thường, `POST /api/auth/telegram` trả 404.
+
+1. Mở Telegram, chat với **@BotFather** → `/newbot` → đặt tên và username (phải kết thúc bằng
+   `bot`, ví dụ `candle_guess_bot`). BotFather trả về **token**. Token này là toàn bộ bí mật của
+   đăng nhập Telegram: ai có nó thì đăng nhập được thành bất kỳ ai, nên đừng dán vào chat hay commit.
+2. Vẫn ở @BotFather → `/newapp` → chọn bot vừa tạo → nhập tên, mô tả, ảnh 640×360 → **Web App URL**
+   là `https://candles-oj1q.onrender.com` → **short name**, ví dụ `play`. Link mở app sẽ là
+   `https://t.me/candle_guess_bot/play`.
+3. (Nên làm) `/setmenubutton` → chọn bot → URL như trên, để nút menu trong chat với bot mở game.
+4. Render → service → **Environment**, thêm:
+   - `TELEGRAM_BOT_TOKEN` = token ở bước 1
+   - `TELEGRAM_BOT_USERNAME` = `candle_guess_bot` (không có `@`)
+   - `TELEGRAM_APP_NAME` = `play`
+
+   Lưu lại, Render deploy lại.
+5. Kiểm tra: `curl https://candles-oj1q.onrender.com/api/site-config` phải có
+   `"telegram":{"login":true,"appLink":"https://t.me/candle_guess_bot/play"}`. Mở link đó trong
+   Telegram: tên `@username` hiện góc trên, không cần ví.
+
+Hai biến sau không bắt buộc: thiếu thì đăng nhập vẫn chạy, chỉ là link thách đấu gửi từ trong
+Telegram sẽ là link web thay vì link mở lại Mini App.
+
 ## 5. Kiểm tra sau deploy
 
 - [ ] Log Render có `Started CandlesApplication`, không có `Refusing to run with development

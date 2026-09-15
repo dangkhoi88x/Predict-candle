@@ -223,11 +223,11 @@ chưa xem.
 
 | # | Việc | Effort | Ghi chú |
 |---|---|---|---|
-| M2.1 | **Telegram Mini App.** Bọc web app hiện tại qua `@BotFather`, dùng Telegram WebApp SDK cho theme và nút chính | M | Chạy chính `index.html`. Việc khó là đăng nhập (M2.2) |
-| M2.2 | **Đăng nhập bằng Telegram** (`initData` ký HMAC bằng bot token), song song với ví | M | Bỏ bước ký ví cho người vào từ Telegram. `users` cần thêm cột `telegram_id`; `AuthService` có thêm một cửa vào. Giữ nguyên nguyên tắc role nằm trong config |
-| M2.3 | **Thách đấu qua link (R6).** Link chứa seed, người nhận chơi đúng bộ chart đó, hai bên so điểm | M | Dùng lại cơ chế chart theo seed của daily. Đối thủ có "duel", mình chưa có. Hợp để thả vào nhóm chat |
+| M2.1 ✅ | **Telegram Mini App.** Bọc web app hiện tại qua `@BotFather`, dùng Telegram WebApp SDK cho theme và nút chính | M | Chạy chính `index.html`. Việc khó là đăng nhập (M2.2) |
+| M2.2 ✅ | **Đăng nhập bằng Telegram** (`initData` ký HMAC bằng bot token), song song với ví | M | Bỏ bước ký ví cho người vào từ Telegram. Không cần cột mới: tài khoản Telegram có khoá `tg:<id>` trong cột `wallet_address`, nên không bao giờ trùng ví admin. Cần tạo bot, xem DEPLOY_PLAN §4.4 |
+| M2.3 ✅ | **Thách đấu qua link (R6).** Link chứa seed, người nhận chơi đúng bộ chart đó, hai bên so điểm | M | Dùng lại cơ chế chart theo seed của daily. Đối thủ có "duel", mình chưa có. Hợp để thả vào nhóm chat |
 | M2.4 | **Bot nhắc daily trong nhóm:** 8h sáng gửi "Thử thách #257 đã mở", tối gửi top 3 | S | Chỉ khi M2.1 xong và nhóm đồng ý |
-| M2.5 | **PWA** (manifest + icon), cài được lên màn hình chính | S | Rẻ, dành cho người không dùng Telegram |
+| M2.5 ✅ | **PWA** (manifest + icon), cài được lên màn hình chính | S | Rẻ, dành cho người không dùng Telegram |
 
 ### MVP 3 — Giữ chân dài hạn · làm khi có số liệu ủng hộ
 

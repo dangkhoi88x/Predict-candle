@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.example.candles.domain.AuthSession;
+import com.example.candles.domain.TelegramUser;
 import com.example.candles.dto.request.WalletVerifyRequest;
 import com.example.candles.dto.response.AuthResponse;
 import com.example.candles.dto.response.WalletNonceResponse;
@@ -73,6 +74,26 @@ public class AuthService {
             log.info("Promoted {} to ADMIN on login (wallet is in candles.admin.wallets)", address);
             userRepository.save(user);
         }
+        return issueSession(user);
+    }
+
+    public static final String TELEGRAM_KEY_PREFIX = "tg:";
+
+    /**
+     * A player who opened the game inside Telegram, already verified by
+     * {@code TelegramInitDataVerifier}. The account is keyed {@code tg:<telegram id>} in the column
+     * a wallet address otherwise fills: that column is the account's identity and unique, and a
+     * Telegram id fits it without making it nullable for every reader that assumes a value.
+     * The prefix also means no Telegram account can ever match an address in
+     * {@code candles.admin.wallets} — the admin role stays a wallet's.
+     *
+     * A Telegram account and a wallet are two accounts; linking them is not built.
+     */
+    @Transactional
+    public AuthSession telegramLogin(TelegramUser telegramUser) {
+        String key = TELEGRAM_KEY_PREFIX + telegramUser.id();
+        User user = userRepository.findByWalletAddress(key)
+                .orElseGet(() -> userRepository.save(new User(key, telegramUser.displayName())));
         return issueSession(user);
     }
 

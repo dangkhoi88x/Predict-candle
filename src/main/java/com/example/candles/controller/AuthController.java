@@ -1,5 +1,6 @@
 package com.example.candles.controller;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Pattern;
 import org.springframework.http.HttpHeaders;
@@ -18,12 +19,15 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.example.candles.config.AuthProperties;
 import com.example.candles.domain.AuthSession;
+import com.example.candles.dto.request.TelegramLoginRequest;
 import com.example.candles.dto.request.WalletVerifyRequest;
 import com.example.candles.dto.response.AuthResponse;
 import com.example.candles.dto.response.WalletNonceResponse;
 import com.example.candles.entity.User;
 import com.example.candles.exception.InvalidCredentialsException;
+import com.example.candles.security.TelegramInitDataVerifier;
 import com.example.candles.service.AuthService;
+import com.example.candles.service.RateLimiter;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -34,10 +38,15 @@ public class AuthController {
 
     private final AuthService authService;
     private final AuthProperties authProperties;
+    private final TelegramInitDataVerifier telegramVerifier;
+    private final RateLimiter rateLimiter;
 
-    public AuthController(AuthService authService, AuthProperties authProperties) {
+    public AuthController(AuthService authService, AuthProperties authProperties,
+                          TelegramInitDataVerifier telegramVerifier, RateLimiter rateLimiter) {
         this.authService = authService;
         this.authProperties = authProperties;
+        this.telegramVerifier = telegramVerifier;
+        this.rateLimiter = rateLimiter;
     }
 
     @GetMapping("/wallet/nonce")
@@ -48,6 +57,19 @@ public class AuthController {
     @PostMapping("/wallet/verify")
     public ResponseEntity<AuthResponse> verify(@Valid @RequestBody WalletVerifyRequest request) {
         return withRefreshCookie(HttpStatus.OK, authService.walletLogin(request));
+    }
+
+    /**
+     * Sign-in for a player who opened the game as a Telegram Mini App: the launch's signed
+     * {@code initData}, checked against the bot token. 404 when no bot is configured, so a
+     * deployment without Telegram does not advertise a login that cannot work.
+     */
+    @PostMapping("/telegram")
+    public ResponseEntity<AuthResponse> telegram(@Valid @RequestBody TelegramLoginRequest request,
+                                                 HttpServletRequest httpRequest) {
+        if (!telegramVerifier.enabled()) return ResponseEntity.notFound().build();
+        rateLimiter.check("telegram-login", 30, httpRequest);
+        return withRefreshCookie(HttpStatus.OK, authService.telegramLogin(telegramVerifier.verify(request.initData())));
     }
 
     @PostMapping("/refresh")

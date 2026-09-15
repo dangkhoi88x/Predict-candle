@@ -495,6 +495,11 @@
             var text = "Mình đoán đúng " + created.correct + "/" + created.total
                 + " nến trên chart này. Bạn làm được không?";
             if (window.CandleAnalytics) window.CandleAnalytics.track("challenge-create");
+            // Inside Telegram the web share sheet is not there; Telegram's own one is.
+            if (window.CandleTelegram && window.CandleTelegram.share(text, created.path)) {
+                setStatus("Chọn người hoặc nhóm Telegram để gửi thách đấu.");
+                return;
+            }
             if (navigator.share) {
                 try {
                     await navigator.share({ title: "Candle Guess — thách đấu", text: text, url: url });

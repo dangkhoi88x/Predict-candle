@@ -26,8 +26,24 @@ public class SiteConfigController {
 
     private final SiteConfigResponse config;
 
-    public SiteConfigController(@Value("${candles.analytics.goatcounter:}") String goatcounterCode) {
-        this.config = new SiteConfigResponse(goatcounterEndpoint(goatcounterCode));
+    private static final Pattern TELEGRAM_NAME = Pattern.compile("[A-Za-z0-9_]{3,64}");
+
+    public SiteConfigController(@Value("${candles.analytics.goatcounter:}") String goatcounterCode,
+                                @Value("${candles.telegram.bot-token:}") String telegramBotToken,
+                                @Value("${candles.telegram.bot-username:}") String telegramBotUsername,
+                                @Value("${candles.telegram.app-name:}") String telegramAppName) {
+        this.config = new SiteConfigResponse(goatcounterEndpoint(goatcounterCode),
+                telegram(telegramBotToken, telegramBotUsername, telegramAppName));
+    }
+
+    /** Names only, validated like the GoatCounter code, so neither can make the page link anywhere else. */
+    static SiteConfigResponse.Telegram telegram(String botToken, String botUsername, String appName) {
+        boolean login = botToken != null && !botToken.isBlank();
+        String bot = botUsername == null ? "" : botUsername.trim().replaceFirst("^@", "");
+        String app = appName == null ? "" : appName.trim();
+        String link = TELEGRAM_NAME.matcher(bot).matches() && TELEGRAM_NAME.matcher(app).matches()
+                ? "https://t.me/" + bot + "/" + app : null;
+        return login || link != null ? new SiteConfigResponse.Telegram(login, link) : null;
     }
 
     static String goatcounterEndpoint(String code) {
