@@ -13,6 +13,7 @@ import com.example.candles.dto.response.AdminPlayerDetail;
 import com.example.candles.dto.response.AdminPlayerPage;
 import com.example.candles.dto.response.PlayerSummary;
 import com.example.candles.entity.User;
+import com.example.candles.repository.ChallengeRepository;
 import com.example.candles.repository.GuessResultRepository;
 import com.example.candles.repository.LivePredictionRepository;
 import com.example.candles.repository.UserRepository;
@@ -38,13 +39,16 @@ public class AdminPlayerService {
     private final UserRepository userRepository;
     private final GuessResultRepository guessResultRepository;
     private final LivePredictionRepository livePredictionRepository;
+    private final ChallengeRepository challengeRepository;
 
     public AdminPlayerService(UserRepository userRepository,
                               GuessResultRepository guessResultRepository,
-                              LivePredictionRepository livePredictionRepository) {
+                              LivePredictionRepository livePredictionRepository,
+                              ChallengeRepository challengeRepository) {
         this.userRepository = userRepository;
         this.guessResultRepository = guessResultRepository;
         this.livePredictionRepository = livePredictionRepository;
+        this.challengeRepository = challengeRepository;
     }
 
     /**
@@ -139,6 +143,9 @@ public class AdminPlayerService {
      * Removes the account and everything recorded against it. Guess results are deleted first
      * because they hold the foreign key — and because leaving them would keep the player's
      * history under a user id nobody can look up.
+     *
+     * Challenge links the account made survive, for the friends already playing them, but lose
+     * its name: a deletion on request that left the name on every link sent would not be one.
      */
     @Transactional
     public void delete(Long userId) {
@@ -147,6 +154,7 @@ public class AdminPlayerService {
             throw new IllegalArgumentException(
                     "Không xoá được tài khoản admin. Gỡ ví khỏi candles.admin.wallets rồi khởi động lại trước.");
         }
+        challengeRepository.forgetCreator(userId, ChallengeService.ANONYMOUS_CREATOR);
         guessResultRepository.deleteByUserId(userId);
         userRepository.delete(user);
     }

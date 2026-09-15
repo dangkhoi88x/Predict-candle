@@ -955,6 +955,13 @@ Everything else is the daily's shape: one attempt per signed-in player from a un
 resume from recorded rows, `checkToken` making the path's challenge and the token's chart agree.
 Anonymous play is never recorded, so it never appears among `finishers`.
 
+**The creator's name on a link is read from the account, not from `creator_name`.** That column is
+a snapshot taken when the link was made; reading it meant an admin renaming an offensive name left
+the old one on every link the account had sent. It is now only the name for an anonymous creator,
+or a deleted one — and `AdminPlayerService.delete` overwrites it (`ChallengeRepository.forgetCreator`)
+before removing the account, since `ON DELETE SET NULL` alone kept a deleted player's name on their
+links. V20 clears names left behind by deletions made before that.
+
 **The daily board plays challenges**, the way it plays archive days: `daily.js`'s `challengeId`
 switches the URLs, heading, gate text, finish line (you vs the creator) and adds the finishers list;
 `isToday()` keeps challenge plays out of the daily funnel events. `loadSeq` drops a stale response —

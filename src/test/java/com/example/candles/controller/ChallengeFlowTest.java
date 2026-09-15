@@ -28,9 +28,11 @@ import com.example.candles.entity.User;
 import com.example.candles.repository.AssetRepository;
 import com.example.candles.repository.CandleRepository;
 import com.example.candles.repository.ChallengeGuessRepository;
+import com.example.candles.repository.ChallengeRepository;
 import com.example.candles.repository.GuessResultRepository;
 import com.example.candles.repository.UserRepository;
 import com.example.candles.security.JwtService;
+import com.example.candles.service.AdminPlayerService;
 import com.example.candles.service.RoundTokenService;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -58,6 +60,8 @@ class ChallengeFlowTest {
     @Autowired private CandlesProperties properties;
     @Autowired private RoundTokenService tokens;
     @Autowired private JwtService jwt;
+    @Autowired private AdminPlayerService adminPlayers;
+    @Autowired private ChallengeRepository challenges;
 
     private final ObjectMapper mapper = new ObjectMapper();
 
@@ -201,6 +205,31 @@ class ChallengeFlowTest {
         assertThat(after.path("finishers").size()).isEqualTo(1);
         assertThat(after.path("finishers").get(0).path("displayName").asString()).isEqualTo("Friend");
         assertThat(after.path("finishers").get(0).path("you").asBoolean()).isTrue();
+    }
+
+    /**
+     * The name on a link is the account's name now. An admin renaming an offensive display name,
+     * or deleting an account on request, must not leave the old name on every link it sent.
+     */
+    @Test
+    void aLinkShowsTheCreatorsCurrentNameAndForgetsItWhenTheAccountIsDeleted() throws Exception {
+        String pair = seedTradablePair();
+        User creator = player("Tên cũ");
+        JsonNode finished = finishPracticeChart(pair, bearer(creator));
+        String id = json(post("/api/challenges",
+                "{\"challengeToken\":\"" + finished.path("challengeToken").asString() + "\"}", bearer(creator)))
+                .path("id").asString();
+
+        adminPlayers.rename(creator.getId(), "Tên mới");
+        assertThat(getJson("/api/challenges/" + id, null).path("creatorName").asString()).isEqualTo("Tên mới");
+
+        adminPlayers.delete(creator.getId());
+        JsonNode orphan = getJson("/api/challenges/" + id, null);
+        assertThat(orphan.path("creatorName").asString()).isEqualTo("Một người chơi");
+        assertThat(orphan.path("roundToken").isNull()).isFalse();   // the link still plays
+        assertThat(challenges.findById(id).orElseThrow().getCreatorName())
+                .as("the stored copy is gone too, not just hidden")
+                .isEqualTo("Một người chơi");
     }
 
     @Test
