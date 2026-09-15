@@ -88,6 +88,20 @@ public class TelegramDailyBroadcastService {
         return chatIds;
     }
 
+    /** Null when the bot's username or the app's short name is missing or malformed. */
+    public String appLink() {
+        return appLink;
+    }
+
+    public boolean botConfigured() {
+        return bot.configured();
+    }
+
+    /** What has been posted — or claimed — for {@code day}, oldest first. */
+    public List<TelegramBroadcast> claimsOn(LocalDate day) {
+        return broadcasts.findByDayOrderBySentAt(day);
+    }
+
     public enum Outcome { SENT, ALREADY_SENT, FAILED }
 
     public record ChatResult(long chatId, Outcome outcome, String error) {
@@ -150,6 +164,9 @@ public class TelegramDailyBroadcastService {
     }
 
     public Message compose(TelegramBroadcast.Kind kind, LocalDate day, Instant now) {
+        if (appLink == null) {
+            throw new IllegalStateException("Thiếu TELEGRAM_BOT_USERNAME hoặc TELEGRAM_APP_NAME cho nút mở game");
+        }
         long number = DailyRound.forDay(day).number();
         String play = appLink + "?startapp=daily";
         return switch (kind) {

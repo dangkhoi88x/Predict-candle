@@ -3183,6 +3183,59 @@ body:not(.is-admin) .adm-search {
     gap: 10px;
 }
 
+/* The reminders card: each message drawn roughly the way the group will see it — Telegram's
+   bubble with the one button under it — because "does this read well in a chat" is the question. */
+.telegram-card {
+    margin-top: 16px;
+}
+
+/* Two short messages side by side; the pane's 520px split would stack them on a laptop. */
+.telegram-card .adm-split {
+    grid-template-columns: repeat(auto-fit, minmax(min(340px, 100%), 1fr));
+}
+
+.telegram-preview {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+.telegram-bubble {
+    align-self: stretch;
+    max-width: 46ch;
+    padding: 10px 12px;
+    border-radius: 12px 12px 12px 4px;
+    background: var(--adm-panel-2);
+    border: 1px solid var(--adm-border);
+    color: var(--adm-text);
+    font-size: 14px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.telegram-bubble.is-problem {
+    color: var(--adm-warn);
+}
+
+.telegram-bubble-button {
+    display: block;
+    margin-top: 8px;
+    padding: 6px 10px;
+    border-radius: 8px;
+    background: var(--adm-panel-3);
+    text-align: center;
+    font-size: 13px;
+}
+
+.telegram-find {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
 .adm-chart-head {
     display: flex;
     align-items: baseline;

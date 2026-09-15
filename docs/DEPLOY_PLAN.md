@@ -246,6 +246,31 @@ Không có ba biến dưới đây thì app chạy như web thường, `POST /ap
 Hai biến sau không bắt buộc: thiếu thì đăng nhập vẫn chạy, chỉ là link thách đấu gửi từ trong
 Telegram sẽ là link web thay vì link mở lại Mini App.
 
+### 4.5 Bot nhắc Thử thách trong nhóm Telegram (tuỳ chọn)
+
+Cần làm xong §4.4 trước. Chỉ gửi vào nhóm nào đã đồng ý: bot không tự gửi chỉ vì được thêm vào nhóm.
+
+1. Trong Telegram, mở nhóm → **Thêm thành viên** → tìm username bot → thêm. Bot không cần quyền
+   admin trong nhóm để gửi tin.
+2. Trong nhóm gõ `/start@<username_bot>` (ví dụ `/start@Candle_Guess_bot`). Bước này để bot chắc
+   chắn "nghe" thấy nhóm; bot vẫn im lặng, như vậy là bình thường.
+3. Vào trang admin → **Thử thách** → kéo xuống thẻ **Nhắc trong nhóm Telegram** → bấm
+   **Tìm chat id của nhóm**. Chép số ở cột *Chat id*, số âm, siêu nhóm bắt đầu bằng `-100`.
+   Telegram chỉ giữ tin cho bot 24 giờ, quá hạn thì làm lại bước 2.
+4. Render → **Environment** → thêm `TELEGRAM_DAILY_CHAT_IDS` = chat id đó. Nhiều nhóm thì ngăn
+   cách bằng dấu phẩy. Lưu và đợi deploy lại.
+5. Quay lại thẻ trên trang admin: dòng trạng thái phải là *đang bật · Thử thách #…*. Bấm
+   **Gửi tin sáng ngay** để thử. Tin gửi tay chính là tin của hôm đó, nên lịch 8:00 sẽ bỏ qua nhóm
+   đã nhận.
+
+Lịch mặc định là **8:00** (thử thách mới) và **21:00** (top 3 tạm tính), theo giờ Việt Nam. Muốn
+đổi giờ thì đặt `TELEGRAM_MORNING_CRON` / `TELEGRAM_EVENING_CRON`, dạng cron 6 trường của Spring,
+ví dụ `0 30 7 * * *` là 7:30. Đặt `-` để tắt tin đó. Lịch chỉ chạy khi app đang thức, nên cron
+giữ app thức ở §4.3 phải còn chạy.
+
+Muốn dừng nhắc một nhóm thì xoá chat id khỏi biến. Nếu bot bị kick khỏi nhóm, lỗi sẽ hiện ở
+**Vận hành → Lỗi gần đây**.
+
 ## 5. Kiểm tra sau deploy
 
 - [ ] Log Render có `Started CandlesApplication`, không có `Refusing to run with development
