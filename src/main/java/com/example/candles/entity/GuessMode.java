@@ -15,5 +15,11 @@ public enum GuessMode {
      * days with a DAILY row, so replaying an old chart must not be able to stand in for
      * turning up today.
      */
-    ARCHIVE
+    ARCHIVE,
+    /**
+     * A friend's challenge link. Travels on round tokens only and is never written to
+     * guess_results (whose CHECK constraint would refuse it): challenge guesses have a table of
+     * their own, because a challenge's creator has seen its answers — see V18.
+     */
+    CHALLENGE
 }

@@ -15,7 +15,12 @@ public record GuessResponse(
         RoundIdentity identity,
         RoundContext context,
         /** Readings unlocked for the *next* guess by how many have been missed so far. */
-        RoundHints hints
+        RoundHints hints,
+        /**
+         * On a finished practice chart only: the signed result a player can turn into a challenge
+         * link with {@code POST /api/challenges}. Null everywhere else.
+         */
+        String challengeToken
 ) {
 
     /**

@@ -882,19 +882,23 @@ h1, h2, h3 {
     position: relative;
 }
 
+/* The gate takes the chart's place in the flow rather than being laid over it: on a phone the
+   chart is ~150px tall, and a challenge's title and note run past that, which pushed the text up
+   over the banner above. */
 .daily-board.is-gated .daily-chart {
-    visibility: hidden;
+    display: none;
 }
 
 .daily-start:not(.hidden) {
-    position: absolute;
-    inset: 0;
+    /* The chart's own proportions (its viewBox is 720x300); with height left auto, the box still
+       grows past them when the text needs more. */
+    aspect-ratio: 720 / 300;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 8px;
-    padding: 0 16px;
+    padding: 18px 16px;
     text-align: center;
     border-radius: 10px;
     background: var(--overlay-soft);
@@ -4531,6 +4535,45 @@ body:not(.is-admin) .adm-search {
     font-weight: 600;
     font-size: 13px;
     cursor: pointer;
+}
+
+/* The one call to action a finished chart offers besides the next chart, so it takes the accent
+   rather than sitting as quietly as "Biểu đồ mới". */
+.next-btn.challenge-btn {
+    color: var(--accent);
+    border-color: color-mix(in oklab, var(--accent) 45%, var(--border));
+    background: var(--tint-accent);
+}
+
+.daily-finishers {
+    display: grid;
+    gap: 6px;
+    margin: 4px 0 14px;
+}
+
+.daily-finishers-list {
+    margin: 0;
+    padding-left: 22px;
+    display: grid;
+    gap: 4px;
+    font-size: 14px;
+    color: var(--text-2);
+    font-variant-numeric: tabular-nums;
+}
+
+.daily-finishers-list .is-creator {
+    color: var(--muted);
+}
+
+.daily-finishers-list .is-you {
+    color: var(--text);
+    font-weight: 700;
+}
+
+.daily-finishers-empty {
+    margin: 0;
+    font-size: 13px;
+    color: var(--muted);
 }
 
 .next-btn:hover {

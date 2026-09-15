@@ -11,6 +11,7 @@ import java.time.Instant;
 import java.util.Date;
 
 import com.example.candles.config.CandlesProperties;
+import com.example.candles.domain.ChallengeResult;
 import com.example.candles.domain.RoundToken;
 import com.example.candles.entity.GuessMode;
 import com.example.candles.exception.InvalidRoundTokenException;
@@ -53,6 +54,46 @@ public class RoundTokenService {
                 .compact();
     }
 
+    /** A result token lives a day: long enough to finish a chart and send the link later that evening. */
+    private static final java.time.Duration CHALLENGE_RESULT_TTL = java.time.Duration.ofDays(1);
+    private static final String CHALLENGE_RESULT = "challenge-result";
+
+    /**
+     * Signs how a finished practice chart went, for {@code POST /api/challenges}. A different
+     * {@code type} claim from a round token, so neither can be passed off as the other.
+     */
+    public String generateChallengeResult(ChallengeResult result) {
+        Instant now = Instant.now();
+        return Jwts.builder()
+                .claim("type", CHALLENGE_RESULT)
+                .claim("assetId", result.assetId())
+                .claim("timeframe", result.timeframe())
+                .claim("startIndex", result.startIndex())
+                .claim("correct", result.correct())
+                .claim("total", result.total())
+                .issuedAt(Date.from(now))
+                .expiration(Date.from(now.plus(CHALLENGE_RESULT_TTL)))
+                .signWith(key)
+                .compact();
+    }
+
+    public ChallengeResult verifyChallengeResult(String jwt) {
+        try {
+            Claims claims = Jwts.parser().verifyWith(key).build().parseSignedClaims(jwt).getPayload();
+            if (!CHALLENGE_RESULT.equals(claims.get("type", String.class))) {
+                throw new InvalidRoundTokenException("Không phải kết quả của một biểu đồ đã chơi xong.");
+            }
+            return new ChallengeResult(
+                    claims.get("assetId", Number.class).longValue(),
+                    claims.get("timeframe", String.class),
+                    claims.get("startIndex", Number.class).intValue(),
+                    claims.get("correct", Number.class).intValue(),
+                    claims.get("total", Number.class).intValue());
+        } catch (JwtException | IllegalArgumentException | NullPointerException e) {
+            throw new InvalidRoundTokenException(e);
+        }
+    }
+
     /**
      * The verified round together with when the token was minted — the clock the guess
      * deadline is measured against. Nothing else in the request can be trusted for timing:
@@ -72,6 +113,9 @@ public class RoundTokenService {
                challenge did not exist then. Same reasoning as iatMs below: round tokens live
                minutes, so this window shuts on its own, and a player mid-round at deploy time
                should not have their next guess rejected. */
+            if (claims.get("type") != null) {
+                throw new InvalidRoundTokenException("Đây không phải token của một lượt chơi.");
+            }
             String mode = claims.get("mode", String.class);
             Number misses = claims.get("misses", Number.class);
             RoundToken round = new RoundToken(

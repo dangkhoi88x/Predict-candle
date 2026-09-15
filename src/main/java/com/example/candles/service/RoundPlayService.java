@@ -63,11 +63,27 @@ public class RoundPlayService {
     }
 
     /**
+     * Writes one answered (or timed-out) guess somewhere. Practice, the daily and the archive
+     * record into guess_results; a challenge records into its own table, so that nothing scoring
+     * players can see it (V18).
+     */
+    @FunctionalInterface
+    public interface GuessRecorder {
+        void record(Asset asset, String timeframe, int startIndex, int guessNumber,
+                    Direction guessed, Direction actual, GuessMode mode);
+    }
+
+    public GuessResponse play(GuessRequest body, GuessMode mode, Consumer<RoundToken> extraCheck) {
+        return play(body, mode, extraCheck, guessResultService::record);
+    }
+
+    /**
      * @param extraCheck run once the token verifies, for whatever the calling game needs to be
      *                   true beyond a valid signature — the daily challenge uses it to refuse a
      *                   token for a day that has since rolled over.
      */
-    public GuessResponse play(GuessRequest body, GuessMode mode, Consumer<RoundToken> extraCheck) {
+    public GuessResponse play(GuessRequest body, GuessMode mode, Consumer<RoundToken> extraCheck,
+                              GuessRecorder recorder) {
         RoundTokenService.Verified verified = roundTokenService.verify(body.roundToken());
         timingPolicy.check(verified.issuedAt(), body.answered());
 
@@ -90,7 +106,7 @@ public class RoundPlayService {
                 ? Direction.LONG : Direction.SHORT;
 
         // No-op for anonymous play, which stays supported.
-        guessResultService.record(asset, token.timeframe(), token.startIndex(),
+        recorder.record(asset, token.timeframe(), token.startIndex(),
                 token.guessNumber(), guess, actualDirection, mode);
 
         int totalGuesses = properties.round().guessesPerChart();
@@ -144,6 +160,16 @@ public class RoundPlayService {
                             .toList());
         }
 
+        /* Only practice: a daily or an archive chart is already one everybody can play, and a
+           challenge of a challenge would let a player launder a link they were sent into one that
+           says they set it. The count comes from `misses`, which rode the signed token all the way
+           here — nothing the client said. */
+        String challengeToken = sessionComplete && mode == GuessMode.PRACTICE
+                ? roundTokenService.generateChallengeResult(new com.example.candles.domain.ChallengeResult(
+                        token.assetId(), token.timeframe(), token.startIndex(),
+                        Math.max(0, totalGuesses - misses), totalGuesses))
+                : null;
+
         return new GuessResponse(
                 guess == actualDirection,
                 actualDirection.name(),
@@ -155,7 +181,8 @@ public class RoundPlayService {
                 revealed.stream().map(CandleDto::from).toList(),
                 identity,
                 context,
-                nextHints
+                nextHints,
+                challengeToken
         );
     }
 }

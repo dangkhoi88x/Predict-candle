@@ -462,6 +462,9 @@
     </div>
 
     <button id="next-chart" class="next-btn hidden"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-refresh"/></svg>Biểu đồ mới</button>
+    <!-- Offered once a chart is finished: turns it into a link a friend plays (/?thach=…). The
+         result behind it is the one the server signed, not anything this page counted. -->
+    <button id="challenge-create" class="next-btn challenge-btn hidden" type="button"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-target"/></svg>Thách bạn bè chart này</button>
 
     <p id="status" class="status"></p>
 </div><!-- /.play-main -->
@@ -523,11 +526,11 @@
 
 <main id="view-daily" class="view app hidden" role="tabpanel" aria-labelledby="tab-daily">
     <div class="view-head">
-        <h2>Thử Thách Hôm Nay</h2>
+        <h2 id="daily-title">Thử Thách Hôm Nay</h2>
         <span class="daily-number" id="daily-number"></span>
     </div>
 
-    <p class="daily-intro">Cùng một biểu đồ cho tất cả mọi người, mỗi ngày một lần.</p>
+    <p class="daily-intro" id="daily-intro">Cùng một biểu đồ cho tất cả mọi người, mỗi ngày một lần.</p>
 
     <div class="daily-streak hidden" id="daily-streak">
         <svg class="icon daily-streak-flame" aria-hidden="true" focusable="false"><use href="#i-flame"/></svg>
@@ -582,6 +585,8 @@
         <div class="daily-done hidden" id="daily-done">
             <p class="daily-done-line" id="daily-done-line"></p>
             <p class="daily-next" id="daily-next"></p>
+            <!-- A friend's challenge only: who has played it through. -->
+            <div class="daily-finishers hidden" id="daily-finishers"></div>
             <!-- The lesson: one thing to take away from the round just played, chosen in daily.js —
                  a pattern that was on the chart right before a miss, else the player's biggest
                  habit, else a pattern the chart held. -->
