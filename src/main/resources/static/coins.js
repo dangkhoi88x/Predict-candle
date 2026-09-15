@@ -8,7 +8,7 @@
  * said less. Both callers ask for more rows than they show and keep the first real ones.
  *
  * Two tests, because neither is enough alone: names that say what they are (wrapped, staked,
- * bridged), and a price pinned to a dollar that did not move — which catches pegged products
+ * bridged), and a price pinned near a dollar that did not move — which catches pegged products
  * whose names give nothing away. A real coin trading at exactly $1 and flat for a day is rare
  * enough to lose from a decorative strip.
  */
@@ -18,10 +18,13 @@
     var DERIVATIVE_NAME = /\b(wrapped|staked|restaked|bridged|liquid staking|tokenized|tokenised)\b/i;
     var KNOWN_STABLE = /^(usdt|usdc|usds|dai|usde|usd1|fdusd|tusd|pyusd|usdd|frax|lusd|gusd|usdp|usdtb|rlusd|bsc-usd|busd|eurc|xaut|paxg)$/i;
 
+    /* Within 5% of a dollar and flat, or with no 24h change at all. The band started at 1.5%, and
+       the next day Figure Heloc sat at $1.03 with no change reported and walked straight back onto
+       the ticker; a real coin that close to $1 still moves more than half a percent in a day. */
     function isPegged(coin) {
         var price = coin.current_price;
         var change = coin.price_change_percentage_24h;
-        return typeof price === "number" && price >= 0.985 && price <= 1.015
+        return typeof price === "number" && price >= 0.95 && price <= 1.05
             && (typeof change !== "number" || Math.abs(change) < 0.5);
     }
 

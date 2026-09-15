@@ -774,6 +774,14 @@ h1, h2, h3 {
     display: none;
 }
 
+/* "/USDT" is the part of a pair's name a phone can lose: every pair on the site is quoted in
+   USDT, and with it the four pills ran past the edge of a 390px screen with SOL cut in half. */
+@media (max-width: 480px) {
+    .pill-quote {
+        display: none;
+    }
+}
+
 .pill-option {
     position: relative;
     z-index: 1;

@@ -114,7 +114,8 @@
         if (!r) return;
 
         el.symbol.textContent = SYMBOL_NAME[r.asset] || r.asset;
-        el.roundNumber.textContent = "Vòng #" + r.roundNumber;
+        el.roundNumber.textContent = window.CandleFormat.roundLabel(r.openTime);
+        el.roundNumber.title = "Vòng #" + r.roundNumber;
         el.roundState.textContent = r.locked ? "Đã khoá — chờ đóng nến" : "Đang mở";
         el.roundState.className = "live-round-state " + (r.locked ? "is-locked" : "is-open");
 
@@ -307,13 +308,14 @@
             item.className = "live-history-item " + (r.result === "LONG" ? "lh-long" : "lh-short");
             var num = document.createElement("span");
             num.className = "lh-round";
-            num.textContent = "Vòng #" + r.roundNumber;
+            num.textContent = window.CandleFormat.roundLabel(r.openTime);
+            item.title = "Vòng #" + r.roundNumber;
             var res = document.createElement("span");
             res.className = "lh-result";
             res.textContent = (r.result === "LONG" ? "LONG" : "SHORT") + " thắng";
             item.appendChild(num);
             item.appendChild(res);
-            item.addEventListener("click", function () { openRoundDetail(r.roundNumber); });
+            item.addEventListener("click", function () { openRoundDetail(r); });
             el.historyStrip.appendChild(item);
         });
     }
@@ -400,11 +402,15 @@
 
     var modalOpenerButton = null;
 
-    function openRoundDetail(roundNumber) {
+    /** @param entry a history row — its number addresses the round, its open time names it. */
+    function openRoundDetail(entry) {
+        var roundNumber = entry.roundNumber;
         modalOpenerButton = document.activeElement;
         el.modal.classList.remove("hidden");
         el.modalClose.focus();
-        el.modalEyebrow.textContent = "4H CANDLE · VÒNG #" + roundNumber;
+        // It said "4H CANDLE" on an hourly round, in English, on a Vietnamese page.
+        var timeframe = (state.round && state.round.timeframe) || "1h";
+        el.modalEyebrow.textContent = "Nến " + timeframe + " · " + window.CandleFormat.roundLabel(entry.openTime);
         el.modalTitle.textContent = (SYMBOL_NAME[state.asset] || state.asset) + " — vòng đã kết thúc";
         el.modalBadgeState.textContent = "";
         el.modalBadgeResult.textContent = "";
@@ -432,7 +438,7 @@
 
     function renderRoundDetail(detail) {
         el.modalStatus.textContent = "";
-        el.modalBadgeState.textContent = "VÒNG #" + detail.roundNumber + " ĐÃ KẾT THÚC";
+        el.modalBadgeState.textContent = window.CandleFormat.roundLabel(detail.openTime) + " đã kết thúc";
         el.modalBadgeResult.textContent = (detail.result === "LONG" ? "LONG" : "SHORT") + " thắng vòng này";
         el.modalBadgeResult.classList.add(detail.result === "LONG" ? "outcome-up" : "outcome-down");
         el.modalOpen.textContent = window.CandleFormat.usd(detail.openPrice);

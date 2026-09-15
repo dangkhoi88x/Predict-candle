@@ -66,7 +66,7 @@
         var left = new Date(round.lockAt).getTime() - now;
         if (left <= 0) {
             var opens = new Date(round.closeAt).getTime() - now;
-            text.textContent = "Vòng #" + round.roundNumber + " đã chốt · vòng mới sau "
+            text.textContent = window.CandleFormat.roundLabel(round.openTime) + " đã chốt · vòng mới sau "
                 + window.CandleFormat.clock(Math.max(0, opens));
             if (cta) cta.textContent = "Xem →";
             banner.classList.remove("hidden");
@@ -78,7 +78,8 @@
             return;
         }
 
-        text.textContent = "Vòng live #" + round.roundNumber + " chốt sau " + window.CandleFormat.clock(left);
+        text.textContent = window.CandleFormat.roundLabel(round.openTime).replace("Vòng", "Vòng live")
+            + " chốt sau " + window.CandleFormat.clock(left);
         if (cta) cta.textContent = "Vào đặt →";
         banner.classList.remove("hidden");
         railTag.textContent = window.CandleFormat.clock(left);

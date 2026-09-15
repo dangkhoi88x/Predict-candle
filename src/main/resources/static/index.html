@@ -279,7 +279,7 @@
                     <button class="rail-item" role="tab" id="tab-daily" aria-controls="view-daily" aria-selected="false" data-view="daily">
                         <svg class="icon rail-icon" aria-hidden="true" focusable="false"><use href="#i-calendar-check"/></svg>
                         <span class="rail-label">Thử Thách</span>
-                        <span class="rail-tag is-new">MỚI</span>
+                        <span class="rail-tag is-new" id="rail-tag-new-daily">MỚI</span>
                     </button>
                     <button class="rail-item" role="tab" id="tab-live" aria-controls="view-live" aria-selected="false" data-view="live">
                         <svg class="icon rail-icon" aria-hidden="true" focusable="false"><use href="#i-bolt"/></svg>
@@ -331,7 +331,7 @@
                     </button>
                     <button class="rail-item" role="tab" id="tab-heatmap" aria-controls="view-heatmap" aria-selected="false" data-view="heatmap">
                         <svg class="icon rail-icon" aria-hidden="true" focusable="false"><use href="#i-treemap"/></svg>
-                        <span class="rail-label">Market Heatmap</span>
+                        <span class="rail-label">Bản Đồ Thị Trường</span>
                     </button>
                     <!-- Shown only while signed in; nav.js toggles it on the session event. -->
                     <button class="rail-item hidden" role="tab" id="tab-profile" aria-controls="view-profile" aria-selected="false" data-view="profile">
@@ -350,10 +350,10 @@
 <div class="play-main">
     <div class="game-toolbar">
         <div class="pill" id="asset-pill">
-            <button class="pill-option active" data-asset="BTCUSDT">BTC/USDT</button>
-            <button class="pill-option" data-asset="ETHUSDT">ETH/USDT</button>
-            <button class="pill-option" data-asset="BNBUSDT">BNB/USDT</button>
-            <button class="pill-option" data-asset="SOLUSDT">SOL/USDT</button>
+            <button class="pill-option active" data-asset="BTCUSDT">BTC<span class="pill-quote">/USDT</span></button>
+            <button class="pill-option" data-asset="ETHUSDT">ETH<span class="pill-quote">/USDT</span></button>
+            <button class="pill-option" data-asset="BNBUSDT">BNB<span class="pill-quote">/USDT</span></button>
+            <button class="pill-option" data-asset="SOLUSDT">SOL<span class="pill-quote">/USDT</span></button>
         </div>
         <div class="game-toolbar-end">
             <span id="guess-progress" class="guess-progress hidden"></span>
@@ -477,11 +477,13 @@
                 <span class="stat-value rolling" id="score">0</span>
             </div>
             <div class="stat">
-                <span class="stat-label">Streak</span>
+                <!-- Correct calls in a row, which is what score pays a bonus on — not the day streak,
+                     which the topbar chip and the profile name "ngày liên tiếp". -->
+                <span class="stat-label">Chuỗi đúng</span>
                 <span class="stat-value rolling" id="streak">0</span>
             </div>
             <div class="stat">
-                <span class="stat-label">Best streak</span>
+                <span class="stat-label">Chuỗi dài nhất</span>
                 <span class="stat-value rolling" id="best-streak">0</span>
             </div>
             <div class="stat">
@@ -573,8 +575,8 @@
         </div>
 
         <div class="daily-actions hidden" id="daily-actions">
-            <button class="guess-btn long" type="button" id="daily-long">LONG</button>
-            <button class="guess-btn short" type="button" id="daily-short">SHORT</button>
+            <button class="guess-btn long" type="button" id="daily-long">▲ LONG</button>
+            <button class="guess-btn short" type="button" id="daily-short">▼ SHORT</button>
         </div>
 
         <div class="daily-done hidden" id="daily-done">
@@ -782,10 +784,10 @@
 <main id="view-live" class="view app hidden" role="tabpanel" aria-labelledby="tab-live">
     <div class="game-toolbar">
         <div class="pill" id="live-asset-pill">
-            <button class="pill-option active" data-asset="BTCUSDT">BTC/USDT</button>
-            <button class="pill-option" data-asset="ETHUSDT">ETH/USDT</button>
-            <button class="pill-option" data-asset="BNBUSDT">BNB/USDT</button>
-            <button class="pill-option" data-asset="SOLUSDT">SOL/USDT</button>
+            <button class="pill-option active" data-asset="BTCUSDT">BTC<span class="pill-quote">/USDT</span></button>
+            <button class="pill-option" data-asset="ETHUSDT">ETH<span class="pill-quote">/USDT</span></button>
+            <button class="pill-option" data-asset="BNBUSDT">BNB<span class="pill-quote">/USDT</span></button>
+            <button class="pill-option" data-asset="SOLUSDT">SOL<span class="pill-quote">/USDT</span></button>
         </div>
     </div>
 
@@ -898,7 +900,7 @@
 
 <main id="view-heatmap" class="view app app-heatmap hidden" role="tabpanel" aria-labelledby="tab-heatmap">
     <div class="heatmap-toolbar">
-        <h2>Market Heatmap</h2>
+        <h2>Bản Đồ Thị Trường</h2>
         <div class="pill" id="heatmap-source-pill">
             <button class="pill-option active" data-source="crypto">Crypto</button>
             <button class="pill-option" data-source="sp500">S&amp;P 500</button>
@@ -963,10 +965,10 @@
     <div class="pattern-asset-toggle" id="pattern-asset-toggle">
         <span class="pattern-asset-label">Tìm ví dụ thật trên:</span>
         <div class="pill" id="pattern-asset-pill">
-            <button class="pill-option active" data-asset="BTCUSDT">BTC/USDT</button>
-            <button class="pill-option" data-asset="ETHUSDT">ETH/USDT</button>
-            <button class="pill-option" data-asset="BNBUSDT">BNB/USDT</button>
-            <button class="pill-option" data-asset="SOLUSDT">SOL/USDT</button>
+            <button class="pill-option active" data-asset="BTCUSDT">BTC<span class="pill-quote">/USDT</span></button>
+            <button class="pill-option" data-asset="ETHUSDT">ETH<span class="pill-quote">/USDT</span></button>
+            <button class="pill-option" data-asset="BNBUSDT">BNB<span class="pill-quote">/USDT</span></button>
+            <button class="pill-option" data-asset="SOLUSDT">SOL<span class="pill-quote">/USDT</span></button>
         </div>
     </div>
 
@@ -990,10 +992,10 @@
     <div class="pattern-asset-toggle" id="technical-asset-toggle">
         <span class="pattern-asset-label">Tìm ví dụ thật trên:</span>
         <div class="pill" id="technical-asset-pill">
-            <button class="pill-option active" data-asset="BTCUSDT">BTC/USDT</button>
-            <button class="pill-option" data-asset="ETHUSDT">ETH/USDT</button>
-            <button class="pill-option" data-asset="BNBUSDT">BNB/USDT</button>
-            <button class="pill-option" data-asset="SOLUSDT">SOL/USDT</button>
+            <button class="pill-option active" data-asset="BTCUSDT">BTC<span class="pill-quote">/USDT</span></button>
+            <button class="pill-option" data-asset="ETHUSDT">ETH<span class="pill-quote">/USDT</span></button>
+            <button class="pill-option" data-asset="BNBUSDT">BNB<span class="pill-quote">/USDT</span></button>
+            <button class="pill-option" data-asset="SOLUSDT">SOL<span class="pill-quote">/USDT</span></button>
         </div>
     </div>
 
