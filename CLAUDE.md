@@ -1025,6 +1025,14 @@ round is open, at 21:00 the top three so far and the hours left (`TelegramDailyS
 - A job that fires while Render has the instance asleep does not run; the keep-awake cron
   (DEPLOY_PLAN §4.3) is what makes the times reliable.
 
+**The admin card** sits on the challenges pane (`admin-telegram.js`, `GET /api/admin/telegram`,
+`/chats`, `POST /send?kind=`). It previews both of today's messages from the server's own text,
+drawn with `createElement` since a display name is inside it; lists what has been claimed today;
+finds a group's chat id through `getUpdates` (no offset, so reading acknowledges nothing — and it
+only works because this app never sets a webhook); and sends a message now through the same
+claims, so "send now" *is* that day's message and the schedule then skips it. It cannot change
+where the bot posts: that stays `TELEGRAM_DAILY_CHAT_IDS`, for the reason roles stay in config.
+
 ### Achievements
 
 Nine badges on the profile, from `Achievement` — a pure enum where each entry is a name, a

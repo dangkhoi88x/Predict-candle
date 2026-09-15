@@ -9,6 +9,7 @@ import org.springframework.web.client.RestClient;
 import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -79,5 +80,23 @@ class TelegramBotClientTest {
         assertThat(off.configured()).isFalse();
         assertThatThrownBy(() -> off.sendMessage(-1L, "x", null, null))
                 .isInstanceOf(TelegramBotClient.TelegramApiException.class);
+    }
+
+    @Test
+    void recentChatsAreEachChatOnceWhereverTheUpdateMentionedIt() {
+        server.expect(requestTo("http://tg.test/bot" + TOKEN + "/getUpdates"))
+                .andRespond(withSuccess("""
+                        {"ok": true, "result": [
+                          {"update_id": 1, "my_chat_member": {"chat": {"id": -1001234, "type": "supergroup", "title": "Crypto VN"}}},
+                          {"update_id": 2, "message": {"chat": {"id": 555, "type": "private", "first_name": "Lan"}, "text": "/start"}},
+                          {"update_id": 3, "message": {"chat": {"id": -1001234, "type": "supergroup", "title": "Crypto VN"}, "text": "/start@candle_guess_bot"}}
+                        ]}
+                        """, MediaType.APPLICATION_JSON));
+
+        List<TelegramBotClient.Chat> chats = client.recentChats();
+
+        assertThat(chats).containsExactly(
+                new TelegramBotClient.Chat(555L, "private", "Lan"),
+                new TelegramBotClient.Chat(-1001234L, "supergroup", "Crypto VN"));
     }
 }

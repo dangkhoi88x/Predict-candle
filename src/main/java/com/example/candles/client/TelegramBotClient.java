@@ -60,6 +60,37 @@ public class TelegramBotClient {
         call("sendMessage", body);
     }
 
+    /** A chat the bot has heard from lately: a group's id is negative, a supergroup's starts -100. */
+    public record Chat(long id, String type, String title) {
+    }
+
+    /**
+     * The chats in the bot's pending updates, newest last, each once — how to learn a group's id
+     * without asking anybody to paste the bot token into a browser. Telegram keeps updates for
+     * 24 hours and only while no webhook is set, which this app never sets. Adding the bot to a
+     * group is itself an update ({@code my_chat_member}), and so is any command sent there.
+     *
+     * No {@code offset} is passed, so reading does not acknowledge anything: the list is the same
+     * when asked again.
+     */
+    public List<Chat> recentChats() {
+        Map<Long, Chat> chats = new LinkedHashMap<>();
+        for (JsonNode update : call("getUpdates", Map.of())) {
+            for (String field : List.of("message", "edited_message", "channel_post", "my_chat_member", "chat_member")) {
+                JsonNode chat = update.path(field).path("chat");
+                if (!chat.has("id")) continue;
+                String title = chat.path("title").asString(null);
+                if (title == null) {
+                    title = (chat.path("first_name").asString("") + " " + chat.path("last_name").asString("")).trim();
+                }
+                long id = chat.path("id").asLong();
+                chats.remove(id);
+                chats.put(id, new Chat(id, chat.path("type").asString("?"), title));
+            }
+        }
+        return List.copyOf(chats.values());
+    }
+
     private JsonNode call(String method, Map<String, Object> body) {
         if (!configured()) throw new TelegramApiException("Chưa cấu hình TELEGRAM_BOT_TOKEN");
         JsonNode response;

@@ -542,6 +542,38 @@
                             </div>
                         </div>
                     </section>
+
+                    <!-- The group reminders. Where the bot posts is TELEGRAM_DAILY_CHAT_IDS, never
+                         this card: a group agreeing to reminders is written down in configuration. -->
+                    <section id="telegram-card" class="adm-card adm-chart-card telegram-card" aria-live="polite">
+                        <div class="adm-chart-head">
+                            <span class="adm-kicker">Nhắc trong nhóm Telegram</span>
+                            <span class="adm-kicker-note" id="telegram-state">—</span>
+                        </div>
+                        <p class="content-note" id="telegram-where"></p>
+                        <div class="adm-split">
+                            <div class="telegram-preview">
+                                <span class="adm-kicker" id="telegram-morning-label">Tin sáng</span>
+                                <div class="telegram-bubble" id="telegram-morning"></div>
+                                <button id="telegram-send-morning" class="ghost-btn" type="button">Gửi tin sáng ngay</button>
+                            </div>
+                            <div class="telegram-preview">
+                                <span class="adm-kicker" id="telegram-evening-label">Tin tối</span>
+                                <div class="telegram-bubble" id="telegram-evening"></div>
+                                <button id="telegram-send-evening" class="ghost-btn" type="button">Gửi tin tối ngay</button>
+                            </div>
+                        </div>
+                        <div class="telegram-find">
+                            <button id="telegram-find" class="ghost-btn" type="button">Tìm chat id của nhóm</button>
+                            <span class="content-note">Thêm bot vào nhóm (hoặc gõ <code>/start</code> trong nhóm) rồi bấm. Telegram giữ tin cho bot 24 giờ.</span>
+                        </div>
+                        <div class="scroller hidden" id="telegram-chats-wrap">
+                            <table class="ops-table" id="telegram-chats">
+                                <thead><tr><th>Chat id</th><th>Loại</th><th>Tên</th><th>Nhắc?</th></tr></thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </section>
                 </section>
 
                 <!-- The live game keeps no rounds, so this is the only place one can be looked at
@@ -939,6 +971,7 @@
 <script src="admin-ops.js"></script>
 <script src="admin-assets.js"></script>
 <script src="admin-challenges.js"></script>
+<script src="admin-telegram.js"></script>
 <script src="admin-live.js"></script>
 <script src="admin-demo.js"></script>
 <script src="admin-players.js"></script>
