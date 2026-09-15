@@ -1,0 +1,22 @@
+{
+  "name": "Candle Guess — Đoán nến tiếp theo",
+  "short_name": "Candle Guess",
+  "description": "Luyện đọc chart crypto bằng dữ liệu thật: đoán nến tiếp theo lên hay xuống, mỗi ngày một thử thách chung.",
+  "lang": "vi",
+  "start_url": "/?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0a0a0a",
+  "categories": ["games", "education", "finance"],
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Thử thách hôm nay", "short_name": "Hôm nay", "url": "/?view=daily", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Vòng trực tiếp", "short_name": "Live", "url": "/?view=live", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] }
+  ]
+}

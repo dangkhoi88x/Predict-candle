@@ -29,6 +29,14 @@
     <link rel="icon" href="/favicon.ico" sizes="32x32"/>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml"/>
     <link rel="apple-touch-icon" href="/apple-touch-icon.png"/>
+    <!-- Installable: an icon on the home screen that opens straight into the game, without the
+         browser's address bar. No service worker on purpose — this site's rule is that content
+         comes from the server or not at all, and an offline cache is exactly a way to show a
+         stale chart as current. The manifest's shortcuts open ?view=daily / ?view=live (nav.js). -->
+    <link rel="manifest" href="/manifest.json"/>
+    <meta name="mobile-web-app-capable" content="yes"/>
+    <meta name="apple-mobile-web-app-title" content="Candle Guess"/>
+    <meta name="apple-mobile-web-app-status-bar-style" content="default"/>
     <meta name="theme-color" content="#0a0a0a" media="(prefers-color-scheme: dark)"/>
     <meta name="theme-color" content="#f6f7f9" media="(prefers-color-scheme: light)"/>
     <link rel="stylesheet" href="style.css"/>

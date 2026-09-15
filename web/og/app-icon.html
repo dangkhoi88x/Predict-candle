@@ -1,0 +1,45 @@
+<!doctype html>
+<!--
+  Source of static/icon-192.png, icon-512.png and icon-maskable-512.png — the installed app's
+  icons (manifest.json). The favicon's two candles, drawn full-bleed on the game's ground.
+  Render from the repository root, one command per file:
+
+    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new --hide-scrollbars --default-background-color=00000000 --window-size=512,512 --screenshot=src/main/resources/static/icon-512.png "file://$PWD/web/og/app-icon.html?size=512"
+    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new --hide-scrollbars --default-background-color=00000000 --window-size=192,192 --screenshot=src/main/resources/static/icon-192.png "file://$PWD/web/og/app-icon.html?size=192"
+    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new --hide-scrollbars --window-size=512,512 --screenshot=src/main/resources/static/icon-maskable-512.png "file://$PWD/web/og/app-icon.html?size=512&maskable"
+
+  "maskable" keeps the candles inside the central 80% safe zone, because Android crops that icon
+  to whatever shape the launcher uses; the plain icons may use the whole square with rounded
+  corners of their own. Colours are --bg, --up and --down.
+-->
+<html><head><meta charset="utf-8">
+<style>
+  html, body { margin: 0; overflow: hidden; background: transparent; }
+  svg { display: block; }
+</style></head>
+<body>
+<script>
+  var params = new URLSearchParams(location.search);
+  var size = +(params.get("size") || 512);
+  var maskable = params.has("maskable");
+  // The candles span 23 of the favicon's 32 units. Plain: scaled to fill ~61% of the tile.
+  // Maskable: ~45%, inside the 80% circle a launcher may crop to.
+  var scale = maskable ? 0.62 : 0.85;
+  var ns = "http://www.w3.org/2000/svg";
+  var svg = document.createElementNS(ns, "svg");
+  svg.setAttribute("width", size); svg.setAttribute("height", size);
+  svg.setAttribute("viewBox", "0 0 32 32");
+  var r = maskable ? 0 : 7;
+  var inner = (32 * scale);
+  var offset = (32 - inner) / 2;
+  svg.innerHTML =
+    '<rect width="32" height="32" rx="' + r + '" fill="#0a0a0a"/>' +
+    '<g transform="translate(' + offset + ' ' + offset + ') scale(' + scale + ')" stroke-linecap="round">' +
+      '<path d="M11 4.5v15" stroke="#34d399" stroke-width="2"/>' +
+      '<rect x="8" y="7" width="6" height="10" rx="1.5" fill="#34d399"/>' +
+      '<path d="M21 12.5v15" stroke="#fb7185" stroke-width="2"/>' +
+      '<rect x="18" y="15" width="6" height="10" rx="1.5" fill="#fb7185"/>' +
+    '</g>';
+  document.body.appendChild(svg);
+</script>
+</body></html>
