@@ -3315,6 +3315,19 @@ body:not(.is-admin) .adm-search {
     color: var(--adm-muted);
 }
 
+/* How the account signs in, in front of its key. A tint of the ink rather than Telegram's own
+   blue: the label says "a different kind of account", not whose brand it is. */
+.ops-badge.login-badge {
+    padding: 1px 7px;
+    font-size: 11px;
+    font-family: var(--sans);
+}
+
+.ops-badge.is-telegram {
+    background: color-mix(in oklch, var(--adm-ink) 12%, transparent);
+    color: var(--adm-text);
+}
+
 /* Named for the call rather than for the colour it borrows. A SHORT is not "bad" — it is one
    of the two answers — so these do not reuse .is-good / .is-bad even though the up and down
    tokens are exactly what they paint with. */

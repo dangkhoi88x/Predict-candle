@@ -116,6 +116,29 @@ class AdminPlayerDetailTest {
     }
 
     @Test
+    void aTelegramAccountIsLabelledAndCanBeListedApartFromWallets() {
+        User wallet = player("wallet");
+        User telegram = new User("tg:" + (900_000_000L + (System.nanoTime() % 1_000_000)), tag + "-telegram");
+        telegram.assignRole(Role.USER);
+        telegram = users.saveAndFlush(telegram);
+
+        AdminPlayerPage all = service.players(tag, null, null, 0, 50);
+        assertThat(all.total()).isEqualTo(2);
+        assertThat(all.players()).extracting(PlayerSummary::login).containsExactlyInAnyOrder("WALLET", "TELEGRAM");
+
+        AdminPlayerPage onlyTelegram = service.players(tag, null, "telegram", 0, 50);
+        assertThat(onlyTelegram.players()).extracting(PlayerSummary::id).containsExactly(telegram.getId());
+        assertThat(onlyTelegram.total()).isEqualTo(1);
+
+        AdminPlayerPage onlyWallets = service.players(tag, null, "wallet", 0, 50);
+        assertThat(onlyWallets.players()).extracting(PlayerSummary::id).containsExactly(wallet.getId());
+
+        // Anything else is no filter, rather than an empty page for a typo.
+        assertThat(service.players(tag, null, "fax", 0, 50).total()).isEqualTo(2);
+        assertThat(service.detail(telegram.getId()).account().login()).isEqualTo("TELEGRAM");
+    }
+
+    @Test
     void theRecentSortIsADifferentOrderFromTheBusiestOne() {
         Asset asset = asset();
         User loud = player("loud");

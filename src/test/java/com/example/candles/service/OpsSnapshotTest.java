@@ -10,16 +10,21 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
+import com.example.candles.config.CandlesProperties;
 import com.example.candles.dto.response.OpsSnapshot;
 import com.example.candles.entity.Asset;
 import com.example.candles.entity.AssetType;
 import com.example.candles.entity.Candle;
+import com.example.candles.entity.Challenge;
+import com.example.candles.entity.ChallengeGuess;
 import com.example.candles.entity.Direction;
 import com.example.candles.entity.LivePrediction;
 import com.example.candles.entity.Role;
 import com.example.candles.entity.User;
 import com.example.candles.repository.AssetRepository;
 import com.example.candles.repository.CandleRepository;
+import com.example.candles.repository.ChallengeGuessRepository;
+import com.example.candles.repository.ChallengeRepository;
 import com.example.candles.repository.LivePredictionRepository;
 import com.example.candles.repository.UserRepository;
 import com.example.candles.security.JwtService;
@@ -34,6 +39,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @Transactional
 class OpsSnapshotTest {
+
+    @Autowired private ChallengeRepository challengeRepository;
+    @Autowired private ChallengeGuessRepository challengeGuessRepository;
+    @Autowired private CandlesProperties properties;
 
     @Autowired
     private MockMvc mockMvc;
@@ -196,5 +205,44 @@ class OpsSnapshotTest {
                 .andExpect(jsonPath("$.activity.liveSettledToday").exists())
                 .andExpect(jsonPath("$.activity.liveCorrectToday").exists())
                 .andExpect(jsonPath("$.activity.liveCallsWeek").exists());
+    }
+
+    /**
+     * Challenge links are counted nowhere else — their guesses are kept out of every other total on
+     * purpose — so this card is the only way to see whether anyone sends them. Deltas, for the same
+     * reason as the live test above.
+     */
+    @Test
+    void challengeLinksAndTelegramAccountsAreCounted() throws Exception {
+        OpsSnapshot.Activity before = opsService.snapshot().activity();
+
+        Asset asset = assetRepository.saveAndFlush(
+                new Asset("TEST" + UUID.randomUUID().toString().substring(0, 6).toUpperCase(), "Test pair", AssetType.CRYPTO));
+        User creator = userRepository.saveAndFlush(new User("0x" + UUID.randomUUID().toString().replace("-", ""), "C"));
+        User finisher = userRepository.saveAndFlush(new User("tg:" + (800_000_000L + (System.nanoTime() % 1_000_000)), "@f"));
+        User quitter = userRepository.saveAndFlush(new User("0x" + UUID.randomUUID().toString().replace("-", ""), "Q"));
+        int total = properties.round().guessesPerChart();
+        Challenge challenge = challengeRepository.saveAndFlush(new Challenge(
+                "t" + UUID.randomUUID().toString().substring(0, 7), asset, "1h", 10, creator, "C", 3, total));
+        for (int n = 1; n <= total; n++) {
+            challengeGuessRepository.save(new ChallengeGuess(challenge, finisher, n, Direction.LONG, Direction.LONG));
+        }
+        challengeGuessRepository.save(new ChallengeGuess(challenge, quitter, 1, Direction.LONG, Direction.SHORT));
+        challengeGuessRepository.flush();
+
+        OpsSnapshot.Activity after = opsService.snapshot().activity();
+
+        assertThat(after.telegramAccounts() - before.telegramAccounts()).isEqualTo(1);
+        assertThat(after.challenges() - before.challenges()).isEqualTo(1);
+        assertThat(after.challengesWeek() - before.challengesWeek()).isEqualTo(1);
+        assertThat(after.challengePlayers() - before.challengePlayers()).isEqualTo(2);
+        assertThat(after.challengeFinishes() - before.challengeFinishes()).isEqualTo(1);
+
+        mockMvc.perform(get("/api/admin/ops").header("Authorization", tokenFor(Role.ADMIN)))
+                .andExpect(jsonPath("$.activity.telegramAccounts").exists())
+                .andExpect(jsonPath("$.activity.challenges").exists())
+                .andExpect(jsonPath("$.activity.challengesWeek").exists())
+                .andExpect(jsonPath("$.activity.challengePlayers").exists())
+                .andExpect(jsonPath("$.activity.challengeFinishes").exists());
     }
 }

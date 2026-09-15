@@ -430,6 +430,12 @@ lowered address and display name, deliberately *not* the topbar search's diacrit
 that one matches rendered Vietnamese titles, this one matches a name or an address somebody is
 pasting in.
 
+**Two kinds of account share the list.** A Telegram account's key is `tg:<id>` in the column a
+wallet address fills, so `PlayerSummary.login` (WALLET / TELEGRAM) is read off that prefix server-side
+and the page never has to know it; the list takes `login=wallet|telegram`, the ops card counts
+`telegramAccounts`, and wording that said *ví* for "account" now says *tài khoản*. A `tg:` key is
+shown whole — shortening it like an address cut the id somebody was trying to read.
+
 `GET /api/admin/players/{id}` is the drill-down: the account's history split by game and by
 pair, its live calls counted three ways (`calls` / `settled` / `correct` — accuracy on live
 calls is against settled ones, since a round still running is not one the player got wrong),
@@ -968,6 +974,10 @@ switches the URLs, heading, gate text, finish line (you vs the creator) and adds
 opening a challenge reveals the tab (which loads today) and then loads the challenge, and whichever
 answered last used to win. `?thach=` is read on `DOMContentLoaded` and stripped from the address bar.
 `AssetSeedOrderTest` deletes every table pointing at `assets`; `challenges` is on that list.
+
+**The ops pane's "Thách đấu" card is the only place links are counted** — links made (all time and
+7 days), signed-in players who played one, plays finished — precisely because their guesses are
+kept out of every other total. Anonymous plays are recorded nowhere, so they are in none of them.
 
 ### Telegram Mini App
 

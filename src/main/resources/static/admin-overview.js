@@ -239,7 +239,7 @@
             }),
         }));
         el.kpis.appendChild(kpiCard({
-            label: "Tài khoản người chơi", value: num(act.players), unit: "ví",
+            label: "Tài khoản người chơi", value: num(act.players), unit: "tài khoản",
             delta: deltas.players, deltaNote: "tuần trước",
             spark: accounts.map(function (a) { return a.total; }),
         }));
@@ -372,7 +372,7 @@
         daily.forEach(function (bucket, i) {
             var bar = element("span", i === daily.length - 1 ? "is-now" : null);
             bar.style.height = (max > 0 ? Math.max(2, Math.round((bucket.activePlayers / max) * 96)) : 2) + "px";
-            bar.title = num(bucket.activePlayers) + " ví";
+            bar.title = num(bucket.activePlayers) + " người chơi";
             el.playersBars.appendChild(bar);
         });
 

@@ -61,15 +61,18 @@ public interface UserRepository extends JpaRepository<User, Long> {
                        max(created_at) as last_played
                 from guess_results group by user_id
             ) g on g.user_id = u.id
-            where cast(:pattern as text) is null
+            where (cast(:pattern as text) is null
                or lower(u.wallet_address) like cast(:pattern as text)
-               or lower(u.display_name) like cast(:pattern as text)
+               or lower(u.display_name) like cast(:pattern as text))
+              and (cast(:source as text) is null
+               or (cast(:source as text) = 'telegram') = (u.wallet_address like 'tg:%'))
             order by case when cast(:sort as text) = 'recent' then g.last_played end desc nulls last,
                      coalesce(g.total, 0) desc,
                      u.id
             limit :size offset :offset
             """, nativeQuery = true)
     List<Object[]> playerPage(@Param("pattern") String pattern,
+                              @Param("source") String source,
                               @Param("sort") String sort,
                               @Param("size") int size,
                               @Param("offset") int offset);
@@ -77,9 +80,14 @@ public interface UserRepository extends JpaRepository<User, Long> {
     /** How many accounts the same filter matches, for the page count under the table. */
     @Query(value = """
             select count(*) from users u
-            where cast(:pattern as text) is null
+            where (cast(:pattern as text) is null
                or lower(u.wallet_address) like cast(:pattern as text)
-               or lower(u.display_name) like cast(:pattern as text)
+               or lower(u.display_name) like cast(:pattern as text))
+              and (cast(:source as text) is null
+               or (cast(:source as text) = 'telegram') = (u.wallet_address like 'tg:%'))
             """, nativeQuery = true)
-    long countPlayers(@Param("pattern") String pattern);
+    long countPlayers(@Param("pattern") String pattern, @Param("source") String source);
+
+    /** Accounts made by signing in from Telegram — {@code AuthService.TELEGRAM_KEY_PREFIX}. */
+    long countByWalletAddressStartingWith(String prefix);
 }

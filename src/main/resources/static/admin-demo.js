@@ -41,7 +41,9 @@
 
     /* ---- formatting ---- */
 
+    /* A Telegram account's key (tg:<id>) is shown whole; only a wallet address is shortened. */
     function shortWallet(address) {
+        if (/^tg:/.test(address) || address.length <= 12) return address;
         return address.slice(0, 6) + "…" + address.slice(-4);
     }
 

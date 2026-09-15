@@ -344,7 +344,7 @@
                             <div class="adm-card adm-mini-card">
                                 <div class="adm-mini-head">
                                     <b class="adm-mini-value" id="ov-players-now">—</b>
-                                    <span class="adm-mini-note">ví hoạt động hôm nay</span>
+                                    <span class="adm-mini-note">người chơi hoạt động hôm nay</span>
                                 </div>
                                 <div class="adm-bars" id="ov-players-bars"></div>
                                 <div class="adm-mini-axis" id="ov-players-axis"></div>
@@ -616,7 +616,7 @@
                             <div class="scroller">
                                 <table class="ops-table" id="live-calls">
                                     <thead>
-                                        <tr><th>Ví</th><th>Tên hiển thị</th><th>Gọi</th><th>Lúc</th><th>Kết quả</th></tr>
+                                        <tr><th>Tài khoản</th><th>Tên hiển thị</th><th>Gọi</th><th>Lúc</th><th>Kết quả</th></tr>
                                     </thead>
                                     <tbody></tbody>
                                 </table>
@@ -647,7 +647,7 @@
                             <table class="ops-table" id="demo-table">
                                 <thead>
                                     <tr>
-                                        <th>Ví</th><th>Tên hiển thị</th><th class="num">Lệnh</th>
+                                        <th>Tài khoản</th><th>Tên hiển thị</th><th class="num">Lệnh</th>
                                         <th class="num">Tiền mặt</th><th class="num">Tài sản</th>
                                         <th class="num">Đã chốt</th>
                                         <th>Giao dịch gần nhất</th><th></th>
@@ -706,7 +706,12 @@
                         <span id="players-count" class="ops-generated"></span>
                         <div class="editor-actions">
                             <input id="players-search" class="folder-input" type="search"
-                                   placeholder="Tên hoặc địa chỉ ví" maxlength="60" aria-label="Tìm tài khoản"/>
+                                   placeholder="Tên, ví hoặc tg:id" maxlength="60" aria-label="Tìm tài khoản"/>
+                            <div class="pill" id="players-login" aria-label="Cách đăng nhập">
+                                <button class="pill-option active" type="button" data-login="">Tất cả</button>
+                                <button class="pill-option" type="button" data-login="wallet">Ví</button>
+                                <button class="pill-option" type="button" data-login="telegram">Telegram</button>
+                            </div>
                             <div class="pill" id="players-sort">
                                 <button class="pill-option active" type="button" data-sort="active">Chơi nhiều</button>
                                 <button class="pill-option" type="button" data-sort="recent">Mới chơi</button>
@@ -718,7 +723,7 @@
                         <div class="scroller">
                             <table class="ops-table" id="player-table">
                                 <thead>
-                                    <tr><th>Ví</th><th>Tên hiển thị</th><th>Vai trò</th><th class="num">Lượt</th>
+                                    <tr><th>Tài khoản</th><th>Tên hiển thị</th><th>Vai trò</th><th class="num">Lượt</th>
                                         <th class="num">Đúng</th><th>Chơi gần nhất</th><th></th></tr>
                                 </thead>
                                 <tbody></tbody>
