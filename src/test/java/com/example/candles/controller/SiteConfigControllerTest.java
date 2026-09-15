@@ -29,4 +29,19 @@ class SiteConfigControllerTest {
         assertNull(SiteConfigController.goatcounterEndpoint("a/b"));
         assertNull(SiteConfigController.goatcounterEndpoint("-leading"));
     }
+
+    @Test
+    void telegramIsOffUntilABotIsConfigured() {
+        assertNull(SiteConfigController.telegram("", "", ""));
+        assertNull(SiteConfigController.telegram(null, null, null));
+    }
+
+    @Test
+    void theAppLinkIsBuiltFromNamesAndNeverFromAUrl() {
+        assertEquals("https://t.me/candle_guess_bot/play",
+                SiteConfigController.telegram("1:x", "@candle_guess_bot", "play").appLink());
+        assertNull(SiteConfigController.telegram("1:x", "evil.example/x", "play").appLink());
+        assertNull(SiteConfigController.telegram("1:x", "candle_guess_bot", "").appLink());
+        assertEquals(true, SiteConfigController.telegram("1:x", "", "").login());
+    }
 }

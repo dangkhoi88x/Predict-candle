@@ -91,6 +91,14 @@ candles:
       api-key: ${CLOUDINARY_API_KEY:}
       api-secret: ${CLOUDINARY_API_SECRET:}
   timeframe: 1h
+  telegram:
+    # The bot the Mini App runs under (BotFather). The token signs every launch's initData, so it is
+    # the whole secret of Telegram login — environment only. Empty turns Telegram login off.
+    bot-token: ${TELEGRAM_BOT_TOKEN:}
+    # For share links that open inside Telegram: https://t.me/<bot-username>/<app-name>.
+    bot-username: ${TELEGRAM_BOT_USERNAME:}
+    app-name: ${TELEGRAM_APP_NAME:}
+    init-data-max-age: PT24H
   analytics:
     # GoatCounter site code (the part before .goatcounter.com). Empty counts nothing, which is
     # every checkout — only the deployment sets it. See SiteConfigController and analytics.js.

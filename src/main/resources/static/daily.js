@@ -239,25 +239,34 @@
         return !archiveDay && !challengeId;
     }
 
+    /** The share text without its link; {@link sharePath} is the link, kept apart for Telegram's sheet. */
     function shareText() {
         var correct = results.filter(Boolean).length;
         if (challengeId) {
             return "Mình đoán đúng " + correct + "/" + results.length + " nến trên chart "
                 + state.creatorName + " thách (họ đúng " + state.creatorCorrect + "/" + state.totalGuesses
-                + "). Bạn thử không?\n" + window.location.origin + "/?thach=" + challengeId;
+                + "). Bạn thử không?";
         }
         var dots = results.map(function (ok) { return ok ? "🟩" : "🟥"; }).join("");
-        return "Candle Guess #" + state.roundNumber + " — " + correct + "/" + results.length
-            + "\n" + dots + "\n" + window.location.origin;
+        return "Candle Guess #" + state.roundNumber + " — " + correct + "/" + results.length + "\n" + dots;
+    }
+
+    function shareLabel() {
+        return window.CandleTelegram && window.CandleTelegram.inside() ? "Gửi kết quả qua Telegram" : "Sao chép kết quả";
+    }
+
+    function sharePath() {
+        return challengeId ? "/?thach=" + challengeId : "/";
     }
 
     async function copyShare() {
         if (window.CandleAnalytics) window.CandleAnalytics.track(challengeId ? "challenge-share" : "daily-share");
-        var text = shareText();
+        if (window.CandleTelegram && window.CandleTelegram.share(shareText(), sharePath())) return;
+        var text = shareText() + "\n" + window.location.origin + (challengeId ? sharePath() : "");
         try {
             await navigator.clipboard.writeText(text);
             el.share.textContent = "Đã sao chép";
-            setTimeout(function () { el.share.textContent = "Sao chép kết quả"; }, 2000);
+            setTimeout(function () { el.share.textContent = shareLabel(); }, 2000);
         } catch (e) {
             /* Refused — an insecure origin, or a browser that wants a gesture it did not see.
                Putting the text on screen and selecting it is the difference between a share
@@ -404,7 +413,7 @@
             return;
         }
 
-        el.share.textContent = "Sao chép kết quả";
+        el.share.textContent = shareLabel();
         el.share.classList.remove("hidden");
         el.doneLine.textContent = "Bạn đoán đúng " + correct + "/" + results.length + " nến.";
         el.status.textContent = "Xong thử thách hôm nay.";

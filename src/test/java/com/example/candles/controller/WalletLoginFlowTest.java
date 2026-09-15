@@ -163,4 +163,13 @@ class WalletLoginFlowTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.walletAddress").value(wallet.address()));
     }
+
+    /** The default context has no bot configured: the Telegram door is not there at all. */
+    @Test
+    void telegramLoginDoesNotExistWithoutABot() throws Exception {
+        mockMvc.perform(post("/api/auth/telegram")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"initData\":\"auth_date=1&hash=00\"}"))
+                .andExpect(status().isNotFound());
+    }
 }

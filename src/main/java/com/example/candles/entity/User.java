@@ -96,7 +96,9 @@ public class User {
      * handing over the full 42 characters, which matters once an admin has renamed the
      * account and {@link #getDisplayName()} no longer is that shorthand.
      */
+    /** A Telegram account ({@code tg:<id>}) can be shorter than the ten characters this abbreviates. */
     public String getShortWalletAddress() {
+        if (walletAddress.length() <= 11) return walletAddress;
         return walletAddress.substring(0, 6) + "…" + walletAddress.substring(walletAddress.length() - 4);
     }
 
