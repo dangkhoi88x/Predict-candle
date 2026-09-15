@@ -24,6 +24,14 @@ public class RestClientConfig {
     }
 
     @Bean
+    public RestClient telegramRestClient(
+            @Value("${candles.telegram.api-base-url:https://api.telegram.org}") String baseUrl) {
+        return RestClient.builder()
+                .baseUrl(baseUrl)
+                .build();
+    }
+
+    @Bean
     public RestClient yahooFinanceRestClient() {
         return RestClient.builder()
                 .baseUrl("https://query1.finance.yahoo.com")

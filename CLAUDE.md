@@ -996,6 +996,35 @@ protection with one exception; `TelegramLoginFlowTest` pins both headers.
 
 Setting up the bot (BotFather, `/newapp`, the three variables) is `docs/DEPLOY_PLAN.md` §4.4.
 
+### Telegram group reminders
+
+The bot posts the daily into the groups that asked for it: at 08:00 Vietnam time that today's
+round is open, at 21:00 the top three so far and the hours left (`TelegramDailyScheduler`, crons
+`TELEGRAM_MORNING_CRON` / `TELEGRAM_EVENING_CRON`, `-` switches one off).
+`TelegramDailyBroadcastService` composes and sends; `TelegramBotClient` is the Bot API.
+
+- **Opt-in by chat id** (`TELEGRAM_DAILY_CHAT_IDS`). Adding the bot to a group sends nothing;
+  the list is where a group's agreement is written down. Also off without the bot's username and
+  app name, since the button opens `t.me/<bot>/<app>?startapp=daily`.
+- **No message gives the chart away** — the share text's rule: round number and scores, never the
+  pair or a date. `theMorningMessageGoesToEveryChatOnceAndGivesNothingAway` checks the symbol.
+- **Each message is claimed before it is sent** (`telegram_broadcasts`, unique on chat, kind,
+  day). Render keeps the old instance running through a deploy, so two schedulers can fire the
+  same minute; the claim makes that one post. Insert-then-send means a crash in between loses a
+  reminder rather than doubling one. A failed send deletes its claim and goes to recent errors.
+- **The standings are `roundFinishers`**: DAILY rows on that day's chart, finished only, admins
+  out (the leaderboard's rule), best score then earliest finish. They are a snapshot — the round
+  runs to UTC midnight, 07:00 in Vietnam — so the message says hours left, not winners.
+- **Display names are escaped** for Telegram's HTML mode (`&`, `<`, `>` only — `HtmlUtils` would
+  turn Vietnamese letters into named entities Telegram does not know).
+- **The bot token is in every Bot API path**, and Spring's I/O exceptions quote the URL. The
+  client rethrows every failure as `TelegramApiException` built from Telegram's `description` or
+  the exception type, never the original message, so the token cannot reach the log or the ops
+  pane. It is also concatenated into the path, not a URI variable: a variable percent-encodes the
+  token's colon.
+- A job that fires while Render has the instance asleep does not run; the keep-awake cron
+  (DEPLOY_PLAN §4.3) is what makes the times reliable.
+
 ### Achievements
 
 Nine badges on the profile, from `Achievement` — a pure enum where each entry is a name, a

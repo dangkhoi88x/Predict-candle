@@ -99,6 +99,13 @@ candles:
     bot-username: ${TELEGRAM_BOT_USERNAME:}
     app-name: ${TELEGRAM_APP_NAME:}
     init-data-max-age: PT24H
+    # Group chats that agreed to the daily reminders, comma-separated ids (a group's is negative).
+    # Empty sends nothing. See TelegramDailyBroadcastService and DEPLOY_PLAN §4.5.
+    daily-chat-ids: ${TELEGRAM_DAILY_CHAT_IDS:}
+    # Vietnam time (the scheduler's zone). "-" switches that message off.
+    morning-cron: ${TELEGRAM_MORNING_CRON:0 0 8 * * *}
+    evening-cron: ${TELEGRAM_EVENING_CRON:0 0 21 * * *}
+    api-base-url: https://api.telegram.org
   analytics:
     # GoatCounter site code (the part before .goatcounter.com). Empty counts nothing, which is
     # every checkout — only the deployment sets it. See SiteConfigController and analytics.js.
