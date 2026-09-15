@@ -57,6 +57,30 @@ public interface GuessResultRepository extends JpaRepository<GuessResult, Long> 
                                        @Param("startIndex") int startIndex);
 
     /**
+     * Everybody who has finished one chart in {@code mode} — {@code total} guesses in — as
+     * {@code [User, correct, finishedAt]}, best first and, between equals, whoever finished first.
+     * Admin accounts are left out for the leaderboard's reason: staff testing the game are not
+     * players to announce.
+     */
+    @Query("""
+            select g.user, sum(case when g.correct = true then 1 else 0 end), max(g.createdAt)
+            from GuessResult g
+            where g.mode = :mode
+              and g.asset.id = :assetId
+              and g.timeframe = :timeframe
+              and g.startIndex = :startIndex
+              and g.user.role <> com.example.candles.entity.Role.ADMIN
+            group by g.user
+            having count(g) >= :total
+            order by sum(case when g.correct = true then 1 else 0 end) desc, max(g.createdAt) asc
+            """)
+    List<Object[]> roundFinishers(@Param("mode") GuessMode mode,
+                                  @Param("assetId") Long assetId,
+                                  @Param("timeframe") String timeframe,
+                                  @Param("startIndex") int startIndex,
+                                  @Param("total") long total);
+
+    /**
      * The distinct UTC days this player played the daily challenge on, newest first — folded by
      * {@link com.example.candles.domain.PlayStreak} into the streak the daily tab shows.
      *

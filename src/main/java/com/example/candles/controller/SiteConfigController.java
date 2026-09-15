@@ -1,5 +1,6 @@
 package com.example.candles.controller;
 
+import com.example.candles.domain.TelegramAppLink;
 import com.example.candles.dto.response.SiteConfigResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.CacheControl;
@@ -26,8 +27,6 @@ public class SiteConfigController {
 
     private final SiteConfigResponse config;
 
-    private static final Pattern TELEGRAM_NAME = Pattern.compile("[A-Za-z0-9_]{3,64}");
-
     public SiteConfigController(@Value("${candles.analytics.goatcounter:}") String goatcounterCode,
                                 @Value("${candles.telegram.bot-token:}") String telegramBotToken,
                                 @Value("${candles.telegram.bot-username:}") String telegramBotUsername,
@@ -39,10 +38,7 @@ public class SiteConfigController {
     /** Names only, validated like the GoatCounter code, so neither can make the page link anywhere else. */
     static SiteConfigResponse.Telegram telegram(String botToken, String botUsername, String appName) {
         boolean login = botToken != null && !botToken.isBlank();
-        String bot = botUsername == null ? "" : botUsername.trim().replaceFirst("^@", "");
-        String app = appName == null ? "" : appName.trim();
-        String link = TELEGRAM_NAME.matcher(bot).matches() && TELEGRAM_NAME.matcher(app).matches()
-                ? "https://t.me/" + bot + "/" + app : null;
+        String link = TelegramAppLink.of(botUsername, appName);
         return login || link != null ? new SiteConfigResponse.Telegram(login, link) : null;
     }
 
