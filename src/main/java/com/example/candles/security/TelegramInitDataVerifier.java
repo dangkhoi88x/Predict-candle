@@ -53,12 +53,19 @@ public class TelegramInitDataVerifier {
         this.json = json;
     }
 
+    static final String INVALID_MESSAGE =
+            "Không xác thực được lượt mở từ Telegram. Hãy đóng game rồi mở lại từ Telegram.";
+
+    private static InvalidCredentialsException invalid() {
+        return new InvalidCredentialsException(INVALID_MESSAGE);
+    }
+
     public boolean enabled() {
         return secretKey != null;
     }
 
     public TelegramUser verify(String initData) {
-        if (!enabled() || initData == null || initData.isBlank()) throw new InvalidCredentialsException();
+        if (!enabled() || initData == null || initData.isBlank()) throw invalid();
 
         Map<String, String> fields = new TreeMap<>();
         for (String pair : initData.split("&")) {
@@ -67,7 +74,7 @@ public class TelegramInitDataVerifier {
             fields.put(decode(pair.substring(0, eq)), decode(pair.substring(eq + 1)));
         }
         String hash = fields.remove("hash");
-        if (hash == null) throw new InvalidCredentialsException();
+        if (hash == null) throw invalid();
 
         String dataCheckString = fields.entrySet().stream()
                 .map(e -> e.getKey() + "=" + e.getValue())
@@ -77,30 +84,30 @@ public class TelegramInitDataVerifier {
         try {
             given = HexFormat.of().parseHex(hash);
         } catch (IllegalArgumentException e) {
-            throw new InvalidCredentialsException();
+            throw invalid();
         }
-        if (!MessageDigest.isEqual(expected, given)) throw new InvalidCredentialsException();
+        if (!MessageDigest.isEqual(expected, given)) throw invalid();
 
         Instant authDate;
         try {
             authDate = Instant.ofEpochSecond(Long.parseLong(fields.get("auth_date")));
         } catch (RuntimeException e) {
-            throw new InvalidCredentialsException();
+            throw invalid();
         }
         Instant now = clock.instant();
         if (authDate.isBefore(now.minus(maxAge)) || authDate.isAfter(now.plus(FUTURE_TOLERANCE))) {
-            throw new InvalidCredentialsException();
+            throw invalid();
         }
 
         try {
             JsonNode user = json.readTree(fields.get("user"));
             long id = user.path("id").asLong(0);
-            if (id <= 0) throw new InvalidCredentialsException();
+            if (id <= 0) throw invalid();
             return new TelegramUser(id, text(user, "username"), text(user, "first_name"), text(user, "last_name"));
         } catch (InvalidCredentialsException e) {
             throw e;
         } catch (RuntimeException e) {
-            throw new InvalidCredentialsException();
+            throw invalid();
         }
     }
 
