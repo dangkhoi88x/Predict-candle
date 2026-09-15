@@ -135,7 +135,7 @@ public class ChallengeService {
                         g.getActualDirection().name(), g.isCorrect())).toList(),
                 resolved,
                 hints,
-                challenge.getCreatorName(),
+                creatorName(challenge),
                 challenge.getCreatorCorrect(),
                 mine,
                 finishers(challenge, callerId, totalGuesses));
@@ -185,6 +185,19 @@ public class ChallengeService {
                             ((Number) row[1]).intValue(), total, user.getId().equals(callerId));
                 })
                 .toList();
+    }
+
+    /**
+     * The creator's name as it is now, not as it was when the link was made. {@code creator_name}
+     * is a snapshot, and reading it for a signed-in creator meant an admin who renamed an offensive
+     * display name left the old one on every link that account had sent. The snapshot is only
+     * what is left for an anonymous creator, or one whose account has been deleted — and
+     * {@link ChallengeRepository#forgetCreator} has already replaced it in that case.
+     */
+    static String creatorName(Challenge challenge) {
+        User creator = challenge.getCreator();
+        if (creator == null) return challenge.getCreatorName();
+        return creator.getDisplayName() == null ? creator.getShortWalletAddress() : creator.getDisplayName();
     }
 
     private Challenge find(String id) {
