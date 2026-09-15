@@ -39,6 +39,7 @@ class AssetSeedOrderTest {
     @Autowired private GuessResultRepository guessResults;
     @Autowired private LivePredictionRepository livePredictions;
     @Autowired private DemoTradeRepository demoTrades;
+    @Autowired private com.example.candles.repository.ChallengeRepository challenges;
     @Autowired private CandlesProperties properties;
 
     @Test
@@ -47,6 +48,7 @@ class AssetSeedOrderTest {
         // This list is the one thing here that ages — a new table with an asset_id needs a line,
         // and the failure it causes otherwise depends on whether an earlier test in the same run
         // happened to leave a row behind, so it does not reproduce when the class runs alone.
+        challenges.deleteAllInBatch(); // challenge_guesses go with them (ON DELETE CASCADE)
         demoTrades.deleteAllInBatch();
         livePredictions.deleteAllInBatch();
         guessResults.deleteAllInBatch();

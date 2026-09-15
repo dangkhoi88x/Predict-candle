@@ -929,6 +929,39 @@ by coincidence, and the unique constraint would then treat them as one archived 
 of thousands of windows per asset this is remote, and pinning it would mean carrying the day on
 `guess_results` for no other reason.
 
+### Challenge links
+
+A finished practice chart can be sent to a friend: `POST /api/challenges` → `/?thach=<id>`, played
+through `GET /api/challenges/{id}` and `POST /api/challenges/{id}/guess`, all public.
+
+**The advertised score is one the server signed.** A practice chart's last `GuessResponse` carries
+`challengeToken` — a JWT with `type: challenge-result`, the chart, and `correct = guesses − misses`,
+where `misses` rode the signed round token the whole way. Creating a challenge requires that token,
+so a link cannot claim a result nobody made. `RoundTokenService.verify` refuses anything carrying a
+`type` claim, so a result token cannot be spent as a round, and the reverse is checked by type.
+Only practice mints one: a daily or archive chart is already everyone's, and challenging a
+challenge would let a player launder a link they were sent into one saying they set it.
+
+**Challenge guesses live in `challenge_guesses`, never `guess_results`, and that is the design.**
+The creator has seen the chart's answers, so a challenge is a chart whose answers somebody already
+knows; counted towards score, badges, retention or the leaderboard, a second account could farm
+points off links the first made. `GuessMode.CHALLENGE` exists for the token only — the CHECK on
+`guess_results.mode` would refuse a row. `RoundPlayService.play` therefore takes a `GuessRecorder`;
+practice, daily and archive pass `GuessResultService::record`, challenges their own. For the same
+reason the creator cannot play their own challenge (`checkToken` refuses, and `mine` returns the
+chart finished with no token), and a signed-in creator asking twice for one chart gets the same id.
+
+Everything else is the daily's shape: one attempt per signed-in player from a unique constraint,
+resume from recorded rows, `checkToken` making the path's challenge and the token's chart agree.
+Anonymous play is never recorded, so it never appears among `finishers`.
+
+**The daily board plays challenges**, the way it plays archive days: `daily.js`'s `challengeId`
+switches the URLs, heading, gate text, finish line (you vs the creator) and adds the finishers list;
+`isToday()` keeps challenge plays out of the daily funnel events. `loadSeq` drops a stale response —
+opening a challenge reveals the tab (which loads today) and then loads the challenge, and whichever
+answered last used to win. `?thach=` is read on `DOMContentLoaded` and stripped from the address bar.
+`AssetSeedOrderTest` deletes every table pointing at `assets`; `challenges` is on that list.
+
 ### Achievements
 
 Nine badges on the profile, from `Achievement` — a pure enum where each entry is a name, a

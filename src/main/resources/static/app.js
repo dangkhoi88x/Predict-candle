@@ -72,6 +72,7 @@
         gameStartTitle: document.getElementById("game-start-title"),
         gameStartNote: document.getElementById("game-start-note"),
         gameStartButton: document.getElementById("game-start-button"),
+        challengeCreate: document.getElementById("challenge-create"),
         soundToggle: document.getElementById("sound-toggle"),
         gameStreak: document.getElementById("game-streak"),
         gameStreakValue: document.getElementById("game-streak-value"),
@@ -456,7 +457,66 @@
        round being parked — but the rest of the chart is never asked. */
     var IDLE_TIMEOUT_STREAK = 2;
 
+    /* ---- challenge a friend ------------------------------------------------------------------
+
+       The finished chart's last response carries a signed result (challengeToken). Pressing the
+       button turns it into a short link and shares it — the phone's share sheet where there is one,
+       the clipboard otherwise. The score in the message is the one the server signed, so a link
+       cannot claim a result nobody made. */
+    var pendingChallengeToken = null;
+
+    function hideChallengeOffer() {
+        pendingChallengeToken = null;
+        el.challengeCreate.classList.add("hidden");
+    }
+
+    function offerChallenge(challengeToken, correct, total) {
+        if (!challengeToken) return hideChallengeOffer();
+        pendingChallengeToken = challengeToken;
+        el.challengeCreate.disabled = false;
+        el.challengeCreate.lastChild.textContent = "Thách bạn bè chart này";
+        el.challengeCreate.classList.remove("hidden");
+        el.challengeCreate.dataset.score = correct + "/" + total;
+    }
+
+    async function createChallenge() {
+        if (!pendingChallengeToken) return;
+        cancelAutoNextChart();
+        el.challengeCreate.disabled = true;
+        try {
+            var res = await window.CandleAuth.authFetch("/api/challenges", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ challengeToken: pendingChallengeToken }),
+            });
+            var created = await res.json();
+            if (!res.ok) throw new Error(created.message || "Không tạo được thách đấu");
+            var url = window.location.origin + created.path;
+            var text = "Mình đoán đúng " + created.correct + "/" + created.total
+                + " nến trên chart này. Bạn làm được không?";
+            if (window.CandleAnalytics) window.CandleAnalytics.track("challenge-create");
+            if (navigator.share) {
+                try {
+                    await navigator.share({ title: "Candle Guess — thách đấu", text: text, url: url });
+                    setStatus("Đã gửi thách đấu.");
+                    return;
+                } catch (shareError) {
+                    if (shareError && shareError.name === "AbortError") { setStatus(""); return; }
+                    // Share sheet unavailable after all: fall through to the clipboard.
+                }
+            }
+            await navigator.clipboard.writeText(text + "\n" + url);
+            el.challengeCreate.lastChild.textContent = "Đã sao chép link thách đấu";
+            setStatus("Dán link vào Zalo, Telegram hay Messenger để thách bạn bè.");
+        } catch (e) {
+            setStatus("Lỗi: " + e.message);
+        } finally {
+            el.challengeCreate.disabled = false;
+        }
+    }
+
     function showStartGate(reason) {
+        hideChallengeOffer();
         clearTimeout(autoNextChartTimer);
         autoNextChartTimer = null;
         stopGuessTimer();
@@ -667,6 +727,7 @@
     async function loadRound() {
         clearTimeout(autoNextChartTimer);
         autoNextChartTimer = null;
+        hideChallengeOffer();
         el.marketCard.classList.remove("is-gated");
         state.timeoutsInARow = 0;
         stopGuessTimer();
@@ -1137,6 +1198,7 @@
 
                 showRoundIdentity(result.identity);
                 showRoundContext(result.context);
+                offerChallenge(result.challengeToken, state.sessionCorrect, result.totalGuesses);
 
                 // A chart that ran out on its last guess was not finished by anyone watching.
                 if (missedIt) {
@@ -1274,6 +1336,8 @@
     renderStats();
     /* The first chart waits for the first-visit tour: a round's clock starts when it is dealt,
        so dealing it under the tour would spend a newcomer's first guess while they read. */
+    el.challengeCreate.addEventListener("click", createChallenge);
+
     el.gameStartButton.addEventListener("click", function () {
         window.CandleSound.unlock();
         loadRound();

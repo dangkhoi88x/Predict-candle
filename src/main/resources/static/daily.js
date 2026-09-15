@@ -39,6 +39,9 @@
         archive: document.getElementById("daily-archive"),
         shareText: document.getElementById("daily-share-text"),
         board: document.querySelector("#view-daily .daily-board"),
+        finishers: document.getElementById("daily-finishers"),
+        title: document.getElementById("daily-title"),
+        intro: document.getElementById("daily-intro"),
         start: document.getElementById("daily-start"),
         startTitle: document.getElementById("daily-start-title"),
         startNote: document.getElementById("daily-start-note"),
@@ -53,6 +56,14 @@
     /* Which day is on the board: null is today, a "YYYY-MM-DD" string is a replay. Every
        request and every label reads this, so the board can only ever be showing one day. */
     var archiveDay = null;
+    /* A friend's challenge on the board instead of a day: "/?thach=<id>" puts it here. Same board,
+       same clock, same one attempt; the server keeps its guesses apart from everything that scores
+       (V18). Null whenever a day is on the board, so the two can never both be. */
+    var challengeId = null;
+    /* Every load() bumps this and a response for an older one is dropped. Opening a challenge
+       reveals the tab, which loads today, and then loads the challenge — whichever answered last
+       used to win. */
+    var loadSeq = 0;
     var lastArchive = [];
     var timerId = null;
     var deadline = 0;
@@ -104,6 +115,14 @@
             el.startNote.textContent = "Bạn đã đoán " + guessesMade + "/" + total + " nến. Đồng hồ "
                 + seconds + " giây chạy lại khi bạn bấm.";
             el.startButton.textContent = "Tiếp tục từ nến " + (guessesMade + 1);
+        } else if (challengeId && state) {
+            el.startTitle.textContent = state.creatorName + " đoán đúng " + state.creatorCorrect + "/" + total
+                + " nến trên chart này";
+            el.startNote.textContent = "Bạn làm được không? " + total + " nến, " + seconds + " giây mỗi nến."
+                + (window.CandleAuth.getUser()
+                    ? " Một lượt, kết quả được ghi lên bảng của thách đấu."
+                    : " Kết nối ví hoặc email để kết quả được ghi lên bảng của thách đấu.");
+            el.startButton.textContent = "Nhận thách đấu";
         } else {
             el.startTitle.textContent = archiveDay ? "Chơi lại ngày này?" : "Sẵn sàng?";
             el.startNote.textContent = total + " nến, " + seconds + " giây mỗi nến"
@@ -206,22 +225,34 @@
        Deliberately no asset name and no dates — that is the answer, and a result you cannot
        post without spoiling the puzzle is one nobody posts. */
     function roundUrl() {
+        if (challengeId) return "/api/challenges/" + encodeURIComponent(challengeId);
         return archiveDay ? "/api/daily/archive/" + archiveDay : "/api/daily/round";
     }
 
     function guessUrl() {
+        if (challengeId) return "/api/challenges/" + encodeURIComponent(challengeId) + "/guess";
         return archiveDay ? "/api/daily/archive/" + archiveDay + "/guess" : "/api/daily/guess";
+    }
+
+    /** Only today's challenge feeds the daily funnel; a replay or a friend's challenge is its own step. */
+    function isToday() {
+        return !archiveDay && !challengeId;
     }
 
     function shareText() {
         var correct = results.filter(Boolean).length;
+        if (challengeId) {
+            return "Mình đoán đúng " + correct + "/" + results.length + " nến trên chart "
+                + state.creatorName + " thách (họ đúng " + state.creatorCorrect + "/" + state.totalGuesses
+                + "). Bạn thử không?\n" + window.location.origin + "/?thach=" + challengeId;
+        }
         var dots = results.map(function (ok) { return ok ? "🟩" : "🟥"; }).join("");
         return "Candle Guess #" + state.roundNumber + " — " + correct + "/" + results.length
             + "\n" + dots + "\n" + window.location.origin;
     }
 
     async function copyShare() {
-        if (window.CandleAnalytics) window.CandleAnalytics.track("daily-share");
+        if (window.CandleAnalytics) window.CandleAnalytics.track(challengeId ? "challenge-share" : "daily-share");
         var text = shareText();
         try {
             await navigator.clipboard.writeText(text);
@@ -293,7 +324,8 @@
             el.lessonText.textContent = "Ngay trước nến thứ " + lesson.guessNumber + ", chart có mẫu " + name
                 + ". Bạn đã đọc đúng lần này; xem lại để nhận ra nó nhanh hơn.";
         } else {
-            el.lessonText.textContent = "Chart hôm nay có mẫu " + name + ". Xem lại cách nhận diện nó.";
+            el.lessonText.textContent = (challengeId ? "Chart này" : "Chart hôm nay") + " có mẫu " + name
+                + ". Xem lại cách nhận diện nó.";
         }
         setLessonAction("Xem mẫu " + name, function () { window.CandlePatterns.reveal(lesson.patternId); });
     }
@@ -351,11 +383,34 @@
         el.done.classList.remove("hidden");
 
         var correct = results.filter(Boolean).length;
+        renderFinishers();
+
+        if (challengeId) {
+            el.share.textContent = "Thách tiếp người khác";
+            el.share.classList.toggle("hidden", !!state.mine);
+            if (state.mine) {
+                el.doneLine.textContent = "Bạn tạo thử thách này với " + state.creatorCorrect + "/" + state.totalGuesses + " nến.";
+                el.next.textContent = "Bạn đã biết đáp án của chart này nên không chơi lại được. Bảng bên dưới là kết quả của người được thách.";
+                el.status.textContent = "";
+                return;
+            }
+            var theirs = state.creatorCorrect;
+            el.doneLine.textContent = "Bạn đúng " + correct + "/" + results.length + " — " + state.creatorName
+                + " đúng " + theirs + "/" + state.totalGuesses + ".";
+            el.next.textContent = correct > theirs ? "Bạn thắng thách đấu này."
+                : correct === theirs ? "Hoà." : "Lần này " + state.creatorName + " đọc chart tốt hơn.";
+            el.status.textContent = "Xong thách đấu.";
+            renderLesson();
+            return;
+        }
+
+        el.share.textContent = "Sao chép kết quả";
+        el.share.classList.remove("hidden");
         el.doneLine.textContent = "Bạn đoán đúng " + correct + "/" + results.length + " nến.";
         el.status.textContent = "Xong thử thách hôm nay.";
 
         var next = new Date(state.nextRoundAt);
-        el.next.textContent = "Thử thách tiếp theo mở lúc "
+        el.next.textContent = archiveDay ? "" : "Thử thách tiếp theo mở lúc "
             + next.toLocaleString("vi-VN", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit" })
             + " (giờ của bạn).";
 
@@ -380,7 +435,7 @@
             var payload = await res.json();
             if (!res.ok) throw new Error(payload.message || ("Máy chủ trả về " + res.status));
             // Today's challenge only: an archive replay is a different step of a different funnel.
-            if (direction && !archiveDay && window.CandleAnalytics) window.CandleAnalytics.trackOnce("daily-first-guess");
+            if (direction && isToday() && window.CandleAnalytics) window.CandleAnalytics.trackOnce("daily-first-guess");
 
             candles.push(payload.actualCandle);
             results.push(payload.correct);
@@ -392,7 +447,7 @@
             renderHint();
 
             if (payload.sessionComplete) {
-                if (!archiveDay && window.CandleAnalytics) window.CandleAnalytics.track("daily-complete");
+                if (window.CandleAnalytics) window.CandleAnalytics.track(challengeId ? "challenge-complete" : isToday() ? "daily-complete" : "archive-complete");
                 // Only this response carries the chart's patterns; take the lesson from it now.
                 chartLesson = lessonFromContext(payload.context, results);
                 /* Signed in, re-read: the streak only moves once the day is finished and the
@@ -489,18 +544,61 @@
     }
 
     function renderReplayBanner() {
-        el.replay.classList.toggle("hidden", !archiveDay);
-        if (archiveDay && state) {
+        // The heading says which kind of chart is on the board; "the same chart for everyone,
+        // once a day" is not true of a link a friend sent.
+        el.title.textContent = challengeId ? "Thách Đấu" : "Thử Thách Hôm Nay";
+        el.intro.textContent = challengeId
+            ? "Một người bạn đã chơi chart này và gửi nó cho bạn. Cùng biểu đồ, cùng luật."
+            : "Cùng một biểu đồ cho tất cả mọi người, mỗi ngày một lần.";
+        el.replay.classList.toggle("hidden", isToday());
+        if (challengeId && state) {
+            el.replayLabel.textContent = "Thách đấu từ " + state.creatorName;
+        } else if (archiveDay && state) {
             el.replayLabel.textContent = "Đang chơi lại #" + state.roundNumber;
+        }
+    }
+
+    /* Who has played the challenge through, best first. Only signed-in players — an anonymous
+       attempt is never recorded — so an empty list says how to get onto it. */
+    function renderFinishers() {
+        el.finishers.innerHTML = "";
+        el.finishers.classList.toggle("hidden", !challengeId);
+        if (!challengeId || !state) return;
+        var title = document.createElement("span");
+        title.className = "side-eyebrow";
+        title.textContent = "Bảng của thách đấu";
+        el.finishers.appendChild(title);
+        var list = document.createElement("ol");
+        list.className = "daily-finishers-list";
+        var creator = document.createElement("li");
+        creator.className = "is-creator";
+        creator.textContent = state.creatorName + " (người thách) — " + state.creatorCorrect + "/" + state.totalGuesses;
+        list.appendChild(creator);
+        (state.finishers || []).forEach(function (f) {
+            var li = document.createElement("li");
+            if (f.you) li.className = "is-you";
+            li.textContent = (f.you ? "Bạn" : f.displayName) + " — " + f.correct + "/" + f.total;
+            list.appendChild(li);
+        });
+        el.finishers.appendChild(list);
+        if (!(state.finishers || []).length) {
+            var empty = document.createElement("p");
+            empty.className = "daily-finishers-empty";
+            empty.textContent = window.CandleAuth.getUser()
+                ? "Chưa ai khác chơi xong thách đấu này."
+                : "Kết nối ví hoặc email rồi chơi để có tên trên bảng này.";
+            el.finishers.appendChild(empty);
         }
     }
 
     /** @param play true when the player pressed start — only then is the chart drawn and timed. */
     async function load(play) {
         stopTimer();
+        var seq = ++loadSeq;
         try {
             var res = await window.CandleAuth.authFetch(roundUrl());
             var payload = await res.json();
+            if (seq !== loadSeq) return; // a later load() owns the board now
             if (!res.ok) throw new Error(payload.message || ("Máy chủ trả về " + res.status));
 
             state = payload;
@@ -509,8 +607,8 @@
             hints = payload.hints;
             token = payload.roundToken;
 
-            el.number.textContent = "#" + payload.roundNumber;
-            renderStreak(payload.streak);
+            el.number.textContent = challengeId ? "Thách đấu" : "#" + payload.roundNumber;
+            renderStreak(challengeId ? null : payload.streak);
             renderReplayBanner();
 
             if (payload.completed) {
@@ -546,7 +644,8 @@
             setPlaying(true);
             startTimer();
         } catch (e) {
-            el.status.textContent = "Không tải được thử thách hôm nay: " + e.message;
+            if (seq !== loadSeq) return;
+            el.status.textContent = (challengeId ? "Không tải được thách đấu: " : "Không tải được thử thách hôm nay: ") + e.message;
             setPlaying(false);
         }
     }
@@ -563,6 +662,8 @@
     el.back.addEventListener("click", async function () {
         hideLesson();
         archiveDay = null;
+        challengeId = null;
+        renderFinishers();
         await load();
         renderArchive(lastArchive);
     });
@@ -579,9 +680,41 @@
        would think they had already played. */
     window.__initDailyView = function () {
         // A lesson taken from a replayed day does not belong on today.
-        if (archiveDay) hideLesson();
+        if (!isToday()) hideLesson();
         archiveDay = null;
+        challengeId = null;
+        renderFinishers();
         loadArchive();
         return load();
     };
+
+    /** Puts a friend's challenge on the board, behind its start button. */
+    function openChallenge(id) {
+        if (window.CandleNav) window.CandleNav.go("daily"); // loads today first; loadSeq drops that
+        hideLesson();
+        archiveDay = null;
+        challengeId = id;
+        state = null;
+        if (window.CandleAnalytics) window.CandleAnalytics.track("challenge-open");
+        return load();
+    }
+
+    /* "/?thach=<id>" is how a challenge link arrives. Read once every script has run — the same
+       reason nav.js waits for ?view — and then taken out of the address bar, so a reload lands on
+       the game rather than replaying the link. */
+    document.addEventListener("DOMContentLoaded", function () {
+        try {
+            var params = new URLSearchParams(window.location.search);
+            var id = params.get("thach");
+            if (!id) return;
+            params.delete("thach");
+            var rest = params.toString();
+            history.replaceState(null, "", window.location.pathname + (rest ? "?" + rest : "") + window.location.hash);
+            if (/^[a-z0-9]{4,16}$/.test(id)) openChallenge(id);
+        } catch (e) {
+            // Without URLSearchParams the link opens the site normally.
+        }
+    });
+
+    window.CandleDaily = { openChallenge: openChallenge };
 })();

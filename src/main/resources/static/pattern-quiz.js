@@ -93,6 +93,10 @@
             var payload = await res.json();
             if (!res.ok) throw new Error(payload.message || ("Máy chủ trả về " + res.status));
             state = payload;
+            /* The choices are named from the library fetch the page starts at load. Opening the
+               daily tab straight from a link (?view=daily, ?thach=…) asks before that fetch has
+               landed, and the buttons read "shooting-star" and "dark-cloud-cover". */
+            if (window.CandlePatterns && window.CandlePatterns.whenLoaded) await window.CandlePatterns.whenLoaded();
             render();
         } catch (e) {
             // Its own failure: the daily round beside it is unaffected and stays playable.
