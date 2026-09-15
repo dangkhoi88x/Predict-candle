@@ -13,9 +13,14 @@ import com.example.candles.dto.response.AdminPlayerDetail;
 import com.example.candles.dto.response.AdminPlayerPage;
 import com.example.candles.dto.response.PlayerSummary;
 import com.example.candles.entity.User;
+import com.example.candles.config.CandlesProperties;
+import com.example.candles.repository.ChallengeGuessRepository;
 import com.example.candles.repository.ChallengeRepository;
+import com.example.candles.repository.DemoAccountRepository;
+import com.example.candles.repository.DemoTradeRepository;
 import com.example.candles.repository.GuessResultRepository;
 import com.example.candles.repository.LivePredictionRepository;
+import com.example.candles.repository.PatternQuizResultRepository;
 import com.example.candles.repository.UserRepository;
 
 /**
@@ -40,15 +45,30 @@ public class AdminPlayerService {
     private final GuessResultRepository guessResultRepository;
     private final LivePredictionRepository livePredictionRepository;
     private final ChallengeRepository challengeRepository;
+    private final ChallengeGuessRepository challengeGuessRepository;
+    private final PatternQuizResultRepository patternQuizResultRepository;
+    private final DemoAccountRepository demoAccountRepository;
+    private final DemoTradeRepository demoTradeRepository;
+    private final CandlesProperties properties;
 
     public AdminPlayerService(UserRepository userRepository,
                               GuessResultRepository guessResultRepository,
                               LivePredictionRepository livePredictionRepository,
-                              ChallengeRepository challengeRepository) {
+                              ChallengeRepository challengeRepository,
+                              ChallengeGuessRepository challengeGuessRepository,
+                              PatternQuizResultRepository patternQuizResultRepository,
+                              DemoAccountRepository demoAccountRepository,
+                              DemoTradeRepository demoTradeRepository,
+                              CandlesProperties properties) {
         this.userRepository = userRepository;
         this.guessResultRepository = guessResultRepository;
         this.livePredictionRepository = livePredictionRepository;
         this.challengeRepository = challengeRepository;
+        this.challengeGuessRepository = challengeGuessRepository;
+        this.patternQuizResultRepository = patternQuizResultRepository;
+        this.demoAccountRepository = demoAccountRepository;
+        this.demoTradeRepository = demoTradeRepository;
+        this.properties = properties;
     }
 
     /**
@@ -89,9 +109,10 @@ public class AdminPlayerService {
     /**
      * Everything recorded against one account.
      *
-     * Five reads rather than one, and they stay five: each answers a different question — how
-     * the history divides by game, by pair, what the live calls did, what was imported, and
-     * what the last few rounds actually looked like. Folding them into one query would produce
+     * Separate reads rather than one, and they stay separate: each answers a different question —
+     * how the history divides by game, by pair, what the live calls did, what was imported, what
+     * the last few rounds actually looked like, and the three games whose rows live in tables of
+     * their own (the quiz, challenge links, paper trading). Folding them into one query would produce
      * a shape nothing else wants and a join nobody could read.
      */
     @Transactional(readOnly = true)
@@ -131,8 +152,27 @@ public class AdminPlayerService {
                         String.valueOf(row[2]), String.valueOf(row[3]), (Boolean) row[4]))
                 .toList();
 
+        Object[] quizRow = unwrap(patternQuizResultRepository.tallyForUser(userId));
+        AdminPlayerDetail.QuizTally quiz = new AdminPlayerDetail.QuizTally(
+                asLong(quizRow[0]), asLong(quizRow[1]), instant(quizRow[2]));
+
+        Object[] challengeRow = unwrap(challengeGuessRepository.tallyForUser(userId,
+                properties.round().guessesPerChart()));
+        AdminPlayerDetail.ChallengeTally challenges = new AdminPlayerDetail.ChallengeTally(
+                challengeRepository.countByCreatorId(userId),
+                asLong(challengeRow[0]), asLong(challengeRow[1]), instant(challengeRow[2]));
+
+        AdminPlayerDetail.DemoTally demo = demoAccountRepository.findById(userId)
+                .map(account -> {
+                    long before = demoTradeRepository.countBeforeReset(userId);
+                    return new AdminPlayerDetail.DemoTally(true,
+                            demoTradeRepository.countByUserId(userId) - before, before,
+                            account.getResets(), demoTradeRepository.lastTradeAt(userId));
+                })
+                .orElse(new AdminPlayerDetail.DemoTally(false, 0, 0, 0, null));
+
         return new AdminPlayerDetail(summary(user), user.getCreatedAt(),
-                modes, assets, live, legacy, guesses, calls);
+                modes, assets, live, legacy, guesses, calls, quiz, challenges, demo);
     }
 
     @Transactional

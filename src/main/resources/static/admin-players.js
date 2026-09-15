@@ -192,6 +192,18 @@
             // round the player got wrong.
             detail.live.settled + " đã chốt · " + pct(detail.live.correct, detail.live.settled) + " đúng"));
 
+        /* The three games whose rows live in tables of their own, and so in none of the totals
+           above — which is exactly why an account that "never plays" could still be busy. */
+        el.figures.appendChild(figure(detail.quiz.answered, "câu đố mẫu nến",
+            pct(detail.quiz.correct, detail.quiz.answered) + " đúng"
+            + (detail.quiz.lastAnsweredAt ? " · gần nhất " + clock(detail.quiz.lastAnsweredAt) : "")));
+        el.figures.appendChild(figure(detail.challenges.played, "thách đấu đã chơi",
+            detail.challenges.finished + " chơi xong · đã gửi " + detail.challenges.created + " link"));
+        el.figures.appendChild(figure(detail.demo.opened ? detail.demo.trades : "—", "lệnh sàn demo",
+            !detail.demo.opened ? "chưa mở sàn demo"
+                : detail.demo.resets + " lần đặt lại"
+                  + (detail.demo.tradesBeforeReset ? " · " + detail.demo.tradesBeforeReset + " lệnh trước đó" : "")));
+
         /* The two splits go in the footnote rather than in a third figure. `.adm-mini-value` is
            26px mono sized for a number; a run of "PRACTICE 500 · DAILY 120 · ARCHIVE 22" set in
            it wrapped to three lines and took over the card it was a footnote to. */
