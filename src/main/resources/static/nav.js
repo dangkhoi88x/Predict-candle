@@ -332,5 +332,30 @@
         }
     });
 
+    /* ?view=daily opens on that view — the installed app's shortcuts use it, and so can any link.
+       Removed from the address bar afterwards, so reloading or sharing the page does not pin
+       whoever opens it to a tab. The profile is refused: it only exists signed in, and a link
+       cannot know that. */
+    function openRequestedView() {
+        try {
+            var params = new URLSearchParams(window.location.search);
+            var wanted = params.get("view");
+            if (wanted && views[wanted] && wanted !== "profile") activate(wanted);
+            if (params.has("view") || params.has("source")) {
+                params.delete("view");
+                params.delete("source");
+                var rest = params.toString();
+                history.replaceState(null, "", window.location.pathname + (rest ? "?" + rest : "") + window.location.hash);
+            }
+        } catch (e) {
+            // An old browser without URLSearchParams opens on the default view, which is fine.
+        }
+    }
+    /* After every script has run, not now: most views' builders (heatmap, patterns, leaderboard,
+       profile…) are defined by files loaded after this one, and activating before them would open
+       an empty tab that never builds. The scripts sit at the end of <body>, so DOMContentLoaded
+       fires once they have all executed. */
+    document.addEventListener("DOMContentLoaded", openRequestedView);
+
     window.CandleNav = { go: activate };
 })();

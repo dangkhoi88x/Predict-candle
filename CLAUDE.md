@@ -172,6 +172,16 @@ The group toggles are buttons inside a `role="tablist"`, which the pattern does 
 The alternative was hiding a real control from the accessibility tree to keep the role tidy,
 which is the worse of the two.
 
+**`?view=<name>` opens the page on that view** — the installed app's shortcuts use it, as can any
+link. `nav.js` handles it on `DOMContentLoaded`, not when it loads: most views' builders are
+defined by scripts after it, and activating earlier opens a tab that never builds. The parameter
+(and `source`) is then stripped from the address bar; `profile` is refused, since a link cannot
+know the visitor is signed in.
+
+**The site is installable (`manifest.json`, icons rendered from `web/og/app-icon.html`) and has no
+service worker, on purpose.** Content comes from the server or not at all; an offline cache is
+precisely a way to show a stale chart as current.
+
 **Activation is keyed on the view name, never on the element pressed.** Three sets of controls
 point at the same views: the rail, the bottom bar, and deep links inside the views themselves.
 `window.CandleNav.go(view)` is how code moves between them, mirroring `CandleAdminNav.go`, and
