@@ -88,4 +88,9 @@ public interface DemoTradeRepository extends JpaRepository<DemoTrade, Long> {
             """)
     List<DemoTrade> findRecentSince(@Param("userId") Long userId, @Param("since") Instant since,
                                      Pageable pageable);
+
+    long countByUserId(Long userId);
+
+    @Query("select max(t.createdAt) from DemoTrade t where t.userId = :userId")
+    Instant lastTradeAt(@Param("userId") Long userId);
 }

@@ -1,5 +1,16 @@
 package com.example.candles.service;
 
+import com.example.candles.entity.Challenge;
+import com.example.candles.entity.ChallengeGuess;
+import com.example.candles.entity.DemoAccount;
+import com.example.candles.entity.DemoTrade;
+import com.example.candles.entity.PatternQuizResult;
+import com.example.candles.entity.TradeSide;
+import com.example.candles.repository.ChallengeGuessRepository;
+import com.example.candles.repository.ChallengeRepository;
+import com.example.candles.repository.DemoAccountRepository;
+import com.example.candles.repository.DemoTradeRepository;
+import com.example.candles.repository.PatternQuizResultRepository;
 import com.example.candles.config.CandlesProperties;
 import com.example.candles.dto.response.AdminPlayerDetail;
 import com.example.candles.dto.response.AdminPlayerPage;
@@ -25,6 +36,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -50,6 +62,11 @@ class AdminPlayerDetailTest {
     @Autowired private GuessResultRepository guessResults;
     @Autowired private LivePredictionRepository livePredictions;
     @Autowired private CandlesProperties properties;
+    @Autowired private PatternQuizResultRepository quizResults;
+    @Autowired private ChallengeRepository challenges;
+    @Autowired private ChallengeGuessRepository challengeGuesses;
+    @Autowired private DemoAccountRepository demoAccounts;
+    @Autowired private DemoTradeRepository demoTrades;
 
     /** Unique per test method, so a search on it sees this test's accounts and nothing else. */
     private final String tag = "tag" + UUID.randomUUID().toString().substring(0, 8);
@@ -172,6 +189,57 @@ class AdminPlayerDetailTest {
                 .containsExactlyInAnyOrder(first.getSymbol(), second.getSymbol());
         // Nothing was imported into this account, so there is no legacy block to draw.
         assertThat(detail.legacy()).isNull();
+    }
+
+    /**
+     * The quiz, challenge links and paper trading keep their rows in tables of their own, so none
+     * of them reaches the guess totals — and until the detail read them, an account busy with all
+     * three looked like one that never played.
+     */
+    @Test
+    void theDetailCountsTheGamesKeptOutOfTheGuessTotals() {
+        Asset asset = asset();
+        User user = player("elsewhere");
+        User friend = player("friend");
+        int total = properties.round().guessesPerChart();
+
+        PatternQuizResult quiz = new PatternQuizResult(user, LocalDate.of(2026, 3, 1), "doji", "doji");
+        quizResults.saveAndFlush(quiz);
+        quizResults.saveAndFlush(new PatternQuizResult(user, LocalDate.of(2026, 3, 2), "hammer", "doji"));
+
+        challenges.saveAndFlush(new Challenge("s" + tag.substring(3, 10), asset, "1h", 5, user, "U", 2, total));
+        Challenge theirs = challenges.saveAndFlush(new Challenge("f" + tag.substring(3, 10), asset, "1h", 9, friend, "F", 3, total));
+        Challenge other = challenges.saveAndFlush(new Challenge("o" + tag.substring(3, 10), asset, "1h", 13, friend, "F", 1, total));
+        for (int n = 1; n <= total; n++) {
+            challengeGuesses.save(new ChallengeGuess(theirs, user, n, Direction.LONG, Direction.LONG));
+        }
+        challengeGuesses.save(new ChallengeGuess(other, user, 1, Direction.LONG, Direction.SHORT));
+        challengeGuesses.flush();
+
+        AdminPlayerDetail detail = service.detail(user.getId());
+
+        assertThat(detail.quiz().answered()).isEqualTo(2);
+        assertThat(detail.quiz().correct()).isEqualTo(1);
+        assertThat(detail.challenges().created()).isEqualTo(1);
+        assertThat(detail.challenges().played()).isEqualTo(2);
+        assertThat(detail.challenges().finished()).isEqualTo(1);
+        assertThat(detail.challenges().lastPlayedAt()).isNotNull();
+        assertThat(detail.demo().opened()).isFalse();
+        // None of it is a guess.
+        assertThat(detail.account().guesses()).isZero();
+
+        demoAccounts.saveAndFlush(new DemoAccount(user.getId(), Instant.parse("2026-03-10T00:00:00Z")));
+        demoTrades.save(new DemoTrade(user.getId(), asset, TradeSide.BUY, BigDecimal.ONE, BigDecimal.TEN,
+                BigDecimal.ZERO, Instant.parse("2026-03-05T00:00:00Z")));   // before the account's open mark
+        demoTrades.save(new DemoTrade(user.getId(), asset, TradeSide.BUY, BigDecimal.ONE, BigDecimal.TEN,
+                BigDecimal.ZERO, Instant.parse("2026-03-11T00:00:00Z")));
+        demoTrades.flush();
+
+        AdminPlayerDetail.DemoTally demo = service.detail(user.getId()).demo();
+        assertThat(demo.opened()).isTrue();
+        assertThat(demo.trades()).isEqualTo(1);
+        assertThat(demo.tradesBeforeReset()).isEqualTo(1);
+        assertThat(demo.lastTradeAt()).isEqualTo(Instant.parse("2026-03-11T00:00:00Z"));
     }
 
     /**

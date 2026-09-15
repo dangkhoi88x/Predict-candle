@@ -14,7 +14,8 @@ import java.util.List;
 public record AdminPlayerDetail(PlayerSummary account, Instant createdAt,
                                  List<ModeTally> modes, List<AssetTally> assets,
                                  LiveTally live, Legacy legacy,
-                                 List<Guess> recentGuesses, List<LiveCall> recentLiveCalls) {
+                                 List<Guess> recentGuesses, List<LiveCall> recentLiveCalls,
+                                 QuizTally quiz, ChallengeTally challenges, DemoTally demo) {
 
     /** How the account's practice/daily/archive history divides up. */
     public record ModeTally(String mode, long guesses, long correct) {
@@ -49,6 +50,27 @@ public record AdminPlayerDetail(PlayerSummary account, Instant createdAt,
      */
     public record Guess(Instant createdAt, String mode, String symbol, int guessNumber,
                          String guessedDirection, String actualDirection, boolean correct) {
+    }
+
+    /** The pattern-of-the-day quiz: one answer a day, kept apart from every guess total. */
+    public record QuizTally(long answered, long correct, Instant lastAnsweredAt) {
+    }
+
+    /**
+     * Challenge links, both sides of them. {@code created} is links this account sent;
+     * {@code played} and {@code finished} are other people's links it played — one each per link,
+     * finished once every guess is in. None of it is in {@code account}'s totals, on purpose.
+     */
+    public record ChallengeTally(long created, long played, long finished, Instant lastPlayedAt) {
+    }
+
+    /**
+     * Paper trading, counted rather than valued: the balance needs live prices and has its own
+     * pane. {@code trades} is since the last reset, which is what the player's terminal shows;
+     * {@code tradesBeforeReset} is the rest, for the reason the demo pane carries it too — an
+     * account with hundreds of rows and three visible trades otherwise reads as lost data.
+     */
+    public record DemoTally(boolean opened, long trades, long tradesBeforeReset, int resets, Instant lastTradeAt) {
     }
 
     /** {@code correct} is null while the round has no candle to settle it. */

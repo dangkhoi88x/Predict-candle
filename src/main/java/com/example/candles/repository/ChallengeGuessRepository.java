@@ -41,4 +41,15 @@ public interface ChallengeGuessRepository extends JpaRepository<ChallengeGuess, 
             ) finished
             """, nativeQuery = true)
     long countFinishes(@Param("total") long total);
+
+    /** [challenges played, challenges finished, lastPlayedAt] for one account. */
+    @Query(value = """
+            select count(*), count(*) filter (where guesses >= :total), max(last_played)
+            from (
+                select challenge_id, count(*) as guesses, max(created_at) as last_played
+                from challenge_guesses where user_id = :userId
+                group by challenge_id
+            ) per_challenge
+            """, nativeQuery = true)
+    Object[] tallyForUser(@Param("userId") Long userId, @Param("total") long total);
 }
