@@ -27,4 +27,18 @@ public interface ChallengeGuessRepository extends JpaRepository<ChallengeGuess, 
             order by sum(case when g.correct = true then 1 else 0 end) desc, max(g.createdAt) asc
             """)
     List<Object[]> finishers(@Param("challengeId") String challengeId, @Param("total") long total, Pageable page);
+
+    /** Signed-in players who have made at least one guess on any challenge. */
+    @Query("select count(distinct g.user.id) from ChallengeGuess g")
+    long countPlayers();
+
+    /** Plays finished: one per player per challenge that reached {@code total} guesses. */
+    @Query(value = """
+            select count(*) from (
+                select 1 from challenge_guesses
+                group by challenge_id, user_id
+                having count(*) >= :total
+            ) finished
+            """, nativeQuery = true)
+    long countFinishes(@Param("total") long total);
 }

@@ -97,7 +97,13 @@
             errors.length ? "gần nhất: " + clock(errors[0].lastAt) : "từ lần khởi động",
             recentCount ? "bad" : "good"));
         el.cards.appendChild(card("Tài khoản", act.players.toLocaleString("vi-VN"),
-            act.admins + " admin"));
+            act.admins + " admin · " + act.telegramAccounts.toLocaleString("vi-VN") + " qua Telegram"));
+        /* The one place challenge links are counted: their guesses are kept out of every other
+           total on purpose, so without this card nobody could tell whether anyone sends them. */
+        el.cards.appendChild(card("Thách đấu", act.challenges.toLocaleString("vi-VN") + " link",
+            act.challengesWeek.toLocaleString("vi-VN") + " link mới trong 7 ngày · "
+            + act.challengePlayers.toLocaleString("vi-VN") + " người đã chơi · "
+            + act.challengeFinishes.toLocaleString("vi-VN") + " lượt chơi xong"));
         el.cards.appendChild(card("Nội dung", act.contentItems + " mục",
             act.publishedBlogPosts + "/" + act.blogPosts + " bài blog đã đăng"));
 

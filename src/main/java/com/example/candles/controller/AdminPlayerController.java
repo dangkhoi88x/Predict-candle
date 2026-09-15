@@ -42,9 +42,10 @@ public class AdminPlayerController {
     @GetMapping
     public AdminPlayerPage list(@RequestParam(required = false) String query,
                                  @RequestParam(required = false) String sort,
+                                 @RequestParam(required = false) String login,
                                  @RequestParam(required = false) Integer page,
                                  @RequestParam(required = false) Integer size) {
-        return playerService.players(query, sort, page, size);
+        return playerService.players(query, sort, login, page, size);
     }
 
     /** Everything recorded against one account — read-only, like the list it opens from. */

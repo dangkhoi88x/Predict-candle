@@ -61,6 +61,13 @@ public class AdminPlayerService {
      */
     @Transactional(readOnly = true)
     public AdminPlayerPage players(String query, String sort, Integer page, Integer size) {
+        return players(query, sort, null, page, size);
+    }
+
+    /** {@code login} narrows to "wallet" or "telegram" accounts; anything else is every account. */
+    @Transactional(readOnly = true)
+    public AdminPlayerPage players(String query, String sort, String login, Integer page, Integer size) {
+        String source = "wallet".equals(login) || "telegram".equals(login) ? login : null;
         String trimmed = query == null ? "" : query.trim();
         /* Null rather than an empty string, because the query tests for null: a `like '%%'`
            would match every row anyway, but only by doing the work of a scan per column. */
@@ -70,10 +77,10 @@ public class AdminPlayerService {
         int pageIndex = page == null ? 0 : Math.max(page, 0);
 
         List<PlayerSummary> players = userRepository
-                .playerPage(pattern, order, pageSize, pageIndex * pageSize).stream()
+                .playerPage(pattern, source, order, pageSize, pageIndex * pageSize).stream()
                 .map(AdminPlayerService::summaryOf)
                 .toList();
-        long total = userRepository.countPlayers(pattern);
+        long total = userRepository.countPlayers(pattern, source);
 
         return new AdminPlayerPage(players, trimmed, order, pageIndex, pageSize, total,
                 (long) pageIndex * pageSize + players.size() < total);
@@ -175,7 +182,8 @@ public class AdminPlayerService {
         Object[] row = unwrap(guessResultRepository.tallyForUser(user.getId()));
         return new PlayerSummary(user.getId(), user.getWalletAddress(), user.getDisplayName(),
                 user.getRole().name(), asLong(row[0]), asLong(row[1]),
-                user.hasImportedLegacyStats(), user.getCreatedAt(), (Instant) row[2]);
+                user.hasImportedLegacyStats(), user.getCreatedAt(), (Instant) row[2],
+                PlayerSummary.loginOf(user.getWalletAddress()));
     }
 
     /** One row of {@link UserRepository#playerPage}, in that query's column order. */
@@ -183,7 +191,7 @@ public class AdminPlayerService {
         return new PlayerSummary(
                 asLong(row[0]), String.valueOf(row[1]), String.valueOf(row[2]), String.valueOf(row[3]),
                 asLong(row[5]), asLong(row[6]), asBoolean(row[8]),
-                instant(row[4]), instant(row[7]));
+                instant(row[4]), instant(row[7]), PlayerSummary.loginOf(String.valueOf(row[1])));
     }
 
     /**

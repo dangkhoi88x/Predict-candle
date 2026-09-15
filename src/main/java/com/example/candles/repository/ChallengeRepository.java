@@ -13,6 +13,8 @@ public interface ChallengeRepository extends JpaRepository<Challenge, String> {
     Optional<Challenge> findFirstByCreatorIdAndAssetIdAndTimeframeAndStartIndex(
             Long creatorId, Long assetId, String timeframe, int startIndex);
 
+    long countByCreatedAtAfter(java.time.Instant since);
+
     /**
      * Detaches a deleted account from the links it made. The links keep working for the people
      * already playing them — that is why the foreign key is SET NULL rather than CASCADE — but the

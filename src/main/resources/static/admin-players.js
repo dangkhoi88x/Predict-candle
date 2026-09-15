@@ -18,6 +18,7 @@
         count: document.getElementById("players-count"),
         search: document.getElementById("players-search"),
         sort: document.getElementById("players-sort"),
+        login: document.getElementById("players-login"),
         rows: document.querySelector("#player-table tbody"),
         pager: document.getElementById("players-pager"),
         prev: document.getElementById("players-prev"),
@@ -37,11 +38,25 @@
 
     var query = "";
     var sort = "active";
+    var login = "";
     var page = 0;
     var searchTimer = null;
 
+    /* A Telegram account's key is tg:<telegram id> — short enough to show whole, and shortening
+       it like an address would cut the id somebody is trying to read. */
     function shortWallet(address) {
+        if (/^tg:/.test(address) || address.length <= 12) return address;
         return address.slice(0, 6) + "…" + address.slice(-4);
+    }
+
+    function accountCell(player) {
+        var td = element("td", "num");
+        var telegram = player.login === "TELEGRAM";
+        td.appendChild(element("span", "ops-badge login-badge " + (telegram ? "is-telegram" : "is-off"),
+            telegram ? "Telegram" : "Ví"));
+        td.appendChild(document.createTextNode(" " + shortWallet(player.walletAddress)));
+        td.title = player.walletAddress;
+        return td;
     }
 
     function when(iso) {
@@ -112,9 +127,7 @@
         data.players.forEach(function (player) {
             var tr = element("tr");
 
-            var wallet = element("td", "num", shortWallet(player.walletAddress));
-            wallet.title = player.walletAddress;
-            tr.appendChild(wallet);
+            tr.appendChild(accountCell(player));
 
             cell(tr, player.displayName);
 
@@ -167,7 +180,8 @@
     function renderDetail(detail) {
         el.detail.classList.remove("hidden");
         el.detailTitle.textContent = detail.account.displayName;
-        el.detailSub.textContent = shortWallet(detail.account.walletAddress)
+        el.detailSub.textContent = (detail.account.login === "TELEGRAM" ? "Telegram " : "Ví ")
+            + shortWallet(detail.account.walletAddress)
             + " · mở tài khoản " + clock(detail.createdAt);
 
         el.figures.innerHTML = "";
@@ -269,7 +283,7 @@
 
     async function load() {
         try {
-            render(await api("?query=" + encodeURIComponent(query) + "&sort=" + sort
+            render(await api("?query=" + encodeURIComponent(query) + "&sort=" + sort + "&login=" + login
                 + "&page=" + page + "&size=" + PAGE_SIZE));
         } catch (e) {
             el.status.textContent = "Không tải được danh sách: " + e.message;
@@ -287,6 +301,15 @@
         query = el.search.value.trim();
         window.clearTimeout(searchTimer);
         searchTimer = window.setTimeout(refilter, SEARCH_DEBOUNCE_MS);
+    });
+
+    el.login.addEventListener("click", function (event) {
+        var button = event.target.closest(".pill-option");
+        if (!button || button.dataset.login === login) return;
+        Array.prototype.forEach.call(el.login.children, function (b) { b.classList.remove("active"); });
+        button.classList.add("active");
+        login = button.dataset.login;
+        refilter();
     });
 
     el.sort.addEventListener("click", function (event) {
