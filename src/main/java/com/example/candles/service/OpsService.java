@@ -21,6 +21,8 @@ import com.example.candles.entity.Role;
 import com.example.candles.repository.AssetRepository;
 import com.example.candles.repository.BlogPostRepository;
 import com.example.candles.repository.CandleRepository;
+import com.example.candles.repository.ChallengeGuessRepository;
+import com.example.candles.repository.ChallengeRepository;
 import com.example.candles.repository.ContentItemRepository;
 import com.example.candles.repository.GuessResultRepository;
 import com.example.candles.repository.LivePredictionRepository;
@@ -43,6 +45,8 @@ public class OpsService {
     private final UserRepository userRepository;
     private final BlogPostRepository blogPostRepository;
     private final ContentItemRepository contentItemRepository;
+    private final ChallengeRepository challengeRepository;
+    private final ChallengeGuessRepository challengeGuessRepository;
     private final CandleSyncService candleSyncService;
     private final CandlesProperties properties;
     private final ObjectProvider<Flyway> flyway;
@@ -56,6 +60,8 @@ public class OpsService {
                       UserRepository userRepository,
                       BlogPostRepository blogPostRepository,
                       ContentItemRepository contentItemRepository,
+                      ChallengeRepository challengeRepository,
+                      ChallengeGuessRepository challengeGuessRepository,
                       CandleSyncService candleSyncService,
                       CandlesProperties properties,
                       ObjectProvider<Flyway> flyway,
@@ -68,6 +74,8 @@ public class OpsService {
         this.userRepository = userRepository;
         this.blogPostRepository = blogPostRepository;
         this.contentItemRepository = contentItemRepository;
+        this.challengeRepository = challengeRepository;
+        this.challengeGuessRepository = challengeGuessRepository;
         this.candleSyncService = candleSyncService;
         this.properties = properties;
         this.flyway = flyway;
@@ -160,7 +168,12 @@ public class OpsService {
                 blogPostRepository.count(),
                 blogPostRepository.findByPublishedTrueOrderByPositionAscIdAsc().size(),
                 contentItemRepository.count(),
-                asLong(liveToday[0]), asLong(liveToday[1]), asLong(liveToday[2]), asLong(liveWeek[0]));
+                asLong(liveToday[0]), asLong(liveToday[1]), asLong(liveToday[2]), asLong(liveWeek[0]),
+                userRepository.countByWalletAddressStartingWith(AuthService.TELEGRAM_KEY_PREFIX),
+                challengeRepository.count(),
+                challengeRepository.countByCreatedAtAfter(now.minus(7, ChronoUnit.DAYS)),
+                challengeGuessRepository.countPlayers(),
+                challengeGuessRepository.countFinishes(properties.round().guessesPerChart()));
     }
 
     /**

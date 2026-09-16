@@ -54,10 +54,19 @@ public record OpsSnapshot(
      * and {@code liveCorrectToday} only count calls whose candle has since closed, so the panel
      * can show "how many were called" and "how many of those we know the answer to" as two
      * different numbers rather than treating a call still in flight as either wrong or missing.
+     *
+     * {@code telegramAccounts} is how many of {@code players} signed in from Telegram. The
+     * challenge figures are the only place challenge links are counted at all, since their guesses
+     * are kept out of every other total on purpose: links made ({@code challenges},
+     * {@code challengesWeek}), signed-in players who played one ({@code challengePlayers}) and
+     * plays finished ({@code challengeFinishes}, one per player per link). Anonymous plays are not
+     * recorded, so they are in none of them.
      */
     public record Activity(long players, long admins, long guessesToday, long correctToday,
                             long guessesWeek, long blogPosts, long publishedBlogPosts,
                             long contentItems, long liveCallsToday, long liveSettledToday,
-                            long liveCorrectToday, long liveCallsWeek) {
+                            long liveCorrectToday, long liveCallsWeek,
+                            long telegramAccounts, long challenges, long challengesWeek,
+                            long challengePlayers, long challengeFinishes) {
     }
 }
