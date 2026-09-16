@@ -234,6 +234,11 @@ storing. `analytics.js` names the steps (`onboarding-*`, `first-guess`, `chart-c
 `daily-first-guess`, `daily-complete`, `daily-share`, `sign-in`) and GoatCounter counts them with
 no cookies.
 
+**The admin's overview links to it rather than redrawing it.** Those steps are counted outside this
+database, so a funnel card here would either be empty or a second, disagreeing copy; `admin-overview.js`
+turns the configured endpoint into its dashboard URL (the same string without `/count`, checked against
+the shape the server validates before it becomes an `href`) and hides the link when no site is configured.
+
 It is off unless `ANALYTICS_GOATCOUNTER` names a site code, which `SiteConfigController` turns
 into the endpoint — a code and not a URL, so a mistyped variable cannot become a script source.
 `/api/site-config` is cached five minutes, which is also why switching it locally seems not to

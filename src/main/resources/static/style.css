@@ -2930,6 +2930,10 @@ body:not(.is-admin) .adm-search {
     transition: border-color var(--duration-fast) var(--ease-out);
 }
 
+.admin-shell a.ghost-btn {
+    text-decoration: none;
+}
+
 .admin-shell .ghost-btn:hover {
     color: var(--adm-text);
     border-color: var(--adm-border-2);
