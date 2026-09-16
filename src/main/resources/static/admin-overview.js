@@ -55,6 +55,7 @@
         modeArchive: document.getElementById("ov-mode-archive"),
         modeArchiveBase: document.getElementById("ov-mode-archive-base"),
         modesFoot: document.getElementById("ov-modes-foot"),
+        analytics: document.getElementById("ov-analytics"),
         status: document.getElementById("admin-status"),
     };
     if (!el.section) return;
@@ -546,6 +547,34 @@
         if (window.CandleAdminNav) window.CandleAdminNav.go("ops");
     });
 
+    /* The steps before a player's first recorded guess are counted by GoatCounter and by nothing
+       here — an events table would be a second copy of what guess_results already says. So the
+       link is the honest version of a funnel card: it goes where the numbers actually are.
+
+       The endpoint comes from /api/site-config, the same one the game reads, and the dashboard is
+       that URL without its /count. Checked against the shape the server validates rather than
+       trusted: this writes an href, and a link on an admin page is worth one regex. */
+    var analyticsLoaded = false;
+
+    async function loadAnalyticsLink() {
+        if (analyticsLoaded || !el.analytics) return;
+        analyticsLoaded = true;
+        try {
+            var res = await fetch("/api/site-config");
+            if (!res.ok) return;
+            var endpoint = (await res.json()).goatcounter || "";
+            var site = /^https:\/\/[a-z0-9][a-z0-9-]*\.goatcounter\.com\/count$/.test(endpoint)
+                ? endpoint.replace(/\/count$/, "") : null;
+            if (!site) return;
+            el.analytics.href = site;
+            el.analytics.title = "Mở " + site + " — phễu và lượt xem trang, đếm ngoài cơ sở dữ liệu này";
+            el.analytics.classList.remove("hidden");
+        } catch (e) {
+            // No link is the right failure: the pane's own numbers do not depend on it.
+            analyticsLoaded = false;
+        }
+    }
+
     document.addEventListener("candles:ops", function (event) {
         snapshot = event.detail.snapshot;
         renderHeader();
@@ -559,6 +588,7 @@
             renderKpis();
             loadStats();
             loadRetention();
+            loadAnalyticsLink();
         }
     });
 })();
