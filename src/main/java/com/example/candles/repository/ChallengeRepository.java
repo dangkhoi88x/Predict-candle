@@ -24,4 +24,6 @@ public interface ChallengeRepository extends JpaRepository<Challenge, String> {
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("update Challenge c set c.creator = null, c.creatorName = :name where c.creator.id = :userId")
     int forgetCreator(@Param("userId") Long userId, @Param("name") String name);
+
+    long countByCreatorId(Long creatorId);
 }

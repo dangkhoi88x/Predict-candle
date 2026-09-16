@@ -34,4 +34,11 @@ public interface PatternQuizResultRepository extends JpaRepository<PatternQuizRe
             select r.patternId from PatternQuizResult r where r.day = :day order by r.id
             """)
     List<String> askedPatternIds(@Param("day") LocalDate day, Pageable pageable);
+
+    /** [answered, correct, lastAnsweredAt] for one account. */
+    @Query("""
+            select count(r), coalesce(sum(case when r.correct = true then 1 else 0 end), 0), max(r.createdAt)
+            from PatternQuizResult r where r.user.id = :userId
+            """)
+    Object[] tallyForUser(@Param("userId") Long userId);
 }

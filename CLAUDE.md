@@ -440,7 +440,10 @@ shown whole — shortening it like an address cut the id somebody was trying to 
 pair, its live calls counted three ways (`calls` / `settled` / `correct` — accuracy on live
 calls is against settled ones, since a round still running is not one the player got wrong),
 the imported browser tally shown apart and never added to anything, and the last 25 guesses and
-live calls. Read-only, like the list it opens from: the same bargain that keeps roles in
+live calls. It also counts the three games whose rows live in tables of their own and so reach
+none of those totals — quiz answers, challenge links (sent, played, finished) and demo trades
+(since and before the last reset). Demo is counted rather than valued: a balance needs live prices,
+and the demo pane already folds one. Read-only, like the list it opens from: the same bargain that keeps roles in
 configuration applies to totals.
 
 **`.asset-actions` sized its first two buttons by position, and that was a shared class.** The
