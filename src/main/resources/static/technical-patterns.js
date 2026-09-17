@@ -161,6 +161,8 @@
         var card = document.createElement("div");
         card.className = "pattern-card";
         card.dataset.tags = pattern.tags.join(",");
+        // Addressed by key so /mau-hinh/<key> can open this card, the same as patterns.js.
+        card.dataset.pattern = pattern.id;
 
         var chartBox = document.createElement("div");
         chartBox.className = "pattern-chart technical-chart";
@@ -331,6 +333,43 @@
             });
         });
     }
+
+    /* "?card=<key>" — the hand-off from the crawlable page at /mau-hinh/<key>. Read at load
+       because nav.js strips "view" from the address before this runs, and answered only if the
+       key is one of this library's: the two libraries share the parameter and each leaves the
+       other's alone. */
+    var requestedCard = (function () {
+        try {
+            return new URLSearchParams(window.location.search).get("card");
+        } catch (e) {
+            return null;
+        }
+    })();
+
+    document.addEventListener("DOMContentLoaded", function () {
+        if (!requestedCard) return;
+        var key = requestedCard;
+        requestedCard = null;
+        window.CandleContent.load("technical-pattern").then(function (items) {
+            if (!items.some(function (item) { return item.id === key; })) return;
+            document.getElementById("tab-technical").click();
+            var card = document.querySelector('.pattern-card[data-pattern="' + key + '"]');
+            if (!card) return;
+            var toggle = card.querySelector(".pattern-toggle");
+            var detail = card.querySelector(".pattern-detail");
+            if (detail && detail.classList.contains("hidden") && toggle) toggle.click();
+            card.scrollIntoView({ block: "center", behavior: "smooth" });
+            try {
+                var params = new URLSearchParams(window.location.search);
+                params.delete("card");
+                var rest = params.toString();
+                history.replaceState(null, "", window.location.pathname + (rest ? "?" + rest : "")
+                    + window.location.hash);
+            } catch (e) {
+                // The card is open, which is what the link was for.
+            }
+        }).catch(function () { });
+    });
 
     /* Built on first reveal, not at load: 1423 elements and its own SVG illustrations, none of which the game tab ever asks about.
        nav.js drives this through its onFirstShow map. */

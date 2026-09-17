@@ -365,6 +365,41 @@
         },
     };
 
+    /* "?card=<key>" — how /mau-nen/<key> hands a reader over to the card itself. Read at load
+       rather than inside the handler: nav.js strips "view" from the address first, and a reader
+       who lands here from a search should not have to find the card by scrolling. */
+    var requestedCard = (function () {
+        try {
+            return new URLSearchParams(window.location.search).get("card");
+        } catch (e) {
+            return null;
+        }
+    })();
+
+    function openRequestedCard() {
+        if (!requestedCard) return;
+        var key = requestedCard;
+        requestedCard = null;
+        loadOnce().then(function (items) {
+            // The two libraries share the parameter; whichever holds the key answers it, and the
+            // other leaves the address alone so it is still there when its own turn comes.
+            if (!items.some(function (item) { return item.id === key; })) return;
+            document.getElementById("tab-patterns").click();
+            focusCard(key);
+            try {
+                var params = new URLSearchParams(window.location.search);
+                params.delete("card");
+                var rest = params.toString();
+                history.replaceState(null, "", window.location.pathname + (rest ? "?" + rest : "")
+                    + window.location.hash);
+            } catch (e) {
+                // Nothing to clean up on a browser this old; the card is open, which is the point.
+            }
+        }).catch(function () { });
+    }
+
+    document.addEventListener("DOMContentLoaded", openRequestedCard);
+
     function focusCard(id) {
         // A filter left on "Tăng" would hide the very card we are pointing at.
         var showAll = document.querySelector('#pattern-filters .pill-option[data-filter="all"]');

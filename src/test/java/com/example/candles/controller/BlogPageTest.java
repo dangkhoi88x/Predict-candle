@@ -106,4 +106,47 @@ class BlogPageTest {
 
         assertThat(html).doesNotContain("<script>alert").contains("&lt;script&gt;");
     }
+
+    /**
+     * The libraries get the same treatment, and for the same reason: thirteen candlestick patterns
+     * written in Vietnamese are the most searched-for text on the site and lived at no address.
+     */
+    @Test
+    void everyLibraryEntryHasItsOwnPageAndItsOwnWordsOnIt() throws Exception {
+        String html = mockMvc.perform(get("/mau-nen/doji"))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+
+        assertThat(html)
+                .contains("<h1>Doji</h1>")
+                .contains("<h2>Cách nhận biết</h2>")
+                .contains("<link rel=\"canonical\" href=\"https://candles-oj1q.onrender.com/mau-nen/doji\"/>")
+                // The card is where the shape is drawn, so the page sends the reader to it by key.
+                .contains("/?view=patterns&amp;card=doji");
+
+        assertThat(mockMvc.perform(get("/mau-hinh/double-bottom")).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString())
+                .contains("/?view=technical&amp;card=double-bottom");
+
+        // A psychology note has no shape to point at, so it opens its own tab and nothing else.
+        String psychology = mockMvc.perform(get("/tam-ly")).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        assertThat(psychology).contains("/tam-ly/").contains("/?view=psychology");
+    }
+
+    @Test
+    void anEntryThatIsNotInThatLibraryIsAbsentAndTheSitemapListsTheOnesThatAre() throws Exception {
+        // The key exists — in the other library. Answering anyway would make two addresses for one
+        // card, which is exactly what a canonical is supposed to prevent.
+        mockMvc.perform(get("/mau-hinh/doji")).andExpect(status().isNotFound());
+        mockMvc.perform(get("/mau-nen/khong-co-mau-nay")).andExpect(status().isNotFound());
+
+        String sitemap = mockMvc.perform(get("/sitemap.xml")).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        assertThat(sitemap)
+                .contains("<loc>https://candles-oj1q.onrender.com/mau-nen</loc>")
+                .contains("<loc>https://candles-oj1q.onrender.com/mau-nen/doji</loc>")
+                .contains("<loc>https://candles-oj1q.onrender.com/mau-hinh/double-bottom</loc>")
+                .contains("<loc>https://candles-oj1q.onrender.com/tam-ly</loc>");
+    }
 }
