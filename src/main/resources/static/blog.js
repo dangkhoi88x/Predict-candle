@@ -106,6 +106,9 @@
     function buildPost(post) {
         var article = document.createElement("div");
         article.className = "blog-post";
+        // The server-rendered page at /blog/<slug> links back here with ?post=<slug>, and this is
+        // what lets that link land on the article rather than on the top of the list.
+        if (post.slug) article.dataset.slug = post.slug;
 
         var cover = document.createElement("div");
         cover.className = "blog-post-cover";
@@ -195,12 +198,16 @@
         }
         detail.appendChild(source);
 
+        function toggle(open) {
+            detail.classList.toggle("hidden", !open);
+            hint.textContent = open ? "Ẩn bớt ▴" : "Bấm để xem chi tiết ▾";
+            article.classList.toggle("expanded", open);
+        }
+
         summary.addEventListener("click", function () {
-            var expanded = !detail.classList.contains("hidden");
-            detail.classList.toggle("hidden", expanded);
-            hint.textContent = expanded ? "Bấm để xem chi tiết ▾" : "Ẩn bớt ▴";
-            article.classList.toggle("expanded", !expanded);
+            toggle(detail.classList.contains("hidden"));
         });
+        article.open = function () { toggle(true); };
 
         article.appendChild(cover);
         article.appendChild(summary);
@@ -221,6 +228,7 @@
      */
     function fromApi(post) {
         return {
+            slug: post.slug,
             title: post.title,
             cover: post.coverSvg,
             coverImg: post.coverImg,
@@ -239,6 +247,29 @@
         posts.forEach(function (post) {
             list.appendChild(buildPost(post));
         });
+        openRequestedPost(list);
+    }
+
+    /* "?post=<slug>" — how the crawlable page at /blog/<slug> hands a reader over to the app. The
+       parameter is dropped from the address afterwards, the same as "?thach=" and "?view=": it has
+       done its job, and leaving it there makes a refresh reopen something the reader closed. */
+    function openRequestedPost(list) {
+        var slug;
+        try {
+            var params = new URLSearchParams(window.location.search);
+            slug = params.get("post");
+            if (!slug) return;
+            params.delete("post");
+            var rest = params.toString();
+            history.replaceState(null, "", window.location.pathname + (rest ? "?" + rest : "")
+                + window.location.hash);
+        } catch (e) {
+            return;
+        }
+        var article = list.querySelector('[data-slug="' + slug.replace(/"/g, "") + '"]');
+        if (!article || !article.open) return;
+        article.open();
+        article.scrollIntoView({ block: "start", behavior: "auto" });
     }
 
     async function init() {

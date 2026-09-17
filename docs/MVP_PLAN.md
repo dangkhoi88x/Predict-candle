@@ -236,7 +236,7 @@ chưa xem.
 | M3.1 ✅ | **Mùa giải không có thưởng tiền:** bảng xếp hạng reset theo tháng, huy hiệu mùa | Quay lại trong tuần ≥ 30% |
 | M3.2 ✅ | **Đa khung cho game (G2):** 4h và 1d gộp từ nến 1h (`CandleAggregator` đã có), 15m thì cần lưu thêm | Người chơi lâu năm phàn nàn chart nhàm |
 | M3.3 ✅ | **Độ khó theo cộng đồng (R4):** tỉ lệ đoán đúng mỗi chart → điểm thưởng | Mỗi chart daily có ≥ 30 người chơi |
-| M3.4 | **Trang nội dung có URL riêng** cho blog và từng mẫu (render phía server hoặc prerender), phục vụ SEO | Muốn có lượng truy cập tự nhiên từ Google |
+| M3.4 ⏳ | **Trang nội dung có URL riêng** cho blog và từng mẫu (render phía server hoặc prerender), phục vụ SEO | Muốn có lượng truy cập tự nhiên từ Google |
 
 **Đang làm** (bắt đầu 2026-09-17, chưa đạt điều kiện số liệu, theo quyết định của chủ project vì
 mục tiêu là học và làm portfolio — giống MVP 1):
@@ -259,6 +259,10 @@ mục tiêu là học và làm portfolio — giống MVP 1):
   sẽ viết lại điểm hôm qua và cả thứ hạng người chơi đã nhìn thấy. Muốn thưởng cho đúng thì phải
   đóng băng độ khó tại lúc chơi, tức là lưu một con số cho mỗi lượt — đúng thứ "nguồn sự thật thứ
   hai" mà cả project đang tránh.
+- **M3.4** — mỗi bài blog đã đăng có một trang riêng render sẵn ở máy chủ (`/blog/<slug>`), kèm
+  trang danh sách `/blog` và `sitemap.xml`; `robots.txt` trỏ tới sitemap. Trang không tải app,
+  canonical trỏ về chính nó, và có link mở lại bài đó trong app. Trang riêng cho từng mẫu nến /
+  mẫu hình / tâm lý là phần tiếp theo, chưa làm.
 
 ### Cố ý chưa làm
 
