@@ -4678,6 +4678,78 @@ body:not(.is-admin) .adm-search {
 
 /* --- leaderboard --- */
 
+/* A month a player finished on the podium. Sized like a tag rather than like the badges below
+   it: a medal is one fact — which month, which place — and a card would promise more. */
+.profile-seasons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 18px;
+}
+
+.profile-season {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 6px 12px 6px 9px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--panel-2);
+    color: var(--text);
+    font-size: 13px;
+    cursor: pointer;
+    transition: border-color var(--duration-fast) var(--ease-out);
+}
+
+.profile-season:hover {
+    border-color: var(--accent);
+}
+
+/* Gold, silver and bronze are the medallion's own three (candles-enhance.css), reused by name so
+   one place decides what second place looks like. */
+.profile-season-medal {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 30px;
+    padding: 2px 6px;
+    border-radius: 999px;
+    background: color-mix(in oklab, var(--medal) 30%, transparent);
+    color: var(--text);
+    font: 600 11.5px var(--mono);
+    font-variant-numeric: tabular-nums;
+}
+
+.profile-season.is-first { --medal: #e7ad2b; }
+.profile-season.is-second { --medal: #b6bcc8; }
+.profile-season.is-third { --medal: #c07d3f; }
+
+.profile-season-label {
+    font-variant-numeric: tabular-nums;
+}
+
+/* Last month's podium, under the picker on the running season's board. */
+.lb-last {
+    margin: -6px 0 14px;
+    color: var(--muted);
+    font-size: 13.5px;
+}
+
+/* The medal colour is the pill behind the number, not the number itself: gold text on a light
+   panel is about 2:1, and these are 12px. */
+.lb-last-rank {
+    --medal: var(--accent);
+    padding: 1px 6px;
+    border-radius: 999px;
+    background: color-mix(in oklab, var(--medal) 30%, transparent);
+    color: var(--text);
+    font: 600 12px var(--mono);
+}
+
+.lb-last-rank.is-first { --medal: #e7ad2b; }
+.lb-last-rank.is-second { --medal: #b6bcc8; }
+.lb-last-rank.is-third { --medal: #c07d3f; }
+
 /* The season picker sits under the heading rather than in it: the board below it changes
    entirely, so it is a control on the view, not a caption on the title. */
 .lb-seasons {

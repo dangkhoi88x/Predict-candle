@@ -13,6 +13,7 @@ import java.util.UUID;
 
 import com.example.candles.domain.Season;
 import com.example.candles.dto.response.Leaderboard;
+import com.example.candles.dto.response.SeasonHistory;
 import com.example.candles.entity.Asset;
 import com.example.candles.entity.Direction;
 import com.example.candles.entity.GuessMode;
@@ -269,5 +270,63 @@ class LeaderboardTest {
                 .executeUpdate();
         entityManager.flush();
         entityManager.clear();
+    }
+
+    /**
+     * A season medal is last month's rank asked again, not a row written when the month ended —
+     * so it has to come off the same ranking the board itself serves, and a month nobody
+     * qualified in has to drop out rather than list an empty podium.
+     */
+    @Test
+    void finishedMonthsCarryTheirPodiumAndTheCallersOwnMedals() {
+        Season lastMonth = leaderboard.currentSeason().previous();
+        String winnerName = "champion-" + UUID.randomUUID();
+        String runnerName = "runnerup-" + UUID.randomUUID();
+        User winner = player(winnerName, 30, 0);
+        User runner = player(runnerName, LeaderboardService.MIN_GUESSES, 10);
+        backdate(winner, lastMonth.startInclusive().plusSeconds(3600));
+        backdate(runner, lastMonth.startInclusive().plusSeconds(7200));
+        leaderboard.evict();
+
+        SeasonHistory history = leaderboard.history(6, winner.getId());
+
+        SeasonHistory.Past past = history.seasons().stream()
+                .filter(s -> s.id().equals(lastMonth.id())).findFirst().orElseThrow();
+        assertThat(past.label()).isEqualTo(lastMonth.label());
+        assertThat(past.podium()).hasSizeLessThanOrEqualTo(LeaderboardService.PODIUM);
+        assertThat(past.podium().getFirst().displayName()).isEqualTo(winnerName);
+        assertThat(past.podium()).extracting(Leaderboard.Row::displayName).contains(runnerName);
+
+        assertThat(history.mine()).singleElement().satisfies(medal -> {
+            assertThat(medal.seasonId()).isEqualTo(lastMonth.id());
+            assertThat(medal.rank()).isEqualTo(1);
+        });
+
+        // The running month is never in the history: it has not been won yet.
+        assertThat(history.seasons()).noneMatch(s -> s.id().equals(leaderboard.currentSeason().id()));
+        // Signed out there is a podium to read and no medals to claim.
+        assertThat(leaderboard.history(6, null).mine()).isEmpty();
+    }
+
+    @Test
+    void aPlayerOutsideThePodiumHasNoMedalAndTheWindowIsCapped() throws Exception {
+        Season lastMonth = leaderboard.currentSeason().previous();
+        for (int i = 0; i < LeaderboardService.PODIUM; i++) {
+            backdate(player("ahead-" + i + "-" + UUID.randomUUID(), 30 + i, 0),
+                    lastMonth.startInclusive().plusSeconds(60L * i));
+        }
+        User fourth = player("fourth-" + UUID.randomUUID(), LeaderboardService.MIN_GUESSES, 30);
+        backdate(fourth, lastMonth.startInclusive().plusSeconds(600));
+        leaderboard.evict();
+
+        assertThat(leaderboard.history(6, fourth.getId()).mine()).isEmpty();
+        // A caller asking for a decade gets the cap, not a decade of scans.
+        assertThat(leaderboard.history(999, null).seasons().size())
+                .isLessThanOrEqualTo(LeaderboardService.MAX_HISTORY_MONTHS);
+
+        mockMvc.perform(get("/api/leaderboard/seasons?months=2"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.seasons[0].podium[0].displayName").exists())
+                .andExpect(jsonPath("$.mine").isEmpty());
     }
 }

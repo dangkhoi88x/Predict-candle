@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.candles.dto.response.Leaderboard;
+import com.example.candles.dto.response.SeasonHistory;
 import com.example.candles.service.LeaderboardService;
 import com.example.candles.service.RateLimiter;
 
@@ -25,6 +26,7 @@ import com.example.candles.service.RateLimiter;
 public class LeaderboardController {
 
     private static final int REQUESTS_PER_MINUTE = 30;
+    private static final int SEASON_REQUESTS_PER_MINUTE = 10;
 
     private final LeaderboardService leaderboardService;
     private final RateLimiter rateLimiter;
@@ -46,6 +48,21 @@ public class LeaderboardController {
         rateLimiter.check("leaderboard", REQUESTS_PER_MINUTE, request);
         return leaderboardService.board(limit, callerId(authentication),
                 leaderboardService.resolveSeason(season));
+    }
+
+    /**
+     * Finished months and the caller's medals on them — the profile's season badges, and the line
+     * naming last month's winner on the board.
+     *
+     * Its own, lower limit: a cold read walks one ranking per month asked for, so this is the more
+     * expensive of the two open endpoints here even with every season cached.
+     */
+    @GetMapping("/seasons")
+    public SeasonHistory seasons(@RequestParam(defaultValue = "6") int months,
+                                 Authentication authentication,
+                                 HttpServletRequest request) {
+        rateLimiter.check("leaderboard-seasons", SEASON_REQUESTS_PER_MINUTE, request);
+        return leaderboardService.history(months, callerId(authentication));
     }
 
     /**

@@ -29,6 +29,7 @@
         rank: document.getElementById("profile-rank"),
         rankMedal: document.getElementById("profile-rank-medal"),
         rankValue: document.getElementById("profile-rank-value"),
+        seasons: document.getElementById("profile-seasons"),
         insightsScope: document.getElementById("profile-insights-scope"),
         insightsBody: document.getElementById("profile-insights-body"),
     };
@@ -463,6 +464,54 @@
         body.appendChild(grid);
     }
 
+    /* ---- season medals -------------------------------------------------------------------- */
+
+    /* The same three the medallion above already uses, by the same class names — a month's medal
+       and the rank disc beside it must not be two different golds. No emoji: those are drawn by
+       the operating system, and three of them beside a CSS medallion is three shades of gold. */
+    var MEDAL_CLASS = ["is-first", "is-second", "is-third"];
+
+    /* A medal is last month's rank asked again, not a row written when the month ended — the same
+       bargain the badges above make. So a month with no medal draws nothing rather than an empty
+       slot: there is no list of seasons a player is expected to complete. */
+    async function loadSeasonMedals() {
+        if (!el.seasons) return;
+        try {
+            var res = await window.CandleAuth.authFetch("/api/leaderboard/seasons?months=12");
+            if (!res.ok) throw new Error("seasons unavailable");
+            var history = await res.json();
+            el.seasons.innerHTML = "";
+            if (!history.mine.length) {
+                var empty = document.createElement("p");
+                empty.className = "profile-empty";
+                empty.textContent = history.seasons.length
+                    ? "Chưa có. Vào top 3 của một tháng để nhận huy hiệu mùa."
+                    : "Mùa đầu tiên vẫn đang chạy — huy hiệu trao khi tháng kết thúc.";
+                el.seasons.appendChild(empty);
+                return;
+            }
+            history.mine.forEach(function (medal) {
+                var chip = document.createElement("button");
+                chip.type = "button";
+                chip.className = "profile-season " + MEDAL_CLASS[medal.rank - 1];
+                chip.setAttribute("data-nav-view", "leaderboard");
+                chip.title = "Hạng " + medal.rank + " " + medal.label + ". Mở bảng xếp hạng.";
+                var mark = document.createElement("span");
+                mark.className = "profile-season-medal";
+                mark.textContent = "#" + medal.rank;
+                var label = document.createElement("span");
+                label.className = "profile-season-label";
+                label.textContent = medal.label;
+                chip.appendChild(mark);
+                chip.appendChild(label);
+                el.seasons.appendChild(chip);
+            });
+        } catch (e) {
+            // The medals are context beside the totals; a gap beats an error nobody can act on.
+            el.seasons.innerHTML = "";
+        }
+    }
+
     /* Separate from the totals on purpose: a slow or failed read of habits must not hold up or
        blank the numbers above it, which are the part a player opened the tab for. */
     async function loadInsights() {
@@ -488,6 +537,7 @@
     async function load() {
         if (!window.CandleAuth.getUser()) return;
         loadInsights();
+        loadSeasonMedals();
         try {
             var res = await window.CandleAuth.authFetch("/api/stats/me");
             if (res.ok) {

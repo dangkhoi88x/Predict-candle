@@ -155,6 +155,35 @@
         });
     }
 
+    /* One line, and only while the running season is on screen: on a board three days into a month
+       "nobody is far ahead yet" is all there is to read, and who took last month is the part worth
+       reading. Its own request rather than a field on the board, because the board is public and
+       cached per season while this walks a second ranking. */
+    async function renderLastSeason(board) {
+        var line = document.getElementById("leaderboard-last");
+        if (!line) return;
+        line.classList.add("hidden");
+        if (!board.season || !board.season.current) return;
+        try {
+            var res = await window.CandleAuth.authFetch("/api/leaderboard/seasons?months=1");
+            if (!res.ok) return;
+            var history = await res.json();
+            if (!history.seasons.length) return;
+            var past = history.seasons[0];
+            line.innerHTML = "";
+            line.appendChild(document.createTextNode(past.label + ": "));
+            past.podium.forEach(function (entry, i) {
+                if (i) line.appendChild(document.createTextNode(" · "));
+                line.appendChild(el("b", "lb-last-rank " + ["is-first", "is-second", "is-third"][i],
+                    "#" + entry.rank));
+                line.appendChild(document.createTextNode(" " + entry.displayName));
+            });
+            line.classList.remove("hidden");
+        } catch (e) {
+            // No line at all is the right failure for context beside a board that loaded.
+        }
+    }
+
     async function init() {
         var container = document.getElementById("leaderboard-body");
         var note = document.getElementById("leaderboard-note");
@@ -175,6 +204,7 @@
                 ? board.season.label + (board.season.current ? " · " + daysLeft(board.season.endsAt) : " · đã kết thúc")
                 : "Mọi lúc") + " · từ " + board.minGuesses + " lượt đoán trở lên";
             renderSeasons();
+            renderLastSeason(board);
             container.innerHTML = "";
 
             if (!board.rows.length) {

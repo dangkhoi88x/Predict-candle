@@ -19,6 +19,7 @@ import com.example.candles.domain.DailyRound;
 import com.example.candles.domain.PlayerScore;
 import com.example.candles.domain.Season;
 import com.example.candles.dto.response.Leaderboard;
+import com.example.candles.dto.response.SeasonHistory;
 import com.example.candles.entity.Role;
 import com.example.candles.entity.User;
 import com.example.candles.repository.LivePredictionRepository;
@@ -121,6 +122,44 @@ public class LeaderboardService {
                 .findFirst().orElse(null);
 
         return new Leaderboard(Instant.now(), MIN_GUESSES, seasonInfo(season), page, me);
+    }
+
+    /** How many finished months a history may reach back over — one screen's worth, not an archive. */
+    public static final int MAX_HISTORY_MONTHS = 12;
+
+    /** The podium of a finished month, and which of those the caller stands on. */
+    public static final int PODIUM = 3;
+
+    /**
+     * The seasons that have ended, newest first, and the caller's medals among them.
+     *
+     * Read off the same per-season rankings the board itself caches, so a medal and the board it
+     * came from cannot disagree — a medal is the rank that month's board gives, asked again.
+     * Months nobody qualified in are dropped: an empty month is not a season worth listing, and a
+     * run of them would push the real ones off the screen.
+     */
+    @Transactional(readOnly = true)
+    public SeasonHistory history(int months, Long callerId) {
+        int window = Math.clamp(months, 1, MAX_HISTORY_MONTHS);
+        List<SeasonHistory.Past> past = new ArrayList<>();
+        List<SeasonHistory.Medal> mine = new ArrayList<>();
+
+        Season walk = currentSeason().previous();
+        for (int i = 0; i < window && !walk.month().isBefore(FIRST_SEASON); i++, walk = walk.previous()) {
+            Season season = walk;
+            List<Ranked> ranked = cache.get(season.id(), key -> rank(Season.parse(key)));
+            if (ranked.isEmpty()) continue;
+
+            past.add(new SeasonHistory.Past(season.id(), season.label(),
+                    ranked.stream().limit(PODIUM).map(Ranked::row).toList()));
+
+            if (callerId == null) continue;
+            ranked.stream()
+                    .filter(r -> callerId.equals(r.userId()) && r.row().rank() <= PODIUM)
+                    .findFirst()
+                    .ifPresent(r -> mine.add(new SeasonHistory.Medal(season.id(), season.label(), r.row().rank())));
+        }
+        return new SeasonHistory(List.copyOf(past), List.copyOf(mine));
     }
 
     /** Drops the cached ranking, so the next read rebuilds it. */

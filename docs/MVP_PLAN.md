@@ -233,7 +233,7 @@ chưa xem.
 
 | # | Việc | Điều kiện để bắt đầu |
 |---|---|---|
-| M3.1 ⏳ | **Mùa giải không có thưởng tiền:** bảng xếp hạng reset theo tháng, huy hiệu mùa | Quay lại trong tuần ≥ 30% |
+| M3.1 ✅ | **Mùa giải không có thưởng tiền:** bảng xếp hạng reset theo tháng, huy hiệu mùa | Quay lại trong tuần ≥ 30% |
 | M3.2 | **Đa khung cho game (G2):** 4h và 1d gộp từ nến 1h (`CandleAggregator` đã có), 15m thì cần lưu thêm | Người chơi lâu năm phàn nàn chart nhàm |
 | M3.3 | **Độ khó theo cộng đồng (R4):** tỉ lệ đoán đúng mỗi chart → điểm thưởng | Mỗi chart daily có ≥ 30 người chơi |
 | M3.4 | **Trang nội dung có URL riêng** cho blog và từng mẫu (render phía server hoặc prerender), phục vụ SEO | Muốn có lượng truy cập tự nhiên từ Google |
@@ -245,7 +245,10 @@ mục tiêu là học và làm portfolio — giống MVP 1):
   `?season=all` cho mọi lúc, không truyền gì thì là tháng đang chạy. Không reset và không lưu gì
   thêm: mùa chỉ là bộ lọc trên chính các lượt đã ghi, nên tháng cũ đọc lại vẫn đúng như lúc đó.
   Thẻ top bên cạnh chart, tag ở rail và huy hiệu hạng trên hồ sơ đều theo tháng đang chạy.
-  Huy hiệu mùa (top 3 tháng trước) là phần tiếp theo, chưa làm.
+  Huy hiệu mùa: `GET /api/leaderboard/seasons` trả podium của từng tháng đã kết thúc và huy hiệu
+  của chính người gọi. Không lưu gì khi tháng đóng — huy hiệu là thứ hạng của tháng đó hỏi lại,
+  đọc từ đúng bảng đã cache, nên huy hiệu và bảng không thể lệch nhau. Hồ sơ hiện huy hiệu của
+  người chơi, bảng xếp hạng hiện podium tháng trước ngay dưới bộ chọn mùa.
 
 ### Cố ý chưa làm
 
