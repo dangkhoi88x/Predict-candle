@@ -4717,6 +4717,8 @@ body:not(.is-admin) .adm-search {
     color: var(--muted);
     font-size: 12px;
     line-height: 1.5;
+}
+
 /* The timeframe pill sits beside the pair pill, and is the narrower of the two: three fixed
    labels against a list of pairs that grows. */
 .tf-pill {
