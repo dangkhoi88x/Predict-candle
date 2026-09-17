@@ -4678,6 +4678,53 @@ body:not(.is-admin) .adm-search {
 
 /* --- leaderboard --- */
 
+/* How the crowd called each candle of a finished round. Chips rather than a bar chart: five
+   percentages are five facts, and the player's own result is the tint on the one it belongs to. */
+.daily-community {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 4px 0 2px;
+}
+
+.daily-community-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.daily-community-chip {
+    padding: 4px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--panel-2);
+    font-size: 12.5px;
+    font-variant-numeric: tabular-nums;
+}
+
+.daily-community-chip.is-correct {
+    border-color: color-mix(in oklab, var(--up) 45%, transparent);
+    background: color-mix(in oklab, var(--up) 14%, transparent);
+}
+
+.daily-community-chip.is-wrong {
+    border-color: color-mix(in oklab, var(--down) 45%, transparent);
+    background: color-mix(in oklab, var(--down) 14%, transparent);
+}
+
+.daily-community-note {
+    margin: 0;
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+/* The timeframe pill sits beside the pair pill, and is the narrower of the two: three fixed
+   labels against a list of pairs that grows. */
+.tf-pill {
+    flex: 0 0 auto;
+}
+
 /* A month a player finished on the podium. Sized like a tag rather than like the badges below
    it: a medal is one fact — which month, which place — and a card would promise more. */
 .profile-seasons {

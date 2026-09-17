@@ -43,12 +43,14 @@ public class DailyRoundService {
      */
     private static final int MAX_ARCHIVE_DAYS = 60;
 
+
     private final RoundSelectionService rounds;
     private final RoundTokenService tokens;
     private final GuessResultRepository guessResults;
     private final CandlesProperties properties;
     private final RoundTimingPolicy timingPolicy;
     private final RoundHintService hintService;
+    private final CommunityDifficultyService difficulty;
     private final Clock clock;
 
     public DailyRoundService(RoundSelectionService rounds,
@@ -57,6 +59,7 @@ public class DailyRoundService {
                              CandlesProperties properties,
                              RoundTimingPolicy timingPolicy,
                              RoundHintService hintService,
+                             CommunityDifficultyService difficulty,
                              Clock clock) {
         this.rounds = rounds;
         this.tokens = tokens;
@@ -64,6 +67,7 @@ public class DailyRoundService {
         this.properties = properties;
         this.timingPolicy = timingPolicy;
         this.hintService = hintService;
+        this.difficulty = difficulty;
         this.clock = clock;
     }
 
@@ -170,6 +174,11 @@ public class DailyRoundService {
                         selection.startIndex(), totalGuesses).stream().map(CandleDto::from).toList()
                 : List.of();
 
+        // Only once it is over — the crowd's answer is most of an answer, the same gate the
+        // context chart passes through.
+        DailyRoundResponse.Community community = completed ? difficulty.forChart(mode,
+                selection.asset().getId(), selection.timeframe(), selection.startIndex()) : null;
+
         return new DailyRoundResponse(
                 day,
                 DailyRound.forDay(day).number(),
@@ -189,7 +198,8 @@ public class DailyRoundService {
                 resolved,
                 hints,
                 streak,
-                nextRoundAt);
+                nextRoundAt,
+                community);
     }
 
     /**
