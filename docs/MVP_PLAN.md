@@ -235,7 +235,7 @@ chưa xem.
 |---|---|---|
 | M3.1 ✅ | **Mùa giải không có thưởng tiền:** bảng xếp hạng reset theo tháng, huy hiệu mùa | Quay lại trong tuần ≥ 30% |
 | M3.2 ✅ | **Đa khung cho game (G2):** 4h và 1d gộp từ nến 1h (`CandleAggregator` đã có), 15m thì cần lưu thêm | Người chơi lâu năm phàn nàn chart nhàm |
-| M3.3 | **Độ khó theo cộng đồng (R4):** tỉ lệ đoán đúng mỗi chart → điểm thưởng | Mỗi chart daily có ≥ 30 người chơi |
+| M3.3 ✅ | **Độ khó theo cộng đồng (R4):** tỉ lệ đoán đúng mỗi chart → điểm thưởng | Mỗi chart daily có ≥ 30 người chơi |
 | M3.4 | **Trang nội dung có URL riêng** cho blog và từng mẫu (render phía server hoặc prerender), phục vụ SEO | Muốn có lượng truy cập tự nhiên từ Google |
 
 **Đang làm** (bắt đầu 2026-09-17, chưa đạt điều kiện số liệu, theo quyết định của chủ project vì
@@ -253,6 +253,12 @@ mục tiêu là học và làm portfolio — giống MVP 1):
   không sync thêm gì. Chỉ số vị trí vẫn đếm trên nến đã lưu nên token, ràng buộc duy nhất và phần
   thói quen giữ nguyên một hệ toạ độ. Daily vẫn 1h vì là chart chung. 15m không làm: chưa lưu phút
   nào, đúng như plan ghi.
+- **M3.3** — chơi xong daily thì bảng hiện tỉ lệ đoán đúng của cộng đồng cho *từng nến*, chỉ với
+  nến có từ 10 người trả lời trở lên, chip tô theo kết quả của chính người chơi. **Không cộng vào
+  điểm**, khác với plan: độ khó một chart còn đổi khi có thêm người chơi, nên cộng thưởng theo nó
+  sẽ viết lại điểm hôm qua và cả thứ hạng người chơi đã nhìn thấy. Muốn thưởng cho đúng thì phải
+  đóng băng độ khó tại lúc chơi, tức là lưu một con số cho mỗi lượt — đúng thứ "nguồn sự thật thứ
+  hai" mà cả project đang tránh.
 
 ### Cố ý chưa làm
 
