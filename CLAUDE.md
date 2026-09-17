@@ -423,6 +423,22 @@ Three things make it safe to write from inside a failure:
   a different one; a failed write goes to the log and no further, and a failed read leaves the rest
   of the ops snapshot intact.
 
+**`ErrorAlertService` is the half that reaches somebody**, through the bot this app already runs:
+a failure that starts its own row is announced to `TELEGRAM_ALERT_CHAT_ID`, with a button to the ops
+pane. The cheap version of an error tracker on purpose — a third-party account for a demo whose
+whole error history is a handful of exchange bans buys less than a message in the chat the owner
+already reads.
+
+- **Only a new episode.** `AppErrorStore.record` returns whether the row was new or folded, and a
+  repeat of something already on the pane is not news — an exchange ban would be a message a second.
+- **At most one message per `alert-cooldown` (15m)**, and the ones held back are counted in the next
+  message rather than dropped: a night where every poll fails differently is exactly when a phone
+  has to stay usable.
+- **Its own daemon thread**, so an alert never puts an HTTP call to Telegram in front of the request
+  that failed, with a bounded queue that discards rather than grows.
+- **A failed send is logged and forgotten.** The row is already stored, which is the part that had
+  to survive; a second error raised by reporting the first would be the worst of both.
+
 `ErrorRetentionScheduler` trims nightly by age (`candles.errors.retention`, 14 days) **and** by row
 count (`max-rows`, 2000). Both are needed: age keeps the table a picture of the last fortnight, and
 the cap stops one bad night — a different error on every poll — filling it inside that window. The

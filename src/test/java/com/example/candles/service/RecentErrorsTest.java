@@ -20,6 +20,8 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 /**
@@ -42,6 +44,7 @@ class RecentErrorsTest {
     @Autowired private AppErrorStore store;
     @Autowired private AppErrorRepository rows;
     @Autowired private ErrorRetentionScheduler retention;
+    @MockitoBean private ErrorAlertService alerts;
     @MockitoBean private Clock clock;
 
     @BeforeEach
@@ -91,7 +94,7 @@ class RecentErrorsTest {
     void theListOutlivesTheObjectThatRecordedIt() {
         errors.record("sync", "ETHUSDT", "Read timed out");
 
-        RecentErrors afterRestart = new RecentErrors(store);
+        RecentErrors afterRestart = new RecentErrors(store, alerts);
 
         assertThat(afterRestart.snapshot()).singleElement()
                 .satisfies(row -> assertThat(row.where()).isEqualTo("ETHUSDT"));
@@ -125,7 +128,7 @@ class RecentErrorsTest {
         AppErrorStore broken = mock(AppErrorStore.class);
         doThrow(new IllegalStateException("no connection")).when(broken).record(anyString(), anyString(), anyString());
         when(broken.recent(org.mockito.ArgumentMatchers.anyInt())).thenThrow(new IllegalStateException("no connection"));
-        RecentErrors overABrokenStore = new RecentErrors(broken);
+        RecentErrors overABrokenStore = new RecentErrors(broken, alerts);
 
         assertThatCode(() -> overABrokenStore.record("server", "GET /x", "boom")).doesNotThrowAnyException();
         assertThat(overABrokenStore.snapshot()).isEmpty();
@@ -148,5 +151,22 @@ class RecentErrorsTest {
         assertThat(removed).isEqualTo(4);   // one by age, three over the cap
         assertThat(rows.findAll()).extracting(AppError::getWhereAt)
                 .containsExactlyInAnyOrder("recent-4", "recent-3");
+    }
+
+    /**
+     * A repeat is not news. An exchange ban raises the same error on every poll of every open tab,
+     * so alerting on anything but a new episode would be a message a second.
+     */
+    @Test
+    void onlyANewEpisodeIsAnnounced() {
+        errors.record("sync", "BTCUSDT", "Read timed out");
+        at(T0.plusSeconds(5));
+        errors.record("sync", "BTCUSDT", "Read timed out");
+        at(T0.plusSeconds(6));
+        errors.record("upstream", "GET /api/live/round", "HTTP 418");
+
+        verify(alerts).newFailure("sync", "BTCUSDT", "Read timed out");
+        verify(alerts).newFailure("upstream", "GET /api/live/round", "HTTP 418");
+        verifyNoMoreInteractions(alerts);
     }
 }

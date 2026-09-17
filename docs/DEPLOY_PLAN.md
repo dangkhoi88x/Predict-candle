@@ -246,6 +246,12 @@ Không có ba biến dưới đây thì app chạy như web thường, `POST /ap
 Hai biến sau không bắt buộc: thiếu thì đăng nhập vẫn chạy, chỉ là link thách đấu gửi từ trong
 Telegram sẽ là link web thay vì link mở lại Mini App.
 
+**Nhận cảnh báo lỗi qua bot (nên bật):** thêm biến `TELEGRAM_ALERT_CHAT_ID` trên Render, giá trị là
+chat id của bạn với bot. Lấy id bằng cách nhắn cho bot một câu bất kỳ rồi vào trang admin → Thử
+thách → thẻ Telegram → **Tìm chat id của nhóm** (bảng đó liệt kê cả chat riêng). Khi có một loại lỗi
+mới xuất hiện, bot nhắn một tin kèm nút mở trang Vận hành; tối đa 15 phút một tin, và số lỗi bị dồn
+lại được ghi trong tin kế tiếp. Rỗng thì không gửi gì.
+
 ### 4.5 Bot nhắc Thử thách trong nhóm Telegram (tuỳ chọn)
 
 Cần làm xong §4.4 trước. Chỉ gửi vào nhóm nào đã đồng ý: bot không tự gửi chỉ vì được thêm vào nhóm.
