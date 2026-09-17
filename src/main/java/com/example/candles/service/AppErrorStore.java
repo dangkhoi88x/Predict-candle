@@ -43,9 +43,13 @@ public class AppErrorStore {
      * Folds into the newest row when it is the same failure and recent enough, else starts a new
      * one. Only the newest row folds: a different failure in between starts a new row, so the list
      * reads as a sequence of episodes rather than a set of counters.
+     *
+     * @return true when this started a new episode rather than folding into the one on top. That
+     *         is the moment worth telling somebody about — a repeat of a failure already on the
+     *         pane is not news, and an exchange ban would otherwise send a message a second.
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void record(String source, String where, String summary) {
+    public boolean record(String source, String where, String summary) {
         Instant now = clock.instant();
         Optional<AppError> newest = errors.findFirstByOrderByLastAtDescIdDesc();
         if (newest.isPresent() && matches(newest.get(), source, where, summary)
@@ -55,9 +59,10 @@ public class AppErrorStore {
             AppError row = newest.get();
             row.repeated(now);
             errors.save(row);
-            return;
+            return false;
         }
         errors.save(new AppError(source, where, summary, now));
+        return true;
     }
 
     @Transactional(readOnly = true)

@@ -2,6 +2,7 @@ package com.example.candles.exception;
 
 import com.example.candles.client.ExchangeCoolingDownException;
 import com.example.candles.service.AppErrorStore;
+import com.example.candles.service.ErrorAlertService;
 import com.example.candles.service.RecentErrors;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -27,7 +28,7 @@ class GlobalExceptionHandlerTest {
     /* The rows themselves have their own test; what matters here is that the handler hands the
        failure over, with the request it happened in. */
     private final AppErrorStore store = mock(AppErrorStore.class);
-    private final RecentErrors recentErrors = new RecentErrors(store);
+    private final RecentErrors recentErrors = new RecentErrors(store, mock(ErrorAlertService.class));
     private final GlobalExceptionHandler handler = new GlobalExceptionHandler(recentErrors);
     private final MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/live/round");
 

@@ -21,6 +21,9 @@ import com.example.candles.dto.response.OpsSnapshot;
  * question that evening actually asked. The rows live in {@code app_errors} now
  * ({@link AppErrorStore}), and {@link ErrorRetentionScheduler} keeps that table bounded.
  *
+ * A failure that starts its own row is also sent to {@link ErrorAlertService}, which is the half
+ * that reaches somebody rather than waiting to be opened.
+ *
  * <b>Recording never throws and never fails a request.</b> This is called from a servlet filter, an
  * exception handler and a scheduler — all places where something has already gone wrong — so a
  * database that is itself the problem must not turn one failure into a different one. A failed
@@ -37,9 +40,11 @@ public class RecentErrors {
     static final int MAX_SOURCE = 32;
 
     private final AppErrorStore store;
+    private final ErrorAlertService alerts;
 
-    public RecentErrors(AppErrorStore store) {
+    public RecentErrors(AppErrorStore store, ErrorAlertService alerts) {
         this.store = store;
+        this.alerts = alerts;
     }
 
     /**
@@ -48,8 +53,15 @@ public class RecentErrors {
      * @param summary what went wrong, one line; truncated to fit its column
      */
     public void record(String source, String where, String summary) {
+        String trimmedSource = cut(source, MAX_SOURCE);
+        String trimmedWhere = cut(where, MAX_WHERE);
+        String line = oneLine(summary);
         try {
-            store.record(cut(source, MAX_SOURCE), cut(where, MAX_WHERE), oneLine(summary));
+            // Only a new episode is news: a repeat folds into the row on top, and an exchange ban
+            // repeating on every poll would otherwise be a message a second.
+            if (store.record(trimmedSource, trimmedWhere, line)) {
+                alerts.newFailure(trimmedSource, trimmedWhere, line);
+            }
         } catch (RuntimeException e) {
             log.warn("Could not record an error for the ops pane: {}", e.toString());
         }

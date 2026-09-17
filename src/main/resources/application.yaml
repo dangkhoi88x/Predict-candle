@@ -114,6 +114,12 @@ candles:
     # Repeats of one failure fold into a row with a count for this long. Longer and a ban that ran
     # all night and the same ban next week become one row that says neither happened when it did.
     fold-window: PT1H
+    # Where a new kind of failure is announced, through the bot (ErrorAlertService). A chat id, not
+    # a name — the admin card's "Tìm chat id" lists private chats too. Empty sends nothing.
+    alert-chat-id: ${TELEGRAM_ALERT_CHAT_ID:}
+    # At most one message per window; what was held back is counted in the next one. A night where
+    # every poll fails differently is exactly when a phone must stay usable.
+    alert-cooldown: PT15M
   analytics:
     # GoatCounter site code (the part before .goatcounter.com). Empty counts nothing, which is
     # every checkout — only the deployment sets it. See SiteConfigController and analytics.js.
