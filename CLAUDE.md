@@ -1332,6 +1332,18 @@ board, because an empty board is a real answer for a quiet month. Each window ca
 key. The play tab's card, the rail's tag and the profile's medallion all follow the current season,
 which is why they say *tháng này* rather than only "rank".
 
+**A season medal is that month's rank asked again** — `GET /api/leaderboard/seasons?months=` returns
+each finished month's podium and, for a signed-in caller, the ones they stand on. Nothing is written
+when a month ends, the same bargain `Achievement` makes: medals cannot drift from the board, a month
+cannot be awarded twice, and deleting an account takes them with it. They are read off the per-season
+rankings the board already caches, so a medal and the board it came from cannot disagree; months
+nobody qualified in drop out rather than list an empty podium, and the window is capped at
+`MAX_HISTORY_MONTHS` because a cold read walks one ranking per month asked for (its own lower rate
+limit, for the same reason). The profile draws the caller's medals; the board draws last month's
+podium under the picker while the running season is on screen. Gold/silver/bronze come from the
+medallion's own three, as a tint behind the rank rather than as its colour — gold text at 12px is
+about 2:1 on a light panel.
+
 `GET /api/leaderboard` is public — anonymous callers get the board without the `me` row, and
 signing in adds it. Ranked on `score` from `PlayerScore`, the same function the profile and the
 game tab use, so a rank is computed from the number the player already sees.

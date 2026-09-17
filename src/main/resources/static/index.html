@@ -1045,6 +1045,10 @@
          it, so walking back needs no list of seasons anywhere. -->
     <div class="pill lb-seasons" id="leaderboard-seasons" aria-label="Mùa giải"></div>
 
+    <!-- Who took the month before this one. Shown while the running season is on screen, where
+         "nobody is far ahead yet" is otherwise all a new board says. -->
+    <p class="lb-last hidden" id="leaderboard-last"></p>
+
     <!-- Filled by leaderboard.js on first reveal; the notice element doubles as the empty and
          error state, the same way the other content tabs do. -->
     <div id="leaderboard-body"></div>
@@ -1136,6 +1140,11 @@
         </div>
 
         <div class="profile-col">
+            <!-- Podium finishes in months that have ended. Derived from the same guesses the board
+                 ranks, like every other badge here — nothing is written when a month closes. -->
+            <h3 class="profile-section">Huy hiệu mùa</h3>
+            <div id="profile-seasons" class="profile-seasons"></div>
+
             <h3 class="profile-section">Huy hiệu</h3>
             <div id="profile-badges" class="profile-badges"></div>
 
