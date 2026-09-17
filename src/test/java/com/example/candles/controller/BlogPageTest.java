@@ -89,6 +89,9 @@ class BlogPageTest {
 
         String sitemap = mockMvc.perform(get("/sitemap.xml")).andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
+        // Seconds, not the microseconds a Postgres timestamp comes back with.
+        assertThat(sitemap).containsPattern("<lastmod>\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z</lastmod>")
+                .doesNotContainPattern("<lastmod>[^<]*\\.[0-9]+Z</lastmod>");
         assertThat(sitemap)
                 .contains("<loc>https://candles-oj1q.onrender.com/</loc>")
                 .contains("<loc>https://candles-oj1q.onrender.com/blog</loc>")
