@@ -34,12 +34,18 @@ public class LeaderboardController {
         this.rateLimiter = rateLimiter;
     }
 
+    /**
+     * {@code season} is a month ({@code 2026-09}), {@code all} for every recorded call, or absent
+     * for the season running now — which is what a visitor who follows a plain link gets.
+     */
     @GetMapping
     public Leaderboard board(@RequestParam(defaultValue = "50") int limit,
+                             @RequestParam(required = false) String season,
                              Authentication authentication,
                              HttpServletRequest request) {
         rateLimiter.check("leaderboard", REQUESTS_PER_MINUTE, request);
-        return leaderboardService.board(limit, callerId(authentication));
+        return leaderboardService.board(limit, callerId(authentication),
+                leaderboardService.resolveSeason(season));
     }
 
     /**

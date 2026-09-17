@@ -233,6 +233,20 @@ public interface LivePredictionRepository extends JpaRepository<LivePrediction, 
     List<Object[]> combinedResultFlagsByUserInPlayOrder();
 
     /**
+     * The same flags, limited to one window — a season's board. Filtered on the combined stream
+     * rather than inside each branch so a live call is judged by when it was placed, exactly as
+     * the unfiltered query orders them.
+     */
+    @Query(value = "select user_id, correct from ("
+            + "select user_id, created_at, correct from guess_results "
+            + "union all "
+            + "select user_id, created_at, correct from (" + SETTLED_LIVE_FLAGS + ") live"
+            + ") combined where created_at >= :from and created_at < :to"
+            + " order by user_id, created_at", nativeQuery = true)
+    List<Object[]> combinedResultFlagsByUserInPlayOrderBetween(@Param("from") Instant from,
+                                                              @Param("to") Instant to);
+
+    /**
      * The distinct UTC days this player called anything on, newest first — practice and live
      * together, which is what {@link com.example.candles.domain.PlayStreak} folds into a
      * day streak.

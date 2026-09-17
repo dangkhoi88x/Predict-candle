@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import com.example.candles.domain.Season;
 import com.example.candles.dto.response.Leaderboard;
 import com.example.candles.entity.Asset;
 import com.example.candles.entity.Direction;
@@ -23,6 +24,7 @@ import com.example.candles.repository.GuessResultRepository;
 import com.example.candles.repository.UserRepository;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -37,6 +39,7 @@ class LeaderboardTest {
     @Autowired private UserRepository users;
     @Autowired private AssetRepository assets;
     @Autowired private GuessResultRepository guessResults;
+    @Autowired private jakarta.persistence.EntityManager entityManager;
 
     /* The board caches for a minute, which is right in production and wrong across tests
        sharing one JVM: the second test would read the first one's ranking. */
@@ -74,7 +77,7 @@ class LeaderboardTest {
         player(strong, 30, 5);
         player(weak, 21, 14);
 
-        Leaderboard board = leaderboard.board(50, null);
+        Leaderboard board = leaderboard.board(50, null, leaderboard.currentSeason());
 
         Leaderboard.Row a = rowFor(board, strong), b = rowFor(board, weak);
         assertThat(a).isNotNull();
@@ -102,7 +105,7 @@ class LeaderboardTest {
         player(real, LeaderboardService.MIN_GUESSES, 0);
         leaderboard.evict();
 
-        Leaderboard board = leaderboard.board(50, adminUser.getId());
+        Leaderboard board = leaderboard.board(50, adminUser.getId(), leaderboard.currentSeason());
 
         assertThat(rowFor(board, admin)).isNull();
         assertThat(rowFor(board, real)).isNotNull();
@@ -116,7 +119,7 @@ class LeaderboardTest {
         // A perfect record over too few guesses is a perfect record and a meaningless one.
         player(tiny, LeaderboardService.MIN_GUESSES - 1, 0);
 
-        assertThat(rowFor(leaderboard.board(50, null), tiny)).isNull();
+        assertThat(rowFor(leaderboard.board(50, null, leaderboard.currentSeason()), tiny)).isNull();
     }
 
     /**
@@ -137,7 +140,7 @@ class LeaderboardTest {
         users.saveAndFlush(cheat);
         leaderboard.evict();
 
-        Leaderboard board = leaderboard.board(50, null);
+        Leaderboard board = leaderboard.board(50, null, leaderboard.currentSeason());
         Leaderboard.Row a = rowFor(board, honest), b = rowFor(board, claimant);
 
         assertThat(a.rank()).isLessThan(b.rank());
@@ -156,7 +159,7 @@ class LeaderboardTest {
         User self = player(mid, 20, 10);
 
         // A page of one: the caller is nowhere in `rows`, and still learns their rank.
-        Leaderboard board = leaderboard.board(1, self.getId());
+        Leaderboard board = leaderboard.board(1, self.getId(), leaderboard.currentSeason());
 
         assertThat(board.rows()).hasSize(1);
         assertThat(board.rows().getFirst().displayName()).isEqualTo(top);
@@ -190,5 +193,81 @@ class LeaderboardTest {
         // appear, since this is the first thing in the app one user can read about another.
         assertThat(body).doesNotContain("walletAddress");
         assertThat(body).doesNotMatch("(?s).*0x[0-9a-fA-F]{40}.*");
+    }
+
+    /**
+     * The point of a season: a month's board ranks that month's play and nothing else, so a player
+     * who starts today is not ranked against a year of somebody else's history. All-time still
+     * counts everything, which is why both windows exist rather than one replacing the other.
+     */
+    @Test
+    void aMonthsBoardRanksThatMonthsPlayAndAllTimeStillCountsEverything() {
+        String name = "seasonal-" + UUID.randomUUID();
+        User user = player(name, LeaderboardService.MIN_GUESSES, 0);
+        Season lastMonth = leaderboard.currentSeason().previous();
+        backdate(user, lastMonth.startInclusive().plusSeconds(3600));
+
+        String thisMonth = "thismonth-" + UUID.randomUUID();
+        player(thisMonth, LeaderboardService.MIN_GUESSES, 0);
+        leaderboard.evict();
+
+        Leaderboard current = leaderboard.board(50, null, leaderboard.currentSeason());
+        assertThat(rowFor(current, name)).as("last month's play is not this month's board").isNull();
+        assertThat(rowFor(current, thisMonth)).isNotNull();
+        assertThat(current.season().current()).isTrue();
+        assertThat(current.season().endsAt()).isEqualTo(leaderboard.currentSeason().endExclusive());
+
+        Leaderboard previous = leaderboard.board(50, null, lastMonth);
+        assertThat(rowFor(previous, name)).as("a finished month can still be read back").isNotNull();
+        assertThat(rowFor(previous, thisMonth)).isNull();
+        assertThat(previous.season().current()).isFalse();
+        assertThat(previous.season().endsAt()).as("a finished season has no countdown").isNull();
+
+        Leaderboard allTime = leaderboard.board(50, null, null);
+        assertThat(rowFor(allTime, name)).isNotNull();
+        assertThat(rowFor(allTime, thisMonth)).isNotNull();
+        assertThat(allTime.season()).isNull();
+    }
+
+    @Test
+    void theSeasonAskedForIsTheMonthOrAllTimeOrNothing() {
+        assertThat(leaderboard.resolveSeason(null)).isEqualTo(leaderboard.currentSeason());
+        assertThat(leaderboard.resolveSeason("")).isEqualTo(leaderboard.currentSeason());
+        assertThat(leaderboard.resolveSeason("all")).isNull();
+        assertThat(leaderboard.resolveSeason(leaderboard.currentSeason().id()))
+                .isEqualTo(leaderboard.currentSeason());
+
+        // A typo must not read as a quiet month, and a month the site did not exist in is a typo.
+        assertThatThrownBy(() -> leaderboard.resolveSeason("thang-chin"))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> leaderboard.resolveSeason("2000-01"))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> leaderboard.resolveSeason(leaderboard.currentSeason().month().plusMonths(1) + ""))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void theEndpointAnswersTheRunningSeasonByDefaultAndRefusesAMonthThatIsNotOne() throws Exception {
+        mockMvc.perform(get("/api/leaderboard?limit=5"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.season.id").value(leaderboard.currentSeason().id()))
+                .andExpect(jsonPath("$.season.current").value(true));
+
+        mockMvc.perform(get("/api/leaderboard?limit=5&season=all"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.season").doesNotExist());
+
+        mockMvc.perform(get("/api/leaderboard?limit=5&season=hom-qua"))
+                .andExpect(status().isBadRequest());
+    }
+
+    /** Moves an account's recorded calls back in time; createdAt is set when the row is made. */
+    private void backdate(User user, java.time.Instant at) {
+        entityManager.createNativeQuery("update guess_results set created_at = :at where user_id = :id")
+                .setParameter("at", at)
+                .setParameter("id", user.getId())
+                .executeUpdate();
+        entityManager.flush();
+        entityManager.clear();
     }
 }

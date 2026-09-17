@@ -523,7 +523,7 @@
 
     <section class="side-card hidden" id="side-rank">
         <div class="side-head">
-            <span class="side-eyebrow">Top người chơi</span>
+            <span class="side-eyebrow">Top tháng này</span>
             <button class="side-link" type="button" data-nav-view="leaderboard">Xem tất cả</button>
         </div>
         <div class="side-rank" id="side-rank-list"></div>
@@ -1040,6 +1040,11 @@
         <span id="leaderboard-note" class="profile-wallet"></span>
     </div>
 
+    <!-- A board is a month, so the season is a control rather than a caption. Options are built
+         by leaderboard.js from the season the server answered with — it names the month before
+         it, so walking back needs no list of seasons anywhere. -->
+    <div class="pill lb-seasons" id="leaderboard-seasons" aria-label="Mùa giải"></div>
+
     <!-- Filled by leaderboard.js on first reveal; the notice element doubles as the empty and
          error state, the same way the other content tabs do. -->
     <div id="leaderboard-body"></div>
@@ -1065,7 +1070,7 @@
             <span class="pf-medal" id="profile-rank-medal" aria-hidden="true">
                 <span class="pf-shine"></span><b id="profile-rank-value">#–</b>
             </span>
-            <span class="pf-medal-cap" aria-hidden="true">Bảng xếp hạng</span>
+            <span class="pf-medal-cap" aria-hidden="true">Hạng tháng này</span>
         </button>
     </div>
 

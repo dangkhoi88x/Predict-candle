@@ -130,6 +130,9 @@
         document.dispatchEvent(new CustomEvent("candles:rank", { detail: { rank: rank } }));
     }
 
+    /* No season parameter: the server answers with the month that is running, which is what both
+       this card and the rail's tag mean now that a board is a season. Asking for a fixed month
+       here would freeze the tag on whichever month this line was written in. */
     function loadRank() {
         /* Five rows, not fifty: this is a glance at who is ahead, and "Xem tất cả" is right
            there for the rest. */

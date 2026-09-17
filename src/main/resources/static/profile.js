@@ -56,7 +56,8 @@
         if (rank <= PODIUM.length) el.rank.classList.add(PODIUM[rank - 1]);
         el.rankValue.textContent = "#" + rank;
         el.rankMedal.classList.toggle("is-wide", rank >= 100);
-        el.rank.setAttribute("aria-label", "Hạng " + rank + " trên bảng xếp hạng. Mở bảng xếp hạng.");
+        el.rank.setAttribute("aria-label",
+            "Hạng " + rank + " trên bảng xếp hạng tháng này. Mở bảng xếp hạng.");
     }
 
     document.addEventListener("candles:rank", function (event) {
