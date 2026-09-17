@@ -24,7 +24,6 @@ import com.example.candles.entity.GuessMode;
 import com.example.candles.entity.User;
 import com.example.candles.exception.InvalidRoundTokenException;
 import com.example.candles.repository.AssetRepository;
-import com.example.candles.repository.CandleRepository;
 import com.example.candles.repository.ChallengeGuessRepository;
 import com.example.candles.repository.ChallengeRepository;
 import com.example.candles.repository.UserRepository;
@@ -52,7 +51,7 @@ public class ChallengeService {
     private final ChallengeGuessRepository challengeGuesses;
     private final AssetRepository assets;
     private final UserRepository users;
-    private final CandleRepository candles;
+    private final RoundCandleService roundCandles;
     private final RoundSelectionService rounds;
     private final RoundTokenService tokens;
     private final RoundHintService hintService;
@@ -60,7 +59,7 @@ public class ChallengeService {
     private final CandlesProperties properties;
 
     public ChallengeService(ChallengeRepository challenges, ChallengeGuessRepository challengeGuesses,
-                            AssetRepository assets, UserRepository users, CandleRepository candles,
+                            AssetRepository assets, UserRepository users, RoundCandleService roundCandles,
                             RoundSelectionService rounds, RoundTokenService tokens,
                             RoundHintService hintService, RoundTimingPolicy timingPolicy,
                             CandlesProperties properties) {
@@ -68,7 +67,7 @@ public class ChallengeService {
         this.challengeGuesses = challengeGuesses;
         this.assets = assets;
         this.users = users;
-        this.candles = candles;
+        this.roundCandles = roundCandles;
         this.rounds = rounds;
         this.tokens = tokens;
         this.hintService = hintService;
@@ -123,7 +122,7 @@ public class ChallengeService {
                 challenge.getId(),
                 asset.getSymbol(),
                 challenge.getTimeframe(),
-                candles.findWindow(asset.getId(), challenge.getTimeframe(), challenge.getStartIndex(),
+                roundCandles.window(asset, challenge.getTimeframe(), challenge.getStartIndex(),
                         properties.round().visibleCandles()).stream().map(CandleDto::from).toList(),
                 totalGuesses,
                 timingPolicy.guessSeconds(),

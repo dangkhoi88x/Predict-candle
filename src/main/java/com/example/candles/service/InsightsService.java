@@ -110,10 +110,17 @@ public class InsightsService {
         return seen;
     }
 
+    /**
+     * Only calls made on the stored timeframe are read back: a 4h round's candles are folded from
+     * the hours rather than stored, so there are no rows to address by index. Those calls still
+     * count everywhere a candle is not needed — the long/short split, the sessions, the timeouts —
+     * and simply have no trend and no patterns, the same as a call whose candles have a gap in them.
+     */
     private Map<ChartKey, Map<Long, Candle>> trailingCandles(List<GuessResult> recent) {
         Map<ChartKey, TreeSet<Long>> wanted = new HashMap<>();
         Map<ChartKey, Asset> assets = new HashMap<>();
         for (GuessResult guess : recent) {
+            if (!properties.timeframe().equals(guess.getTimeframe())) continue;
             ChartKey key = ChartKey.of(guess);
             assets.putIfAbsent(key, guess.getAsset());
             long last = lastVisibleIndex(guess);

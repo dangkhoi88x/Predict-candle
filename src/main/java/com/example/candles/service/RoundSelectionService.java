@@ -35,14 +35,17 @@ public class RoundSelectionService {
 
     private final AssetRepository assetRepository;
     private final CandleRepository candleRepository;
+    private final RoundCandleService roundCandles;
     private final CandlesProperties properties;
     private final Cache<String, Boolean> recentlyServed;
 
     public RoundSelectionService(AssetRepository assetRepository,
                                   CandleRepository candleRepository,
+                                  RoundCandleService roundCandles,
                                   CandlesProperties properties) {
         this.assetRepository = assetRepository;
         this.candleRepository = candleRepository;
+        this.roundCandles = roundCandles;
         this.properties = properties;
         this.recentlyServed = Caffeine.newBuilder()
                 .expireAfterWrite(properties.round().repeatCacheTtl())
@@ -61,9 +64,19 @@ public class RoundSelectionService {
     }
 
     public RoundSelection selectRound(String assetSymbol) {
+        return selectRound(assetSymbol, properties.timeframe());
+    }
+
+    /**
+     * Practice at a chosen timeframe. Only the chart changes: a 4h round is the same game on bars
+     * folded from the stored hours, and every index below is still a position in the stored rows
+     * — see {@link RoundCandleService}.
+     */
+    public RoundSelection selectRound(String assetSymbol, String timeframe) {
         Asset asset = resolveAsset(assetSymbol);
+        String tf = roundCandles.resolve(timeframe);
         long total = candleRepository.countByAssetAndTimeframe(asset, properties.timeframe());
-        return pickWindow(asset, maxStartIndex(asset, total), ThreadLocalRandom.current(), true);
+        return pickWindow(asset, tf, maxStartIndex(asset, total, tf), ThreadLocalRandom.current(), true);
     }
 
     /**
@@ -108,7 +121,10 @@ public class RoundSelectionService {
             long total = candleRepository.countByAssetAndTimeframeAndOpenTimeLessThan(
                     asset, properties.timeframe(), midnight);
             if (hasEnoughHistory(total)) {
-                return pickWindow(asset, maxStartIndex(asset, total), random, false);
+                // The daily is one chart for everybody, so it stays on the stored timeframe: the
+                // number a player shares is a score on that chart, not on a timeframe they chose.
+                return pickWindow(asset, properties.timeframe(),
+                        maxStartIndex(asset, total, properties.timeframe()), random, false);
             }
         }
         throw new IllegalStateException("No asset has enough candle history for a daily round");
@@ -123,8 +139,8 @@ public class RoundSelectionService {
         return totalCandles >= sessionSpan();
     }
 
-    private int maxStartIndex(Asset asset, long totalCandles) {
-        int maxStartIndex = (int) totalCandles - sessionSpan();
+    private int maxStartIndex(Asset asset, long totalCandles, String timeframe) {
+        int maxStartIndex = (int) totalCandles - roundCandles.storedSpan(timeframe, sessionSpan());
         if (maxStartIndex < 0) {
             throw new IllegalStateException("Not enough candle history for " + asset.getSymbol());
         }
@@ -136,15 +152,19 @@ public class RoundSelectionService {
      * practice round, which must not serve the same chart twice in a row, from a daily one,
      * which must serve the same chart to everyone.
      */
-    private RoundSelection pickWindow(Asset asset, int maxStartIndex, Random random, boolean avoidRepeats) {
-        String timeframe = properties.timeframe();
+    private RoundSelection pickWindow(Asset asset, String timeframe, int maxStartIndex,
+                                       Random random, boolean avoidRepeats) {
         int visibleCandles = properties.round().visibleCandles();
 
         List<Candle> fallback = null;
         int fallbackStart = -1;
         for (int attempt = 0; attempt < properties.round().maxAttempts(); attempt++) {
-            int startIndex = random.nextInt(0, maxStartIndex + 1);
-            String cacheKey = asset.getId() + ":" + startIndex;
+            /* Snapped to its own bucket so a 4h bar covers 08:00-12:00 rather than 09:00-13:00.
+               The draw stays uniform over the history; only where each attempt lands moves. */
+            int startIndex = roundCandles.alignToBucket(asset, timeframe,
+                    random.nextInt(0, maxStartIndex + 1));
+            if (startIndex > maxStartIndex) continue;
+            String cacheKey = asset.getId() + ":" + timeframe + ":" + startIndex;
             if (avoidRepeats && recentlyServed.getIfPresent(cacheKey) != null) {
                 continue;
             }
@@ -155,8 +175,8 @@ public class RoundSelectionService {
              * still ask them to call the direction of a candle that closed where it opened.
              */
             int guessesPerChart = properties.round().guessesPerChart();
-            List<Candle> span = candleRepository.findWindow(
-                    asset.getId(), timeframe, startIndex, visibleCandles + guessesPerChart);
+            List<Candle> span = roundCandles.window(
+                    asset, timeframe, startIndex, visibleCandles + guessesPerChart);
             if (span.size() < visibleCandles + guessesPerChart) {
                 continue;
             }
@@ -195,8 +215,8 @@ public class RoundSelectionService {
      * i.e. the candle right after the visible window plus however many guesses already happened.
      */
     public Candle answerCandleAt(Asset asset, String timeframe, int startIndex, int guessNumber) {
-        return candleAt(asset, timeframe,
-                startIndex + properties.round().visibleCandles() + (guessNumber - 1));
+        return roundCandles.at(asset, timeframe, startIndex,
+                properties.round().visibleCandles() + (guessNumber - 1));
     }
 
     /**
@@ -204,8 +224,8 @@ public class RoundSelectionService {
      * guess — used to redraw a session that is already over, where all of them are known.
      */
     public List<Candle> answerCandles(Asset asset, String timeframe, int startIndex, int guesses) {
-        return candleRepository.findWindow(asset.getId(), timeframe,
-                startIndex + properties.round().visibleCandles(), guesses);
+        return roundCandles.window(asset, timeframe,
+                startIndex + roundCandles.storedSpan(timeframe, properties.round().visibleCandles()), guesses);
     }
 
     /**
@@ -217,13 +237,13 @@ public class RoundSelectionService {
      */
     public ContextWindow contextWindow(Asset asset, String timeframe, int startIndex) {
         int padding = properties.round().contextPadding();
-        int from = Math.max(0, startIndex - padding);
-        int span = (startIndex - from)
+        int from = Math.max(0, startIndex - roundCandles.storedSpan(timeframe, padding));
+        int leadingBars = (startIndex - from) / roundCandles.storedPerBar(timeframe);
+        int span = leadingBars
                 + properties.round().visibleCandles()
                 + properties.round().guessesPerChart()
                 + padding;
-        return new ContextWindow(startIndex - from,
-                candleRepository.findWindow(asset.getId(), timeframe, from, span));
+        return new ContextWindow(leadingBars, roundCandles.window(asset, timeframe, from, span));
     }
 
     /** {@code leading} is how many candles precede the played window — 0 at the very start of history. */
@@ -235,11 +255,7 @@ public class RoundSelectionService {
      * {@code startIndex} is expressed in. Used to date the chart once the session is over.
      */
     public Candle candleAt(Asset asset, String timeframe, int index) {
-        List<Candle> window = candleRepository.findWindow(asset.getId(), timeframe, index, 1);
-        if (window.isEmpty()) {
-            throw new IllegalStateException("Candle at index " + index + " no longer exists");
-        }
-        return window.get(0);
+        return roundCandles.at(asset, timeframe, index, 0);
     }
 
     /**
@@ -248,9 +264,10 @@ public class RoundSelectionService {
      * curious how the chart continued.
      */
     public List<Candle> revealCandlesAfter(Asset asset, String timeframe, int startIndex, int guessesPerChart) {
-        int index = startIndex + properties.round().visibleCandles() + guessesPerChart;
+        int index = startIndex + roundCandles.storedSpan(timeframe,
+                properties.round().visibleCandles() + guessesPerChart);
         int count = properties.round().revealCandlesAfterComplete();
-        return candleRepository.findWindow(asset.getId(), timeframe, index, count);
+        return roundCandles.window(asset, timeframe, index, count);
     }
 
     /**

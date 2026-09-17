@@ -11,7 +11,6 @@ import com.example.candles.config.CandlesProperties;
 import com.example.candles.domain.HintLevel;
 import com.example.candles.dto.response.RoundHints;
 import com.example.candles.entity.Candle;
-import com.example.candles.repository.CandleRepository;
 
 /**
  * Builds the readings a struggling player has unlocked, over exactly the candles they can
@@ -31,14 +30,14 @@ public class RoundHintService {
      */
     private static final int MOVING_AVERAGE_PERIOD = 5;
 
-    private final CandleRepository candles;
+    private final RoundCandleService roundCandles;
     private final CandlesProperties properties;
     private final RoundPatternScanner patternScanner;
 
-    public RoundHintService(CandleRepository candles,
+    public RoundHintService(RoundCandleService roundCandles,
                             CandlesProperties properties,
                             RoundPatternScanner patternScanner) {
-        this.candles = candles;
+        this.roundCandles = roundCandles;
         this.properties = properties;
         this.patternScanner = patternScanner;
     }
@@ -55,8 +54,9 @@ public class RoundHintService {
             return RoundHints.NONE;
         }
 
+        // Bars, not stored candles: a hint on a 4h round reads the 4h bars the player is looking at.
         int seen = properties.round().visibleCandles() + (guessNumber - 1);
-        List<Candle> window = candles.findWindow(assetId, timeframe, startIndex, seen);
+        List<Candle> window = roundCandles.window(assetId, timeframe, startIndex, seen);
 
         return new RoundHints(
                 level.volume() ? window.stream().map(Candle::getVolume).toList() : null,
