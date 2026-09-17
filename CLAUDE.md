@@ -122,6 +122,13 @@ start is a time, and its index is how many candles closed before it, which is ex
 mid-bucket drops that last bar rather than asking a player to call a candle built from three of its
 four hours.
 
+**The picker is a second pill in the game toolbar** (`#tf-pill`), and choosing a timeframe deals a
+chart the way choosing a pair does — a button that did nothing until the current chart ran out
+would be worse than no button. The choice is remembered in `candles-timeframe`, guarded like every
+other storage read, since being put back on hourly every visit is the kind of friction that stops a
+feature being used. The practice axis counts back in the round's own step — "−76h" on a 4h chart,
+"−19d" on a daily one, because "−456h" is a number nobody converts.
+
 **The daily stays hourly** — it is one chart for everybody, and a score shared from it has to mean
 the same thing for everyone who plays it. Challenge links carry their chart's timeframe, so a 4h
 practice chart can still be sent to a friend. `InsightsService` reads back only calls on the stored
