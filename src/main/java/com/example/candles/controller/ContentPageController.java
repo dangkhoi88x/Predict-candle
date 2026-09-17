@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.RestController;
 import tools.jackson.databind.JsonNode;
 
 import java.time.Duration;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -217,19 +219,28 @@ public class ContentPageController {
                 .append(url(siteUrl + "/", null))
                 .append(url(siteUrl + "/blog", null));
         for (BlogPostDto post : blog.published()) {
-            xml.append(url(siteUrl + "/blog/" + post.slug(), post.updatedAt() == null ? null : post.updatedAt().toString()));
+            xml.append(url(siteUrl + "/blog/" + post.slug(), lastmod(post.updatedAt())));
         }
         for (Library library : Library.values()) {
             xml.append(url(siteUrl + "/" + library.path, null));
             for (ContentItemDto item : content.published(library.kind)) {
-                xml.append(url(siteUrl + "/" + library.path + "/" + item.itemKey(),
-                        item.updatedAt() == null ? null : item.updatedAt().toString()));
+                xml.append(url(siteUrl + "/" + library.path + "/" + item.itemKey(), lastmod(item.updatedAt())));
             }
         }
         xml.append("</urlset>\n");
         return ResponseEntity.ok()
                 .cacheControl(CacheControl.maxAge(Duration.ofMinutes(10)).cachePublic())
                 .body(xml.toString());
+    }
+
+    /**
+     * Seconds, never the microseconds a Postgres timestamp comes back with.
+     * {@code Instant.toString()} writes {@code 2026-09-13T13:04:57.189464Z}, which is a valid W3C
+     * datetime and which Google does accept — but a sitemap is read by crawlers nobody here can
+     * ask, and precision below a second says nothing true about when a post changed anyway.
+     */
+    private static String lastmod(Instant at) {
+        return at == null ? null : at.truncatedTo(ChronoUnit.SECONDS).toString();
     }
 
     private String url(String loc, String lastmod) {
