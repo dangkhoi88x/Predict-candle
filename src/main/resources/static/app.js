@@ -5,6 +5,12 @@
     /** Set once this browser's tally has been carried into some account. */
     var STATS_CARRIED_KEY = "candleGuess.statsCarried.v1";
     var CANDLE_STEP_SECONDS = 3600;
+
+    /* What the timeframe pill offers, and how long one candle of each is. Kept beside the markup's
+       buttons rather than fetched: the server refuses anything it does not offer, so a stale entry
+       here is a 400 and not a chart at the wrong timeframe. */
+    var TIMEFRAMES = { "1h": 3600, "4h": 14400, "1d": 86400 };
+    var TF_STORAGE_KEY = "candles-timeframe";
     var SVG_NS = "http://www.w3.org/2000/svg";
 
     var UP = "var(--up)";
@@ -176,8 +182,20 @@
         };
     }
 
+    function stepSeconds() {
+        return TIMEFRAMES[state.timeframe] || CANDLE_STEP_SECONDS;
+    }
+
+    /* Days once a candle is a day long: "−19d" reads as nineteen candles back, while the same
+       chart in hours reads "−456h", which is a number nobody converts. */
     function formatHoursBack(index) {
-        var back = (chart.candles.length - 1 - index) * CANDLE_STEP_SECONDS / 3600;
+        var step = stepSeconds();
+        var candlesBack = chart.candles.length - 1 - index;
+        if (step >= 86400) {
+            var days = candlesBack * step / 86400;
+            return days === 0 ? "0d" : "\u2212" + days + "d";
+        }
+        var back = candlesBack * step / 3600;
         return back === 0 ? "0h" : "\u2212" + back + "h";
     }
 
@@ -551,8 +569,21 @@
         setStatus("");
     }
 
+    /* Remembered per browser: which chart somebody plays is a preference, like the theme, and
+       being put back on hourly every visit is the kind of small friction that stops a feature
+       being used at all. Anything not on the pill falls back to hourly rather than to a 400. */
+    function storedTimeframe() {
+        try {
+            var saved = localStorage.getItem(TF_STORAGE_KEY);
+            return Object.prototype.hasOwnProperty.call(TIMEFRAMES, saved) ? saved : "1h";
+        } catch (e) {
+            return "1h";
+        }
+    }
+
     var state = {
         asset: "BTCUSDT",
+        timeframe: storedTimeframe(),
         roundToken: null,
         visibleCandles: [],
         awaitingGuess: false,
@@ -753,7 +784,8 @@
             // authFetch, not fetch: signed in, the guess gets recorded against the account;
             // signed out, it is an ordinary request and play carries on unchanged.
             var res = await window.CandleAuth.authFetch(
-                "/api/practice/round?asset=" + encodeURIComponent(state.asset));
+                "/api/practice/round?asset=" + encodeURIComponent(state.asset)
+                    + "&tf=" + encodeURIComponent(state.timeframe));
             if (!res.ok) throw new Error((await res.json()).message || "Không tải được vòng chơi");
             var data = await res.json();
 
@@ -1289,6 +1321,30 @@
      * buttons in index.html stay as the fallback: they render before this resolves, and they
      * are what remains if it fails.
      */
+    /* Same bargain as the pair picker: choosing one deals a chart, because choosing is asking to
+       play. A round already on screen is abandoned, exactly as switching pairs abandons it —
+       anything else would leave a 4h button that does nothing until the current chart runs out. */
+    function initTimeframePicker() {
+        var pill = document.getElementById("tf-pill");
+        if (!pill) return;
+        var buttons = Array.prototype.slice.call(pill.querySelectorAll(".pill-option"));
+        buttons.forEach(function (btn) {
+            btn.classList.toggle("active", btn.dataset.tf === state.timeframe);
+            btn.addEventListener("click", function () {
+                if (btn.dataset.tf === state.timeframe) return;
+                buttons.forEach(function (b) { b.classList.toggle("active", b === btn); });
+                state.timeframe = btn.dataset.tf;
+                try {
+                    localStorage.setItem(TF_STORAGE_KEY, state.timeframe);
+                } catch (e) {
+                    // Private mode: the choice holds for this visit and no longer.
+                }
+                loadRound();
+            });
+        });
+        window.CandlePill.attach(pill, ".pill-option");
+    }
+
     async function loadAssetPicker() {
         var pill = document.getElementById("asset-pill");
         try {
@@ -1338,6 +1394,7 @@
     }
 
     initChart();
+    initTimeframePicker();
     renderStats();
     /* The first chart waits for the first-visit tour: a round's clock starts when it is dealt,
        so dealing it under the tour would spend a newcomer's first guess while they read. */
