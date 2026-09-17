@@ -234,7 +234,7 @@ chưa xem.
 | # | Việc | Điều kiện để bắt đầu |
 |---|---|---|
 | M3.1 ✅ | **Mùa giải không có thưởng tiền:** bảng xếp hạng reset theo tháng, huy hiệu mùa | Quay lại trong tuần ≥ 30% |
-| M3.2 ⏳ | **Đa khung cho game (G2):** 4h và 1d gộp từ nến 1h (`CandleAggregator` đã có), 15m thì cần lưu thêm | Người chơi lâu năm phàn nàn chart nhàm |
+| M3.2 ✅ | **Đa khung cho game (G2):** 4h và 1d gộp từ nến 1h (`CandleAggregator` đã có), 15m thì cần lưu thêm | Người chơi lâu năm phàn nàn chart nhàm |
 | M3.3 | **Độ khó theo cộng đồng (R4):** tỉ lệ đoán đúng mỗi chart → điểm thưởng | Mỗi chart daily có ≥ 30 người chơi |
 | M3.4 | **Trang nội dung có URL riêng** cho blog và từng mẫu (render phía server hoặc prerender), phục vụ SEO | Muốn có lượng truy cập tự nhiên từ Google |
 
@@ -249,6 +249,10 @@ mục tiêu là học và làm portfolio — giống MVP 1):
   của chính người gọi. Không lưu gì khi tháng đóng — huy hiệu là thứ hạng của tháng đó hỏi lại,
   đọc từ đúng bảng đã cache, nên huy hiệu và bảng không thể lệch nhau. Hồ sơ hiện huy hiệu của
   người chơi, bảng xếp hạng hiện podium tháng trước ngay dưới bộ chọn mùa.
+- **M3.2** — practice chơi được ở 1h, 4h, 1d. Nến 4h/1d gộp từ nến 1h đã lưu (`RoundCandleService`),
+  không sync thêm gì. Chỉ số vị trí vẫn đếm trên nến đã lưu nên token, ràng buộc duy nhất và phần
+  thói quen giữ nguyên một hệ toạ độ. Daily vẫn 1h vì là chart chung. 15m không làm: chưa lưu phút
+  nào, đúng như plan ghi.
 
 ### Cố ý chưa làm
 

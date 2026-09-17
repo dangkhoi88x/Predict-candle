@@ -4678,6 +4678,12 @@ body:not(.is-admin) .adm-search {
 
 /* --- leaderboard --- */
 
+/* The timeframe pill sits beside the pair pill, and is the narrower of the two: three fixed
+   labels against a list of pairs that grows. */
+.tf-pill {
+    flex: 0 0 auto;
+}
+
 /* A month a player finished on the podium. Sized like a tag rather than like the badges below
    it: a medal is one fact — which month, which place — and a card would promise more. */
 .profile-seasons {
