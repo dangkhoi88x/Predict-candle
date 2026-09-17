@@ -1,93 +1,152 @@
 package com.example.candles.service;
 
-import com.example.candles.dto.response.OpsSnapshot;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import com.example.candles.dto.response.OpsSnapshot;
+import com.example.candles.entity.AppError;
+import com.example.candles.repository.AppErrorRepository;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+/**
+ * What the ops pane lists, now that it is rows rather than a deque.
+ *
+ * The behaviour worth pinning is the same as before — repeats fold, a different failure in between
+ * starts a new row — plus the two things the move to the database is for: the list outlives the
+ * process, and recording can never turn one failure into another.
+ *
+ * Deliberately not {@code @Transactional}: the store writes in a transaction of its own
+ * (REQUIRES_NEW), so a test transaction could not roll those rows back anyway. The table is cleared
+ * before each test instead, which also gives the fold rule a known newest row to work against.
+ */
+@SpringBootTest
 class RecentErrorsTest {
 
     private static final Instant T0 = Instant.parse("2026-09-14T10:00:00Z");
 
+    @Autowired private RecentErrors errors;
+    @Autowired private AppErrorStore store;
+    @Autowired private AppErrorRepository rows;
+    @Autowired private ErrorRetentionScheduler retention;
+    @MockitoBean private Clock clock;
+
+    @BeforeEach
+    void freshTable() {
+        when(clock.instant()).thenReturn(T0);
+        rows.deleteAllInBatch();
+    }
+
+    private void at(Instant instant) {
+        when(clock.instant()).thenReturn(instant);
+    }
+
     @Test
     void theSameFailureAgainFoldsIntoOneRowWithACount() {
-        MovableClock clock = new MovableClock(T0);
-        RecentErrors errors = new RecentErrors(clock);
-
         errors.record("upstream", "GET /api/live/round", "HTTP 418");
-        clock.advance(Duration.ofSeconds(4));
+        at(T0.plusSeconds(4));
         errors.record("upstream", "GET /api/live/round", "HTTP 418");
-        clock.advance(Duration.ofSeconds(4));
+        at(T0.plusSeconds(8));
         errors.record("upstream", "GET /api/live/round", "HTTP 418");
 
         List<OpsSnapshot.RecentError> listed = errors.snapshot();
-        assertEquals(1, listed.size());
-        assertEquals(3, listed.getFirst().count());
-        assertEquals(T0, listed.getFirst().firstAt());
-        assertEquals(T0.plusSeconds(8), listed.getFirst().lastAt());
+        assertThat(listed).singleElement().satisfies(row -> {
+            assertThat(row.count()).isEqualTo(3);
+            assertThat(row.firstAt()).isEqualTo(T0);
+            assertThat(row.lastAt()).isEqualTo(T0.plusSeconds(8));
+        });
     }
 
     @Test
     void aDifferentFailureInBetweenStartsANewRowNewestFirst() {
-        RecentErrors errors = new RecentErrors(new MovableClock(T0));
-
         errors.record("upstream", "GET /api/live/round", "HTTP 418");
+        at(T0.plusSeconds(1));
         errors.record("sync", "BTCUSDT", "java.net.UnknownHostException: api.binance.com");
+        at(T0.plusSeconds(2));
         errors.record("upstream", "GET /api/live/round", "HTTP 418");
 
-        List<OpsSnapshot.RecentError> listed = errors.snapshot();
-        assertEquals(List.of("upstream", "sync", "upstream"), listed.stream().map(OpsSnapshot.RecentError::source).toList());
-        assertTrue(listed.stream().allMatch(e -> e.count() == 1));
+        assertThat(errors.snapshot()).extracting(OpsSnapshot.RecentError::source)
+                .containsExactly("upstream", "sync", "upstream");
+        assertThat(errors.snapshot()).allMatch(row -> row.count() == 1);
+    }
+
+    /**
+     * The reason these rows exist at all: a deploy or Render's nightly restart used to empty the
+     * list, so the one thing it could not say was what had failed while nobody was watching.
+     */
+    @Test
+    void theListOutlivesTheObjectThatRecordedIt() {
+        errors.record("sync", "ETHUSDT", "Read timed out");
+
+        RecentErrors afterRestart = new RecentErrors(store);
+
+        assertThat(afterRestart.snapshot()).singleElement()
+                .satisfies(row -> assertThat(row.where()).isEqualTo("ETHUSDT"));
+    }
+
+    /** A ban that ran all night and the same ban next week are two episodes, not one long row. */
+    @Test
+    void aRepeatLongAfterTheFoldWindowStartsItsOwnEpisode() {
+        errors.record("upstream", "GET /api/live/round", "HTTP 418");
+        at(T0.plus(Duration.ofHours(6)));
+        errors.record("upstream", "GET /api/live/round", "HTTP 418");
+
+        assertThat(errors.snapshot()).hasSize(2).allMatch(row -> row.count() == 1);
     }
 
     @Test
-    void onlyTheNewestFiftyAreKeptAndLongSummariesAreCutToOneLine() {
-        RecentErrors errors = new RecentErrors(new MovableClock(T0));
-        for (int i = 0; i < RecentErrors.CAPACITY + 10; i++) {
-            errors.record("server", "GET /x/" + i, "boom " + i);
-        }
-        errors.record("server", "GET /long", "line one\n\tline two " + "x".repeat(500));
+    void aStackTraceBecomesOneTruncatedLineAndALongPathIsCutToFitItsColumn() {
+        errors.record("server", "GET /" + "x".repeat(400), "line one\n\tline two " + "y".repeat(500));
 
-        List<OpsSnapshot.RecentError> listed = errors.snapshot();
-        assertEquals(RecentErrors.CAPACITY, listed.size());
-        assertEquals("GET /long", listed.getFirst().where());
-        assertEquals("GET /x/59", listed.get(1).where());
-        String summary = listed.getFirst().summary();
-        assertTrue(summary.startsWith("line one line two "));
-        assertEquals(RecentErrors.MAX_SUMMARY, summary.length());
+        OpsSnapshot.RecentError row = errors.snapshot().getFirst();
+        assertThat(row.summary()).startsWith("line one line two ").hasSize(RecentErrors.MAX_SUMMARY);
+        assertThat(row.where()).hasSize(RecentErrors.MAX_WHERE).endsWith("…");
     }
 
-    private static final class MovableClock extends Clock {
-        private Instant now;
+    /**
+     * Recording happens where something has already gone wrong. A database that is itself the
+     * problem must not replace the original failure with a different one.
+     */
+    @Test
+    void aFailureWhileRecordingIsSwallowed() {
+        AppErrorStore broken = mock(AppErrorStore.class);
+        doThrow(new IllegalStateException("no connection")).when(broken).record(anyString(), anyString(), anyString());
+        when(broken.recent(org.mockito.ArgumentMatchers.anyInt())).thenThrow(new IllegalStateException("no connection"));
+        RecentErrors overABrokenStore = new RecentErrors(broken);
 
-        MovableClock(Instant now) {
-            this.now = now;
-        }
+        assertThatCode(() -> overABrokenStore.record("server", "GET /x", "boom")).doesNotThrowAnyException();
+        assertThat(overABrokenStore.snapshot()).isEmpty();
+    }
 
-        void advance(Duration by) {
-            now = now.plus(by);
+    /**
+     * Both limits are needed and bound different failures: age keeps the table a picture of the
+     * last fortnight, and the row cap stops one bad night filling it inside that window.
+     */
+    @Test
+    void retentionDropsWhatIsOldAndCapsWhatIsLeft() {
+        rows.save(new AppError("sync", "old", "gone", T0.minus(Duration.ofDays(30))));
+        for (int i = 0; i < 5; i++) {
+            rows.save(new AppError("server", "recent-" + i, "kept", T0.minusSeconds(60L - i)));
         }
+        rows.flush();
 
-        @Override
-        public ZoneId getZone() {
-            return ZoneOffset.UTC;
-        }
+        int removed = retention.purge(Duration.ofDays(14), 2);
 
-        @Override
-        public Clock withZone(ZoneId zone) {
-            return this;
-        }
-
-        @Override
-        public Instant instant() {
-            return now;
-        }
+        assertThat(removed).isEqualTo(4);   // one by age, three over the cap
+        assertThat(rows.findAll()).extracting(AppError::getWhereAt)
+                .containsExactlyInAnyOrder("recent-4", "recent-3");
     }
 }

@@ -76,7 +76,7 @@ R4 (Elo), R6 (thách đấu), **R7 (phân tích thiên kiến)**, N1, N4 (i18n),
 |---|---|---|
 | ✅ `README.md` sai với thực tế | Thấp, sửa nhanh | Viết lại 2026-09-17: đủ khung 4h/1D, thách đấu, Telegram, mùa giải, trang SEO và các biến môi trường mới |
 | Một instance, nhiều thứ nằm trong bộ nhớ (rate limit, cache, cooldown sàn, job sync) | Chỉ quan trọng khi scale | Đã ghi trong `DEPLOY_PLAN.md` §7 |
-| Không có error monitoring | Trung bình | Log Render khó đọc (đã trả giá một buổi tối) |
+| ✅ Không có error monitoring | Trung bình | 2026-09-17: lỗi ghi vào bảng `app_errors`, còn nguyên sau deploy và restart, tự dọn sau 14 ngày. Vẫn chưa có cảnh báo đẩy — muốn thì gửi qua bot Telegram sẵn có |
 | `roundToken` là JWS, đọc được payload | Thấp đến khi có thưởng | `SPEC.md` §6 đã chốt: làm JWE khi có giải có thưởng |
 | Không có backup ngoài Neon | Thấp cho demo | Nến lấy lại được, tài khoản thì không |
 | Toàn bộ UI hard-code tiếng Việt | Chỉ quan trọng nếu ra quốc tế | Xem quyết định Q1 |
