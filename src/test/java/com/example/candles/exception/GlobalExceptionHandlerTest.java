@@ -1,8 +1,10 @@
 package com.example.candles.exception;
 
 import com.example.candles.client.ExchangeCoolingDownException;
+import com.example.candles.service.AppErrorStore;
 import com.example.candles.service.RecentErrors;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -12,16 +14,20 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.ResourceAccessException;
 import java.io.IOException;
 import java.net.UnknownHostException;
-import java.time.Clock;
-import java.time.ZoneOffset;
 import java.time.Instant;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
 class GlobalExceptionHandlerTest {
 
-    private final RecentErrors recentErrors = new RecentErrors(Clock.fixed(Instant.parse("2026-09-14T10:00:00Z"), ZoneOffset.UTC));
+    /* The rows themselves have their own test; what matters here is that the handler hands the
+       failure over, with the request it happened in. */
+    private final AppErrorStore store = mock(AppErrorStore.class);
+    private final RecentErrors recentErrors = new RecentErrors(store);
     private final GlobalExceptionHandler handler = new GlobalExceptionHandler(recentErrors);
     private final MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/live/round");
 
@@ -75,10 +81,8 @@ class GlobalExceptionHandlerTest {
         handler.handleUpstreamFailure(HttpClientErrorException.create(
                 HttpStatusCode.valueOf(418), "", HttpHeaders.EMPTY, null, null), request);
 
-        var listed = recentErrors.snapshot();
-        assertEquals(1, listed.size());
-        assertEquals("upstream", listed.getFirst().source());
-        assertEquals("GET /api/live/round", listed.getFirst().where());
-        assertEquals(true, listed.getFirst().summary().startsWith("HTTP 418"));
+        ArgumentCaptor<String> summary = ArgumentCaptor.forClass(String.class);
+        verify(store).record(eq("upstream"), eq("GET /api/live/round"), summary.capture());
+        assertEquals(true, summary.getValue().startsWith("HTTP 418"));
     }
 }

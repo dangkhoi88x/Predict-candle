@@ -452,7 +452,7 @@
                     <div class="adm-table-card">
                         <div class="adm-table-head">
                             <b>Lỗi gần đây</b>
-                            <span>50 lỗi mới nhất trên instance này, lỗi giống nhau liên tiếp gộp làm một. Khởi động lại thì xoá sạch.</span>
+                            <span>50 lỗi mới nhất, lỗi giống nhau liên tiếp gộp làm một. Lưu trong database nên deploy hay khởi động lại vẫn còn; dọn tự động sau 14 ngày.</span>
                         </div>
                         <div class="scroller">
                             <table class="ops-table" id="ops-errors">
@@ -462,7 +462,7 @@
                                 <tbody></tbody>
                             </table>
                         </div>
-                        <p class="content-note hidden" id="ops-errors-empty">Chưa có lỗi nào kể từ lần khởi động gần nhất.</p>
+                        <p class="content-note hidden" id="ops-errors-empty">Chưa có lỗi nào trong 14 ngày qua.</p>
                     </div>
 
                     <div class="admin-bar">

@@ -106,6 +106,14 @@ candles:
     morning-cron: ${TELEGRAM_MORNING_CRON:0 0 8 * * *}
     evening-cron: ${TELEGRAM_EVENING_CRON:0 0 21 * * *}
     api-base-url: https://api.telegram.org
+  errors:
+    # What the ops pane lists. Rows live in app_errors so a deploy or a nightly restart no longer
+    # empties the list; both limits below are what keep that table from growing forever.
+    retention: P14D
+    max-rows: 2000
+    # Repeats of one failure fold into a row with a count for this long. Longer and a ban that ran
+    # all night and the same ban next week become one row that says neither happened when it did.
+    fold-window: PT1H
   analytics:
     # GoatCounter site code (the part before .goatcounter.com). Empty counts nothing, which is
     # every checkout — only the deployment sets it. See SiteConfigController and analytics.js.

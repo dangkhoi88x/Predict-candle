@@ -49,12 +49,12 @@ packages where a layer name would lie about the contents.
 
 | package | holds |
 |---|---|
-| `controller/` | the 22 `@RestController`s |
-| `service/` | the 26 `@Service`s, plus `RateLimiter` and `CandleSyncScheduler` |
-| `repository/` | the 9 Spring Data interfaces |
-| `entity/` | the 9 `@Entity` classes and the 6 persisted enums (`GuessMode` is PRACTICE / DAILY / ARCHIVE) |
-| `dto/request/` | the 5 records a client sends in: `GuessRequest`, `WalletVerifyRequest`, `BlogPostRequest`, `ContentItemRequest`, `LegacyStatsRequest` |
-| `dto/response/` | the 17 records the server sends out, including the pieces nested inside them (`CandleDto`, `BlogPostDto`, `PlayerSummary`) |
+| `controller/` | the 30 `@RestController`s |
+| `service/` | the `@Service`s, plus `RateLimiter` and the schedulers |
+| `repository/` | the 14 Spring Data interfaces |
+| `entity/` | the 13 `@Entity` classes and the 7 persisted enums (`GuessMode` is PRACTICE / DAILY / ARCHIVE / CHALLENGE) |
+| `dto/request/` | the records a client sends in: `GuessRequest`, `WalletVerifyRequest`, `TelegramLoginRequest`, `BlogPostRequest`, `ContentItemRequest`, `LegacyStatsRequest`, `ChallengeCreateRequest` |
+| `dto/response/` | the records the server sends out, including the pieces nested inside them (`CandleDto`, `BlogPostDto`, `PlayerSummary`) |
 | `domain/` | internal value records that never leave the server: `RoundToken`, `RoundSelection`, `AuthSession`, `PlayerScore`, `PlayStreak`, `DailySeed`, `DailyRound`, `HintLevel`, `Achievement`, `PatternQuizPick`, `DemoPortfolio`, `StoredMedia` |
 | `security/` | `JwtService`, the filter, `WalletSignatureVerifier`, `TelegramInitDataVerifier`, `AdminAccess`, `AdminWallets`, `AdminRoleReconciler` |
 | `client/` | Binance and Yahoo, their DTOs, and `Timeframes` |
@@ -395,18 +395,39 @@ with no error), the pane's own line in the `.admin-panes[data-pane=…]` rule in
 however right the attribute is), and an entry in `admin-search.js`'s `SOURCES` so the topbar
 search can see its rows.
 
-**The ops pane lists what has failed lately, from memory.** `RecentErrors` keeps the newest 50
-failures on this instance from three places: `GlobalExceptionHandler` (an upstream call it turned
-into a 502, with the reason), `ErrorRecordingFilter` (an exception nothing handled — outermost
-filter, records and rethrows), and `CandleSyncScheduler` (a pair that failed to sync).
-Consecutive repeats of one failure fold into a row with a count, because an exchange ban raises
-the same error on every poll of every open tab and fifty copies would push out the one different
-error worth seeing. It rides on the ops snapshot as `recentErrors`, pinned by `OpsSnapshotTest`.
+**The ops pane lists what has failed lately, and those rows outlive the process.** `RecentErrors`
+collects from four places — `GlobalExceptionHandler` (an upstream call it turned into a 502, with
+the reason), `ErrorRecordingFilter` (an exception nothing handled — outermost filter, records and
+rethrows), `CandleSyncScheduler` (a pair that failed to sync) and the Telegram broadcaster — and
+writes them to `app_errors` (V21). It rides on the ops snapshot as `recentErrors`, pinned by
+`OpsSnapshotTest`. Consecutive repeats of one failure fold into a row with a count, because an
+exchange ban raises the same error on every poll of every open tab and fifty copies would push out
+the one different error worth seeing. Only the *newest* row folds, and only inside
+`candles.errors.fold-window` (1h): a different failure in between starts a new row, and a ban that
+ran all night is a different episode from the same ban next week.
 
-In memory on purpose: it answers "is something failing right now", which the first night on
-Render needed and the log viewer could not give, and it needs no account or network. A restart
-empties it, and that is the trade — it is not a log. The card counts the last hour only, so a
-morning's error that has stopped does not keep a card red.
+**It used to be a deque in memory, and the restart is what changed that.** That version answered
+"is something failing right now" and nothing about what failed while nobody was looking — and it
+was emptied by every deploy, and by every night Render restarts a free instance. Errors are events
+rather than derived state, so storing them invents no second source of truth: nothing else in the
+app knows one happened.
+
+Three things make it safe to write from inside a failure:
+
+- **`AppErrorStore` is its own bean.** `@Transactional` is a proxy and a class calling its own
+  method does not go through one, so a private method here would silently join the caller's
+  transaction — the one being rolled back, which is where the row would go with it.
+- **`REQUIRES_NEW`**, for that same reason: `GlobalExceptionHandler` records while the request's
+  transaction is already doomed.
+- **Recording never throws.** A database that is itself the problem must not turn one failure into
+  a different one; a failed write goes to the log and no further, and a failed read leaves the rest
+  of the ops snapshot intact.
+
+`ErrorRetentionScheduler` trims nightly by age (`candles.errors.retention`, 14 days) **and** by row
+count (`max-rows`, 2000). Both are needed: age keeps the table a picture of the last fortnight, and
+the cap stops one bad night — a different error on every poll — filling it inside that window. The
+card above the table still counts the last hour only, so a morning's error that has stopped does
+not keep a card red.
 
 Overview charts come from `GET /api/admin/stats?range=week|month|year` (`AdminStatsService`,
 cached 60s, bucketed in UTC; `&fresh=true` is the refresh button skipping that cache). The four

@@ -94,7 +94,7 @@
         var recentCount = recent.reduce(function (sum, e) { return sum + e.count; }, 0);
         el.cards.appendChild(card("Lỗi trong 1 giờ",
             recentCount ? recentCount.toLocaleString("vi-VN") : "Không có",
-            errors.length ? "gần nhất: " + clock(errors[0].lastAt) : "từ lần khởi động",
+            errors.length ? "gần nhất: " + clock(errors[0].lastAt) : "trong 14 ngày qua",
             recentCount ? "bad" : "good"));
         el.cards.appendChild(card("Tài khoản", act.players.toLocaleString("vi-VN"),
             act.admins + " admin · " + act.telegramAccounts.toLocaleString("vi-VN") + " qua Telegram"));
