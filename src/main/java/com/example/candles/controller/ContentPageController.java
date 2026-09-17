@@ -15,11 +15,14 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 import com.example.candles.dto.response.BlogPostDto;
+import com.example.candles.dto.response.ContentItemDto;
+import com.example.candles.entity.ContentKind;
 import com.example.candles.service.BlogDocumentHtml;
 import com.example.candles.service.BlogService;
+import com.example.candles.service.ContentService;
 
 /**
- * A page per blog post, rendered on the server.
+ * A page per blog post and per library entry, rendered on the server.
  *
  * <b>Why these exist at all:</b> every view of the app is a tab inside one {@code index.html} and a
  * post expands in place, so until now the whole site was a single URL. Nothing could be linked to,
@@ -41,12 +44,52 @@ public class ContentPageController {
     private static final DateTimeFormatter DAY = DateTimeFormatter.ofPattern("dd/MM/yyyy").withZone(ZoneOffset.UTC);
     private static final int DESCRIPTION_LENGTH = 160;
 
+    /**
+     * The three libraries, their addresses and the view each one hands a reader over to.
+     *
+     * Vietnamese paths on purpose: these are the URLs that end up in a search result and in
+     * somebody's message, and the site is Vietnamese. The key in the path is the same
+     * {@code item_key} the matcher in {@code PatternLibrary} is found by, so a page and the card
+     * it links to cannot drift apart.
+     */
+    private enum Library {
+        CANDLE("mau-nen", ContentKind.CANDLE_PATTERN, "patterns", "Mẫu nến",
+                "Thư viện mẫu nến tiếng Việt: cách nhận biết từng mẫu và ý nghĩa của nó trên chart thật."),
+        TECHNICAL("mau-hinh", ContentKind.TECHNICAL_PATTERN, "technical", "Mẫu hình giá",
+                "Thư viện mẫu hình giá tiếng Việt: hai đáy, vai đầu vai, tam giác và cách nhận biết từng mẫu."),
+        PSYCHOLOGY("tam-ly", ContentKind.PSYCHOLOGY, "psychology", "Tâm lý giao dịch",
+                "Những ghi chú ngắn về tâm lý giao dịch: rủi ro, kỷ luật và các bẫy thường gặp.");
+
+        final String path;
+        final ContentKind kind;
+        final String view;
+        final String title;
+        final String description;
+
+        Library(String path, ContentKind kind, String view, String title, String description) {
+            this.path = path;
+            this.kind = kind;
+            this.view = view;
+            this.title = title;
+            this.description = description;
+        }
+
+        static Library of(String path) {
+            for (Library library : values()) {
+                if (library.path.equals(path)) return library;
+            }
+            return null;
+        }
+    }
+
     private final BlogService blog;
+    private final ContentService content;
     private final String siteUrl;
 
-    public ContentPageController(BlogService blog,
+    public ContentPageController(BlogService blog, ContentService content,
                                  @Value("${candles.site-url:https://candles-oj1q.onrender.com}") String siteUrl) {
         this.blog = blog;
+        this.content = content;
         this.siteUrl = siteUrl.replaceAll("/+$", "");
     }
 
@@ -99,6 +142,73 @@ public class ContentPageController {
                 "Đọc trong ứng dụng");
     }
 
+    /** One library — every entry listed, because a list of thirteen is the page worth crawling. */
+    @GetMapping(value = "/{library:mau-nen|mau-hinh|tam-ly}", produces = MediaType.TEXT_HTML_VALUE)
+    public ResponseEntity<String> library(@PathVariable String library) {
+        Library lib = Library.of(library);
+        StringBuilder body = new StringBuilder("<h1>").append(lib.title).append("</h1>")
+                .append("<p class=\"lede\">").append(lib.description).append("</p><ul class=\"posts\">");
+        for (ContentItemDto item : content.published(lib.kind)) {
+            body.append("<li><a href=\"/").append(lib.path).append('/')
+                    .append(BlogDocumentHtml.escape(item.itemKey())).append("\">")
+                    .append(BlogDocumentHtml.escape(name(item))).append("</a><p>")
+                    .append(BlogDocumentHtml.escape(summary(item))).append("</p></li>");
+        }
+        body.append("</ul>");
+        return page(lib.title + " — Candle Guess", lib.description, siteUrl + "/" + lib.path, null,
+                body.toString(), "/?view=" + lib.view, "Mở trong ứng dụng");
+    }
+
+    /** One entry: what it is, how to recognise it, and the card it opens in the app. */
+    @GetMapping(value = "/{library:mau-nen|mau-hinh|tam-ly}/{key}", produces = MediaType.TEXT_HTML_VALUE)
+    public ResponseEntity<String> entry(@PathVariable String library, @PathVariable String key) {
+        Library lib = Library.of(library);
+        ContentItemDto item = content.published(lib.kind).stream()
+                .filter(i -> i.itemKey().equals(key))
+                .findFirst()
+                .orElse(null);
+        if (item == null) return ResponseEntity.notFound().build();
+
+        JsonNode body = item.body();
+        StringBuilder html = new StringBuilder("<h1>").append(BlogDocumentHtml.escape(name(item))).append("</h1>");
+        html.append("<p class=\"meta\">").append(lib.title);
+        for (JsonNode tag : body.path("tags")) {
+            html.append(" · ").append(BlogDocumentHtml.escape(tag.asString("")));
+        }
+        html.append("</p>");
+
+        String summary = summary(item);
+        if (!summary.isBlank()) html.append("<p>").append(BlogDocumentHtml.escape(summary)).append("</p>");
+        if (body.path("howTo").isArray() && !body.path("howTo").isEmpty()) {
+            html.append("<h2>Cách nhận biết</h2><ul>");
+            for (JsonNode step : body.path("howTo")) {
+                html.append("<li>").append(BlogDocumentHtml.escape(step.asString(""))).append("</li>");
+            }
+            html.append("</ul>");
+        }
+
+        // The card itself draws the shape; a page of words cannot, and pretending otherwise with a
+        // picture of one pattern standing for another would be worse than sending the reader on.
+        String appHref = lib.kind == ContentKind.PSYCHOLOGY
+                ? "/?view=" + lib.view
+                : "/?view=" + lib.view + "&card=" + item.itemKey();
+        return page(name(item) + " — " + lib.title + " — Candle Guess",
+                summary.isBlank() ? lib.description : summary,
+                siteUrl + "/" + lib.path + "/" + item.itemKey(), null, html.toString(),
+                appHref, "Xem hình trong ứng dụng");
+    }
+
+    /** Psychology notes keep their words in {@code body}; a pattern keeps its own in {@code summary}. */
+    private static String summary(ContentItemDto item) {
+        JsonNode body = item.body();
+        return body.path("summary").asString(body.path("body").asString(""));
+    }
+
+    private static String name(ContentItemDto item) {
+        JsonNode body = item.body();
+        return body.path("name").asString(body.path("title").asString(item.title()));
+    }
+
     /** Only the addresses that are real pages: the app's own, the blog index, and one per post. */
     @GetMapping(value = "/sitemap.xml", produces = MediaType.APPLICATION_XML_VALUE)
     public ResponseEntity<String> sitemap() {
@@ -108,6 +218,13 @@ public class ContentPageController {
                 .append(url(siteUrl + "/blog", null));
         for (BlogPostDto post : blog.published()) {
             xml.append(url(siteUrl + "/blog/" + post.slug(), post.updatedAt() == null ? null : post.updatedAt().toString()));
+        }
+        for (Library library : Library.values()) {
+            xml.append(url(siteUrl + "/" + library.path, null));
+            for (ContentItemDto item : content.published(library.kind)) {
+                xml.append(url(siteUrl + "/" + library.path + "/" + item.itemKey(),
+                        item.updatedAt() == null ? null : item.updatedAt().toString()));
+            }
         }
         xml.append("</urlset>\n");
         return ResponseEntity.ok()
@@ -148,19 +265,30 @@ public class ContentPageController {
                 </head><body>
                 <header><a class="brand" href="/">Candle Guess</a><a class="app" href="%s">%s</a></header>
                 <main>%s</main>
-                <footer><p><a href="/blog">Tất cả bài viết</a> · <a href="/">Chơi đoán nến</a></p></footer>
+                <footer><p>%s</p></footer>
                 </body></html>
                 """.formatted(
                         BlogDocumentHtml.escape(title), BlogDocumentHtml.escape(description),
                         BlogDocumentHtml.escape(canonical), BlogDocumentHtml.escape(title),
                         BlogDocumentHtml.escape(description), BlogDocumentHtml.escape(canonical),
                         BlogDocumentHtml.escape(image == null ? siteUrl + "/og-image.png" : image),
-                        STYLE, BlogDocumentHtml.escape(appHref), BlogDocumentHtml.escape(appLabel), body);
+                        STYLE, BlogDocumentHtml.escape(appHref), BlogDocumentHtml.escape(appLabel), body,
+                        FOOTER_LINKS);
         return ResponseEntity.ok()
                 .contentType(MediaType.valueOf("text/html; charset=UTF-8"))
                 .cacheControl(CacheControl.maxAge(Duration.ofMinutes(10)).cachePublic())
                 .body(head);
     }
+
+    /**
+     * Every section links to every other one. A sitemap tells a crawler what exists; links are how
+     * it walks there, and these pages are otherwise reachable only from a file it has to be told
+     * about.
+     */
+    private static final String FOOTER_LINKS =
+            "<a href=\"/blog\">Bài viết</a> · <a href=\"/mau-nen\">Mẫu nến</a>"
+            + " · <a href=\"/mau-hinh\">Mẫu hình giá</a> · <a href=\"/tam-ly\">Tâm lý giao dịch</a>"
+            + " · <a href=\"/\">Chơi đoán nến</a>";
 
     private static final String STYLE = """
             :root { color-scheme: light dark; --bg:#fff; --text:#16161a; --muted:#61636c; --line:#e6e6ea; --accent:#2a63d6; }

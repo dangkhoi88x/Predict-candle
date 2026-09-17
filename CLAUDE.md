@@ -1499,7 +1499,8 @@ vanishes during the eight locked minutes of each hour — it says when the next 
 
 ### Crawlable content pages
 
-`GET /blog` and `GET /blog/{slug}` are server-rendered HTML, plus `/sitemap.xml`
+`GET /blog`, `GET /blog/{slug}` and a page per library entry — `/mau-nen/{key}`, `/mau-hinh/{key}`,
+`/tam-ly/{key}`, each with its own index — are server-rendered HTML, plus `/sitemap.xml`
 (`ContentPageController`). Every view of the app is a tab inside one `index.html` and a post expands
 in place, so until these existed the whole site was one URL: nothing could be linked to, quoted or
 found in a search, and a crawler that runs no JavaScript saw an empty shell.
@@ -1512,8 +1513,17 @@ found in a search, and a crawler that runs no JavaScript saw an empty shell.
 - Each page is canonical to itself, takes its `description` from the post's own opening words, and
   links into the app as `/?view=blog&post=<slug>`; `blog.js` opens that post and strips the
   parameter, the same idiom `?thach=` and `?view=` already use.
-- `robots.txt` names the sitemap; the sitemap lists `/`, `/blog` and one entry per published post
-  with its `updatedAt`.
+- `robots.txt` names the sitemap; the sitemap lists `/`, every index and one entry per published
+  post and library entry with its `updatedAt`. Every page's footer links to every section, because
+  a sitemap says what exists and links are how a crawler walks there.
+- **The library paths are Vietnamese and the key in the path is the `item_key`** a matcher in
+  `PatternLibrary` is found by, so a page and the card it links to cannot drift apart. A key that
+  belongs to the *other* library is a 404 rather than an answer: two addresses for one card is what
+  a canonical exists to prevent.
+- A pattern page is words only — the card draws the shape, so the page hands the reader to it with
+  `/?view=patterns&card=<key>`. Both libraries read that parameter at load (nav.js strips `view`
+  first), each answers only for a key it holds, and whichever answers strips it. A psychology note
+  has no shape, so it opens its tab and nothing else.
 
 **`BlogDocumentHtml` is the third renderer of one document, and that is the cost worth naming.**
 Tiptap produces it, `blog-render.js` draws it for a reader, and this writes it for a crawler. A node
