@@ -4678,6 +4678,12 @@ body:not(.is-admin) .adm-search {
 
 /* --- leaderboard --- */
 
+/* The season picker sits under the heading rather than in it: the board below it changes
+   entirely, so it is a control on the view, not a caption on the title. */
+.lb-seasons {
+    margin-bottom: 14px;
+}
+
 .lb-empty {
     display: grid;
     justify-items: center;

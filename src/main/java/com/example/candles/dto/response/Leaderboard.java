@@ -19,6 +19,8 @@ import java.util.List;
 public record Leaderboard(
         Instant generatedAt,
         int minGuesses,
+        /** The month this ranks over, or null when the board is all-time. */
+        SeasonInfo season,
         List<Row> rows,
         /** Where the caller sits, even when that is outside the returned page. Null if signed
             out, or short of {@code minGuesses}. */
@@ -27,5 +29,13 @@ public record Leaderboard(
 
     public record Row(int rank, String displayName, long score, long total, long correct,
                        Double accuracy, int bestStreak) {
+    }
+
+    /**
+     * {@code id} is what the client sends back ({@code 2026-09}); {@code previousId} is the month
+     * before it, so a picker can walk backwards without a list of seasons to keep.
+     * {@code endsAt} is only set while the season is still running.
+     */
+    public record SeasonInfo(String id, String label, boolean current, Instant endsAt, String previousId) {
     }
 }

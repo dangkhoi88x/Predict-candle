@@ -4,7 +4,9 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.time.Clock;
 import java.time.Duration;
+import java.time.YearMonth;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -13,7 +15,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.example.candles.domain.DailyRound;
 import com.example.candles.domain.PlayerScore;
+import com.example.candles.domain.Season;
 import com.example.candles.dto.response.Leaderboard;
 import com.example.candles.entity.Role;
 import com.example.candles.entity.User;
@@ -36,6 +40,12 @@ import com.example.candles.repository.UserRepository;
  * read. The whole board is then cached for a minute, the same arrangement {@code
  * AdminStatsService} uses — this is a public endpoint anyone can call, and recomputing it per
  * request would put a full scan of both tables behind an open URL.
+ *
+ * <b>A board is a month by default</b> ({@link Season}), with all-time still reachable. Nothing
+ * resets and nothing is archived: a season is a filter on the same rows, so last month's board can
+ * still be read exactly as it stood, and a player who starts today is not ranked against a year of
+ * somebody else's play. Each window is cached under its own key, which also means a finished
+ * month's board is computed at most once a minute however often it is looked at.
  */
 @Service
 public class LeaderboardService {
@@ -48,19 +58,47 @@ public class LeaderboardService {
     public static final int MIN_GUESSES = 20;
 
     private static final int MAX_LIMIT = 200;
-    private static final String CACHE_KEY = "board";
+    private static final String ALL_TIME_KEY = "all";
+
+    /** The first month there can be anything to rank: the day the daily challenge was numbered from. */
+    private static final YearMonth FIRST_SEASON = YearMonth.from(DailyRound.FIRST_DAY);
 
     private final LivePredictionRepository livePredictions;
     private final UserRepository users;
+    private final Clock clock;
 
     /** Holds the full ranking; a request's limit is applied after the cache, not inside it. */
     private final Cache<String, List<Ranked>> cache = Caffeine.newBuilder()
             .expireAfterWrite(Duration.ofSeconds(60))
             .build();
 
-    public LeaderboardService(LivePredictionRepository livePredictions, UserRepository users) {
+    public LeaderboardService(LivePredictionRepository livePredictions, UserRepository users, Clock clock) {
         this.livePredictions = livePredictions;
         this.users = users;
+        this.clock = clock;
+    }
+
+    public Season currentSeason() {
+        return Season.of(clock.instant());
+    }
+
+    /**
+     * Which window a request asked for: {@code null} or a month id for that season, {@code "all"}
+     * for every row ever recorded, and no parameter for the season running now.
+     *
+     * A month outside the range the site has existed for is refused rather than answered with an
+     * empty board — an empty board is a real answer for a quiet month, and a typo should not look
+     * like one.
+     */
+    public Season resolveSeason(String requested) {
+        if (requested == null || requested.isBlank()) return currentSeason();
+        if (ALL_TIME_KEY.equalsIgnoreCase(requested.trim())) return null;
+        Season season = Season.parse(requested);
+        if (season == null || season.month().isBefore(FIRST_SEASON)
+                || season.month().isAfter(currentSeason().month())) {
+            throw new IllegalArgumentException("Không có mùa giải nào tên là \"" + requested + "\".");
+        }
+        return season;
     }
 
     /** One player's standing, before it is trimmed to a page. */
@@ -68,8 +106,8 @@ public class LeaderboardService {
     }
 
     @Transactional(readOnly = true)
-    public Leaderboard board(int limit, Long callerId) {
-        List<Ranked> ranked = cache.get(CACHE_KEY, key -> rank());
+    public Leaderboard board(int limit, Long callerId, Season season) {
+        List<Ranked> ranked = cache.get(season == null ? ALL_TIME_KEY : season.id(), key -> rank(season));
 
         int size = Math.clamp(limit, 1, MAX_LIMIT);
         List<Leaderboard.Row> page = ranked.stream().limit(size).map(Ranked::row).toList();
@@ -82,7 +120,7 @@ public class LeaderboardService {
                 .map(Ranked::row)
                 .findFirst().orElse(null);
 
-        return new Leaderboard(Instant.now(), MIN_GUESSES, page, me);
+        return new Leaderboard(Instant.now(), MIN_GUESSES, seasonInfo(season), page, me);
     }
 
     /** Drops the cached ranking, so the next read rebuilds it. */
@@ -90,11 +128,22 @@ public class LeaderboardService {
         cache.invalidateAll();
     }
 
-    private List<Ranked> rank() {
+    private Leaderboard.SeasonInfo seasonInfo(Season season) {
+        if (season == null) return null;
+        boolean current = season.equals(currentSeason());
+        return new Leaderboard.SeasonInfo(season.id(), season.label(), current,
+                current ? season.endExclusive() : null,
+                season.previous().month().isBefore(FIRST_SEASON) ? null : season.previous().id());
+    }
+
+    private List<Ranked> rank(Season season) {
         // Rows arrive already grouped and in play order — practice and settled live-round
         // calls interleaved by when each was made — so one pass fills the per-player lists.
         Map<Long, List<Boolean>> flags = new LinkedHashMap<>();
-        for (Object[] row : livePredictions.combinedResultFlagsByUserInPlayOrder()) {
+        List<Object[]> rows = season == null ? livePredictions.combinedResultFlagsByUserInPlayOrder()
+                : livePredictions.combinedResultFlagsByUserInPlayOrderBetween(
+                        season.startInclusive(), season.endExclusive());
+        for (Object[] row : rows) {
             Long userId = ((Number) row[0]).longValue();
             flags.computeIfAbsent(userId, id -> new ArrayList<>())
                     .add(Boolean.TRUE.equals(row[1]));

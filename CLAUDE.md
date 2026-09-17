@@ -1323,6 +1323,15 @@ nothing to protect.
 
 ### Leaderboard
 
+**A board is a UTC month** (`Season`), with all-time as a second window (`?season=2026-09` /
+`?season=all`; no parameter means the month running now, so an old link opens on the current one).
+Nothing resets and nothing is archived — a season is a filter over the same rows, so a finished
+month reads back exactly as it stood and a player who starts today is not ranked against a year of
+someone else's play. A month outside the site's life is refused rather than answered with an empty
+board, because an empty board is a real answer for a quiet month. Each window caches under its own
+key. The play tab's card, the rail's tag and the profile's medallion all follow the current season,
+which is why they say *tháng này* rather than only "rank".
+
 `GET /api/leaderboard` is public — anonymous callers get the board without the `me` row, and
 signing in adds it. Ranked on `score` from `PlayerScore`, the same function the profile and the
 game tab use, so a rank is computed from the number the player already sees.

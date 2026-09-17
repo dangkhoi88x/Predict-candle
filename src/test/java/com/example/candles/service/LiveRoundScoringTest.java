@@ -124,7 +124,7 @@ class LiveRoundScoringTest {
         }
         leaderboard.evict();
 
-        Leaderboard board = leaderboard.board(50, user.getId());
+        Leaderboard board = leaderboard.board(50, user.getId(), leaderboard.currentSeason());
         Leaderboard.Row row = board.rows().stream()
                 .filter(r -> r.displayName().equals(name))
                 .findFirst().orElse(board.me());

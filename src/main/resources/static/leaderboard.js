@@ -13,6 +13,16 @@
 
     var LIMIT = 50;
 
+    /* Which window is on screen: a month id, or "all". Null until the first response says which
+       season is running — the page asks for no season at all and lets the server decide, so a
+       link somebody kept from last month still opens on this one. */
+    var season = null;
+
+    /* The last season the server named. All-time answers with no season at all, so without this
+       the picker would lose both month options the moment somebody pressed "Mọi lúc" — and there
+       would be no way back to them. */
+    var knownSeason = null;
+
     /* Where the caller's own row is pinned. Being told you are 63rd is most of the reason to
        open this a second time, and at the bottom of fifty rows that answer is invisible —
        which is where it used to sit. Under the top five it is the first thing after the
@@ -92,12 +102,17 @@
        to be on it and offers the way there, rather than only that nobody is. Signed out it also
        says the part a visitor would not guess: anonymous play is never recorded, so no amount of
        it reaches the board. */
-    function emptyBoard(container, minGuesses) {
+    /* A month with nobody on it yet is the ordinary state of a season's first days, and it reads
+       as a broken board unless it says which month it is empty for. */
+    function emptyBoard(container, minGuesses, seasonInfo) {
         container.innerHTML = "";
         var box = el("div", "lb-empty");
-        box.appendChild(el("p", "lb-empty-title", "Bảng đang chờ người đầu tiên"));
+        var running = seasonInfo && seasonInfo.current;
+        box.appendChild(el("p", "lb-empty-title", running ? "Mùa này đang chờ người đầu tiên"
+            : seasonInfo ? seasonInfo.label + " không có ai lên bảng" : "Bảng đang chờ người đầu tiên"));
         box.appendChild(el("p", "lb-empty-text", "Chưa ai đủ " + minGuesses
-            + " lượt đoán được ghi lại. Người đầu tiên đạt " + minGuesses + " lượt sẽ đứng hạng #1."
+            + " lượt đoán được ghi lại" + (seasonInfo ? " trong " + seasonInfo.label.toLowerCase() : "")
+            + ". Người đầu tiên đạt " + minGuesses + " lượt sẽ đứng hạng #1."
             + (window.CandleAuth.getUser() ? "" : " Kết nối ví hoặc email để lượt đoán của bạn được tính.")));
         var play = el("button", "side-cta lb-empty-cta", "Chơi ngay");
         play.type = "button";
@@ -106,21 +121,64 @@
         container.appendChild(box);
     }
 
+    /** Days left in a running season — the reason to play this week rather than next month. */
+    function daysLeft(endsAt) {
+        var left = Math.ceil((new Date(endsAt).getTime() - Date.now()) / 86400000);
+        return left > 1 ? "còn " + left + " ngày" : "ngày cuối";
+    }
+
+    /* Three at most: this month, the month before it, and everything. A full archive of seasons
+       is a list that grows forever for a page nobody scrolls back through — the month before is
+       the one anybody asks about, and "Mọi lúc" is where a long history still counts. */
+    function renderSeasons() {
+        var track = document.getElementById("leaderboard-seasons");
+        if (!track) return;
+        var options = [];
+        if (knownSeason) {
+            options.push({ id: knownSeason.id, label: knownSeason.current ? "Tháng này" : knownSeason.label });
+            if (knownSeason.previousId) {
+                options.push({ id: knownSeason.previousId, label: "Tháng trước" });
+            }
+        }
+        options.push({ id: "all", label: "Mọi lúc" });
+
+        track.innerHTML = "";
+        options.forEach(function (option) {
+            var button = el("button", "pill-option" + (option.id === season ? " active" : ""), option.label);
+            button.type = "button";
+            button.addEventListener("click", function () {
+                if (option.id === season) return;
+                season = option.id;
+                init();
+            });
+            track.appendChild(button);
+        });
+    }
+
     async function init() {
         var container = document.getElementById("leaderboard-body");
         var note = document.getElementById("leaderboard-note");
         if (!container) return;
 
         try {
-            var res = await window.CandleAuth.authFetch("/api/leaderboard?limit=" + LIMIT);
+            var res = await window.CandleAuth.authFetch("/api/leaderboard?limit=" + LIMIT
+                + (season ? "&season=" + encodeURIComponent(season) : ""));
             if (!res.ok) throw new Error("Máy chủ trả về " + res.status);
             var board = await res.json();
+            season = board.season ? board.season.id : "all";
+            /* Only a month answer updates the picker's months: pressing "Tháng trước" must not
+               make that month the one "Tháng này" points at. */
+            if (board.season && board.season.current) knownSeason = board.season;
+            else if (board.season && !knownSeason) knownSeason = { id: board.season.id, label: board.season.label, current: false, previousId: board.season.previousId };
 
-            note.textContent = "Từ " + board.minGuesses + " lượt đoán trở lên";
+            note.textContent = (board.season
+                ? board.season.label + (board.season.current ? " · " + daysLeft(board.season.endsAt) : " · đã kết thúc")
+                : "Mọi lúc") + " · từ " + board.minGuesses + " lượt đoán trở lên";
+            renderSeasons();
             container.innerHTML = "";
 
             if (!board.rows.length) {
-                emptyBoard(container, board.minGuesses);
+                emptyBoard(container, board.minGuesses, board.season);
                 return;
             }
 
