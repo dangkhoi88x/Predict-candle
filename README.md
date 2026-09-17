@@ -12,16 +12,22 @@ khoảng lặng có thể chậm vài giây.
 
 | | |
 |---|---|
-| **Đoán nến** | Chart thật, 5 lượt đoán mỗi chart, đồng hồ 20 giây. Sai thì được gợi ý dần: volume → đường trung bình → tên mẫu nến. Hết chart thì lộ ngày giờ thật và toàn cảnh trước/sau |
-| **Thử thách mỗi ngày** | Một chart chung cho mọi người, một lượt, chia sẻ kết quả kiểu Wordle, chơi lại 60 ngày trước. Kèm một câu đố mẫu nến mỗi ngày |
+| **Đoán nến** | Chart thật ở khung 1h, 4h hoặc 1D, 5 lượt đoán mỗi chart, đồng hồ 20 giây. Sai thì được gợi ý dần: volume → đường trung bình → tên mẫu nến. Hết chart thì lộ ngày giờ thật và toàn cảnh trước/sau |
+| **Thử thách mỗi ngày** | Một chart chung cho mọi người, một lượt, chia sẻ kết quả kiểu Wordle, chơi lại 60 ngày trước. Chơi xong thấy tỉ lệ đoán đúng của cộng đồng ở từng nến. Kèm một câu đố mẫu nến mỗi ngày |
+| **Thách đấu** | Chart practice vừa chơi xong gửi được cho bạn bè qua link, hai bên so điểm trên đúng bộ nến đó |
 | **Trực tiếp** | Cả cộng đồng cùng đoán cây nến 1h đang chạy, khoá lệnh 8 phút trước khi đóng |
 | **Giao dịch demo** | Tiền ảo trên giá thật, 5 khung thời gian, MA/RSI, phí giao dịch |
-| **Học** | Thư viện mẫu nến và mẫu hình kỹ thuật (có "tìm ví dụ thật" trên dữ liệu đã lưu), tâm lý giao dịch, blog |
-| **Giữ chân** | Chuỗi ngày chơi, 9 huy hiệu, bảng xếp hạng, hồ sơ |
-| **Quản trị** | `/admin.html`: tổng quan, retention, người chơi, live round, preview thử thách ngày mai, CMS blog, thư viện ảnh |
+| **Học** | Thư viện mẫu nến và mẫu hình kỹ thuật (có "tìm ví dụ thật" trên dữ liệu đã lưu), tâm lý giao dịch, blog. Mục "Thói quen khi đoán" trên hồ sơ nói người chơi sai ở đâu, không chỉ sai bao nhiêu |
+| **Giữ chân** | Chuỗi ngày chơi, 9 huy hiệu, bảng xếp hạng theo tháng kèm huy hiệu mùa, hồ sơ |
+| **Vào từ đâu cũng được** | Web, cài như app (PWA), hoặc mở thẳng trong Telegram (Mini App). Bot còn nhắc thử thách mỗi ngày vào nhóm đã đồng ý |
+| **Quản trị** | `/admin.html`: tổng quan, retention, người chơi, live round, preview thử thách ngày mai, thẻ nhắc Telegram, CMS blog, thư viện ảnh |
 
-Đăng nhập bằng ví (Reown AppKit, có cả email và Google). Không đăng nhập vẫn chơi được, chỉ không
-lưu kết quả.
+Đăng nhập bằng ví (Reown AppKit, có cả email và Google) hoặc bằng Telegram khi mở trong Mini App.
+Không đăng nhập vẫn chơi được, chỉ không lưu kết quả.
+
+Mỗi bài blog và mỗi mẫu trong thư viện có một địa chỉ riêng render sẵn ở máy chủ
+(`/blog/<slug>`, `/mau-nen/<key>`, `/mau-hinh/<key>`, `/tam-ly/<key>`) kèm `sitemap.xml`, để tìm
+được trên Google mà không cần chạy JavaScript.
 
 ## Kiến trúc
 
@@ -43,6 +49,8 @@ Vài quyết định đáng chú ý (giải thích đầy đủ trong [CLAUDE.md
   lịch sử, nên không bao giờ lệch khỏi thực tế.
 - **Frontend không framework.** Mỗi file một IIFE; chỉ ví và trình soạn blog là bundle (Vite), và
   cả hai chỉ tải khi cần.
+- **Chỉ lưu nến 1h.** Chart 4h và 1D — cả trong game lẫn trong sàn demo — được gộp lại từ nến giờ
+  đã có, nên không thêm thứ gì phải sync và giữ đồng bộ.
 
 ## Stack
 
@@ -80,6 +88,10 @@ ghi đè bằng biến môi trường.
 | `CANDLES_PRICE_SOURCE` | `binance` | `binance` hoặc `okx` |
 | `CANDLES_BACKFILL_START` | `2022-01-01T00:00:00Z` | Lấy nến từ ngày nào |
 | `ANALYTICS_GOATCOUNTER` | rỗng | Mã site GoatCounter để đo phễu (ví dụ `candle-guess`, không phải URL). Rỗng thì không đếm gì |
+| `TELEGRAM_BOT_TOKEN` | rỗng | Token bot từ @BotFather. Rỗng thì đăng nhập Telegram trả 404 và app chạy như web thường |
+| `TELEGRAM_BOT_USERNAME`, `TELEGRAM_APP_NAME` | rỗng | Tên bot và tên Mini App, để dựng link `t.me/<bot>/<app>` |
+| `TELEGRAM_DAILY_CHAT_IDS` | rỗng | Nhóm nhận tin nhắc thử thách, cách nhau dấu phẩy. Rỗng thì bot không gửi đi đâu cả |
+| `CANDLES_SITE_URL` | địa chỉ Render | Địa chỉ dùng cho canonical và `sitemap.xml`. Đổi khi gắn domain riêng |
 | `CLOUDINARY_*` | rỗng | Upload ảnh cho blog |
 
 ## Kiểm thử
@@ -88,7 +100,7 @@ ghi đè bằng biến môi trường.
 ./mvnw test
 ```
 
-Hơn 260 test, gồm các luồng đầy đủ trên Postgres thật. CI chạy trên mọi push; test tự tạo dữ liệu
+Hơn 350 test, gồm các luồng đầy đủ trên Postgres thật. CI chạy trên mọi push; test tự tạo dữ liệu
 nến nên không cần gọi sàn.
 
 ## Sao lưu
