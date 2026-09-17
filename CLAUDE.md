@@ -122,6 +122,13 @@ start is a time, and its index is how many candles closed before it, which is ex
 mid-bucket drops that last bar rather than asking a player to call a candle built from three of its
 four hours.
 
+**The picker is a second pill in the game toolbar** (`#tf-pill`), and choosing a timeframe deals a
+chart the way choosing a pair does — a button that did nothing until the current chart ran out
+would be worse than no button. The choice is remembered in `candles-timeframe`, guarded like every
+other storage read, since being put back on hourly every visit is the kind of friction that stops a
+feature being used. The practice axis counts back in the round's own step — "−76h" on a 4h chart,
+"−19d" on a daily one, because "−456h" is a number nobody converts.
+
 **The daily stays hourly** — it is one chart for everybody, and a score shared from it has to mean
 the same thing for everyone who plays it. Challenge links carry their chart's timeframe, so a 4h
 practice chart can still be sent to a friend. `InsightsService` reads back only calls on the stored
@@ -1246,6 +1253,30 @@ has ever shared.
 The daily streak (`distinctDailyDaysDesc` folded through `PlayStreak`) counts only days the
 challenge itself was played, so it can break while the profile's day streak holds — turning up
 to practice is not doing today's chart.
+
+### Community difficulty
+
+How hard a chart turned out to be, from the calls already recorded on it:
+`CommunityDifficultyService` folds `guess_results` for one chart's coordinates into a rate per
+candle asked, and it travels on the finishing `GuessResponse` and on a finished `DailyRoundResponse`.
+Derived, never stored, like the streaks and the badges.
+
+- **Only once the caller has finished.** "62% called this one LONG" is most of an answer, so it
+  passes the same gate the context chart does.
+- **Only candles at least `MIN_PLAYERS` (10) people answered**, and a chart where no candle clears
+  that floor sends nothing rather than an empty block, which reads as a crowd getting everything
+  wrong. Ten is deliberately below the thirty-per-chart the plan wants before difficulty could
+  *pay* anything: showing a rate and ranking people by one are different promises.
+- **Per candle, not per chart**, because each candle is its own question and "the third one caught
+  almost everybody" is the part worth reading. The daily board tints each chip with the player's own
+  result, so the comparison is on the chip rather than two lines away.
+- **It does not touch the score.** A chart's difficulty moves as more people play it, so paying a
+  bonus for it would rewrite yesterday's score — and the rank the player already saw — every time
+  somebody new turns up. Paying for it honestly would mean freezing each round's difficulty at the
+  moment it was played, which is a stored per-guess number: the second source of truth this codebase
+  keeps refusing. Difficulty is shown beside the score, not folded into it.
+- Each mode has its own crowd: a daily and its archive replay are different populations on the same
+  coordinates, and the query is filtered by mode for that reason.
 
 ### Retention baseline
 

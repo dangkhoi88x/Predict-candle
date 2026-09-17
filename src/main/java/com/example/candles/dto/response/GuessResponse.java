@@ -20,7 +20,13 @@ public record GuessResponse(
          * On a finished practice chart only: the signed result a player can turn into a challenge
          * link with {@code POST /api/challenges}. Null everywhere else.
          */
-        String challengeToken
+        String challengeToken,
+        /**
+         * How everyone else called this chart, sent with the finishing guess and never before —
+         * the crowd's answer is most of an answer. Null on an unfinished round, and on a chart too
+         * few people have played for a rate to mean anything.
+         */
+        DailyRoundResponse.Community community
 ) {
 
     /**

@@ -37,10 +37,34 @@ public record DailyRoundResponse(
         /** Unlocked by misses already recorded today — a resumed session keeps what it earned. */
         RoundHints hints,
         Streak streak,
-        Instant nextRoundAt
+        Instant nextRoundAt,
+        /** How everyone else did on this chart. Null until the caller has finished it, and null
+            while too few have played for a percentage to mean anything. */
+        Community community
 ) {
     /** One guess already made. {@code guessed} is null for one the countdown ate. */
     public record Answer(int guessNumber, String guessed, String actual, boolean correct) {
+    }
+
+    /**
+     * The crowd's answer to the same chart, one entry per candle asked.
+     *
+     * <b>Sent only once the caller has finished.</b> Before that it is a hint — "62% called this
+     * one LONG" is most of an answer — and the same rule the context chart follows for the same
+     * reason.
+     *
+     * <b>It does not touch the score.</b> A chart's difficulty moves as more people play it, so
+     * paying a bonus for it would quietly rewrite yesterday's score and, with it, a rank the
+     * player already saw. Difficulty is shown, not scored.
+     *
+     * @param minPlayers the floor below which nothing is sent: a rate from four people is not a
+     *                   community, it is four people
+     */
+    public record Community(int minPlayers, List<GuessRate> guesses) {
+    }
+
+    /** {@code players} answered this candle of the chart; {@code correct} of them called it right. */
+    public record GuessRate(int guessNumber, long players, long correct) {
     }
 
     /**

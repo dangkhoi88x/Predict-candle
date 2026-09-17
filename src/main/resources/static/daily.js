@@ -40,6 +40,7 @@
         shareText: document.getElementById("daily-share-text"),
         board: document.querySelector("#view-daily .daily-board"),
         finishers: document.getElementById("daily-finishers"),
+        community: document.getElementById("daily-community"),
         title: document.getElementById("daily-title"),
         intro: document.getElementById("daily-intro"),
         start: document.getElementById("daily-start"),
@@ -49,6 +50,11 @@
     };
 
     var state = null;
+
+    /* The crowd's read of this chart. It arrives either with the finishing guess or with the
+       re-read that follows it — signed out there is no re-read, so the guess response is the only
+       copy and it has to be kept. */
+    var community = null;
     var candles = [];
     var results = [];
     var hints = null;
@@ -393,6 +399,7 @@
 
         var correct = results.filter(Boolean).length;
         renderFinishers();
+        renderCommunity();
 
         if (challengeId) {
             el.share.textContent = "Thách tiếp người khác";
@@ -459,6 +466,7 @@
                 if (window.CandleAnalytics) window.CandleAnalytics.track(challengeId ? "challenge-complete" : isToday() ? "daily-complete" : "archive-complete");
                 // Only this response carries the chart's patterns; take the lesson from it now.
                 chartLesson = lessonFromContext(payload.context, results);
+                community = payload.community || null;
                 /* Signed in, re-read: the streak only moves once the day is finished and the
                    server is the one that knows what it moved to.
 
@@ -569,6 +577,48 @@
 
     /* Who has played the challenge through, best first. Only signed-in players — an anonymous
        attempt is never recorded — so an empty list says how to get onto it. */
+    /**
+     * Which candles caught people out, once the player has answered them all.
+     *
+     * Per candle rather than one figure for the chart: each candle is its own question, and "the
+     * third one caught almost everybody" is the part worth reading. The player's own result is
+     * marked on the row it belongs to, so the comparison is right there instead of two lines
+     * apart.
+     */
+    function renderCommunity() {
+        el.community.innerHTML = "";
+        el.community.classList.toggle("hidden", !community || !community.guesses.length);
+        if (!community || !community.guesses.length) return;
+
+        var title = document.createElement("span");
+        title.className = "side-eyebrow";
+        title.textContent = "Cả nhà đoán thế nào";
+        el.community.appendChild(title);
+
+        var row = document.createElement("div");
+        row.className = "daily-community-row";
+        community.guesses.forEach(function (rate) {
+            var mine = results[rate.guessNumber - 1];
+            var chip = document.createElement("span");
+            chip.className = "daily-community-chip"
+                + (mine === true ? " is-correct" : mine === false ? " is-wrong" : "");
+            var pct = Math.round((rate.correct / rate.players) * 100);
+            chip.textContent = "Nến " + rate.guessNumber + " · " + pct + "%";
+            chip.title = rate.correct + "/" + rate.players + " người đoán đúng nến này"
+                + (mine === undefined ? "" : mine ? " — bạn cũng đúng" : " — bạn sai");
+            row.appendChild(chip);
+        });
+        el.community.appendChild(row);
+
+        var note = document.createElement("p");
+        note.className = "daily-community-note";
+        var players = community.guesses[0].players;
+        note.textContent = "Tỉ lệ đoán đúng của những người đã chơi chart này ("
+            + players + " người ở nến đầu). Chỉ hiện nến có từ "
+            + community.minPlayers + " người trở lên, và không cộng vào điểm.";
+        el.community.appendChild(note);
+    }
+
     function renderFinishers() {
         el.finishers.innerHTML = "";
         el.finishers.classList.toggle("hidden", !challengeId);
@@ -611,6 +661,9 @@
             if (!res.ok) throw new Error(payload.message || ("Máy chủ trả về " + res.status));
 
             state = payload;
+            // A finished round carries the crowd; an unfinished one carries null, which is also
+            // what should be on screen.
+            if (payload.completed || payload.community) community = payload.community || community;
             candles = payload.candles.slice();
             results = payload.answers.map(function (a) { return a.correct; });
             hints = payload.hints;

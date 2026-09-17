@@ -363,6 +363,13 @@
             <button class="pill-option" data-asset="BNBUSDT">BNB<span class="pill-quote">/USDT</span></button>
             <button class="pill-option" data-asset="SOLUSDT">SOL<span class="pill-quote">/USDT</span></button>
         </div>
+        <!-- 4h and 1d are folded from the stored hourly candles, so this costs no new data.
+             1h is what the daily and every older client play, and stays the default. -->
+        <div class="pill tf-pill" id="tf-pill" aria-label="Khung thời gian">
+            <button class="pill-option active" type="button" data-tf="1h">1h</button>
+            <button class="pill-option" type="button" data-tf="4h">4h</button>
+            <button class="pill-option" type="button" data-tf="1d">1D</button>
+        </div>
         <div class="game-toolbar-end">
             <span id="guess-progress" class="guess-progress hidden"></span>
             <button id="help-toggle" class="ghost-btn help-toggle" type="button" aria-label="Cách chơi" title="Cách chơi"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-help"/></svg></button>
@@ -595,6 +602,9 @@
             <p class="daily-next" id="daily-next"></p>
             <!-- A friend's challenge only: who has played it through. -->
             <div class="daily-finishers hidden" id="daily-finishers"></div>
+            <!-- How the rest of the players called the same candles. Drawn only once the round is
+                 over, and only for candles enough people have answered. -->
+            <div class="daily-community hidden" id="daily-community"></div>
             <!-- The lesson: one thing to take away from the round just played, chosen in daily.js —
                  a pattern that was on the chart right before a miss, else the player's biggest
                  habit, else a pattern the chart held. -->
