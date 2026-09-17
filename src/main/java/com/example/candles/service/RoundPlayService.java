@@ -10,6 +10,7 @@ import com.example.candles.domain.RoundToken;
 import com.example.candles.dto.request.GuessRequest;
 import com.example.candles.dto.response.CandleDto;
 import com.example.candles.dto.response.DatedCandleDto;
+import com.example.candles.dto.response.DailyRoundResponse;
 import com.example.candles.dto.response.GuessResponse;
 import com.example.candles.dto.response.RoundHints;
 import com.example.candles.entity.Asset;
@@ -43,6 +44,7 @@ public class RoundPlayService {
     private final RoundPatternScanner patternScanner;
     private final RoundTimingPolicy timingPolicy;
     private final RoundHintService hintService;
+    private final CommunityDifficultyService difficulty;
 
     public RoundPlayService(RoundSelectionService roundSelectionService,
                             RoundTokenService roundTokenService,
@@ -51,7 +53,8 @@ public class RoundPlayService {
                             GuessResultService guessResultService,
                             RoundPatternScanner patternScanner,
                             RoundTimingPolicy timingPolicy,
-                            RoundHintService hintService) {
+                            RoundHintService hintService,
+                            CommunityDifficultyService difficulty) {
         this.roundSelectionService = roundSelectionService;
         this.roundTokenService = roundTokenService;
         this.assetRepository = assetRepository;
@@ -60,6 +63,7 @@ public class RoundPlayService {
         this.patternScanner = patternScanner;
         this.timingPolicy = timingPolicy;
         this.hintService = hintService;
+        this.difficulty = difficulty;
     }
 
     /**
@@ -160,6 +164,12 @@ public class RoundPlayService {
                             .toList());
         }
 
+        /* The crowd's read of the same chart, under the same gate the context chart passes: it
+           names which candle caught people out, which before the last guess would be a hint. */
+        DailyRoundResponse.Community community = sessionComplete
+                ? difficulty.forChart(mode, asset.getId(), token.timeframe(), token.startIndex())
+                : null;
+
         /* Only practice: a daily or an archive chart is already one everybody can play, and a
            challenge of a challenge would let a player launder a link they were sent into one that
            says they set it. The count comes from `misses`, which rode the signed token all the way
@@ -182,7 +192,8 @@ public class RoundPlayService {
                 identity,
                 context,
                 nextHints,
-                challengeToken
+                challengeToken,
+                community
         );
     }
 }

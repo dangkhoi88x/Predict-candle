@@ -57,6 +57,29 @@ public interface GuessResultRepository extends JpaRepository<GuessResult, Long> 
                                        @Param("startIndex") int startIndex);
 
     /**
+     * How the crowd did on one chart, as {@code [guessNumber, players, correct]} — the same chart
+     * coordinates a round token carries, in one mode.
+     *
+     * Per guess rather than per chart: each candle of a round is its own question, and "the third
+     * one caught almost everybody" is the thing worth knowing. Derived, never stored, like every
+     * other figure folded out of these rows.
+     */
+    @Query("""
+            select g.guessNumber, count(g), sum(case when g.correct = true then 1 else 0 end)
+            from GuessResult g
+            where g.mode = :mode
+              and g.asset.id = :assetId
+              and g.timeframe = :timeframe
+              and g.startIndex = :startIndex
+            group by g.guessNumber
+            order by g.guessNumber
+            """)
+    List<Object[]> communityByGuess(@Param("mode") GuessMode mode,
+                                    @Param("assetId") Long assetId,
+                                    @Param("timeframe") String timeframe,
+                                    @Param("startIndex") int startIndex);
+
+    /**
      * Everybody who has finished one chart in {@code mode} — {@code total} guesses in — as
      * {@code [User, correct, finishedAt]}, best first and, between equals, whoever finished first.
      * Admin accounts are left out for the leaderboard's reason: staff testing the game are not
