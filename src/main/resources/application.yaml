@@ -144,6 +144,10 @@ candles:
     # are the ones the player never got to see: what led into the setup, and how it resolved
     # past the reveal.
     context-padding: 12
+    # What practice can be played at. The first is the stored timeframe; the rest are folded from
+    # it by CandleAggregator, so nothing new is synced. Nothing shorter than the stored one can
+    # ever be added here — those minutes were never recorded.
+    timeframes: [1h, 4h, 1d]
     timing:
       seconds: 20
       # Between the answer candle's reveal animation and a round trip, the honest gap between

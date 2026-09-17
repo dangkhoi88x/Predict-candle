@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -17,10 +18,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import com.example.candles.CandleFixture;
 import com.example.candles.config.CandlesProperties;
 import com.example.candles.entity.Asset;
 import com.example.candles.entity.AssetType;
 import com.example.candles.entity.Candle;
+import com.example.candles.entity.GuessResult;
 import com.example.candles.entity.Role;
 import com.example.candles.entity.User;
 import com.example.candles.repository.AssetRepository;
@@ -121,6 +124,48 @@ class PracticeRoundFlowTest {
         User user = new User("0x" + UUID.randomUUID().toString().replace("-", ""), "P");
         user.assignRole(Role.USER);
         return users.saveAndFlush(user);
+    }
+
+    /**
+     * A longer round is the same game on bars folded from the stored hours, so what has to hold is
+     * that the round says which timeframe it is and the recorded row says the same — a 4h call
+     * filed as an hourly one would collide with the hourly round on that same stretch of chart.
+     */
+    @Test
+    void aFourHourRoundIsPlayedAndRecordedAtThatTimeframe() throws Exception {
+        Asset pair = assets.saveAndFlush(new Asset(
+                "TF" + UUID.randomUUID().toString().substring(0, 6).toUpperCase(), "Timeframe pair", AssetType.CRYPTO));
+        CandleFixture.seedIfEmpty(candles, pair, properties.timeframe());
+        User player = player();
+
+        JsonNode round = mapper.readTree(mockMvc
+                .perform(get("/api/practice/round?asset=" + pair.getSymbol() + "&tf=4h"))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
+
+        assertThat(round.path("timeframe").asString()).isEqualTo("4h");
+        assertThat(round.path("candles").size()).isEqualTo(properties.round().visibleCandles());
+
+        think();
+        assertThat(guess(round.path("roundToken").asString(), "LONG",
+                "Bearer " + jwt.createAccessToken(player)).getResponse().getStatus()).isEqualTo(200);
+
+        List<GuessResult> recorded = guessResults.findRecent(player.getId(), PageRequest.of(0, 5));
+        assertThat(recorded).singleElement().satisfies(row -> {
+            assertThat(row.getTimeframe()).isEqualTo("4h");
+            assertThat(row.getAsset().getId()).isEqualTo(pair.getId());
+        });
+    }
+
+    @Test
+    void aTimeframeTheGameDoesNotOfferIsRefused() throws Exception {
+        String pair = seedTradablePair();
+
+        // Nothing shorter than the stored timeframe can be folded, and nothing off the list is
+        // quietly played at another one.
+        mockMvc.perform(get("/api/practice/round?asset=" + pair + "&tf=15m")).andExpect(status().isBadRequest());
+        mockMvc.perform(get("/api/practice/round?asset=" + pair + "&tf=2h")).andExpect(status().isBadRequest());
+        // Absent still means the stored timeframe, so a client that predates the picker is unchanged.
+        assertThat(round(pair).path("timeframe").asString()).isEqualTo(properties.timeframe());
     }
 
     @Test

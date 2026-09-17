@@ -234,7 +234,7 @@ chưa xem.
 | # | Việc | Điều kiện để bắt đầu |
 |---|---|---|
 | M3.1 ✅ | **Mùa giải không có thưởng tiền:** bảng xếp hạng reset theo tháng, huy hiệu mùa | Quay lại trong tuần ≥ 30% |
-| M3.2 | **Đa khung cho game (G2):** 4h và 1d gộp từ nến 1h (`CandleAggregator` đã có), 15m thì cần lưu thêm | Người chơi lâu năm phàn nàn chart nhàm |
+| M3.2 ⏳ | **Đa khung cho game (G2):** 4h và 1d gộp từ nến 1h (`CandleAggregator` đã có), 15m thì cần lưu thêm | Người chơi lâu năm phàn nàn chart nhàm |
 | M3.3 | **Độ khó theo cộng đồng (R4):** tỉ lệ đoán đúng mỗi chart → điểm thưởng | Mỗi chart daily có ≥ 30 người chơi |
 | M3.4 | **Trang nội dung có URL riêng** cho blog và từng mẫu (render phía server hoặc prerender), phục vụ SEO | Muốn có lượng truy cập tự nhiên từ Google |
 

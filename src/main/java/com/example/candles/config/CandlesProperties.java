@@ -59,10 +59,15 @@ public record CandlesProperties(
      *                        still close where it opened, and LONG versus SHORT then comes
      *                        down to the last decimal.
      */
+    /**
+     * {@code timeframes} is what a practice round may be played at, longest folded from the stored
+     * one ({@code CandleAggregator}) — the shortest entry has to be the stored timeframe itself,
+     * since minutes below it were never recorded.
+     */
     public record Round(BigDecimal minRangePct, BigDecimal minAnswerBodyPct, int maxAttempts,
                          Duration repeatCacheTtl, int visibleCandles, int guessesPerChart,
-                         int revealCandlesAfterComplete, int contextPadding, Timing timing,
-                         RateLimit rateLimit) {
+                         int revealCandlesAfterComplete, int contextPadding, List<String> timeframes,
+                         Timing timing, RateLimit rateLimit) {
     }
 
     /**

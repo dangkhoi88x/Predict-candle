@@ -49,10 +49,14 @@ public class PracticeController {
     }
 
     @GetMapping("/round")
-    public RoundResponse getRound(@RequestParam String asset, HttpServletRequest request) {
+    public RoundResponse getRound(@RequestParam String asset,
+                                  @RequestParam(required = false) String tf,
+                                  HttpServletRequest request) {
         rateLimiter.check("round", properties.round().rateLimit().roundsPerMinute(), request);
 
-        RoundSelection selection = roundSelectionService.selectRound(asset);
+        // Absent means the stored timeframe, so a link or a client that predates the picker plays
+        // exactly the game it used to.
+        RoundSelection selection = roundSelectionService.selectRound(asset, tf);
 
         String token = roundTokenService.generate(new RoundToken(
                 selection.asset().getId(),

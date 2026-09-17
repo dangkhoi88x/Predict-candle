@@ -46,6 +46,7 @@ class DailyRoundSelectionTest {
     @Autowired private AssetRepository assets;
     @Autowired private CandleRepository candles;
     @Autowired private CandlesProperties properties;
+    @Autowired private RoundCandleService roundCandles;
 
     /* The daily draw needs a pair with enough history to cut a window out of. On CI there is
        none — the pairs are seeded, their candles are not, because the Binance backfill cannot
@@ -72,7 +73,7 @@ class DailyRoundSelectionTest {
 
     @Test
     void aSecondServerWithItsOwnCachesAgrees() {
-        RoundSelectionService otherServer = new RoundSelectionService(assets, candles, properties);
+        RoundSelectionService otherServer = new RoundSelectionService(assets, candles, roundCandles, properties);
 
         assertThat(describe(otherServer.selectDailyRound(DAY)))
                 .isEqualTo(describe(rounds.selectDailyRound(DAY)));

@@ -99,6 +99,35 @@ answer look 900ms old. That is what `min-think-time` is checked against, so read
 roughly two automated answers in three through the floor meant to stop them. One chart yields
 several guesses (`candles.round.guesses-per-chart`), each revealing one more candle.
 
+### Round timeframes
+
+Practice can be played at `1h`, `4h` or `1d` (`candles.round.timeframes`,
+`GET /api/practice/round?asset=…&tf=4h`; no `tf` means the stored timeframe, so a client that
+predates this is unchanged). Only the hourly candles are stored — a longer bar is folded by
+`CandleAggregator` through `RoundCandleService`, the same bargain the trade terminal's chart makes,
+so nothing new is synced and nothing shorter than an hour can ever be offered.
+
+**An index is still a position among the stored rows**, at every timeframe. That is what keeps one
+coordinate space: `guess_results`' unique constraint still names one attempt, a 4h round and an
+hourly one over the same stretch are different rounds because the *timeframe* differs, and a round
+token needs no new field — the timeframe it already carries says how to read its index. Every read
+a round makes goes through `RoundCandleService`: selection, hints, answers, the reveal, the context
+chart and a challenge's window. Moving by a bar means moving `storedPerBar` rows, which is the one
+arithmetic slip that would silently ask about a candle hours away from the one on screen.
+
+**A bar is the exchange's clock period, never four hours from wherever the draw landed.**
+`alignToBucket` moves the drawn index back to the first stored candle of its bucket — the bucket's
+start is a time, and its index is how many candles closed before it, which is exactly what
+`findWindow`'s offset counts, so the two agree even across a gap in history. A window that runs out
+mid-bucket drops that last bar rather than asking a player to call a candle built from three of its
+four hours.
+
+**The daily stays hourly** — it is one chart for everybody, and a score shared from it has to mean
+the same thing for everyone who plays it. Challenge links carry their chart's timeframe, so a 4h
+practice chart can still be sent to a friend. `InsightsService` reads back only calls on the stored
+timeframe: a folded bar has no row to address by index, so those calls keep their long/short,
+session and timeout figures and simply have no trend or pattern, like a call with a gap behind it.
+
 ### Auth
 
 Wallet-signature login, no passwords. `GET /wallet/nonce` → client signs it → `POST
