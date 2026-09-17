@@ -1466,6 +1466,33 @@ only on failure; appearing after their fetches pushed the whole shell down on ev
 0.10 on a phone, where the banner has a row of its own). For the same reason the banner no longer
 vanishes during the eight locked minutes of each hour — it says when the next round opens.
 
+### Crawlable content pages
+
+`GET /blog` and `GET /blog/{slug}` are server-rendered HTML, plus `/sitemap.xml`
+(`ContentPageController`). Every view of the app is a tab inside one `index.html` and a post expands
+in place, so until these existed the whole site was one URL: nothing could be linked to, quoted or
+found in a search, and a crawler that runs no JavaScript saw an empty shell.
+
+- **They are not a second front end.** No app scripts, no wallet, no fonts, no stylesheet — a page
+  that loaded the application to show one article would be slower than the tab it stands in for.
+  The shell is ~30 lines of inlined CSS that follow `prefers-color-scheme`.
+- **A draft answers exactly like a typo** — 404. Anything else turns the address space into a list
+  of what is coming.
+- Each page is canonical to itself, takes its `description` from the post's own opening words, and
+  links into the app as `/?view=blog&post=<slug>`; `blog.js` opens that post and strips the
+  parameter, the same idiom `?thach=` and `?view=` already use.
+- `robots.txt` names the sitemap; the sitemap lists `/`, `/blog` and one entry per published post
+  with its `updatedAt`.
+
+**`BlogDocumentHtml` is the third renderer of one document, and that is the cost worth naming.**
+Tiptap produces it, `blog-render.js` draws it for a reader, and this writes it for a crawler. A node
+the editor can emit needs a branch in all three, and the two public ones deliberately accept and
+refuse the same things: same nodes, same six marks, same http(s)-only check on an href or an image
+src, same fallback of an unknown node to its own text. Storing rendered HTML at publish time was the
+alternative and is a second copy free to drift; a pure function cannot drift, it can only be
+incomplete, and incomplete is visible. Escaping lives here alone — this builds a string where the
+browser's renderer builds DOM nodes.
+
 ## Notes
 
 - **The demo runs on Render (`render.yaml`) against Neon Postgres, both in Singapore** —

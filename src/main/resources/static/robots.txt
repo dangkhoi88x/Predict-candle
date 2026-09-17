@@ -1,8 +1,9 @@
 # Candle Guess
 #
-# There is one address worth crawling. Every view — chart, patterns, technical patterns,
-# psychology, heatmap, blog, profile — is a tab inside index.html, and blog posts expand in
-# place rather than getting their own URLs, so a sitemap would list a single line.
+# The app itself is one address: every view — chart, patterns, technical patterns, psychology,
+# heatmap, blog, profile — is a tab inside index.html. Blog posts are the exception, and the
+# reason sitemap.xml exists: each published post also has a server-rendered page at
+# /blog/<slug>, real HTML a crawler can read without running JavaScript, canonical to itself.
 #
 # Two things about the shape of the record below, both of which are easy to get wrong and
 # silent when you do:
@@ -29,6 +30,8 @@
 #
 # None of this is access control. Every /api/admin/** route is behind hasRole("ADMIN") and
 # re-checked against the database before any write.
+Sitemap: https://candles-oj1q.onrender.com/sitemap.xml
+
 User-agent: *
 # Mints a real round and spends the per-minute limit meant for actual players.
 Disallow: /api/practice/
