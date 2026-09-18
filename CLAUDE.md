@@ -164,7 +164,7 @@ also bumps `tokenVersion`, killing the account's refresh tokens on any role chan
 
 ### Frontend
 
-Plain static files under `src/main/resources/static/` — no bundler, no framework, ES5-style
+Plain static files under `src/main/resources/static/` — no build step, no framework, ES5-style
 IIFEs, one global per file. All eleven views live in **one `index.html`**; `nav.js` toggles
 `.hidden` between them.
 
@@ -260,6 +260,23 @@ and a label only goes from a control whose icon is unambiguous alone.
 
 Script order in `index.html` matters: `pill.js`, `rolling.js` and `avatar.js` define shared
 globals that later files call at load time.
+
+**The browser never sees those `<script>` tags.** `AppShellService` serves `/` with every local
+`<script src>` joined, in the page's order, into one `/app.<hash>.js`, and both stylesheets into
+one `/app.<hash>.css`; the name is a hash of the content, so both are `immutable` for a year and
+the page itself is `no-cache` with an ETag. The page used to ask for 36 files, each `no-cache`,
+and on the demo's 0.1 CPU they queued — 0.4-1.6s each on a first visit, and 36 revalidations on
+every visit after. Nothing is generated or committed: the bundle is built from the same files at
+runtime (re-read when one changes while running from exploded classes, so `process-resources`
+still works), and a new script is still just a tag in `index.html`. Three consequences:
+
+- Each file is wrapped in its own `try`, so one that throws at load still stops only itself.
+  That is safe only because every file is an IIFE — **a top-level `let`/`const`/`class` would
+  become block-scoped** and invisible to the files after it.
+- The stylesheet is served from the root because `style.css` names its fonts relatively.
+- Any other hash gets the current file marked `no-cache`, never a 404: Render runs the old
+  instance beside the new one through a deploy, and a 404 there is a page with no scripts.
+- Stack traces point into the bundle; the `console.error` wrapper names the file.
 
 **The funnel before the first recorded guess is measured by GoatCounter, not by the database.**
 Retention starts at a player's first *recorded* call, and an anonymous guess is never recorded,
@@ -1651,8 +1668,8 @@ browser's renderer builds DOM nodes.
 - **Spring Boot 4.1.1 / Java 25**, and Jackson **3** (`tools.jackson.*`, not
   `com.fasterxml.jackson.*`) — this bites when hand-writing JSON handling.
 - JWT uses `jjwt` with the **Gson** serializer to stay clear of Jackson 3.
-- Static assets are served `Cache-Control: no-cache` (revalidate, not "don't store") and fonts
-  get a year via `WebConfig`. Compression is on. Fonts are self-hosted with Latin + Vietnamese
+- Static assets are served `Cache-Control: no-cache` (revalidate, not "don't store"), except
+  the game page's bundle (`AppShellService`, immutable) and fonts, which get a year via `WebConfig`. Compression is on. Fonts are self-hosted with Latin + Vietnamese
   `unicode-range` subsets; there is no external font request.
 - Blog images live in this project's Cloudinary account behind an `f_auto,q_auto` transform.
   Dropping the transform segment from the URL returns the untouched original.

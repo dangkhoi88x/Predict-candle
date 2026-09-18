@@ -1267,6 +1267,9 @@
     </div>
 </div>
 
+<!-- The server joins every local script below, in this order, into one /app.<hash>.js
+     (AppShellService), and the two stylesheets above into one /app.<hash>.css. Add a script
+     here as a plain tag like the rest; it must be an IIFE with no top-level let/const. -->
 <script src="theme.js"></script>
 <!-- Early, so every later script can report a funnel step; it queues until the counter loads. -->
 <script src="analytics.js"></script>
