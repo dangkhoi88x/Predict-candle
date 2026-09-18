@@ -1606,6 +1606,15 @@ browser's renderer builds DOM nodes.
   rendered from `web/og/og-image.html` with headless Chrome (the command is in that file), so it
   is re-rendered rather than redrawn when the brand or copy changes.
 
+- **The image carries an AOT cache (`extracted/app.aot`), recorded by a training run in the
+  `Dockerfile`**, because a free instance sleeps and whoever wakes it waits for the JVM on a tenth
+  of a CPU. It cut the CPU a start burns before its first answer from 8.3s to 5.2s. Two things there
+  are load-bearing. `-XX:-AOTClassLinking` stays: with linking on, a start whose heap differs from
+  the training run's **refuses to boot** instead of falling back, which is what happened with the
+  heap `render.yaml` gives. And the ENTRYPOINT's classpath must stay `extracted/app.jar`, the path
+  the cache was recorded against; a different one just ignores the cache and starts slowly. A
+  training run that fails fails the image build, which CI does on every push.
+
 - **The demo reads OKX, not Binance: `candles.price-source`, `binance` by default.** Binance
   bans by IP (HTTP 418, 2 minutes growing to 3 days), Render's outbound addresses are shared, and
   the Singapore range was banned twice on the first evening for traffic this app did not send.
