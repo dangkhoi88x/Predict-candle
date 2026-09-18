@@ -358,6 +358,11 @@ failed. Those are gone — a failure now draws `.view-notice` through `CandleCon
 because stale content presented as current is a worse answer than an honest empty state.
 `CandleContent.load(kind)` throws rather than returning a fallback.
 
+`/api/content/*` and `/api/assets` are `max-age=300` plus `stale-while-revalidate` (a day for the
+libraries, an hour for the pairs). Both are fetched on every page load and change a few times a
+year, and on the demo each cost up to 1.5s beside the page's other requests. The price is that an
+admin's edit reaches a returning visitor one load late; `PublicCacheHeadersTest` pins both.
+
 Two consequences worth knowing. `blog.js` builds on first reveal, so its catch clears `built`
 — otherwise one dropped request leaves the tab empty for the whole visit with no way to ask
 again. And `CandlePatterns.nameOf`, which the game tab calls to name a pattern found mid-round,
