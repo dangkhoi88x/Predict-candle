@@ -330,6 +330,7 @@ is wrong.
 | `format.js` | `CandleFormat.price/usd/compactUsd/count/percent/signedPct/clock` | everywhere a number is drawn |
 | `sound.js` | `CandleSound.unlock/correct/wrong/summary/vibrate/attachToggle` | the practice round |
 | `candle-chart.js` | `CandleChart.draw(svg, candles, opts)` | **every** candlestick chart on the site |
+| `keys.js` | `CandleKeys.bind(view, map)` | the practice game and the daily |
 
 **`price()` and `usd()` are two formats on purpose.** `price()` sizes decimals to magnitude,
 for a column being scanned; `usd()` always shows cents, for a single figure somebody is about
@@ -343,6 +344,23 @@ questions at once and `app.js` is already asking it after every recorded guess, 
 `candles:stats` and the play tab's column listens; `play-sidebar.js` publishes `candles:rank`
 off the board it fetches and the rail draws the tag. Two callers reading one figure out of two
 responses can only end up disagreeing about it.
+
+**A shortcut presses the button a mouse would press.** `CandleKeys.bind(view, map)` takes
+elements, never functions, so nothing about a round is written twice — sound, the miss count, the
+funnel event and the recording all stay behind the click handlers that own them, and a key
+reaching a hidden or disabled button does nothing, exactly as a mouse would. Up and down rather
+than left and right, because the call is about where the price goes. A value may be a list,
+meaning whichever of them is actionable: Space on the game tab is the start gate before a round
+and "Biểu đồ mới" after one. The daily binds no key that deals a chart — there is one a day, and
+Space landing on a start button would begin the attempt its countdown then runs on.
+
+Five things the handler ignores, each found by trying it: a focused button or link (those answer
+Enter and Space themselves, so handling them here presses twice), typing in a field, a keystroke
+inside the rail's tablist (it moves the selection with the same arrows), anything carrying
+Cmd/Ctrl/Alt, and every key pressed while another view or a `role="dialog"` is on screen — the
+first-visit tour is exactly that, and a round's clock runs on whatever chart was dealt. The hint
+line under the buttons is `(hover: hover) and (pointer: fine)` only; its base `display: none`
+comes **before** the query, or source order hides it everywhere.
 
 **Nothing deals a chart unless the player asks for one** — the start button in the chart's place
 (`showStartGate` in `app.js`, `showGate` in `daily.js`), "Biểu đồ mới", picking a pair, the tour's

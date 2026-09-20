@@ -1305,6 +1305,15 @@
     el.guessShort.addEventListener("click", function () { window.CandleSound.unlock(); submitGuess("SHORT"); });
     el.nextChart.addEventListener("click", loadRound);
 
+    /* Up and down rather than left and right: the call is about where the price goes, and the
+       marks on the buttons already point that way. Space is whichever of the two buttons that
+       deal a chart is on screen — the gate before a round, "Biểu đồ mới" after one. */
+    window.CandleKeys.bind("game", {
+        ArrowUp: el.guessLong, l: el.guessLong, L: el.guessLong,
+        ArrowDown: el.guessShort, s: el.guessShort, S: el.guessShort,
+        " ": [el.gameStartButton, el.nextChart]
+    });
+
     window.CandleSound.attachToggle(el.soundToggle);
 
     el.assetButtons.forEach(function (btn) {
