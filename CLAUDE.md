@@ -1615,6 +1615,14 @@ browser's renderer builds DOM nodes.
   the cache was recorded against; a different one just ignores the cache and starts slowly. A
   training run that fails fails the image build, which CI does on every push.
 
+- **`/healthz` answers the two things that ping this deployment — Render's health check and the
+  keep-alive cron — and it touches nothing.** A check that queried the database would read a Neon
+  compute waking from idle as a dead instance, and Render restarts those: one second would become
+  a cold start. It also replaced `/` in `render.yaml`, which built 77 KB of game page per check.
+  The cron ping moved for a different reason worth remembering: cron-job.org fails a job whose
+  response is too large, so the ping at `/` was marked failed every run until the job was switched
+  off, and the demo then slept through every visit. `docs/DEPLOY_PLAN.md` §4.3 has the settings.
+
 - **The demo reads OKX, not Binance: `candles.price-source`, `binance` by default.** Binance
   bans by IP (HTTP 418, 2 minutes growing to 3 days), Render's outbound addresses are shared, and
   the Singapore range was banned twice on the first evening for traffic this app did not send.

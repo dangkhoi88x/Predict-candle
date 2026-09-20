@@ -211,16 +211,27 @@ Service free của Render **ngủ sau 15 phút không có request**. Hậu quả
 - Job sync mỗi giờ không chạy trong lúc ngủ. Dữ liệu không mất: lần thức dậy sau, sync tự lấy
   bù từ nến mới nhất đã lưu.
 
-Cách xử lý: tạo cron trên <https://cron-job.org> gọi `GET https://candles-oj1q.onrender.com/`
-mỗi **10 phút** (đã làm, *Test run* trả 200). Gọi `/` vì đó là file tĩnh, không chạm database
-hay sàn, nên không tốn compute hours của Neon và không gửi thêm request tới OKX.
+Cách xử lý: tạo cron trên <https://cron-job.org> gọi `GET https://candles-oj1q.onrender.com/healthz`
+mỗi **10 phút**. Endpoint này trả đúng hai ký tự, không chạm database hay sàn, nên không tốn
+compute hours của Neon và không gửi thêm request tới OKX.
 
-- **Timeout:** giữ 30 giây mặc định. Lượt gọi trúng lúc app vừa thức có thể quá thời gian và bị
-  ghi *failed*, nhưng nó vẫn đánh thức được app.
-- **Notifications:** bật báo lỗi sau vài lần thất bại liên tiếp.
+- **Đừng trỏ vào `/`.** Job đầu tiên gọi `/` và cron-job.org đánh dấu *failed (output too large)*
+  mỗi lần chạy, vì trang chủ trả 77 KB. Request vẫn đánh thức app, nhưng sau một loạt lỗi liên
+  tiếp cron-job.org **tự tắt job** — và demo ngủ suốt từ đó, cho tới khi ai đó mở trang và phải
+  chờ hai phút. Đây là lý do `/healthz` tồn tại.
+- **Timeout:** đặt mức cao nhất cho phép. Lượt gọi trúng lúc app đang khởi động mất 1–2 phút;
+  với timeout 30 giây mặc định thì nó vẫn đánh thức được app, nhưng lại bị ghi *failed*, và đủ
+  nhiều lần *failed* là job bị tắt.
+- **Notifications:** bật báo lỗi sau vài lần thất bại liên tiếp — cái này chỉ hữu ích khi job
+  không còn *failed* vì những lý do vô hại như trên.
+- **Kiểm tra định kỳ:** mở lịch sử chạy của job. Job bị tắt không báo gì trên Render, và triệu
+  chứng duy nhất là trang chờ "waking up" của Render khi có người vào xem.
 - **Giờ free:** Render cho 750 giờ mỗi tháng cho cả workspace, một service chạy 24/7 dùng khoảng
   720–744 giờ. Thêm một web service free thứ hai cũng giữ thức thì sẽ hết giờ trước cuối
   tháng.
+- **Neon vẫn ngủ**, và như vậy là cố ý: `/healthz` không chạm database, nên compute của Neon tự
+  tắt khi rảnh. Người dùng đầu tiên sau một lúc vắng chờ thêm khoảng một giây cho nó dậy, đổi lại
+  không đốt compute hours của gói free.
 
 ### 4.4 Telegram Mini App (tuỳ chọn)
 

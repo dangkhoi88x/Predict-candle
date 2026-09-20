@@ -16,9 +16,12 @@ services:
     branch: main
     # Waits for GitHub Actions to go green, so a red main is never what the demo is running.
     autoDeployTrigger: checksPass
-    # index.html is a static file: it answers as soon as Tomcat is up, while the startup sync is
-    # still running on the main thread, and it never touches the database or the exchange.
-    healthCheckPath: /
+    # Two words from HealthController, and deliberately nothing else: it answers as soon as Tomcat
+    # is up, while the startup sync is still running, and it touches neither the database nor the
+    # exchange — a check that queried Neon would read a compute waking from idle as a dead
+    # instance, and Render restarts those. It replaced `/`, which spends a tenth of a CPU building
+    # 77 KB of game page to answer whether the server is alive.
+    healthCheckPath: /healthz
     envVars:
       # --- asked for once, when the Blueprint is first applied ---
       - key: DB_URL
