@@ -346,32 +346,53 @@
         }
     })();
 
-    document.addEventListener("DOMContentLoaded", function () {
+    /* CandleNav.ready rather than DOMContentLoaded: this file arrives in the technical bundle,
+       after that event. */
+    function openCard(key) {
+        var card = document.querySelector('.pattern-card[data-pattern="' + key + '"]');
+        if (!card) return;
+        var toggle = card.querySelector(".pattern-toggle");
+        var detail = card.querySelector(".pattern-detail");
+        if (detail && detail.classList.contains("hidden") && toggle) toggle.click();
+        card.scrollIntoView({ block: "center", behavior: "smooth" });
+        try {
+            var params = new URLSearchParams(window.location.search);
+            params.delete("card");
+            var rest = params.toString();
+            history.replaceState(null, "", window.location.pathname + (rest ? "?" + rest : "")
+                + window.location.hash);
+        } catch (e) {
+            // The card is open, which is what the link was for.
+        }
+    }
+
+    window.CandleNav.ready(function () {
         if (!requestedCard) return;
         var key = requestedCard;
         requestedCard = null;
         window.CandleContent.load("technical-pattern").then(function (items) {
-            if (!items.some(function (item) { return item.id === key; })) return;
+            if (!items.some(function (item) { return item.id === key; })) return null;
             document.getElementById("tab-technical").click();
-            var card = document.querySelector('.pattern-card[data-pattern="' + key + '"]');
-            if (!card) return;
-            var toggle = card.querySelector(".pattern-toggle");
-            var detail = card.querySelector(".pattern-detail");
-            if (detail && detail.classList.contains("hidden") && toggle) toggle.click();
-            card.scrollIntoView({ block: "center", behavior: "smooth" });
-            try {
-                var params = new URLSearchParams(window.location.search);
-                params.delete("card");
-                var rest = params.toString();
-                history.replaceState(null, "", window.location.pathname + (rest ? "?" + rest : "")
-                    + window.location.hash);
-            } catch (e) {
-                // The card is open, which is what the link was for.
-            }
+            /* Waits on the grid rather than assuming it is there. This file used to rely on the
+               tab's own build having registered its fetch callback first — true while every
+               script loaded together, and false now that this one arrives in the technical
+               bundle: the link then opened the right tab and no card, silently. */
+            return initOnce();
+        }).then(function () {
+            openCard(key);
         }).catch(function () { });
     });
 
     /* Built on first reveal, not at load: 1423 elements and its own SVG illustrations, none of which the game tab ever asks about.
        nav.js drives this through its onFirstShow map. */
-    window.__initTechnicalView = init;
+    /* One build however many callers ask for it: nav.js on the tab's first reveal, and the
+       ?card= link above, which cannot know which of them ran first. */
+    var initPromise = null;
+
+    function initOnce() {
+        if (!initPromise) initPromise = init();
+        return initPromise;
+    }
+
+    window.__initTechnicalView = initOnce;
 })();

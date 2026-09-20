@@ -105,6 +105,61 @@
         // Storage blocked: leave the tag as shipped.
     }
 
+    /* ---- view bundles ----------------------------------------------------------------
+       Each view whose scripts carry data-view in index.html has its own bundle, listed in
+       window.CandleChunks by AppShellService. It is fetched the first time that view opens, so
+       a visitor who plays the game never downloads the trade terminal or the blog.
+
+       One promise per bundle, kept whatever happens next: several rapid switches, or a rail
+       click while a tab is already loading, must not start a second download of the same file.
+       A failure clears the entry instead, so opening the tab again is a real retry rather than
+       a permanently empty pane. */
+    var chunkLoads = {};
+    var chunkReady = {};
+
+    function loadChunk(view) {
+        var src = (window.CandleChunks || {})[view];
+        if (!src) return Promise.resolve();
+        if (chunkLoads[view]) return chunkLoads[view];
+
+        chunkLoads[view] = new Promise(function (resolve, reject) {
+            var script = document.createElement("script");
+            script.src = src;
+            script.onload = function () { chunkReady[view] = true; resolve(); };
+            script.onerror = function () { reject(new Error("Không tải được " + src)); };
+            document.head.appendChild(script);
+        }).catch(function (e) {
+            delete chunkLoads[view];
+            console.error(e);
+            throw e;
+        });
+        return chunkLoads[view];
+    }
+
+    function runBuilders(target) {
+        if (onFirstShow[target]) onFirstShow[target]();
+        if (onEveryShow[target]) onEveryShow[target]();
+    }
+
+    /* The builders live in the bundle, so they cannot be called until it has arrived — but only
+       then. **With the bundle already in hand they run synchronously**, inside activate(), which
+       is where they ran before this existed: technical-patterns.js opens a card by clicking its
+       tab and then reaching for the card, and a builder deferred to a microtask leaves it
+       reaching into a view that has not been built yet. That is a ?card= link opening the right
+       tab and nothing else, with no error anywhere. */
+    function build(target) {
+        var pending = (window.CandleChunks || {})[target] && !chunkReady[target];
+        if (!pending) {
+            runBuilders(target);
+            return;
+        }
+        loadChunk(target).then(function () {
+            runBuilders(target);
+        }, function () {
+            /* Reported by loadChunk. The tab stays empty and opening it again retries. */
+        });
+    }
+
     function activate(target) {
         if (target === "daily") markDailySeen();
         if (!views[target] || target === current()) {
@@ -135,8 +190,7 @@
 
         closeRail();
 
-        if (onFirstShow[target]) onFirstShow[target]();
-        if (onEveryShow[target]) onEveryShow[target]();
+        build(target);
 
         /* Mirrors `candles:pane` on the admin page. The game tab needs to know when it has
            gone off screen — a round left running behind the blog tab keeps timing out and
@@ -336,9 +390,21 @@
        Removed from the address bar afterwards, so reloading or sharing the page does not pin
        whoever opens it to a tab. The profile is refused: it only exists signed in, and a link
        cannot know that. */
+    /* A link that addresses a view's content — a challenge, a post, a library card — is read by
+       a module that now lives in that view's bundle. Nothing would read it if the bundle only
+       arrived when somebody opened the tab by hand, so the parameter loads it here. */
+    var PARAM_CHUNKS = { thach: "daily", post: "blog", card: "technical" };
+
+    function loadChunksForLink(params) {
+        Object.keys(PARAM_CHUNKS).forEach(function (param) {
+            if (params.has(param)) loadChunk(PARAM_CHUNKS[param]);
+        });
+    }
+
     function openRequestedView() {
         try {
             var params = new URLSearchParams(window.location.search);
+            loadChunksForLink(params);
             var wanted = params.get("view");
             if (wanted && views[wanted] && wanted !== "profile") activate(wanted);
             if (params.has("view") || params.has("source")) {
@@ -357,5 +423,43 @@
        fires once they have all executed. */
     document.addEventListener("DOMContentLoaded", openRequestedView);
 
-    window.CandleNav = { go: activate };
+    /* Once the page is quiet, fetch the rest so the first tab switch costs nothing. Prefetch
+       rather than a script tag: the browser stores them and runs nothing, so a bundle nobody
+       opens never costs parse or execution time. */
+    function prefetchChunksWhenIdle() {
+        var chunks = window.CandleChunks || {};
+        Object.keys(chunks).forEach(function (view) {
+            if (chunkLoads[view]) return;
+            var link = document.createElement("link");
+            link.rel = "prefetch";
+            link.as = "script";
+            link.href = chunks[view];
+            document.head.appendChild(link);
+        });
+    }
+
+    if (window.requestIdleCallback) {
+        window.addEventListener("load", function () {
+            window.requestIdleCallback(prefetchChunksWhenIdle, { timeout: 5000 });
+        });
+    } else {
+        window.addEventListener("load", function () { setTimeout(prefetchChunksWhenIdle, 2000); });
+    }
+
+    window.CandleNav = {
+        go: activate,
+
+        /**
+         * Runs fn once the document is parsed — immediately when that has already happened,
+         * which is the case for every module inside a view bundle: those arrive long after
+         * DOMContentLoaded, and a listener added then would never fire.
+         */
+        ready: function (fn) {
+            if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", fn);
+            else fn();
+        },
+
+        /** Loads a view's bundle without opening it. */
+        load: loadChunk
+    };
 })();

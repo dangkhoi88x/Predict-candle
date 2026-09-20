@@ -1271,9 +1271,13 @@
     </div>
 </div>
 
-<!-- The server joins every local script below, in this order, into one /app.<hash>.js
-     (AppShellService), and the two stylesheets above into one /app.<hash>.css. Add a script
-     here as a plain tag like the rest; it must be an IIFE with no top-level let/const. -->
+<!-- The server joins these into bundles (AppShellService), in this order. A tag with no
+     data-view goes into the one the page loads up front; a tag carrying data-view="x" goes
+     into the bundle nav.js fetches the first time view x is opened, so a visitor who only
+     plays the game never downloads the trade terminal or the blog. Add a script here as a
+     plain tag like the rest; it must be an IIFE with no top-level let/const, and anything
+     inside a data-view bundle must not wait for DOMContentLoaded — that has already fired by
+     the time the bundle arrives (CandleNav.ready covers it). -->
 <script src="theme.js"></script>
 <!-- Early, so every later script can report a funnel step; it queues until the counter loads. -->
 <script src="analytics.js"></script>
@@ -1291,10 +1295,10 @@
 <!-- Before daily.js and app.js, which register their shortcuts through it at load. -->
 <script src="keys.js"></script>
 <script src="insights.js"></script>
-<script src="daily.js"></script>
-<script src="pattern-quiz.js"></script>
-<script src="demo-trade.js"></script>
-<script src="live.js"></script>
+<script src="daily.js" data-view="daily"></script>
+<script src="pattern-quiz.js" data-view="daily"></script>
+<script src="demo-trade.js" data-view="trade"></script>
+<script src="live.js" data-view="live"></script>
 <!-- Before ticker.js and heatmap.js, which both filter CoinGecko's list through it. -->
 <script src="coins.js"></script>
 <script src="ticker.js"></script>
@@ -1304,16 +1308,16 @@
 <script src="live-banner.js"></script>
 <script src="app.js"></script>
 <script src="play-sidebar.js"></script>
-<script src="treemap.js"></script>
-<script src="heatmap.js"></script>
-<script src="heatmap-sp500.js"></script>
-<script src="heatmap-view.js"></script>
+<script src="treemap.js" data-view="heatmap"></script>
+<script src="heatmap.js" data-view="heatmap"></script>
+<script src="heatmap-sp500.js" data-view="heatmap"></script>
+<script src="heatmap-view.js" data-view="heatmap"></script>
 <script src="patterns.js"></script>
-<script src="technical-patterns.js"></script>
-<script src="psychology.js"></script>
-<script src="blog-render.js"></script>
-<script src="blog.js"></script>
-<script src="leaderboard.js"></script>
-<script src="profile.js"></script>
+<script src="technical-patterns.js" data-view="technical"></script>
+<script src="psychology.js" data-view="psychology"></script>
+<script src="blog-render.js" data-view="blog"></script>
+<script src="blog.js" data-view="blog"></script>
+<script src="leaderboard.js" data-view="leaderboard"></script>
+<script src="profile.js" data-view="profile"></script>
 </body>
 </html>

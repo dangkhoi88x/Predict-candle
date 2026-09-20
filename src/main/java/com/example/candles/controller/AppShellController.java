@@ -60,6 +60,18 @@ public class AppShellController {
     }
 
     /**
+     * A view's own bundle, fetched the first time that view is opened. An unknown view is a 404,
+     * unlike an unknown hash: the hash moves with every edit, the name is written in index.html.
+     */
+    @GetMapping("/view-{view}.{hash}.js")
+    public ResponseEntity<byte[]> chunk(@PathVariable String view, @PathVariable String hash,
+                                        @RequestHeader(value = HttpHeaders.ACCEPT_ENCODING, required = false) String accept) {
+        Asset chunk = shell.chunk(view);
+        if (chunk == null) return ResponseEntity.notFound().build();
+        return serve(chunk, JAVASCRIPT, chunk.hash().equals(hash) ? FOREVER : CacheControl.noCache(), accept);
+    }
+
+    /**
      * Sends the copy compressed at startup when the client takes gzip; setting Content-Encoding is
      * also what stops Tomcat compressing it a second time. The two copies carry different ETags,
      * since a strong validator names one exact sequence of bytes.

@@ -33,15 +33,16 @@ class AppShellServiceTest {
     void everyScriptIsJoinedInTheOrderThePageListedIt() throws IOException {
         // Order is the whole contract: pill.js, rolling.js and avatar.js define globals that later
         // files call at load time.
-        List<String> listed = listed("<script src=\"([a-z0-9-]+\\.js)\"></script>");
+        List<String> listed = listed("<script src=\"([a-z0-9-]+\\.js)\"( data-view=\"[a-z-]+\")?></script>");
         assertThat(listed).hasSizeGreaterThan(30).startsWith("theme.js").endsWith("profile.js");
         assertThat(shell.scripts()).containsExactlyElementsOf(listed);
 
-        String bundle = new String(shell.script().body(),
-                StandardCharsets.UTF_8);
+        // Within each bundle, the page's order survives.
+        String upFront = new String(shell.script().body(), StandardCharsets.UTF_8);
         int previous = -1;
         for (String name : listed) {
-            int at = bundle.indexOf("console.error(\"" + name + "\"");
+            int at = upFront.indexOf("console.error(\"" + name + "\"");
+            if (at < 0) continue; // in a view's own bundle, checked separately
             assertThat(at).as(name).isGreaterThan(previous);
             previous = at;
         }
@@ -109,6 +110,53 @@ class AppShellServiceTest {
         assertThat(css).contains("--accent");
         assertThat(css).contains(":root{");
         assertThat(css.length()).isLessThan(140_000);
+    }
+
+    @Test
+    void aLabelledScriptLeavesTheBundleThePageLoadsUpFront() {
+        // The point of the split: somebody who plays and leaves never downloads these.
+        String upFront = new String(shell.script().body(), StandardCharsets.UTF_8);
+        assertThat(upFront).doesNotContain("console.error(\"demo-trade.js\"");
+        assertThat(upFront).doesNotContain("console.error(\"profile.js\"");
+        assertThat(upFront).doesNotContain("console.error(\"blog.js\"");
+        // And what the game itself needs stays in it.
+        assertThat(upFront).contains("console.error(\"app.js\"");
+        assertThat(upFront).contains("console.error(\"nav.js\"");
+        // patterns.js is deliberately unlabelled: the game names a pattern mid-round from it.
+        assertThat(upFront).contains("console.error(\"patterns.js\"");
+    }
+
+    @Test
+    void everyScriptLandsInExactlyOneBundle() {
+        String upFront = new String(shell.script().body(), StandardCharsets.UTF_8);
+        for (String name : shell.scripts()) {
+            long bundles = shell.chunks().values().stream()
+                    .filter(chunk -> new String(chunk.body(), StandardCharsets.UTF_8)
+                            .contains("console.error(\"" + name + "\""))
+                    .count();
+            if (upFront.contains("console.error(\"" + name + "\"")) bundles++;
+            assertThat(bundles).as(name).isEqualTo(1);
+        }
+    }
+
+    @Test
+    void aViewsScriptsAreJoinedInThePagesOrder() {
+        String daily = new String(shell.chunk("daily").body(), StandardCharsets.UTF_8);
+        assertThat(daily.indexOf("console.error(\"daily.js\""))
+                .isLessThan(daily.indexOf("console.error(\"pattern-quiz.js\""))
+                .isGreaterThan(-1);
+        assertThat(shell.chunk("trade")).isNotNull();
+        assertThat(shell.chunk("nosuchview")).isNull();
+    }
+
+    @Test
+    void thePageCarriesTheListTheClientLoadsThemFrom() {
+        // Written into the head rather than fetched: a manifest that arrives late is a tab that
+        // opens empty and then fills.
+        String page = page();
+        shell.chunks().forEach((view, chunk) ->
+                assertThat(page).contains("\"" + view + "\":\"" + AppShellService.chunkPath(view, chunk.hash()) + "\""));
+        assertThat(page).contains("window.CandleChunks={");
     }
 
     @Test
