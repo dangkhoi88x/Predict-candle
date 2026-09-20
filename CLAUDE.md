@@ -261,7 +261,7 @@ and a label only goes from a control whose icon is unambiguous alone.
 Script order in `index.html` matters: `pill.js`, `rolling.js` and `avatar.js` define shared
 globals that later files call at load time.
 
-**The browser never sees those `<script>` tags.** `AppShellService` serves `/` with every local
+**The browser never sees those `<script>` tags, and the page declares both files in the head.** `AppShellService` serves `/` with every local
 `<script src>` joined, in the page's order, into one `/app.<hash>.js`, and both stylesheets into
 one `/app.<hash>.css`; the name is a hash of the content, so both are `immutable` for a year and
 the page itself is `no-cache` with an ETag. The page used to ask for 36 files, each `no-cache`,
@@ -270,6 +270,14 @@ every visit after. Nothing is generated or committed: the bundle is built from t
 runtime (re-read when one changes while running from exploded classes, so `process-resources`
 still works), and a new script is still just a tag in `index.html`. Three consequences:
 
+- The script is `defer` and sits in the head. A plain tag stopped the parser until 119 KB had
+  downloaded and run — Lighthouse put it at ~2.1s of the mobile first paint. Deferred it still
+  runs after parsing, which is where it ran at the body's end anyway. The two faces the first
+  paint uses are preloaded, since the stylesheet is the only thing naming them and it is 43 KB in.
+  Measured on the mobile preset: score 81 → 91, LCP 4.2s → 3.1s.
+- **HTML comments are stripped on the way out** — 14.6 KB of 76.6 KB, on the one file that cannot
+  be cached (18.3 KB → 11.9 KB gzipped). The source keeps every word. A plain regex is only safe
+  because no comment here sits inside a script or a style.
 - Each file is wrapped in its own `try`, so one that throws at load still stops only itself.
   That is safe only because every file is an IIFE — **a top-level `let`/`const`/`class` would
   become block-scoped** and invisible to the files after it.
