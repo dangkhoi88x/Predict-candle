@@ -475,6 +475,9 @@
         <button id="guess-long" class="guess-btn long" disabled>▲ LONG</button>
         <button id="guess-short" class="guess-btn short" disabled>▼ SHORT</button>
     </div>
+    <!-- Shown only where there is a keyboard to press: (pointer: fine) in style.css. A phone
+         cannot use these and the line would be one more thing between the chart and the call. -->
+    <p class="key-hint"><span><kbd>↑</kbd> LONG</span> · <span><kbd>↓</kbd> SHORT</span> · <span><kbd>Space</kbd> chart mới</span></p>
 
     <button id="next-chart" class="next-btn hidden"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-refresh"/></svg>Biểu đồ mới</button>
     <!-- Offered once a chart is finished: turns it into a link a friend plays (/?thach=…). The
@@ -596,6 +599,7 @@
             <button class="guess-btn long" type="button" id="daily-long">▲ LONG</button>
             <button class="guess-btn short" type="button" id="daily-short">▼ SHORT</button>
         </div>
+        <p class="key-hint"><span><kbd>↑</kbd> LONG</span> · <span><kbd>↓</kbd> SHORT</span></p>
 
         <div class="daily-done hidden" id="daily-done">
             <p class="daily-done-line" id="daily-done-line"></p>
@@ -1284,6 +1288,8 @@
 <script src="telegram.js"></script>
 <script src="candle-chart.js"></script>
 <!-- Before daily.js and profile.js, which both write findings as sentences through it. -->
+<!-- Before daily.js and app.js, which register their shortcuts through it at load. -->
+<script src="keys.js"></script>
 <script src="insights.js"></script>
 <script src="daily.js"></script>
 <script src="pattern-quiz.js"></script>

@@ -7495,3 +7495,38 @@ body.onboarding-open {
     font-size: 11.5px;
     white-space: nowrap;
 }
+
+/* ---- keyboard hints -----------------------------------------------------------------
+   Hidden by default and shown only where there is a keyboard to press. A phone cannot use
+   these, and on the one screen where a chart and two buttons already share a small space, a
+   line that does nothing is a line between the player and the call. The base rule comes first
+   on purpose: written after the query it would win on source order and hide the hint always. */
+.key-hint {
+    display: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .key-hint {
+        display: block;
+        margin: 8px 0 0;
+        text-align: center;
+        font-size: 11px;
+        letter-spacing: 0.04em;
+        color: var(--muted-2);
+    }
+
+    /* Each pair holds together: a line breaking between "chart" and "mới" reads as a typo. */
+    .key-hint span {
+        white-space: nowrap;
+    }
+
+    .key-hint kbd {
+        font-family: inherit;
+        font-size: 11px;
+        padding: 1px 5px;
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        background: var(--panel-2);
+        color: var(--muted);
+    }
+}

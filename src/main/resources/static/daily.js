@@ -717,6 +717,13 @@
         load(true).finally(function () { el.startButton.disabled = false; });
     });
 
+    /* The same two keys as practice. No key deals a chart here: there is one a day, and Space
+       reaching a start button by accident would begin the attempt the countdown then runs on. */
+    window.CandleKeys.bind("daily", {
+        ArrowUp: el.long, l: el.long, L: el.long,
+        ArrowDown: el.short, s: el.short, S: el.short
+    });
+
     el.long.addEventListener("click", function () { submit("LONG"); });
     el.short.addEventListener("click", function () { submit("SHORT"); });
     el.share.addEventListener("click", copyShare);
