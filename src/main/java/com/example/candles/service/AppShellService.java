@@ -12,7 +12,10 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.HexFormat;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.GZIPOutputStream;
@@ -25,6 +28,20 @@ import java.util.zip.GZIPOutputStream;
  * on 0.1 of a CPU, so a first visit queued them — measured at 0.4-1.6s each where one alone takes
  * 0.23s — and every later visit still sent 36 revalidations to be told nothing had changed. A
  * content-hashed name is what lets the browser skip asking: a changed file is a new name.
+ *
+ * <b>The page loads what the game needs and nothing else.</b> A script tag carrying
+ * {@code data-view="trade"} goes into that view's own bundle, which {@code nav.js} fetches the
+ * first time the view is opened; everything unlabelled goes into the bundle the page loads up
+ * front. A visitor who plays and leaves never downloads the trade terminal, the blog or the
+ * profile — measured at 46% of the joined scripts. The names are listed for the client in
+ * {@code window.CandleChunks}, written into the head beside the bundle rather than fetched,
+ * since a manifest that arrives late is a tab that opens empty and then fills.
+ *
+ * Two things follow for anything put in a labelled bundle. It must not wait for
+ * {@code DOMContentLoaded}, which fired long before it arrived — {@code CandleNav.ready} runs a
+ * callback immediately when that has happened. And a global it publishes is absent until its view
+ * has been opened, so a caller outside it has to tolerate that: {@code patterns.js} stays
+ * unlabelled for exactly this reason, because the game names a pattern mid-round from it.
  *
  * <b>The source files stay exactly as they are.</b> There is no build step and nothing generated is
  * committed; the bundle is read from the same {@code static/} files at runtime, in the order
@@ -71,7 +88,7 @@ public class AppShellService {
     private static final String COMMENT = "(?s)<!--(?!\\[if).*?-->\\s*";
 
     private static final Pattern SCRIPT = Pattern.compile(
-            "<script src=\"([a-z0-9-]+\\.js)\"></script>[ \\t]*\\R?");
+            "<script src=\"([a-z0-9-]+\\.js)\"( data-view=\"([a-z-]+)\")?></script>[ \\t]*\\R?");
     private static final Pattern STYLESHEET = Pattern.compile(
             "<link rel=\"stylesheet\" href=\"([a-z0-9-]+\\.css)\"/>[ \\t]*\\R?");
 
@@ -81,7 +98,7 @@ public class AppShellService {
 
     /** Everything built from one reading of the sources. */
     record Shell(Asset page, Asset script, Asset stylesheet, List<String> scripts,
-                 List<String> stylesheets, long signature) {
+                 List<String> stylesheets, Map<String, Asset> chunks, long signature) {
     }
 
     private final ResourceLoader resources;
@@ -103,6 +120,15 @@ public class AppShellService {
     /** The joined stylesheets. Compare {@link Asset#hash()} with the one asked for before caching it. */
     public Asset stylesheet() {
         return current().stylesheet();
+    }
+
+    /** A view's own bundle, or null when no script is labelled for that view. */
+    public Asset chunk(String view) {
+        return current().chunks().get(view);
+    }
+
+    Map<String, Asset> chunks() {
+        return current().chunks();
     }
 
     List<String> scripts() {
@@ -136,12 +162,13 @@ public class AppShellService {
         String html = read(PAGE);
 
         List<String> scripts = new ArrayList<>();
-        StringBuilder js = new StringBuilder();
-        html = gather(html, SCRIPT, SCRIPT_SLOT, scripts);
-        for (String name : scripts) {
-            js.append("try {\n").append(read(STATIC + name))
-                    .append("\n} catch (e) { console.error(\"").append(name).append("\", e); }\n");
-        }
+        Map<String, List<String>> byView = new LinkedHashMap<>();
+        html = gather(html, SCRIPT, SCRIPT_SLOT, scripts, byView);
+
+        Map<String, Asset> chunks = new LinkedHashMap<>();
+        byView.forEach((view, names) -> chunks.put(view, asset(join(names))));
+        List<String> upFront = new ArrayList<>(scripts);
+        byView.values().forEach(upFront::removeAll);
 
         List<String> stylesheets = new ArrayList<>();
         StringBuilder css = new StringBuilder();
@@ -150,16 +177,26 @@ public class AppShellService {
             css.append(CssMinifier.minify(read(STATIC + name))).append('\n');
         }
 
-        Asset script = asset(js.toString());
+        Asset script = asset(join(upFront));
         Asset stylesheet = asset(css.toString());
-        html = html.replace(STYLESHEET_SLOT, head(stylesheet.hash(), script.hash()))
+        html = html.replace(STYLESHEET_SLOT, head(stylesheet.hash(), script.hash(), chunks))
                 .replace(SCRIPT_SLOT, "")
                 .replaceAll(COMMENT, "");
 
         return new Shell(asset(html), script, stylesheet, List.copyOf(scripts), List.copyOf(stylesheets),
-                signature(scripts, stylesheets));
+                Map.copyOf(chunks), signature(scripts, stylesheets));
     }
 
+
+    /** Each file in its own try, so one that throws at load still stops only itself. */
+    private String join(List<String> names) {
+        StringBuilder js = new StringBuilder();
+        for (String name : names) {
+            js.append("try {\n").append(read(STATIC + name))
+                    .append("\n} catch (e) { console.error(\"").append(name).append("\", e); }\n");
+        }
+        return js.toString();
+    }
 
     /**
      * Everything the page needs, declared in the head as early as the parser can see it.
@@ -179,13 +216,28 @@ public class AppShellService {
      * crossorigin} is not optional: a font is fetched anonymously, and a preload without it is a
      * second, separate request rather than the one the CSS then uses.
      */
-    private static String head(String stylesheetHash, String scriptHash) {
+    private static String head(String stylesheetHash, String scriptHash, Map<String, Asset> chunks) {
+        StringBuilder manifest = new StringBuilder("<script>window.CandleChunks={");
+        boolean first = true;
+        for (Map.Entry<String, Asset> chunk : new TreeMap<>(chunks).entrySet()) {
+            if (!first) manifest.append(',');
+            manifest.append('"').append(chunk.getKey()).append("\":\"")
+                    .append(chunkPath(chunk.getKey(), chunk.getValue().hash())).append('"');
+            first = false;
+        }
+        manifest.append("};</script>");
+
         return """
                 <link rel="preload" href="/fonts/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin/>
                 <link rel="preload" href="/fonts/inter-vietnamese-wght-normal.woff2" as="font" type="font/woff2" crossorigin/>
                 <link rel="stylesheet" href="/app.%s.css"/>
+                %s
                 <script defer src="/app.%s.js"></script>
-                """.formatted(stylesheetHash, scriptHash);
+                """.formatted(stylesheetHash, manifest, scriptHash);
+    }
+
+    public static String chunkPath(String view, String hash) {
+        return "/view-" + view + "." + hash + ".js";
     }
 
     /**
@@ -194,11 +246,19 @@ public class AppShellService {
      * markup they reach for, and the head for the stylesheets.
      */
     private static String gather(String html, Pattern tag, String slot, List<String> names) {
+        return gather(html, tag, slot, names, null);
+    }
+
+    private static String gather(String html, Pattern tag, String slot, List<String> names,
+                                 Map<String, List<String>> byView) {
         Matcher m = tag.matcher(html);
         StringBuilder out = new StringBuilder();
         int last = -1;
         while (m.find()) {
             names.add(m.group(1));
+            if (byView != null && m.groupCount() >= 3 && m.group(3) != null) {
+                byView.computeIfAbsent(m.group(3), v -> new ArrayList<>()).add(m.group(1));
+            }
             m.appendReplacement(out, "");
             last = out.length();
         }

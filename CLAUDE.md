@@ -261,7 +261,7 @@ and a label only goes from a control whose icon is unambiguous alone.
 Script order in `index.html` matters: `pill.js`, `rolling.js` and `avatar.js` define shared
 globals that later files call at load time.
 
-**The browser never sees those `<script>` tags, and the page declares both files in the head.** `AppShellService` serves `/` with every local
+**The browser never sees those `<script>` tags, and the page declares its files in the head.** `AppShellService` serves `/` with every local
 `<script src>` joined, in the page's order, into one `/app.<hash>.js`, and both stylesheets into
 one `/app.<hash>.css`; the name is a hash of the content, so both are `immutable` for a year and
 the page itself is `no-cache` with an ETag. The page used to ask for 36 files, each `no-cache`,
@@ -270,6 +270,27 @@ every visit after. Nothing is generated or committed: the bundle is built from t
 runtime (re-read when one changes while running from exploded classes, so `process-resources`
 still works), and a new script is still just a tag in `index.html`. Three consequences:
 
+- **A tag carrying `data-view="x"` goes into that view's own bundle**, which `nav.js` fetches the
+  first time view *x* opens; everything unlabelled goes into the bundle the page loads up front.
+  The names reach the client as `window.CandleChunks`, written into the head beside the bundle —
+  a manifest that arrived over the network would be a tab that opens empty and then fills. The
+  up-front bundle went 52.9 KB → 24.4 KB gzipped, and the mobile score 95 → 99, FCP 1.5s → 1.1s.
+  Three things follow, and the second one shipped as a bug before it was understood:
+  - **A module in a view bundle must not wait for `DOMContentLoaded`** — that fired long before
+    the bundle arrived. `CandleNav.ready(fn)` runs `fn` at once when the document is already
+    parsed. `daily.js` (`?thach=`) and `technical-patterns.js` (`?card=`) both read a deep link
+    this way; without it every challenge link opened the plain game and said nothing.
+  - **With the bundle already in hand the builders run synchronously**, inside `activate()`,
+    which is where they ran before any of this existed. `technical-patterns.js` opens a card by
+    clicking its tab and then reaching for the card; deferring the builder to a microtask left it
+    reaching into a view that had not been built, so `?card=` opened the right tab and no card.
+    Its build is now idempotent (`initOnce`) and the link waits on it rather than on ordering.
+  - **A global from a view bundle is absent until that view has been opened.** `patterns.js` is
+    deliberately unlabelled for exactly this reason: the game names a pattern mid-round from it.
+  A parameter that addresses a view's content needs that view's bundle whether or not the tab is
+  opened, which is what `PARAM_CHUNKS` in `nav.js` is for. Once the page is quiet the rest are
+  `rel="prefetch"`ed, so a first tab switch costs nothing and a bundle nobody opens is still
+  never parsed or run.
 - The script is `defer` and sits in the head. A plain tag stopped the parser until 119 KB had
   downloaded and run — Lighthouse put it at ~2.1s of the mobile first paint. Deferred it still
   runs after parsing, which is where it ran at the body's end anyway. The two faces the first

@@ -770,8 +770,12 @@
 
     /* "/?thach=<id>" is how a challenge link arrives. Read once every script has run — the same
        reason nav.js waits for ?view — and then taken out of the address bar, so a reload lands on
-       the game rather than replaying the link. */
-    document.addEventListener("DOMContentLoaded", function () {
+       the game rather than replaying the link.
+
+       CandleNav.ready, not DOMContentLoaded: this file is inside the daily bundle, which nav.js
+       fetches after that event has fired, so a listener for it would never run and every
+       challenge link would open the plain game instead. */
+    window.CandleNav.ready(function () {
         try {
             var params = new URLSearchParams(window.location.search);
             var id = params.get("thach");

@@ -65,6 +65,23 @@ class AppShellControllerTest {
     }
 
     @Test
+    void aViewsBundleIsCachedLikeTheRestAndAnUnknownViewIsNotFound() throws Exception {
+        String page = mockMvc.perform(get("/")).andReturn().getResponse().getContentAsString();
+        Matcher m = Pattern.compile("/view-trade\\.[0-9a-f]{12}\\.js").matcher(page);
+        assertThat(m.find()).isTrue();
+
+        mockMvc.perform(get(m.group()))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Cache-Control", "max-age=31536000, public, immutable"));
+
+        // A hash moves with every edit; a view name is written in index.html, so it is a 404.
+        mockMvc.perform(get("/view-trade.000000000000.js"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Cache-Control", "no-cache"));
+        mockMvc.perform(get("/view-nosuchview.000000000000.js")).andExpect(status().isNotFound());
+    }
+
+    @Test
     void aClientThatTakesGzipGetsTheCopyCompressedAtStartup() throws Exception {
         String path = script();
         MvcResult plain = mockMvc.perform(get(path)).andReturn();
