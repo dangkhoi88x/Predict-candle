@@ -101,6 +101,17 @@ class AppShellServiceTest {
     }
 
     @Test
+    void theStylesheetIsMinifiedAndStillSaysWhatItSaid() {
+        String css = new String(shell.stylesheet().body(), StandardCharsets.UTF_8);
+        assertThat(css).doesNotContain("/*");
+        assertThat(css).contains("url(\"fonts/inter-latin-wght-normal.woff2\")");
+        // The tokens every rule reads, and a selector whose meaning a careless minifier changes.
+        assertThat(css).contains("--accent");
+        assertThat(css).contains(":root{");
+        assertThat(css.length()).isLessThan(140_000);
+    }
+
+    @Test
     void thePageNamesTheFilesByTheirOwnHashes() {
         assertThat(hashIn(page(), "js")).isEqualTo(shell.script().hash());
         assertThat(hashIn(page(), "css")).isEqualTo(shell.stylesheet().hash());

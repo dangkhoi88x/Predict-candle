@@ -39,6 +39,13 @@ import java.util.zip.GZIPOutputStream;
  * The stylesheet is served from the site root, never a subdirectory: {@code style.css} names its
  * fonts as {@code url("fonts/...")}, relative to wherever the stylesheet is.
  *
+ * <b>The stylesheet is minified here; the scripts were minified by the build.</b> Whitespace is
+ * all a stylesheet has to give once gzip has run — {@link CssMinifier} lands within 1% of esbuild
+ * — and 60 lines of it can live in the server. Scripts need locals renamed to give anything up,
+ * which needs a compiler, which has no business inside a process that has a tenth of a CPU to
+ * start with: the Closure plugin does that at package time, so a checkout still serves the
+ * sources it can read and the jar carries the short ones.
+ *
  * While running from exploded classes (a checkout) the files are re-read whenever one changes, so
  * {@code ./mvnw -q process-resources} still reaches a running server. Inside a jar nothing can
  * change and nothing is checked.
@@ -140,7 +147,7 @@ public class AppShellService {
         StringBuilder css = new StringBuilder();
         html = gather(html, STYLESHEET, STYLESHEET_SLOT, stylesheets);
         for (String name : stylesheets) {
-            css.append(read(STATIC + name)).append('\n');
+            css.append(CssMinifier.minify(read(STATIC + name))).append('\n');
         }
 
         Asset script = asset(js.toString());

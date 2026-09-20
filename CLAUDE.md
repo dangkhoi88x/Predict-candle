@@ -275,6 +275,22 @@ still works), and a new script is still just a tag in `index.html`. Three conseq
   runs after parsing, which is where it ran at the body's end anyway. The two faces the first
   paint uses are preloaded, since the stylesheet is the only thing naming them and it is 43 KB in.
   Measured on the mobile preset: score 81 → 91, LCP 4.2s → 3.1s.
+- **The scripts are minified by the build, the stylesheet by the server**, and the split is not
+  an inconsistency. Whitespace is all a stylesheet has left once gzip has run — `CssMinifier` is
+  60 lines and lands within 1% of esbuild on this input — while scripts only give anything up by
+  renaming locals, which needs a compiler that has no business inside a process with a tenth of a
+  CPU to start with. The Closure plugin (`pom.xml`, `prepare-package`) rewrites `target/classes`
+  in place, so the jar ships short files and a checkout still serves the ones it can read;
+  `spring-boot:run` re-copies the sources over them, which is why dev always sees the originals.
+  SIMPLE, never ADVANCED: ADVANCED rewrites property names and would break every `window.CandleX`.
+  The two committed bundles are excluded — vite minified them already. Measured: the joined script
+  went 120 KB → 52.9 KB gzipped, the stylesheet 39.2 KB → 20.0 KB, mobile score 91 → 95, FCP
+  2.5s → 1.5s.
+- **`CssMinifier` stops where meaning starts.** It drops comments and layout, the space after a
+  declaration's colon and the last `;` of a block. It will not touch the space *before* a colon
+  (`.card :hover` is a descendant, `.card:hover` is the card), anything inside quotes (a `content`
+  string can hold `/*`), or the spaces around a combinator — `>` alone would be safe, but `+` and
+  `~` also appear inside values, and one rule for all three is one rule to get wrong.
 - **HTML comments are stripped on the way out** — 14.6 KB of 76.6 KB, on the one file that cannot
   be cached (18.3 KB → 11.9 KB gzipped). The source keeps every word. A plain regex is only safe
   because no comment here sits inside a script or a style.

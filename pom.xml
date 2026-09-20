@@ -120,6 +120,53 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
             </plugin>
+            <!--
+                Minifies the front end's own scripts into target/classes, so the jar ships them
+                minified and a checkout still runs the sources it can read. Measured on app.js:
+                66 KB to 25 KB, and 19.5 KB to 8.5 KB gzipped — gzip alone does not get close,
+                because renaming locals is not something a compressor can do.
+
+                Closure rather than esbuild, which is 1 KB better on this input, because esbuild
+                needs Node in the build image: the Docker build runs Maven alone, and one tool
+                that is already a Maven artifact beats a second toolchain downloaded per build.
+
+                In place (allowReplacingInputFiles) and under the same names, because index.html
+                and admin.html name these files and AppShellService joins them by those names.
+                The two committed bundles are excluded: vite already minified them, and putting
+                4.5 MB through Closure would add minutes to every build for nothing.
+            -->
+            <plugin>
+                <groupId>com.github.blutorange</groupId>
+                <artifactId>closure-compiler-maven-plugin</artifactId>
+                <version>2.28.0</version>
+                <executions>
+                    <execution>
+                        <id>minify-static-js</id>
+                        <phase>prepare-package</phase>
+                        <goals><goal>minify</goal></goals>
+                        <configuration>
+                            <baseSourceDir>${project.build.outputDirectory}/static</baseSourceDir>
+                            <baseTargetDir>${project.build.outputDirectory}/static</baseTargetDir>
+                            <sourceDir>.</sourceDir>
+                            <targetDir>.</targetDir>
+                            <includes><include>*.js</include></includes>
+                            <excludes>
+                                <exclude>wallet-auth.js</exclude>
+                                <exclude>blog-editor.js</exclude>
+                            </excludes>
+                            <outputFilename>#{path}#{basename}.#{extension}</outputFilename>
+                            <allowReplacingInputFiles>true</allowReplacingInputFiles>
+                            <skipMerge>true</skipMerge>
+                            <!-- SIMPLE renames locals and drops dead code; ADVANCED rewrites
+                                 property names, which would break every window.CandleX global
+                                 and every element id these files reach for. -->
+                            <closureCompilationLevel>SIMPLE_OPTIMIZATIONS</closureCompilationLevel>
+                            <closureLanguageIn>ECMASCRIPT_2020</closureLanguageIn>
+                            <closureLanguageOut>ECMASCRIPT_2017</closureLanguageOut>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 
