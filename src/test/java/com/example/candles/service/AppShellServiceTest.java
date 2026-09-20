@@ -50,9 +50,8 @@ class AppShellServiceTest {
     @Test
     void thePageLoadsOneScriptAndOneStylesheetOfItsOwn() {
         String page = page();
-        assertThat(Pattern.compile("<script src=").matcher(page).results().count()).isEqualTo(1);
+        assertThat(Pattern.compile("<script defer src=").matcher(page).results().count()).isEqualTo(1);
         assertThat(Pattern.compile("rel=\"stylesheet\"").matcher(page).results().count()).isEqualTo(1);
-        assertThat(page).contains("<script src=\"/app." + hashIn(page, "js") + ".js\"></script>\n</body>");
         // The inline theme script runs before first paint and must stay where it is.
         assertThat(page).contains("localStorage.getItem(\"candles-theme\")");
         assertThat(shell.stylesheets()).containsExactly("style.css", "candles-enhance.css");
@@ -65,6 +64,40 @@ class AppShellServiceTest {
         assertThat(page).contains("href=\"/app." + hashIn(page, "css") + ".css\"");
         String css = new String(shell.stylesheet().body(), StandardCharsets.UTF_8);
         assertThat(css).contains("url(\"fonts/inter-latin-wght-normal.woff2\")");
+    }
+
+    @Test
+    void theScriptIsDeferredAndDeclaredInTheHeadWhereTheParserSeesItFirst() {
+        // A plain tag stops the parser until 119 KB has downloaded and run: ~2.1s of the mobile
+        // first paint. Deferred, it still runs after parsing, which is where it ran at the body's
+        // end anyway, so every file still finds a finished DOM.
+        String page = page();
+        String head = page.substring(0, page.indexOf("</head>"));
+        assertThat(head).contains("<script defer src=\"/app." + hashIn(page, "js") + ".js\"></script>");
+        assertThat(page.substring(page.indexOf("</head>"))).doesNotContain("<script defer");
+    }
+
+    @Test
+    void theTwoFacesTheFirstPaintUsesArePreloaded() {
+        // They are named inside the stylesheet, so without this the browser learns they exist
+        // only after fetching and parsing 43 KB of CSS. crossorigin is required: a font is
+        // fetched anonymously, and a preload without it is a second request, not the same one.
+        String page = page();
+        assertThat(page).contains("<link rel=\"preload\" href=\"/fonts/inter-latin-wght-normal.woff2\""
+                + " as=\"font\" type=\"font/woff2\" crossorigin/>");
+        assertThat(page).contains("/fonts/inter-vietnamese-wght-normal.woff2");
+        // Only those two. A preload nothing uses promptly costs the bytes and earns a warning.
+        assertThat(Pattern.compile("rel=\"preload\"").matcher(page).results().count()).isEqualTo(2);
+    }
+
+    @Test
+    void theCommentsStayInTheSourceAndNeverReachTheBrowser() throws IOException {
+        // 14.6 KB of the 76.6 KB, on the one file here that cannot be cached.
+        String source = new String(new DefaultResourceLoader().getResource(AppShellService.PAGE)
+                .getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+        assertThat(source).contains("<!--");
+        assertThat(page()).doesNotContain("<!--");
+        assertThat(shell.page().body().length).isLessThan(source.length() - 10_000);
     }
 
     @Test
