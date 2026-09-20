@@ -28,16 +28,44 @@
         },
 
         /**
-         * The one place these four tabs say "this did not load", so they say it the same way.
-         * Text only, and it replaces whatever the grid held rather than appending to it.
+         * The one place these tabs say "this did not load", so they say it the same way. It
+         * replaces whatever the section held rather than appending to it.
+         *
+         * <b>With a retry, the message stops being a dead end.</b> These tabs used to end at
+         * "thử tải lại trang" — asking someone to throw away the round they were playing, the
+         * scroll they were at and every other tab's state to re-ask one request that had
+         * probably already come back. The button asks again in place.
+         *
+         * The caller supplies it, because only the caller knows what has to be forgotten first:
+         * a tab that builds once has a flag saying it already did, and a retry that does not
+         * clear it redraws the same emptiness. Each caller's retry runs its own build, so a
+         * second failure draws this notice again, button and all.
          */
-        notice: function (target, text) {
+        notice: function (target, text, retry) {
             if (!target) return;
             target.innerHTML = "";
             var p = document.createElement("p");
             p.className = "view-notice";
             p.textContent = text;
             target.appendChild(p);
+            if (typeof retry !== "function") return;
+
+            var button = document.createElement("button");
+            button.type = "button";
+            button.className = "ghost-btn view-notice-retry";
+            button.textContent = "Thử lại";
+            button.addEventListener("click", function () {
+                /* Disabled while the request is out: the failure people hit is a slow or dropped
+                   connection, and a button that still looks pressable invites a queue of
+                   identical requests against a server that is already struggling. */
+                button.disabled = true;
+                button.textContent = "Đang tải…";
+                Promise.resolve()
+                    .then(retry)
+                    .catch(function () { /* the build draws this notice again */ });
+            });
+            p.appendChild(document.createElement("br"));
+            p.appendChild(button);
         },
     };
 })();

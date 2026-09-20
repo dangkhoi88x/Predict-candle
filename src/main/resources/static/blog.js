@@ -292,7 +292,7 @@
                reveal, and without it a single dropped request would leave the tab empty for
                the rest of the visit with no way to ask again. */
             built = false;
-            window.CandleContent.notice(list, "Không tải được bài viết. Mở lại tab này để thử lần nữa.");
+            window.CandleContent.notice(list, "Không tải được bài viết.", init);
         }
     }
 

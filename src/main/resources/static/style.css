@@ -4676,6 +4676,10 @@ body:not(.is-admin) .adm-search {
     line-height: 1.6;
 }
 
+.view-notice-retry {
+    margin-top: 12px;
+}
+
 /* --- leaderboard --- */
 
 /* How the crowd called each candle of a finished round. Chips rather than a bar chart: five
