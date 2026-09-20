@@ -438,6 +438,21 @@ failed. Those are gone — a failure now draws `.view-notice` through `CandleCon
 because stale content presented as current is a worse answer than an honest empty state.
 `CandleContent.load(kind)` throws rather than returning a fallback.
 
+**A failed load ends in a button, not an instruction.** `CandleContent.notice(target, text, retry)`
+draws "Thử lại" when a retry is given; these tabs used to say *thử tải lại trang*, which asks
+somebody to throw away the round they were playing to re-ask one request. The caller supplies the
+retry, because only the caller knows what to forget first — `blog.js` clears `built`,
+`patterns.js` clears `built` (its fetch memo clears itself), and `technical-patterns.js` clears
+`initPromise`, which otherwise hands back the same finished failure, since its build draws the
+notice rather than throwing. The button disables itself while the request is out: the failure
+people actually hit is a slow connection, and a pressable button there queues identical requests
+at a server already struggling.
+
+**A build must empty its container first.** After a retry it holds the notice that offered the
+button, and `patterns.js`, `psychology.js` and `technical-patterns.js` only appended — so a
+successful retry drew the cards *under* "không tải được". `blog.js` and `leaderboard.js` already
+cleared theirs.
+
 `/api/content/*` and `/api/assets` are `max-age=300` plus `stale-while-revalidate` (a day for the
 libraries, an hour for the pairs). Both are fetched on every page load and change a few times a
 year, and on the demo each cost up to 1.5s beside the page's other requests. The price is that an

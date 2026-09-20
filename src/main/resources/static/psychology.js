@@ -62,9 +62,11 @@
         try {
             tips = await window.CandleContent.load("psychology");
         } catch (e) {
-            window.CandleContent.notice(grid, "Không tải được ghi chú tâm lý. Thử tải lại trang.");
+            window.CandleContent.notice(grid, "Không tải được ghi chú tâm lý.", init);
             return;
         }
+        // Empty first: after a retry this holds the notice that offered the button.
+        grid.innerHTML = "";
         // The case study is a one-off layout rather than a list entry, so it stays in code.
         grid.appendChild(buildCaseStudyCard(CASE_STUDY));
         tips.forEach(function (tip, index) {

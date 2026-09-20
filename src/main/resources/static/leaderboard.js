@@ -220,8 +220,7 @@
                     "Bạn chưa đủ " + board.minGuesses + " lượt đoán để lên bảng."));
             }
         } catch (e) {
-            window.CandleContent.notice(container,
-                "Không tải được bảng xếp hạng. Mở lại tab này để thử lần nữa.");
+            window.CandleContent.notice(container, "Không tải được bảng xếp hạng.", init);
         }
     }
 

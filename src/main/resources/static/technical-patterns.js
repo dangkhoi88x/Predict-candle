@@ -297,13 +297,19 @@
         } catch (e) {
             /* No compiled-in copy to fall back to any more, so say so. Silence here
                would read as "there are no mẫu hình kỹ thuật", which is a different claim. */
-            window.CandleContent.notice(grid, "Không tải được mẫu hình kỹ thuật. Thử tải lại trang.");
+            /* initOnce() keeps the promise of a build that failed — and this one resolves
+               rather than throwing, since it draws the notice itself — so the memo goes before
+               the retry, or the button would hand back the same finished failure. */
+            initPromise = null;
+            window.CandleContent.notice(grid, "Không tải được mẫu hình kỹ thuật.", initOnce);
             return;
         }
         if (!items.length) {
             window.CandleContent.notice(grid, "Chưa có mẫu hình kỹ thuật nào.");
             return;
         }
+        // Empty first: after a retry this holds the notice that offered the button.
+        grid.innerHTML = "";
         var filters = Array.prototype.slice.call(document.querySelectorAll("#technical-filters .pill-option"));
         window.CandlePill.attach(document.getElementById("technical-filters"), ".pill-option");
         var cards = items.map(function (p) {

@@ -285,6 +285,9 @@
 
     function render(items) {
         var grid = document.getElementById("pattern-grid");
+        /* Empty first: after a retry this holds the notice that offered the button, and a
+           build that only appends would leave "không tải được" sitting above the cards. */
+        grid.innerHTML = "";
         var filters = Array.prototype.slice.call(document.querySelectorAll("#pattern-filters .pill-option"));
         window.CandlePill.attach(document.getElementById("pattern-filters"), ".pill-option");
         var cards = items.map(function (p) {
@@ -317,7 +320,7 @@
 
     loadOnce().catch(function () { /* the tab's own reveal reports this */ });
 
-    window.__initPatternsView = function () {
+    function buildGrid() {
         if (built) return;
         built = true;
         var grid = document.getElementById("pattern-grid");
@@ -330,10 +333,14 @@
         }).catch(function () {
             /* No compiled-in copy to fall back to any more, so say so. Silence here would
                read as "there are no mẫu nến", which is a different claim. */
+            /* Both memos go: `built` so the grid may be drawn again, and `pending` — which
+               loadOnce() already cleared — so the fetch really is made again. */
             built = false;
-            window.CandleContent.notice(grid, "Không tải được mẫu nến. Thử tải lại trang.");
+            window.CandleContent.notice(grid, "Không tải được mẫu nến.", buildGrid);
         });
-    };
+    }
+
+    window.__initPatternsView = buildGrid;
 
     /* The game tab names the patterns it found in a finished round, and needs both the
        Vietnamese name and a way to send the player to the full card. Kept to those two
