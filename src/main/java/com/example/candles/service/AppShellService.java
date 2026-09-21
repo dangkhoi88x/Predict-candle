@@ -207,6 +207,17 @@ public class AppShellService {
      * the stylesheet and runs after parsing — which is where it ran before anyway, being the last
      * thing in the body — so every file still sees a finished DOM and they still run in order.
      *
+     * <b>{@code fetchpriority="high"}, because {@code defer} alone makes the script wait.</b> A
+     * deferred script is fetched at Low priority, and Chrome holds low-priority requests back
+     * until the render-blocking stylesheet is in — so the bundle declared at the top of the head
+     * was not even requested until the CSS had finished. On a first visit that bundle is what
+     * draws the largest thing on screen (the tour), so LCP waited on CSS, then on the bundle.
+     * The attribute changes when it is fetched, never when it runs: it still executes after
+     * parsing, in order. A/B'd with Lighthouse on real (devtools) throttling, five interleaved
+     * runs each, medians: the request started 850 ms sooner, LCP 2536 → 2241 ms (the ranges did
+     * not overlap), score 87 → 94. The cost is FCP 1665 → 1731 ms, the bundle now sharing the
+     * pipe with the stylesheet — 66 ms of shell for 295 ms of the content the page is for.
+     *
      * <b>The fonts are preloaded because nothing else mentions them early enough.</b> They are
      * named inside the stylesheet, so the browser only learns they exist after it has fetched and
      * parsed 43 KB of CSS; in a waterfall of the live site they started 2.1s in. Only the two
@@ -232,7 +243,7 @@ public class AppShellService {
                 <link rel="preload" href="/fonts/inter-vietnamese-wght-normal.woff2" as="font" type="font/woff2" crossorigin/>
                 <link rel="stylesheet" href="/app.%s.css"/>
                 %s
-                <script defer src="/app.%s.js"></script>
+                <script defer fetchpriority="high" src="/app.%s.js"></script>
                 """.formatted(stylesheetHash, manifest, scriptHash);
     }
 

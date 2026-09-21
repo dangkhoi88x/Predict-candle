@@ -296,6 +296,13 @@ still works), and a new script is still just a tag in `index.html`. Three conseq
   runs after parsing, which is where it ran at the body's end anyway. The two faces the first
   paint uses are preloaded, since the stylesheet is the only thing naming them and it is 43 KB in.
   Measured on the mobile preset: score 81 → 91, LCP 4.2s → 3.1s.
+  **And `fetchpriority="high"`, because `defer` alone makes it wait.** A deferred script is
+  fetched at Low priority, and Chrome holds low-priority requests back until the render-blocking
+  stylesheet is in — the bundle was not even requested until the CSS had finished, and on a first
+  visit it is what draws the LCP (the tour). The attribute changes when it is fetched, never when
+  it runs. Found by reading a live trace rather than guessed, then A/B'd on devtools throttling
+  (five interleaved runs each): LCP 2536 → 2241 ms with ranges that did not overlap, for FCP
+  1665 → 1731 ms, the bundle now sharing the pipe with the stylesheet.
 - **The scripts are minified by the build, the stylesheet by the server**, and the split is not
   an inconsistency. Whitespace is all a stylesheet has left once gzip has run — `CssMinifier` is
   60 lines and lands within 1% of esbuild on this input — while scripts only give anything up by
