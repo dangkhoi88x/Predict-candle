@@ -31,10 +31,17 @@
 
     /* CoinGecko's markets endpoint hands back its 250x250 "large" logo, and a 15px icon was
        downloading it: 15 of them came to 287 KB on the live site — more than the page's own
-       script, stylesheet and HTML together — and arrived as late as 13.5s into a mobile load,
-       which is most of why the Speed Index sat near 5s. The same file exists at 50x50 under
-       /small/ (about 4.8 KB), still sharp at twice the icon's size on a retina screen. Only a
-       URL of that exact shape is rewritten; anything else is used as it came. */
+       script, stylesheet and HTML together. The same file exists at 50x50 under /small/ (about
+       4.8 KB), still sharp at twice the icon's size on a retina screen; measured on the live
+       site the logos went 279 KB → 42 KB.
+
+       What this does NOT do is move Lighthouse. The logos arrived last in a mobile load (13.5s
+       in), and that was taken for the reason the Speed Index sat near 5s — it was not: three
+       runs before and after gave the same score, LCP and Speed Index within run-to-run noise.
+       The win is the bytes, which a visitor on a metered connection pays for; the late paint
+       is somewhere else, and arriving last is not the same as being in the way.
+
+       Only a URL of that exact shape is rewritten; anything else is used as it came. */
     var LARGE_LOGO = /^(https:\/\/coin-images\.coingecko\.com\/coins\/images\/\d+\/)large\//;
 
     function smallLogo(url) {
