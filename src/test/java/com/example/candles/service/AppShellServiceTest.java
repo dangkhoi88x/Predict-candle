@@ -51,7 +51,7 @@ class AppShellServiceTest {
     @Test
     void thePageLoadsOneScriptAndOneStylesheetOfItsOwn() {
         String page = page();
-        assertThat(Pattern.compile("<script defer src=").matcher(page).results().count()).isEqualTo(1);
+        assertThat(Pattern.compile("<script defer ").matcher(page).results().count()).isEqualTo(1);
         assertThat(Pattern.compile("rel=\"stylesheet\"").matcher(page).results().count()).isEqualTo(1);
         // The inline theme script runs before first paint and must stay where it is.
         assertThat(page).contains("localStorage.getItem(\"candles-theme\")");
@@ -74,8 +74,17 @@ class AppShellServiceTest {
         // end anyway, so every file still finds a finished DOM.
         String page = page();
         String head = page.substring(0, page.indexOf("</head>"));
-        assertThat(head).contains("<script defer src=\"/app." + hashIn(page, "js") + ".js\"></script>");
+        assertThat(head).contains("<script defer fetchpriority=\"high\" src=\"/app." + hashIn(page, "js") + ".js\"></script>");
         assertThat(page.substring(page.indexOf("</head>"))).doesNotContain("<script defer");
+    }
+
+    @Test
+    void theDeferredScriptIsFetchedAtHighPriorityOrItWaitsForTheStylesheet() {
+        // defer alone means Low priority, and Chrome holds those back until the render-blocking
+        // CSS is in — the bundle that draws the first visit's LCP (the tour) was not even
+        // requested until then. A/B on devtools throttling: LCP 2536 → 2241 ms.
+        String head = page().substring(0, page().indexOf("</head>"));
+        assertThat(head).containsPattern("<script defer fetchpriority=\"high\" src=\"/app\\.[0-9a-f]{12}\\.js\">");
     }
 
     @Test
