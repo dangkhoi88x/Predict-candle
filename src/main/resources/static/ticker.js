@@ -29,6 +29,18 @@
         return { text: (up ? "▲" : "▼") + " " + Math.abs(pct).toFixed(2) + "%", up: up };
     }
 
+    /* CoinGecko's markets endpoint hands back its 250x250 "large" logo, and a 15px icon was
+       downloading it: 15 of them came to 287 KB on the live site — more than the page's own
+       script, stylesheet and HTML together — and arrived as late as 13.5s into a mobile load,
+       which is most of why the Speed Index sat near 5s. The same file exists at 50x50 under
+       /small/ (about 4.8 KB), still sharp at twice the icon's size on a retina screen. Only a
+       URL of that exact shape is rewritten; anything else is used as it came. */
+    var LARGE_LOGO = /^(https:\/\/coin-images\.coingecko\.com\/coins\/images\/\d+\/)large\//;
+
+    function smallLogo(url) {
+        return LARGE_LOGO.test(url) ? url.replace(LARGE_LOGO, "$1small/") : url;
+    }
+
     function buildItem(coin) {
         var item = document.createElement("span");
         item.className = "ticker-item";
@@ -36,7 +48,12 @@
         if (coin.image) {
             var logo = document.createElement("img");
             logo.className = "ticker-logo";
-            logo.src = coin.image;
+            logo.src = smallLogo(coin.image);
+            /* A coin whose small variant is missing falls back to the file CoinGecko named,
+               once: the comparison stops a second failure from looping. */
+            logo.onerror = function () {
+                if (logo.src !== coin.image) logo.src = coin.image;
+            };
             logo.alt = "";
             logo.loading = "lazy";
             item.appendChild(logo);
