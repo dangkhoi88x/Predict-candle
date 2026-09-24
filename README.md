@@ -41,7 +41,7 @@ OKX / Binance ──► CandleSyncService (backfill + mỗi giờ) ──► Pos
                  REST API ◄──► frontend tĩnh (HTML + JS thuần, chart SVG tự vẽ)
 ```
 
-Vài quyết định đáng chú ý (giải thích đầy đủ trong [CLAUDE.md](CLAUDE.md)):
+Vài quyết định đáng chú ý (giải thích đầy đủ trong [CLAUDE.md](CLAUDE.md) và [docs/architecture/](docs/architecture/)):
 
 - **Đáp án không bao giờ xuống client trước khi đoán.** Nó nằm trong token ký, thời gian trả lời
   đo từ lúc server phát token, và "một lượt mỗi ngày" là unique constraint trong database.
@@ -119,7 +119,8 @@ DATABASE_URL='postgresql://…' BACKUP_PASSPHRASE='…' scripts/restore-db.sh ca
 
 | | |
 |---|---|
-| [CLAUDE.md](CLAUDE.md) | Kiến trúc và lý do đằng sau từng quyết định |
+| [CLAUDE.md](CLAUDE.md) | Lệnh chạy, cấu trúc package, các luật áp dụng toàn project, và mục lục kiến trúc |
+| [docs/architecture/](docs/architecture/) | Kiến trúc và lý do đằng sau từng quyết định, mỗi mảng một file |
 | [docs/MVP_PLAN.md](docs/MVP_PLAN.md) | Review tổng thể và các MVP tiếp theo |
 | [docs/DEPLOY_PLAN.md](docs/DEPLOY_PLAN.md) | Deploy Render + Neon, và vì sao bản demo lấy giá từ OKX |
 | [docs/SPEC.md](docs/SPEC.md) | Spec và khảo sát đối thủ ban đầu |

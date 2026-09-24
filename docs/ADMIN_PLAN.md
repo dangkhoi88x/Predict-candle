@@ -35,7 +35,7 @@ Dự án này đang ở vế trái. **Điều kiện đổi ý:** khi cần phâ
 **Đề xuất: trang riêng `/admin.html`.**
 
 `index.html` hiện nạp 14 file JS cho *mọi* khách. Trình soạn thảo, upload, bảng biểu là gánh
-nặng chết với người chỉ vào chơi đoán nến — đúng thứ mà ghi chú "deferred tabs" trong CLAUDE.md
+nặng chết với người chỉ vào chơi đoán nến — đúng thứ mà ghi chú "deferred tabs" trong `docs/architecture/frontend.md`
 đang cố tránh. Trang riêng cũng cho phép markup thoáng hơn thay vì ép vào lưới của game.
 
 `auth.js` khôi phục phiên từ refresh cookie nên đăng nhập ví hoạt động y nguyên ở trang mới.
