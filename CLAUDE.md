@@ -10,6 +10,8 @@ docker compose up -d          # Postgres on localhost:5544 (5432/5433 avoided on
 ./mvnw test                   # all tests
 ./mvnw test -Dtest=WalletSignatureVerifierTest        # one class
 ./mvnw test -Dtest=WalletSignatureVerifierTest#method # one method
+cd e2e && npm ci && npx playwright install chromium   # browser tests, once
+cd e2e && npx playwright test                         # starts its own server on :8090
 ```
 
 First run backfills ~40k candles per asset from Binance (2022-01-01 → now), 15–30s. Watch for
@@ -165,6 +167,20 @@ its own file and a row in this table.
   pull request it illustrates into a 404, including after that PR has merged, which is exactly
   when somebody reading back through the history wants to see them. Each carries a README
   saying so. `assets/rail-groups-screenshots` is the first.
+
+- **The browser tests in `e2e/` cover what the Java suite cannot see**: deep links opening
+  their card or post, the start gate and the tour holding back the first chart, the daily played
+  signed out, a challenge link played by a second browser, the keyboard. Playwright starts
+  `E2eApplication` (`src/test/java`), which is the real app with three changes: its own port
+  (8090), its own database (`candles_e2e`, created if missing), and no exchange. Candles come from
+  `CandleFixture`, the same source the Java suite uses, so the run needs no network and CI runs it
+  exactly as a laptop does. Every request that leaves localhost is aborted, because the ticker
+  calls CoinGecko straight from the browser. One worker, because every test shares one server and
+  its rate limiter. Two projects, desktop and a Pixel 7; the keyboard tests skip on the phone.
+  A test that something was *not* requested waits `QUIET_MS` and then counts. The page never
+  goes network-idle, because the live banner polls.
+  The first run found a real bug: every `?thach=` link on a first visit opened today's daily
+  (see `CandleNav.ready` in `docs/architecture/frontend.md`).
 
 - **CI is red on `main` only when it is really broken.** It used to be red permanently because
   three test classes read whatever the first-run Binance backfill had left in the database, and
