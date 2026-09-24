@@ -125,6 +125,8 @@
         chunkLoads[view] = new Promise(function (resolve, reject) {
             var script = document.createElement("script");
             script.src = src;
+            // How ready() tells that it is being called from inside this bundle.
+            script.dataset.chunk = view;
             script.onload = function () { chunkReady[view] = true; resolve(); };
             script.onerror = function () { reject(new Error("Không tải được " + src)); };
             document.head.appendChild(script);
@@ -450,11 +452,24 @@
         go: activate,
 
         /**
-         * Runs fn once the document is parsed — immediately when that has already happened,
-         * which is the case for every module inside a view bundle: those arrive long after
-         * DOMContentLoaded, and a listener added then would never fire.
+         * Runs fn once the document is parsed and, for a module inside a view bundle, once that
+         * whole bundle has run.
+         *
+         * A bundle arrives long after DOMContentLoaded, so a listener for it would never fire —
+         * but running fn on the spot is wrong too. The bundle is still executing: the files after
+         * the caller's have not run, and nav.js has not yet marked it loaded, so a CandleNav.go()
+         * made from fn defers that view's builder until the bundle's onload, where it runs *after*
+         * fn and undoes whatever fn set up. That is exactly how a ?thach= link opened today's daily
+         * instead of the challenge: openChallenge() put the challenge on the board, then the
+         * deferred first build reset it to today and loaded that over the top.
          */
         ready: function (fn) {
+            var script = document.currentScript;
+            var chunk = script && script.dataset && script.dataset.chunk;
+            if (chunk && !chunkReady[chunk] && chunkLoads[chunk]) {
+                chunkLoads[chunk].then(fn, function () { /* reported by loadChunk */ });
+                return;
+            }
             if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", fn);
             else fn();
         },

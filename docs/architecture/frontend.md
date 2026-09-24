@@ -122,9 +122,17 @@ still works), and a new script is still just a tag in `index.html`. Three conseq
   up-front bundle went 52.9 KB → 24.4 KB gzipped, and the mobile score 95 → 99, FCP 1.5s → 1.1s.
   Three things follow, and the second one shipped as a bug before it was understood:
   - **A module in a view bundle must not wait for `DOMContentLoaded`** — that fired long before
-    the bundle arrived. `CandleNav.ready(fn)` runs `fn` at once when the document is already
-    parsed. `daily.js` (`?thach=`) and `technical-patterns.js` (`?card=`) both read a deep link
-    this way; without it every challenge link opened the plain game and said nothing.
+    the bundle arrived. `CandleNav.ready(fn)` is the replacement, and called from inside a bundle
+    it runs `fn` **once that whole bundle has run**, not on the spot. `daily.js` (`?thach=`) and
+    `technical-patterns.js` (`?card=`) both read a deep link this way; without it every challenge
+    link opened the plain game and said nothing.
+    Running `fn` on the spot was the second bug, and it shipped. The bundle is still executing
+    at that moment and `nav.js` has not marked it loaded. So a `CandleNav.go()` made from `fn`
+    put off the view's first build until the bundle's `onload`, and that build ran *after* `fn`.
+    `__initDailyView` then reset the board to today and loaded it over the challenge
+    `openChallenge()` had just put there. Every `?thach=` link on a first visit opened today's
+    daily. `nav.js` tags each bundle's `<script>` with `data-chunk` so `ready()` can recognise
+    `document.currentScript`. `e2e/tests/challenge.spec.js` fails without this.
   - **With the bundle already in hand the builders run synchronously**, inside `activate()`,
     which is where they ran before any of this existed. `technical-patterns.js` opens a card by
     clicking its tab and then reaching for the card; deferring the builder to a microtask left it
