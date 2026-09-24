@@ -22,6 +22,20 @@ Where the demo runs and what keeps it up: Render and Neon, the AOT cache, the he
   the cache was recorded against; a different one just ignores the cache and starts slowly. A
   training run that fails fails the image build, which CI does on every push.
 
+- **The API calls a page load makes are slow together, not one by one — do not go looking for a
+  slow endpoint.** A live Lighthouse trace showed `/api/daily/round` taking 5s and
+  `/api/live/round` 3.5s, and that read as a slow endpoint. Measured apart, unthrottled, against
+  `/healthz` (which does nothing, so its ~306 ms is the network to Singapore): every endpoint the
+  page loads costs 0–125 ms of server time, `/api/daily/round` about 90. Fired together, as the
+  page does, six of them come back spread over ~280–975 ms, about 100 ms apart — a 0.1 CPU working
+  through them one after another. The 5s was mostly the tool: Lighthouse's devtools throttling
+  adds ~560 ms of latency to *every* request and shares ~1.5 Mbps across everything in flight, so
+  seven API calls stack on top of the queue. Deferring the side cards' requests would only reorder
+  the same wait, and the one thing that shortens the queue is more CPU, i.e. a paid instance.
+  Two measuring rules came out of it: split server time from network by timing each call alone
+  against `/healthz` before believing a waterfall, and never set a simulated-throttling score
+  beside a devtools-throttling one — the same page read 77 on the first and 85 on the second.
+
 - **`/healthz` answers the two things that ping this deployment — Render's health check and the
   keep-alive cron — and it touches nothing.** A check that queried the database would read a Neon
   compute waking from idle as a dead instance, and Render restarts those: one second would become

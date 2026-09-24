@@ -129,7 +129,7 @@ most of what they record is a bug that already shipped once.
 | [content.md](docs/architecture/content.md) | pattern libraries, heatmap and ticker, `/blog`, `/mau-nen`, `/mau-hinh`, `/tam-ly`, the sitemap, `BlogDocumentHtml` |
 | [frontend.md](docs/architecture/frontend.md) | `index.html`, `nav.js`, `AppShellService`, bundling and minifying, onboarding, shortcuts, shared modules, `style.css` |
 | [admin.md](docs/architecture/admin.md) | `admin.html` and every `admin-*.js`, `RecentErrors` and alerts, admin stats, the blog editor, players, challenge preview |
-| [operations.md](docs/architecture/operations.md) | `render.yaml`, the `Dockerfile` and AOT cache, `/healthz`, the price source, backups |
+| [operations.md](docs/architecture/operations.md) | `render.yaml`, the `Dockerfile` and AOT cache, `/healthz`, the price source, backups, a page load that looks slow |
 
 A new architectural note goes into the file for its area, not back into this one. A new area gets
 its own file and a row in this table.
