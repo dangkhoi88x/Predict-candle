@@ -1,0 +1,730 @@
+/* The demo trading terminal. */
+
+/* ---- Demo trading terminal ---- */
+
+/* Account figures first: on a terminal "how am I doing" outranks any single market, and it is
+   the one thing that is true across all of them. */
+.trade-account {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 26px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--panel);
+}
+
+.trade-account-fig {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+/* One micro-label style for every reading on the tab. Small, letterspaced, muted, with the
+   value below it carrying the weight — the pattern Prism uses above PRICE, 24H CHANGE, FDV. */
+.trade-account-label,
+.trade-stat-label,
+.trade-list-head,
+.trade-rsi-label {
+    font-size: 10.5px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+
+.trade-account-value {
+    font-size: 19px;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+}
+
+.trade-account-actions {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Said plainly and permanently. A terminal that looks like this one should never leave anyone
+   wondering for a second whether the money is real. */
+.trade-demo-badge {
+    padding: 3px 8px;
+    border-radius: 999px;
+    border: 1px dashed var(--warn);
+    color: var(--warn);
+    font-size: 12px;
+    font-weight: 700;
+}
+
+/* One framed grid whose columns are divided by hairlines, rather than three cards floating in a
+   row. The gaps and the per-card rounding are what made this read as a page; a terminal is panes
+   that meet. Prism's trade view is the same shape edge to edge — this keeps the app's 1180px
+   column, so the nav above it still lines up. */
+.trade-terminal {
+    display: grid;
+    grid-template-columns: minmax(220px, 280px) minmax(0, 1fr) minmax(240px, 300px);
+    margin-bottom: 18px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--panel);
+    overflow: hidden;
+}
+
+.trade-chart-col,
+.trade-panel {
+    border-left: 1px solid var(--border);
+}
+
+@media (max-width: 1100px) {
+    .trade-terminal {
+        grid-template-columns: minmax(0, 1fr) minmax(240px, 300px);
+    }
+    /* The chart leads on a narrower screen and the other two drop under it, rather than
+       squeezing the one pane that needs width. */
+    .trade-chart-col {
+        order: -1;
+        grid-column: 1 / -1;
+        border-left: 0;
+        border-bottom: 1px solid var(--border);
+    }
+}
+
+@media (max-width: 720px) {
+    .trade-terminal {
+        grid-template-columns: 1fr;
+    }
+    .trade-list {
+        border-bottom: 1px solid var(--border);
+    }
+    .trade-panel {
+        border-left: 0;
+    }
+}
+
+.trade-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px;
+    min-width: 0;
+}
+
+.trade-search {
+    padding: 6px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    font: inherit;
+    font-size: 13px;
+}
+
+.trade-list-head {
+    display: flex;
+    justify-content: space-between;
+    padding: 0 4px;
+}
+
+.trade-markets {
+    display: flex;
+    flex-direction: column;
+    max-height: 420px;
+    overflow-y: auto;
+}
+
+/* No rule between rows. A picked row is the accent at low alpha with accent-coloured text, and
+   a hovered one is the same idea a step weaker — the whole interaction language of this tab,
+   introduced here because this is where it is used most. */
+.trade-market {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 1px 10px;
+    padding: 8px 12px;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: background var(--duration-fast) var(--ease-out),
+                color var(--duration-fast) var(--ease-out);
+}
+
+.trade-market:hover {
+    background: var(--overlay-soft);
+}
+
+.trade-market.is-selected {
+    background: var(--tint-accent-weak);
+}
+
+/* Only the name takes the accent. The price and the day's move are data, and tinting numbers
+   costs legibility for a signal the background already carries — worse, it would fight the
+   up/down colour the change is meant to be read by. */
+.trade-market.is-selected .trade-market-name {
+    color: var(--accent);
+}
+
+.trade-market-name {
+    font-weight: 700;
+    font-size: 13.5px;
+}
+
+.trade-market-price {
+    text-align: right;
+    font-family: var(--mono);
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+}
+
+.trade-market-sub {
+    font-size: 11.5px;
+    color: var(--muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.trade-market-change {
+    text-align: right;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    font-variant-numeric: tabular-nums;
+}
+
+.trade-chart-col {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.trade-headline {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 24px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+}
+
+.trade-headline-pair {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+}
+
+.trade-headline-pair b {
+    font-size: 18px;
+    font-weight: 800;
+}
+
+.trade-headline-name {
+    font-size: 12.5px;
+    color: var(--muted);
+}
+
+.trade-headline-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 22px;
+    margin-left: auto;
+}
+
+.trade-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+
+.trade-stat-value {
+    font-family: var(--mono);
+    font-size: 14px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.trade-chart-card {
+    padding: 10px 12px 12px;
+}
+
+/* Timeframes on the left where Prism puts them, zoom and pan on the right. Wraps so the zoom
+   controls cannot take width off the timeframes — on a phone the pill had 193px for 249px of
+   buttons, which left 1D scrolled out of sight. */
+.trade-chart-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+}
+
+.trade-timeframes,
+.trade-indicators {
+    width: fit-content;
+}
+
+.trade-zoom {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.trade-zoom-count {
+    min-width: 52px;
+    text-align: center;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+}
+
+/* Borderless until hovered, like every other control here. A grid of outlined boxes competes
+   with the chart it sits above. */
+.trade-zoom-btn {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    font: inherit;
+    font-size: 15px;
+    line-height: 1;
+    cursor: pointer;
+    transition: background var(--duration-fast) var(--ease-out),
+                color var(--duration-fast) var(--ease-out);
+}
+
+.trade-zoom-btn:hover:not(:disabled) {
+    background: var(--overlay-soft);
+    color: var(--text);
+}
+
+.trade-zoom-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+/* The readout above the chart. min-height rather than content-driven height: this row empties
+   and refills as the pointer moves, and a card that grows a line when you touch it is worse
+   than one that holds its shape. */
+.trade-ohlc {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px 12px;
+    padding: 0 14px 6px;
+    min-height: 18px;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    font-variant-numeric: tabular-nums;
+    color: var(--muted);
+}
+
+/* Each value carries its own direction, not the row's. O/H/L/C follow the candle's body, but
+   the percentage is measured against the previous close — a green candle that closed below the
+   one before it is down, and colouring it by the body would say the opposite. The label stays
+   muted either way: it names the field, and a coloured label beside a coloured number is the
+   same fact said twice. */
+.trade-ohlc b {
+    font-weight: 600;
+    color: var(--text);
+    margin-left: 3px;
+}
+
+.trade-ohlc b.is-up { color: var(--up); }
+.trade-ohlc b.is-down { color: var(--down); }
+
+.trade-chart {
+    width: 100%;
+    height: auto;
+    display: block;
+    cursor: grab;
+    touch-action: pan-y;
+}
+
+.trade-chart.is-dragging {
+    cursor: grabbing;
+}
+
+/* Its own pane: an oscillator bounded 0-100 shares no units with a candle, and overlaying it
+   either flattens the candles or leaves a meaningless squiggle across them. */
+.trade-rsi {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--border);
+}
+
+.trade-rsi-label {
+    display: block;
+    margin-bottom: 2px;
+}
+
+.trade-rsi-chart {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+.trade-panel {
+    display: flex;
+    flex-direction: column;
+    align-content: start;
+    gap: 10px;
+    padding: 12px;
+}
+
+.trade-sides {
+    width: 100%;
+}
+
+.trade-field {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    font-size: 12.5px;
+    color: var(--muted);
+}
+
+.trade-field input {
+    padding: 9px 11px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    font: inherit;
+    font-family: var(--mono);
+    font-size: 16px;
+    font-variant-numeric: tabular-nums;
+}
+
+.trade-quick {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px;
+}
+
+.trade-quick-btn {
+    padding: 5px 6px;
+    border-radius: 4px;
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    font: inherit;
+    font-size: 12.5px;
+    cursor: pointer;
+    transition: background var(--duration-fast) var(--ease-out),
+                color var(--duration-fast) var(--ease-out);
+}
+
+.trade-quick-btn:hover:not(:disabled) {
+    background: var(--overlay-soft);
+    color: var(--text);
+}
+
+.trade-quick-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+.trade-preview,
+.trade-position-card {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 8px 10px;
+    border-radius: 6px;
+    background: var(--overlay-soft);
+    font-size: 12.5px;
+}
+
+.trade-preview-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.trade-preview-row span:first-child {
+    color: var(--muted);
+}
+
+.trade-preview-row span:last-child {
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+}
+
+/* Two kinds of message share this line, and only one of them is a refusal: "nothing held to
+   sell" explains a disabled button, while "not enough cash" is the server saying no. Red for
+   both made a successful sell-all announce itself beside a red line about holding nothing. */
+.trade-status {
+    margin: 0;
+    font-size: 12.5px;
+    color: var(--muted);
+    min-height: 1em;
+}
+
+.trade-status.is-error {
+    color: var(--down);
+}
+
+/* A fill is worth saying out loud once, where the eye already is — the account block updates
+   silently above the fold and the history row is below it, so a trade could otherwise complete
+   with nothing on screen visibly changing. Fixed rather than in the flow: it must not push the
+   order ticket around at the moment somebody is clicking in it. */
+.trade-toast {
+    position: fixed;
+    right: 16px;
+    bottom: 16px;
+    z-index: 40;
+    width: min(300px, calc(100vw - 32px));
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 8px;
+    background: var(--panel);
+    box-shadow: 0 10px 30px var(--shadow);
+    font-size: 12.5px;
+}
+
+/* The entrance lives on a class the script takes off and puts back, because a second fill while
+   the first toast is still up has to replay it — an animation on the element itself only runs
+   when the element appears, and this one does not disappear in between. */
+.trade-toast.is-in {
+    animation: trade-toast-in var(--duration-enter) var(--ease-out);
+}
+
+.trade-toast.is-buy { border-left-color: var(--up); }
+.trade-toast.is-sell { border-left-color: var(--down); }
+
+.trade-toast-head {
+    font-weight: 700;
+}
+
+.trade-toast.is-buy .trade-toast-head { color: var(--up); }
+.trade-toast.is-sell .trade-toast-head { color: var(--down); }
+
+.trade-toast-detail {
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+    color: var(--muted);
+}
+
+@keyframes trade-toast-in {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: none; }
+}
+
+/* The pills inside the terminal pick things rather than navigate, so they follow the tab's own
+   selection language. Scoped to the frame, not to `#view-trade`: `.pill` appears in nearly fifty
+   places across both pages and the nav's sliding indicator is positioned from the shared rule,
+   so the narrowest scope that covers every pill in here is the right one — and if this tab ever
+   grows a pill outside the terminal, that pill should look like the rest of the app. */
+.trade-terminal .pill-option.active {
+    background: var(--tint-accent-strong);
+    color: var(--accent);
+}
+
+/* Profit and loss carry the same colours the charts use, so green and red mean one thing across
+   the whole app rather than one thing per surface. */
+.is-up {
+    color: var(--up);
+}
+
+.is-down {
+    color: var(--down);
+}
+
+/* Holdings and fills have classes of their own rather than borrowing the profile's. The two
+   looked alike once, and restyling this tab to match the terminal would otherwise have quietly
+   restyled the profile with it. */
+.trade-section {
+    margin: 22px 0 10px;
+    font-size: 13px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+}
+
+/* The signed-out state of a tab that is otherwise a three-column terminal. A bare line of
+   text centred in that much width reads as a view that failed to load rather than one asking
+   for an account, so it is a card of its own — sized to what it says, not to the tab. */
+.trade-gate {
+    max-width: 420px;
+    margin: 48px auto;
+    padding: 28px 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    text-align: center;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+}
+
+.trade-gate.hidden {
+    display: none;
+}
+
+.trade-gate-icon {
+    font-size: 28px;
+    line-height: 1;
+}
+
+.trade-gate-title {
+    font-size: 17px;
+}
+
+.trade-gate-text {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--muted);
+}
+
+.trade-gate .side-cta {
+    margin-top: 4px;
+    padding: 10px 20px;
+}
+
+.trade-empty {
+    margin: 0;
+    color: var(--muted-2);
+    font-size: 13px;
+}
+
+.trade-positions {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 8px;
+}
+
+/* A control, because tapping a holding takes you to that pair's chart. The button reset is the
+   market row's, but the framing stays a card: this list sits in the page rather than inside the
+   terminal, and borderless rows there would have nothing to sit on. */
+.trade-position {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    align-items: baseline;
+    gap: 4px 10px;
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--panel);
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: background var(--duration-fast) var(--ease-out),
+                border-color var(--duration-fast) var(--ease-out);
+}
+
+.trade-position:hover {
+    background: var(--overlay-soft);
+}
+
+/* Same selection language as the market list: the row tints, and only the symbol takes the
+   accent — the quantity, value and P&L are data, and the P&L already owns up/down colour. */
+.trade-position.is-selected {
+    background: var(--tint-accent-weak);
+    border-color: color-mix(in oklab, var(--accent) 35%, var(--border));
+}
+
+.trade-position.is-selected .trade-position-symbol {
+    color: var(--accent);
+}
+
+.trade-position-symbol {
+    font: 600 13px var(--mono);
+}
+
+.trade-position-value {
+    font: 500 11.5px var(--mono);
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.trade-position-qty,
+.trade-position-cost {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.trade-position-pnl {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 700;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.trade-fills {
+    display: grid;
+    gap: 4px;
+}
+
+.trade-fill {
+    display: grid;
+    grid-template-columns: auto auto 1fr auto;
+    align-items: baseline;
+    gap: 10px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--panel);
+    font-size: 12.5px;
+}
+
+/* The row that just arrived, lit for as long as it takes to find it. The tint is the neutral
+   accent rather than the side's colour: the row's own mark already says buy or sell, and this is
+   answering a different question — "which of these is the one I just did". */
+.trade-fill.is-new {
+    animation: trade-fill-land var(--duration-roll) var(--ease-out);
+}
+
+@keyframes trade-fill-land {
+    from { background: var(--tint-accent-strong); border-color: var(--accent); }
+    to   { background: var(--panel); border-color: var(--border); }
+}
+
+/* A buy and a sell are directions, not verdicts — they take the up/down colours rather than the
+   right/wrong ones the profile's history uses. */
+.trade-fill-mark {
+    font-weight: 700;
+}
+
+.trade-fill.is-buy .trade-fill-mark {
+    color: var(--up);
+}
+
+.trade-fill.is-sell .trade-fill-mark {
+    color: var(--down);
+}
+
+.trade-fill-symbol {
+    font: 600 12px var(--mono);
+}
+
+.trade-fill-detail {
+    color: var(--muted);
+    min-width: 0;
+}
+
+.trade-fill-when {
+    color: var(--muted-2);
+    font-size: 11.5px;
+    white-space: nowrap;
+}

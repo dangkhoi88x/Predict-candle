@@ -21,8 +21,8 @@ import java.util.regex.Pattern;
 import java.util.zip.GZIPOutputStream;
 
 /**
- * Serves {@code index.html} with its 34 scripts joined into one file and its two stylesheets into
- * another, each named by a hash of its contents so it can be cached for a year.
+ * Serves {@code index.html} with its 34 scripts joined into one file and its twelve stylesheets
+ * into another, each named by a hash of its contents so it can be cached for a year.
  *
  * <b>Why:</b> the page used to ask for 36 separate files, every one {@code no-cache}. The demo runs
  * on 0.1 of a CPU, so a first visit queued them — measured at 0.4-1.6s each where one alone takes

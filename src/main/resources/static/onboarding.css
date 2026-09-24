@@ -1,0 +1,320 @@
+/* The first-visit tour (onboarding.js). */
+
+/* ---- first-visit tour (onboarding.js) ----------------------------------------------
+   Above the rail sheet and the live popup: it is the first thing on a stranger's screen and
+   nothing else should be reachable until it is dismissed. */
+.onboarding {
+    position: fixed;
+    inset: 0;
+    z-index: 80;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+}
+
+body.onboarding-open {
+    overflow: hidden;
+}
+
+.onboarding-backdrop {
+    position: absolute;
+    inset: 0;
+    background: color-mix(in srgb, black 62%, transparent);
+    animation: onboarding-fade var(--duration-enter) var(--ease-out);
+}
+
+.onboarding-card {
+    position: relative;
+    width: min(460px, 100%);
+    max-height: calc(100vh - 32px);
+    overflow-y: auto;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 22px 22px 18px;
+    animation: onboarding-rise var(--duration-enter) var(--ease-out);
+}
+
+.onboarding-skip {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 4px 6px;
+    border-radius: 6px;
+}
+
+.onboarding-skip:hover {
+    color: var(--text);
+}
+
+.onboarding-art {
+    display: block;
+    width: 100%;
+    max-width: 280px;
+    height: auto;
+    margin: 6px 0 14px;
+}
+
+.onboarding-eyebrow {
+    font: 700 11px var(--mono);
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin: 0 0 6px;
+}
+
+.onboarding-title {
+    font-size: 21px;
+    line-height: 1.25;
+    letter-spacing: -0.01em;
+    margin: 0 0 12px;
+    padding-right: 56px;
+}
+
+.onboarding-list {
+    margin: 0;
+    padding-left: 18px;
+    color: var(--text-2);
+    font-size: 14px;
+    line-height: 1.55;
+}
+
+.onboarding-list li + li {
+    margin-top: 8px;
+}
+
+.onboarding-list strong {
+    color: var(--text);
+}
+
+.onboarding-list strong.up {
+    color: var(--up);
+}
+
+.onboarding-list strong.down {
+    color: var(--down);
+}
+
+.onboarding-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 20px;
+}
+
+.onboarding-dots {
+    display: flex;
+    gap: 6px;
+}
+
+.onboarding-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 999px;
+    background: var(--border);
+    transition: width var(--duration-fast) var(--ease-out), background var(--duration-fast) var(--ease-out);
+}
+
+.onboarding-dot.active {
+    width: 18px;
+    background: var(--accent);
+}
+
+.onboarding-actions {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
+}
+
+.onboarding-actions .ghost-btn {
+    padding: 9px 12px;
+    font-size: 13px;
+}
+
+.onboarding-primary {
+    border: none;
+    border-radius: 8px;
+    padding: 9px 16px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    /* --bg, not white, the same as .side-cta: white on the dark theme's blue is 3.2:1, the
+       page ground on it is 6.2:1, and on the light theme the ground is near-white anyway. */
+    color: var(--bg);
+    background: var(--accent);
+}
+
+.onboarding-primary:hover {
+    background: color-mix(in oklab, var(--accent) 88%, var(--text));
+}
+
+.onboarding-actions button {
+    white-space: nowrap;
+}
+
+/* A phone has room for one button per row, not three abreast. Column-reverse puts the primary
+   action — last in the markup — on top, where a thumb reaches it first. */
+@media (max-width: 440px) {
+    .onboarding-actions {
+        width: 100%;
+        flex-direction: column-reverse;
+        margin-left: 0;
+    }
+
+    .onboarding-actions button {
+        justify-content: center;
+        width: 100%;
+    }
+}
+
+@keyframes onboarding-fade {
+    from { opacity: 0; }
+}
+
+@keyframes onboarding-rise {
+    from { opacity: 0; transform: translateY(8px); }
+}
+
+
+.live-round-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+}
+
+.live-round-modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background: color-mix(in srgb, black 55%, transparent);
+}
+
+.live-round-modal-card {
+    position: relative;
+    width: min(480px, 100%);
+    max-height: calc(100vh - 32px);
+    overflow-y: auto;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+}
+
+.live-round-modal-close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    font-size: 16px;
+    cursor: pointer;
+    padding: 4px 8px;
+}
+
+.live-round-modal-eyebrow {
+    font: 700 11px var(--mono);
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin: 0 0 4px;
+}
+
+.live-round-modal-title {
+    font-size: 18px;
+    margin: 0 0 12px;
+    padding-right: 24px;
+}
+
+.live-round-modal-chart-wrap {
+    height: 220px;
+    margin-bottom: 14px;
+}
+
+.live-round-modal-chart {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.live-round-modal-badge {
+    text-align: center;
+    margin-bottom: 14px;
+}
+
+.live-round-modal-badge-icon {
+    display: block;
+    width: 26px;
+    height: 26px;
+    margin: 0 auto 6px;
+    color: var(--warn);
+}
+
+.live-round-modal-badge-state {
+    font: 700 11px var(--mono);
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin: 0;
+}
+
+.live-round-modal-badge-result {
+    font-size: 17px;
+    font-weight: 800;
+    margin: 4px 0 0;
+}
+
+.live-round-modal-badge-result.outcome-up { color: var(--up); }
+.live-round-modal-badge-result.outcome-down { color: var(--down); }
+
+.live-round-modal-prices {
+    display: flex;
+    justify-content: space-between;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 14px;
+    margin-bottom: 14px;
+}
+
+.live-round-modal-prices > div {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.live-round-modal-prices > div:last-child {
+    align-items: flex-end;
+}
+
+.live-round-modal-price-label {
+    font-size: 11px;
+    color: var(--muted);
+}
+
+.live-round-modal-price-value {
+    font: 700 15px var(--mono);
+    font-variant-numeric: tabular-nums;
+}
+
+.live-round-modal-pool {
+    margin-bottom: 10px;
+}
+
+.live-round-modal-status {
+    text-align: center;
+    color: var(--muted);
+    font-size: 13px;
+    margin: 0;
+}

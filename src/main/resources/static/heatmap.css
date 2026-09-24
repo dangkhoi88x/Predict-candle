@@ -1,0 +1,254 @@
+/* The market heatmap and its tile detail panel. */
+
+/* --- market heatmap --- */
+
+.heatmap-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-bottom: 14px;
+}
+
+.heatmap-toolbar h2 {
+    margin: 0;
+    font-size: 18px;
+}
+
+.heatmap-meta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 12px;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+}
+
+/* Map and detail side by side. The panel used to open below the map, which pushed the map up
+   and out of view at the moment somebody had just picked a tile off it. */
+.app.app-heatmap {
+    max-width: 1180px;
+}
+
+.heatmap-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 300px;
+    gap: 16px;
+    align-items: start;
+}
+
+.heatmap-map {
+    min-width: 0;
+}
+
+@media (max-width: 1000px) {
+    .heatmap-layout {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+/* A pixel height, not an aspect ratio. The map's width is now whatever is left after a 300px
+   panel, and under aspect-ratio that made its height fall with it — at a laptop width the
+   whole map came out short enough that the smaller tiles had no room for their own labels,
+   which is a map that shrinks the closer you look at it. A clamp gives it a floor. */
+.heatmap-grid {
+    position: relative;
+    width: 100%;
+    height: clamp(340px, 42vw, 460px);
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+}
+
+
+.heatmap-tile {
+    position: absolute;
+    box-sizing: border-box;
+    border: 1px solid rgba(0, 0, 0, 0.4);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    overflow: hidden;
+    padding: 2px;
+    transition: filter var(--duration-fast) var(--ease-out);
+}
+
+.heatmap-tile:hover {
+    filter: brightness(1.18);
+    z-index: 1;
+}
+
+.heatmap-tile.clickable {
+    cursor: pointer;
+}
+
+.heatmap-tile.clickable:active {
+    filter: brightness(0.92);
+}
+
+.heatmap-tile .tile-symbol {
+    font: 700 13px var(--mono);
+    color: #fff;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.55);
+    white-space: nowrap;
+    letter-spacing: 0.02em;
+}
+
+.heatmap-tile .tile-price {
+    font: 600 11px var(--mono);
+    color: rgba(255, 255, 255, 0.95);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
+.heatmap-tile .tile-pct {
+    font: 700 11.5px var(--mono);
+    color: rgba(255, 255, 255, 0.95);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
+.heatmap-tile.tile-tiny .tile-symbol {
+    font-size: 10.5px;
+}
+
+.heatmap-tile.tile-tiny .tile-price {
+    display: none;
+}
+
+.heatmap-tile.tile-tiny .tile-pct {
+    font-size: 9.5px;
+}
+
+.heatmap-tile.tile-micro .tile-symbol {
+    font-size: 8.5px;
+}
+
+.heatmap-tile.tile-micro .tile-price {
+    display: none;
+}
+
+.heatmap-tile.tile-micro .tile-pct {
+    display: none;
+}
+
+.heatmap-caption {
+    text-align: center;
+    color: var(--muted-2);
+    font-size: 11.5px;
+    margin-top: 10px;
+}
+
+.sp500-drilldown-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+    min-height: 30px;
+}
+
+.sp500-drilldown-bar.hidden {
+    display: none;
+}
+
+.sp500-breadcrumb {
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 600;
+}
+
+/* --- heatmap tile detail panel --- */
+
+.heatmap-detail {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: stretch;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px;
+}
+
+.heatmap-detail-empty {
+    margin: 0;
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: var(--muted);
+}
+
+.heatmap-detail-empty.hidden,
+.heatmap-detail-body.hidden {
+    display: none;
+}
+
+.heatmap-detail-body {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.heatmap-detail-name {
+    font-weight: 700;
+    font-size: 14px;
+}
+
+.heatmap-detail-stats {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.heatmap-detail-price {
+    font: 600 24px var(--mono);
+    font-variant-numeric: tabular-nums;
+}
+
+.heatmap-detail-delta {
+    font: 700 12.5px var(--mono);
+    font-variant-numeric: tabular-nums;
+}
+
+.heatmap-detail-delta.outcome-up { color: var(--up); }
+.heatmap-detail-delta.outcome-down { color: var(--down); }
+
+.heatmap-detail-chart {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+/* Label left, figure right, one row each — a definition list because that is what these are,
+   and it keeps the label attached to its value for a screen reader. */
+.heatmap-detail-figures {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 6px 10px;
+    margin: 2px 0 0;
+}
+
+.heatmap-detail-figures dt {
+    font-size: 12px;
+    color: var(--muted);
+}
+
+.heatmap-detail-figures dd {
+    margin: 0;
+    text-align: right;
+    font: 600 12.5px var(--mono);
+    font-variant-numeric: tabular-nums;
+}
+
+.sparkline-svg {
+    display: block;
+    width: 100%;
+    height: 110px;
+}

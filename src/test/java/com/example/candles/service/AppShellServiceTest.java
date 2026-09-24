@@ -55,7 +55,17 @@ class AppShellServiceTest {
         assertThat(Pattern.compile("rel=\"stylesheet\"").matcher(page).results().count()).isEqualTo(1);
         // The inline theme script runs before first paint and must stay where it is.
         assertThat(page).contains("localStorage.getItem(\"candles-theme\")");
-        assertThat(shell.stylesheets()).containsExactly("style.css", "candles-enhance.css");
+        assertThat(shell.stylesheets()).containsExactly("style.css", "play.css", "profile.css",
+                "leaderboard.css", "heatmap.css", "content.css", "controls.css", "live.css",
+                "onboarding.css", "daily.css", "trade.css", "candles-enhance.css");
+    }
+
+    @Test
+    void theGamePageCarriesNoAdminRules() {
+        // A third of the old stylesheet was the admin dashboard, sent to every player.
+        assertThat(shell.stylesheets()).doesNotContain("admin.css");
+        String css = new String(shell.stylesheet().body(), StandardCharsets.UTF_8);
+        assertThat(css).doesNotContain(".admin-shell").doesNotContain(".adm-");
     }
 
     @Test

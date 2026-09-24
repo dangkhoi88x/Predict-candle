@@ -1,0 +1,456 @@
+/* The reading tabs: the two pattern libraries, psychology and the blog. */
+
+/* --- pattern library --- */
+
+/* The filter row is a .pill track; this is left carrying only its spacing. */
+.pattern-filters {
+    margin-bottom: 16px;
+}
+
+.pattern-asset-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 14px;
+}
+
+.pattern-asset-label {
+    color: var(--muted);
+    font-size: 12.5px;
+}
+
+.pattern-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 14px;
+}
+
+/* Every card here carries its own inline SVG chart, so an off-screen one still costs a
+   layout and a paint. Skipping those is what content-visibility buys; the intrinsic size
+   keeps the scrollbar honest meanwhile. The `auto` keyword matters — cards grow when their
+   "Cách nhận diện" section is expanded, and it lets the browser remember the real height
+   rather than snapping back to the placeholder once the card scrolls away. */
+.pattern-grid > *,
+.technical-grid > * {
+    content-visibility: auto;
+}
+
+.pattern-grid > * {
+    contain-intrinsic-size: auto 300px;
+}
+
+.technical-grid > * {
+    contain-intrinsic-size: auto 330px;
+}
+
+.pattern-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.pattern-card.hidden {
+    display: none;
+}
+
+.pattern-chart {
+    background: var(--panel-2);
+    border-bottom: 1px solid var(--border);
+}
+
+.pattern-chart-svg {
+    display: block;
+    width: 100%;
+    height: 110px;
+}
+
+/* min(…, 100%) rather than a bare minimum: a bare one is a floor the track holds even when
+   the container is narrower than it, so on a 375px phone these 360px cards came out wider
+   than the column they sit in. That used to give the page a sideways scrollbar; inside the
+   shell — which clips, that being what rounds its corners — it cuts the card off instead. */
+/* 520 rather than 360: the card now carries a 300px chart, so a 360px track left about
+   sixty pixels for the description. One card per row on a laptop, two on a wide screen. */
+.technical-grid {
+    grid-template-columns: repeat(auto-fill, minmax(min(520px, 100%), 1fr));
+}
+
+/* Chart beside the description rather than above it. These shapes are read left to right —
+   a head and shoulders is a sentence about what price did — and a 360px card with a 160px
+   picture stacked on three lines of prose is twice as tall as it needs to be. */
+.technical-grid .pattern-card {
+    display: grid;
+    grid-template-columns: 300px minmax(0, 1fr);
+    align-items: stretch;
+}
+
+.technical-chart {
+    border-bottom: none;
+    border-right: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+}
+
+.technical-chart .pattern-chart-svg {
+    height: 140px;
+}
+
+/* Capped in characters, not pixels: at one card per row the body would otherwise run the
+   whole width the chart leaves it, and a 90-character line is a line people lose their
+   place in. */
+.technical-grid .pattern-body > .pattern-summary {
+    max-width: 60ch;
+}
+
+@media (max-width: 760px) {
+    .technical-grid .pattern-card {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .technical-chart {
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+    }
+}
+
+.psych-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(380px, 100%), 1fr));
+    gap: 14px;
+}
+
+/* The number beside the principle, not above it: it is an index into a list, and a line of
+   its own gives a label three characters long the same weight as the idea under it. */
+.psych-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: baseline;
+    gap: 6px 12px;
+}
+
+.psych-card-number {
+    grid-row: 1 / span 2;
+    font: 700 12px var(--mono);
+    color: var(--accent);
+}
+
+.psych-card-title {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+}
+
+.psych-card-body {
+    margin: 0;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.55;
+}
+
+.psych-case-study {
+    grid-column: 1 / -1;
+    border-color: var(--accent);
+    background: rgba(79, 140, 255, 0.06);
+}
+
+.psych-case-study .psych-card-number,
+.psych-case-study .psych-card-title {
+    color: var(--accent);
+}
+
+/* One column of wide cards rather than a grid of narrow ones. A blog index is a list of
+   headlines being scanned in order, and a two-across grid asks the reader to scan in two
+   directions to do that; the cover moves beside the title instead of above it, which is
+   also what stops a row of covers taking the top half of the screen. */
+.blog-list {
+    display: grid;
+    gap: 14px;
+    align-items: start;
+}
+
+.blog-post {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    display: grid;
+    grid-template-columns: 220px minmax(0, 1fr);
+    align-items: stretch;
+}
+
+.blog-post-cover {
+    background: var(--panel-2);
+    border-right: 1px solid var(--border);
+    line-height: 0;
+}
+
+.blog-post-cover svg,
+.blog-post-cover img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    min-height: 128px;
+    object-fit: cover;
+}
+
+.blog-post-summary {
+    all: unset;
+    box-sizing: border-box;
+    cursor: pointer;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    justify-content: center;
+}
+
+.blog-post-summary:hover .blog-post-title {
+    color: var(--accent);
+}
+
+.blog-post-kicker {
+    font: 600 10.5px var(--mono);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+}
+
+.blog-post-title {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 700;
+    line-height: 1.35;
+    color: var(--text);
+}
+
+.blog-post-meta {
+    font: 500 11.5px var(--mono);
+    font-variant-numeric: tabular-nums;
+    color: var(--muted);
+}
+
+.blog-post-hint {
+    color: var(--muted-2);
+    font-size: 11.5px;
+}
+
+/* The body spans both tracks: it is the article, and a column of prose 220px narrower than
+   the card it sits in for no reason but the cover above it is a worse read. */
+.blog-post-detail {
+    grid-column: 1 / -1;
+    border-top: 1px solid var(--border);
+    padding: 14px 16px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* On a phone the cover goes back above the text — 220px of the 340 available is most of the
+   row, and what is left cannot hold a headline. */
+@media (max-width: 640px) {
+    .blog-post {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .blog-post-cover {
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .blog-post-cover svg,
+    .blog-post-cover img {
+        height: 140px;
+    }
+}
+
+.blog-post-detail.hidden {
+    display: none;
+}
+
+.blog-post-tags {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.blog-tag {
+    padding: 3px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.blog-post-body p {
+    margin: 0 0 10px;
+    color: var(--muted);
+    font-size: 13.5px;
+    line-height: 1.6;
+}
+
+.blog-post-body p:last-child {
+    margin-bottom: 0;
+}
+
+.blog-post-figure {
+    margin: 4px 0 14px;
+}
+
+.blog-post-figure img {
+    display: block;
+    width: 100%;
+    /* With the width/height attributes blog.js sets, height:auto is what makes the browser
+       derive the ratio from them and hold the space open while the file loads. */
+    height: auto;
+    max-width: 560px;
+    margin: 0 auto;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+}
+
+.blog-post-credit {
+    margin: 0;
+    color: var(--muted-2);
+    font-size: 11px;
+    font-style: italic;
+}
+
+.blog-post-source {
+    align-self: flex-start;
+    color: var(--accent);
+    font-size: 12.5px;
+    text-decoration: none;
+}
+
+.blog-post-source:hover {
+    text-decoration: underline;
+}
+
+.pattern-body {
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.pattern-tags {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.pattern-tag {
+    font: 600 10.5px var(--mono);
+    padding: 3px 8px;
+    border-radius: 999px;
+    letter-spacing: 0.02em;
+}
+
+.pattern-tag.tag-bullish { background: rgba(52, 211, 153, 0.14); color: var(--up); }
+.pattern-tag.tag-bearish { background: rgba(251, 113, 133, 0.14); color: var(--down); }
+.pattern-tag.tag-neutral { background: rgba(125, 125, 130, 0.16); color: var(--muted); }
+.pattern-tag.tag-reversal { background: rgba(79, 140, 255, 0.14); color: var(--accent); }
+.pattern-tag.tag-continuation { background: rgba(245, 191, 66, 0.14); color: var(--warn); }
+
+.pattern-name {
+    margin: 0;
+    font-size: 15px;
+}
+
+.pattern-summary {
+    margin: 0;
+    color: var(--muted);
+    font-size: 12.5px;
+    line-height: 1.5;
+}
+
+.pattern-toggle {
+    align-self: flex-start;
+    background: transparent;
+    border: none;
+    color: var(--accent);
+    font-weight: 600;
+    font-size: 12px;
+    padding: 0;
+    cursor: pointer;
+}
+
+.pattern-detail {
+    margin: 0;
+    padding-left: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    color: var(--text);
+    font-size: 12.5px;
+    line-height: 1.5;
+}
+
+.pattern-detail.hidden {
+    display: none;
+}
+
+.pattern-find-btn {
+    color: var(--up);
+}
+
+.pattern-find-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.pattern-example {
+    border-top: 1px solid var(--border);
+    padding-top: 10px;
+    margin-top: 2px;
+}
+
+.pattern-example.hidden {
+    display: none;
+}
+
+.pattern-example-chart {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.pattern-example-chart .pattern-chart-svg {
+    height: 190px;
+}
+
+.pattern-example-caption {
+    margin: 8px 0 0;
+    color: var(--muted);
+    font-size: 11.5px;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+}
+
+.pattern-example-outcome {
+    margin: 8px 0 0;
+    text-align: center;
+    font: 700 13px var(--mono);
+    font-variant-numeric: tabular-nums;
+}
+
+.pattern-example-outcome.outcome-up {
+    color: var(--up);
+}
+
+.pattern-example-outcome.outcome-down {
+    color: var(--down);
+}
+
+.pattern-example-error {
+    color: var(--down);
+}
