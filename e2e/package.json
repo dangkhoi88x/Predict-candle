@@ -1,0 +1,12 @@
+{
+  "name": "candles-e2e",
+  "private": true,
+  "version": "0.0.1",
+  "description": "Browser tests for the flows the Java suite cannot see: deep links, the start gate, the daily played signed out.",
+  "scripts": {
+    "test": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0"
+  }
+}
