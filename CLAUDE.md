@@ -127,7 +127,7 @@ most of what they record is a bug that already shipped once.
 | [player-stats.md](docs/architecture/player-stats.md) | badges, insights, either streak, the leaderboard and seasons, `/api/admin/retention` |
 | [telegram.md](docs/architecture/telegram.md) | `telegram.js`, `TelegramInitDataVerifier`, the bot, group reminders, framing headers |
 | [content.md](docs/architecture/content.md) | pattern libraries, heatmap and ticker, `/blog`, `/mau-nen`, `/mau-hinh`, `/tam-ly`, the sitemap, `BlogDocumentHtml` |
-| [frontend.md](docs/architecture/frontend.md) | `index.html`, `nav.js`, `AppShellService`, bundling and minifying, onboarding, shortcuts, shared modules, `style.css` |
+| [frontend.md](docs/architecture/frontend.md) | `index.html`, `nav.js`, `AppShellService`, bundling and minifying, onboarding, shortcuts, shared modules, any stylesheet and the order they load in |
 | [admin.md](docs/architecture/admin.md) | `admin.html` and every `admin-*.js`, `RecentErrors` and alerts, admin stats, the blog editor, players, challenge preview |
 | [operations.md](docs/architecture/operations.md) | `render.yaml`, the `Dockerfile` and AOT cache, `/healthz`, the price source, backups |
 

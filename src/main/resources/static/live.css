@@ -1,0 +1,262 @@
+/* The live round, its history popup and the roster of who called it. */
+
+/* ---- live round (G7) --------------------------------------------------------------
+   Round header, sparkline, lock countdown, pool split and history strip. Reuses
+   .market-card, .guess-btn, .guess-timer and .pill wholesale — a live call and a
+   practice guess should look like the same game, not two different products. */
+
+.live-round-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin: 12px 0;
+}
+
+.live-round-number {
+    font: 700 15px var(--mono);
+    color: var(--text);
+}
+
+.live-round-state {
+    font: 600 12px var(--mono);
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.live-round-state.is-open { color: var(--up); }
+.live-round-state.is-locked { color: var(--down); }
+
+.live-sparkline-wrap {
+    margin-top: 4px;
+    height: 60px;
+}
+
+.live-sparkline {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.live-sparkline-line {
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 2;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+}
+
+.live-delta.outcome-up { color: var(--up); background: color-mix(in srgb, var(--up) 14%, transparent); }
+.live-delta.outcome-down { color: var(--down); background: color-mix(in srgb, var(--down) 14%, transparent); }
+
+.live-pool {
+    margin: 14px 0;
+}
+
+.live-pool-track {
+    height: 8px;
+    border-radius: 999px;
+    background: var(--down);
+    overflow: hidden;
+}
+
+.live-pool-long {
+    height: 100%;
+    background: var(--up);
+    width: 50%;
+    transition: width var(--duration-normal) var(--ease-out);
+}
+
+/* Nobody has called the round: no split to show. A neutral bar rather than the 50/50 an empty
+   pool used to draw, which read as two players having called it opposite ways. */
+.live-pool-track.is-empty {
+    background: var(--overlay-strong);
+}
+
+.live-pool-track.is-empty .live-pool-long {
+    width: 0 !important;
+}
+
+.live-pool-labels {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 4px;
+    font: 600 11px var(--mono);
+    color: var(--muted);
+}
+
+.live-history {
+    margin-top: 20px;
+}
+
+.live-history-title {
+    font-size: 13px;
+    color: var(--muted);
+    margin: 0 0 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.live-history-strip {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+}
+
+.live-history-item {
+    flex: 0 0 auto;
+    min-width: 84px;
+    padding: 8px 10px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--panel);
+    text-align: center;
+}
+
+.live-history-item .lh-round {
+    display: block;
+    font: 600 11px var(--mono);
+    color: var(--muted);
+}
+
+.live-history-item .lh-result {
+    display: block;
+    font: 800 12px var(--mono);
+    margin-top: 2px;
+    letter-spacing: 0.03em;
+}
+
+.live-history-item.lh-long .lh-result { color: var(--up); }
+.live-history-item.lh-short .lh-result { color: var(--down); }
+
+/* Bấm rồi và vẫn hiển thị rõ đã chọn bên nào, dù nút đã bị vô hiệu hoá. */
+.guess-btn.chosen {
+    outline: 3px solid color-mix(in srgb, currentColor 55%, transparent);
+    outline-offset: 2px;
+}
+
+/* ---- live round detail popup ------------------------------------------------------- */
+
+/* ---- who called this round (participants roster) ------------------------------------ */
+
+.live-participants {
+    margin-top: 20px;
+}
+
+.live-participants-title {
+    font-size: 13px;
+    color: var(--muted);
+    margin: 0 0 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.live-participants-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.live-participants-empty {
+    color: var(--muted);
+    font-size: 13px;
+    margin: 0;
+}
+
+/* Rounds in the strip are buttons now, styled to read the same as the plain cards did. */
+.live-history-item {
+    cursor: pointer;
+    font: inherit;
+    color: inherit;
+}
+
+.live-history-item:hover {
+    border-color: var(--accent);
+}
+
+.live-participant-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--panel);
+}
+
+.live-participant-avatar {
+    flex: 0 0 auto;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    line-height: 1;
+    /* Set inline per row (avatar-bg-N classes below) rather than one fixed color — a roster
+       of one accent-colored circle each read as one anonymous shape; a palette that rotates
+       by name is what makes the list read as people. */
+}
+
+.live-participant-avatar.avatar-bg-0 { background: color-mix(in srgb, #f59e0b 22%, var(--panel)); }
+.live-participant-avatar.avatar-bg-1 { background: color-mix(in srgb, #3b82f6 22%, var(--panel)); }
+.live-participant-avatar.avatar-bg-2 { background: color-mix(in srgb, #ec4899 22%, var(--panel)); }
+.live-participant-avatar.avatar-bg-3 { background: color-mix(in srgb, #10b981 22%, var(--panel)); }
+.live-participant-avatar.avatar-bg-4 { background: color-mix(in srgb, #8b5cf6 22%, var(--panel)); }
+.live-participant-avatar.avatar-bg-5 { background: color-mix(in srgb, #f97316 22%, var(--panel)); }
+
+.live-participant-info {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.live-participant-name {
+    font: 700 14px var(--mono);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.live-participant-wallet {
+    font: 500 11px var(--mono);
+    color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.live-participant-meta {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+}
+
+.live-participant-direction {
+    font: 700 12px var(--mono);
+    padding: 4px 10px;
+    border-radius: 8px;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+}
+
+.live-participant-direction.dir-long {
+    color: var(--up);
+    background: color-mix(in srgb, var(--up) 16%, transparent);
+}
+
+.live-participant-direction.dir-short {
+    color: var(--down);
+    background: color-mix(in srgb, var(--down) 16%, transparent);
+}
+
+.live-participant-time {
+    font: 600 11px var(--mono);
+    color: var(--muted);
+}

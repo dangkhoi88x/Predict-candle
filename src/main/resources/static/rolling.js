@@ -2,7 +2,7 @@
  *
  * Each digit is a 1em-tall window over a stacked 0–9 strip, so updating a value translates
  * the strip instead of replacing text — the number reads as a mechanical roll rather than a
- * flicker. Pair it with the .rolling class in style.css, which supplies the digit boxes and
+ * flicker. Pair it with the .rolling class in play.css, which supplies the digit boxes and
  * the transition.
  *
  * The container is rebuilt only when the *shape* of the text changes ("$DD,DDD.DD"), not on

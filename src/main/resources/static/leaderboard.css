@@ -1,0 +1,190 @@
+/* The leaderboard: last month's podium, the season picker, avatars and the board itself. */
+
+/* --- leaderboard --- */
+
+/* Last month's podium, under the picker on the running season's board. */
+.lb-last {
+    margin: -6px 0 14px;
+    color: var(--muted);
+    font-size: 13.5px;
+}
+
+/* The medal colour is the pill behind the number, not the number itself: gold text on a light
+   panel is about 2:1, and these are 12px. */
+.lb-last-rank {
+    --medal: var(--accent);
+    padding: 1px 6px;
+    border-radius: 999px;
+    background: color-mix(in oklab, var(--medal) 30%, transparent);
+    color: var(--text);
+    font: 600 12px var(--mono);
+}
+
+.lb-last-rank.is-first { --medal: #e7ad2b; }
+.lb-last-rank.is-second { --medal: #b6bcc8; }
+.lb-last-rank.is-third { --medal: #c07d3f; }
+
+/* The season picker sits under the heading rather than in it: the board below it changes
+   entirely, so it is a control on the view, not a caption on the title. */
+.lb-seasons {
+    margin-bottom: 14px;
+}
+
+.lb-empty {
+    display: grid;
+    justify-items: center;
+    gap: 8px;
+    padding: 36px 16px;
+    text-align: center;
+}
+
+.lb-empty-title {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--text);
+}
+
+.lb-empty-text {
+    margin: 0 0 6px;
+    max-width: 420px;
+    font-size: 13.5px;
+    line-height: 1.6;
+    color: var(--text-2);
+}
+
+.lb-empty-cta {
+    padding: 10px 26px;
+}
+
+/* One face per player, hashed from their name by avatar.js. Shared between this board and
+   the play tab's five-row card, because a player who is a fox on one and an owl on the other
+   reads as two different players. */
+.avatar {
+    width: 22px;
+    height: 22px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    line-height: 1;
+}
+
+.lb-scroller {
+    overflow-x: auto;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: var(--panel);
+}
+
+.lb-table {
+    width: 100%;
+    min-width: 560px;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+/* Fixed widths so the four figure columns line up down the whole board — with auto layout
+   they moved with the longest name in the page, and two players' scores read as comparable
+   only when they sit under each other. The name column takes what is left. */
+.lb-table th:nth-child(1), .lb-table td:nth-child(1) { width: 48px; }
+.lb-table th:nth-child(3), .lb-table td:nth-child(3) { width: 90px; }
+.lb-table th:nth-child(4), .lb-table td:nth-child(4) { width: 110px; }
+.lb-table th:nth-child(5), .lb-table td:nth-child(5) { width: 120px; }
+.lb-table th:nth-child(6), .lb-table td:nth-child(6) { width: 80px; }
+
+.lb-table th {
+    padding: 12px 14px;
+    text-align: left;
+    font: 600 10.5px var(--mono);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted-2);
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+}
+
+.lb-table td {
+    padding: 11px 14px;
+    border-bottom: 1px solid var(--border);
+}
+
+.lb-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.lb-num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.lb-rank {
+    color: var(--muted);
+    font: 500 12px var(--mono);
+    font-variant-numeric: tabular-nums;
+}
+
+.lb-who {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+}
+
+.lb-who-name {
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Score and streak are the two figures the board is read for, so they are the two drawn in
+   full ink; correct/total is the working behind accuracy and sits back. */
+.lb-score {
+    font: 700 13px var(--mono);
+    font-variant-numeric: tabular-nums;
+}
+
+/* Green because accuracy has a direction — it is the same up-colour the chart calls a
+   winning candle, not a decorative highlight. */
+.lb-accuracy {
+    font: 600 13px var(--mono);
+    font-variant-numeric: tabular-nums;
+    color: var(--up);
+}
+
+.lb-muted {
+    color: var(--muted);
+    font: 500 12.5px var(--mono);
+    font-variant-numeric: tabular-nums;
+}
+
+/* Your row, lifted out of its place in the list and up under the podium. The badge is what
+   explains the jump in the numbering around it. */
+.lb-you {
+    padding: 2px 7px;
+    border-radius: 999px;
+    background: var(--tint-accent-strong);
+    color: var(--accent);
+    font: 600 9.5px var(--mono);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.lb-row.is-me td {
+    background: var(--tint-accent-weak);
+}
+
+.lb-row.is-me .lb-rank {
+    color: var(--accent);
+    font-weight: 700;
+}
+
+.lb-me-label {
+    margin: 18px 0 8px;
+    font-size: 12px;
+    color: var(--muted);
+}

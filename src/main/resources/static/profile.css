@@ -1,0 +1,490 @@
+/* The profile: its layout, the habits section, badges and season medals. */
+
+/* ---- profile layout ------------------------------------------------------------------
+   The record on the left, what it earned on the right. In one column the badge grid sat
+   below a list of every recent guess, which is the wrong way round: the trophies are the
+   part worth looking at twice, and the guess log is reference.
+
+   auto-fit rather than two fixed tracks, so the split collapses to one column on its own
+   the moment a track would go under 320px — the badge cards stop being readable below
+   that, and a two-column profile on a phone is two columns of nothing. */
+
+.app.app-profile {
+    max-width: 1180px;
+}
+
+/* min(320px, 100%) rather than a bare 320px: a bare minimum is a floor the track holds even
+   when the container is narrower than it, so on a 300px phone the columns came out 320 wide
+   and the shell — which clips, that being what rounds its corners — simply cut them off. */
+/* ---- habits (profile.js renderInsights) ------------------------------------------------ */
+.pf-insights {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 16px 16px;
+    margin: 4px 0 18px;
+}
+
+.pf-insights-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.pf-insights-head .profile-section {
+    margin-top: 0;
+}
+
+.pf-insights-scope {
+    font: 500 11.5px var(--mono);
+    color: var(--muted);
+}
+
+.pf-insights-progress {
+    display: block;
+    margin-top: 8px;
+}
+
+.pf-findings {
+    margin: 4px 0 14px;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 8px;
+}
+
+/* A finding is the thing to act on, so it reads as a callout: the accent rule down its edge is
+   the same tint language selection uses, not a warning colour — a habit is not an error. */
+.pf-finding {
+    font-size: 14px;
+    line-height: 1.55;
+    color: var(--text);
+    padding: 9px 12px;
+    border-left: 3px solid var(--accent);
+    border-radius: 0 8px 8px 0;
+    background: var(--tint-accent);
+}
+
+.pf-findings-none {
+    font-size: 14px;
+    color: var(--text-2);
+    margin: 4px 0 14px;
+}
+
+.pf-splits {
+    display: grid;
+    gap: 8px;
+    margin-bottom: 14px;
+}
+
+.pf-split {
+    display: grid;
+    grid-template-columns: 72px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+    font-size: 12.5px;
+}
+
+.pf-split-label {
+    color: var(--muted);
+}
+
+.pf-split-track {
+    height: 8px;
+    border-radius: 999px;
+    background: color-mix(in oklab, var(--down) 70%, var(--panel));
+    overflow: hidden;
+}
+
+.pf-split-fill {
+    display: block;
+    height: 100%;
+    background: color-mix(in oklab, var(--up) 80%, var(--panel));
+    transition: width var(--duration-normal) var(--ease-out);
+}
+
+.pf-insights-progress {
+    background: var(--overlay-strong);
+}
+
+.pf-insights-progress .pf-split-fill {
+    background: var(--accent);
+}
+
+.pf-split-value {
+    font: 500 12px var(--mono);
+    font-variant-numeric: tabular-nums;
+    color: var(--text-2);
+    white-space: nowrap;
+}
+
+.pf-bucket-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
+    gap: 14px 24px;
+}
+
+.pf-bucket-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 6px;
+    font-size: 13px;
+}
+
+.pf-bucket-table th {
+    font: 600 10.5px var(--mono);
+    color: var(--muted-2);
+    text-align: left;
+    padding: 4px 0;
+}
+
+.pf-bucket-table td {
+    padding: 5px 0;
+    border-top: 1px solid var(--border);
+}
+
+.pf-bucket-table .num {
+    text-align: right;
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+}
+
+.pf-bucket-table td.is-weak {
+    color: var(--down);
+    font-weight: 700;
+}
+
+.pf-bucket-table tr.is-thin td {
+    color: var(--muted);
+}
+
+.pf-pattern-link {
+    border: none;
+    background: none;
+    padding: 0;
+    font: inherit;
+    color: var(--text);
+    cursor: pointer;
+    text-align: left;
+    text-decoration: underline;
+    text-decoration-color: var(--border);
+    text-underline-offset: 3px;
+}
+
+.pf-pattern-link:hover {
+    color: var(--accent);
+    text-decoration-color: currentColor;
+}
+
+.is-thin .pf-pattern-link {
+    color: var(--muted);
+}
+
+.pf-thin-note {
+    margin: 6px 0 0;
+    font-size: 11.5px;
+    color: var(--muted);
+}
+
+@media (max-width: 520px) {
+    .pf-split {
+        grid-template-columns: 60px minmax(0, 1fr);
+    }
+
+    .pf-split-value {
+        grid-column: 1 / -1;
+    }
+}
+
+.profile-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
+    gap: 8px 24px;
+    align-items: start;
+}
+
+.profile-col {
+    min-width: 0;
+}
+
+/* The first heading in each column lines up with the other's, rather than inheriting the
+   24px that separates one section from the next. */
+.profile-col > .profile-section:first-child {
+    margin-top: 0;
+}
+
+.profile-share {
+    margin-top: 16px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-start;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+}
+
+.profile-share.hidden {
+    display: none;
+}
+
+.profile-share-squares {
+    font-size: 17px;
+    letter-spacing: 2px;
+    line-height: 1;
+}
+
+.profile-share-line {
+    margin: 0;
+    font: 500 12.5px var(--mono);
+    font-variant-numeric: tabular-nums;
+    color: var(--muted);
+}
+
+.profile-wallet {
+    font: 500 12px var(--mono);
+    color: var(--muted);
+}
+
+.profile-note {
+    margin: 0 0 16px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 12.5px;
+    line-height: 1.5;
+}
+
+.profile-section {
+    margin: 24px 0 10px;
+    font-size: 13px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+}
+
+.profile-empty {
+    margin: 0;
+    color: var(--muted-2);
+    font-size: 13px;
+}
+
+.profile-assets {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 10px;
+}
+
+/* Name and rate on the first row, count beside the rate, bar spanning underneath. */
+.profile-asset {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    align-items: baseline;
+    gap: 4px 10px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+}
+
+.profile-asset-name { font: 600 13px var(--mono); }
+
+.profile-asset-rate {
+    font: 700 15px var(--mono);
+    font-variant-numeric: tabular-nums;
+}
+
+.profile-asset-count {
+    font: 500 11.5px var(--mono);
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.profile-asset-track {
+    grid-column: 1 / -1;
+    height: 4px;
+    margin-top: 6px;
+    border-radius: 999px;
+    background: var(--overlay-strong);
+    overflow: hidden;
+}
+
+.profile-asset-fill {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: var(--up);
+    transition: width var(--duration-normal) var(--ease-out);
+}
+
+.profile-recent {
+    display: grid;
+    gap: 6px;
+}
+
+.profile-guess {
+    display: grid;
+    grid-template-columns: auto auto 1fr auto;
+    align-items: baseline;
+    gap: 10px;
+    padding: 9px 12px;
+    border-radius: 9px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    font-size: 12.5px;
+}
+
+.profile-guess-mark { font-weight: 700; }
+.profile-guess.is-correct .profile-guess-mark { color: var(--up); }
+.profile-guess.is-wrong .profile-guess-mark { color: var(--down); }
+
+.profile-guess-symbol { font: 600 12px var(--mono); }
+.profile-guess-call { color: var(--muted); min-width: 0; }
+
+.profile-guess-when {
+    color: var(--muted-2);
+    font-size: 11.5px;
+    white-space: nowrap;
+}
+
+@media (max-width: 480px) {
+    /* The relative time is the first thing worth dropping when the row runs out of width. */
+    .profile-guess { grid-template-columns: auto auto 1fr; }
+    .profile-guess-when { display: none; }
+}
+
+/* A month a player finished on the podium. Sized like a tag rather than like the badges below
+   it: a medal is one fact — which month, which place — and a card would promise more. */
+.profile-seasons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 18px;
+}
+
+.profile-season {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 6px 12px 6px 9px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--panel-2);
+    color: var(--text);
+    font-size: 13px;
+    cursor: pointer;
+    transition: border-color var(--duration-fast) var(--ease-out);
+}
+
+.profile-season:hover {
+    border-color: var(--accent);
+}
+
+/* Gold, silver and bronze are the medallion's own three (candles-enhance.css), reused by name so
+   one place decides what second place looks like. */
+.profile-season-medal {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 30px;
+    padding: 2px 6px;
+    border-radius: 999px;
+    background: color-mix(in oklab, var(--medal) 30%, transparent);
+    color: var(--text);
+    font: 600 11.5px var(--mono);
+    font-variant-numeric: tabular-nums;
+}
+
+.profile-season.is-first { --medal: #e7ad2b; }
+.profile-season.is-second { --medal: #b6bcc8; }
+.profile-season.is-third { --medal: #c07d3f; }
+
+.profile-season-label {
+    font-variant-numeric: tabular-nums;
+}
+
+/* ---- Profile badges ---- */
+
+.profile-badges {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+/* Says which of the two a card is without making the reader work it out from whether there
+   is a progress bar under it. */
+.profile-badge-state {
+    align-self: flex-start;
+    padding: 2px 7px;
+    border-radius: 999px;
+    font: 600 9.5px var(--mono);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    background: var(--overlay-soft);
+    color: var(--muted);
+}
+
+.profile-badge.is-earned .profile-badge-state {
+    background: var(--tint-accent-strong);
+    color: var(--accent);
+}
+
+.profile-badge {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 12px 14px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--panel);
+}
+
+/* Earned reads as lit rather than merely ticked — the accent edge is the reward. */
+.profile-badge.is-earned {
+    border-color: var(--accent);
+    background: var(--panel-2);
+}
+
+.profile-badge-name {
+    font-weight: 700;
+    font-size: 14px;
+}
+
+.profile-badge.is-earned .profile-badge-name {
+    color: var(--accent);
+}
+
+.profile-badge-desc {
+    font-size: 12.5px;
+    color: var(--muted);
+    line-height: 1.4;
+}
+
+.profile-badge-count {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--muted-2);
+    font-variant-numeric: tabular-nums;
+}
+
+.profile-badge-track {
+    height: 4px;
+    border-radius: 999px;
+    background: var(--border);
+    overflow: hidden;
+}
+
+.profile-badge-fill {
+    display: block;
+    height: 100%;
+    background: var(--accent);
+    border-radius: 999px;
+    transition: width var(--duration-normal) var(--ease-out);
+}

@@ -107,7 +107,7 @@ Script order in `index.html` matters: `pill.js`, `rolling.js` and `avatar.js` de
 globals that later files call at load time.
 
 **The browser never sees those `<script>` tags, and the page declares its files in the head.** `AppShellService` serves `/` with every local
-`<script src>` joined, in the page's order, into one `/app.<hash>.js`, and both stylesheets into
+`<script src>` joined, in the page's order, into one `/app.<hash>.js`, and every stylesheet into
 one `/app.<hash>.css`; the name is a hash of the content, so both are `immutable` for a year and
 the page itself is `no-cache` with an ETag. The page used to ask for 36 files, each `no-cache`,
 and on the demo's 0.1 CPU they queued — 0.4-1.6s each on a first visit, and 36 revalidations on
@@ -321,11 +321,38 @@ id, which also covers being asked before the fetch lands.
 Everything reads tokens from `:root` in `style.css`; both themes swap only token values, and
 no drawing code knows which theme is active (SVG presentation attributes take `var()` too).
 
+**The stylesheet is twelve files, one per area, and the order of the `<link>` tags is part of the
+code.** `style.css` holds the tokens, the fonts, the shell and the primitives every view uses;
+`play.css`, `profile.css`, `leaderboard.css`, `heatmap.css`, `content.css`, `live.css`,
+`onboarding.css`, `daily.css` and `trade.css` hold one area each; `candles-enhance.css` stays
+last. The game page still downloads one file, because `AppShellService` joins them in tag order.
+It was one file of 7,536 lines, and a third of that was the admin dashboard, sent to every player.
+That third is `admin.css` now, and only `admin.html` loads it: the game's CSS bundle went from
+19.8 KB to 14.6 KB gzipped.
+
+- **A rule's file is not all that matters; its position counts too.** Two selectors of equal
+  weight are decided by which comes later, so moving a rule to another file can change the
+  cascade without any selector changing. The split was checked by comparing the computed style of
+  every element on both pages, before and after. It was run at five widths, in both themes, with
+  reduced motion forced on and off, and against every admin pane. The result: no differences.
+  Two cases that check caught are the reason for the next two rules.
+- **`controls.css` is loaded after each page's own rules, on both pages.** It holds the ghost
+  button, the wallet and the theme switch. `admin.css` restyles those under `.admin-shell` and
+  relies on these base rules for the rest. `.auth-user.hidden` weighs exactly what
+  `.admin-shell .auth-user` does, so the name hides only because this file comes later.
+- **The reduced-motion block is split in two.** The part that collapses the duration tokens is at
+  the end of `style.css`, because the admin page needs it and loads none of the game's files. The
+  line that stops the ticker is in `play.css`, after the ticker's own rule: that rule starts the
+  scroll with a selector of the same weight, and the later of the two wins.
+- `admin.html` links `style.css`, `admin.css` and `controls.css` directly, with no bundle.
+  Anything the admin page needs from the game's side belongs in `style.css` or `controls.css`.
+
 - Motion: one easing `--ease-out`, four role-named durations (`--duration-fast/normal/enter/roll`).
   Never hard-code a duration — the `prefers-reduced-motion` block collapses the tokens, which is
   the only way it reaches animations that JS writes as inline styles.
 - An `animation: infinite` cannot be handled by shortening its token (that just spins it
-  faster); switch it off explicitly in that block, as `.ticker-track` and `.skeleton::after` do.
+  faster); switch it off explicitly in a reduced-motion block, as `.skeleton::after` does in
+  `style.css` and `.ticker-track` in `play.css`.
 - `.rolling` (odometer digits), `.skeleton`, `.pill` are the shared primitives.
 - Numbers get `font-variant-numeric: tabular-nums`.
 - **Text tokens clear WCAG AA (4.5:1) on every surface they sit on**, including `--muted-2`, which

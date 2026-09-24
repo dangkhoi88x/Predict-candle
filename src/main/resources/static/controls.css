@@ -1,0 +1,125 @@
+/* Controls both pages share: the ghost button, the wallet, the signed-in name and the
+   theme switch. admin.css restyles them under .admin-shell and relies on these base rules
+   for the rest - the ghost button's pointer cursor, for one.
+
+   Loaded after each page's own rules, never before: .auth-user.hidden weighs exactly what
+   .admin-shell .auth-user does, and only coming later lets it hide the name. */
+
+/* inline-flex so the marks these now carry sit on the text's centre line rather than its
+   baseline; a text-only .ghost-btn is unchanged by it. */
+.ghost-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 6px 10px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.ghost-btn:hover {
+    color: var(--text);
+    border-color: var(--muted-2);
+}
+
+.ghost-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.auth-area {
+    grid-area: auth;
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+    justify-self: end;
+}
+
+.theme-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    background: transparent;
+    font-size: 13px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.theme-toggle:hover {
+    background: var(--overlay-soft);
+    border-color: var(--muted-2);
+}
+
+.auth-user {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.auth-user.hidden {
+    display: none;
+}
+
+.auth-display-name {
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    padding: 6px 8px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    max-width: 140px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.auth-display-name:hover {
+    border-color: var(--border);
+    background: var(--overlay-soft);
+}
+
+.auth-error-msg {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    z-index: 20;
+    width: max-content;
+    max-width: 240px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 11px;
+    line-height: 1.4;
+    color: var(--down);
+    white-space: normal;
+    box-shadow: 0 8px 20px var(--shadow);
+}
+
+.auth-error-msg.hidden {
+    display: none;
+}
+
+@media (max-width: 640px) {
+    .auth-display-name {
+        max-width: 80px;
+    }
+
+    .auth-error-msg {
+        max-width: 200px;
+    }
+}

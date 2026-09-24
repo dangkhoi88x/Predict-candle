@@ -1,7 +1,7 @@
 /* ============================================================================
-   A layer of motion and depth over the shapes style.css already draws — hover states,
-   entrances, the profile's own header. Loaded after style.css so the few rules that
-   restate a selector win, and separate from it so the whole layer can be taken off by
+   A layer of motion and depth over the shapes the other stylesheets already draw — hover
+   states, entrances, the profile's own header. Loaded after all of them so the few rules that
+   restate a selector win, and separate from them so the whole layer can be taken off by
    deleting one <link> without touching what it sits on.
 
    Every colour is a token from :root, so nothing here knows which theme is running, and

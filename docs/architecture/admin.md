@@ -5,8 +5,8 @@
 ## Admin frontend
 
 `admin.html` is a second, separate page: a dashboard shell — sidebar, sticky topbar, and ten
-panes of which exactly one shows. It shares `style.css`, `theme.js` and `auth.js` with the game
-and nothing else.
+panes of which exactly one shows. It shares `style.css`, `controls.css`, `theme.js` and `auth.js`
+with the game and nothing else; its own rules are `admin.css`, which the game page never loads.
 
 **Pane switching is an attribute, never `.hidden`.** Every `admin-*.js` module already owns
 `.hidden` on its own section and re-asserts it each time it hears `candles:admin` — so a nav
@@ -28,7 +28,7 @@ to take the blog editor's image picker to the library and back.
 **Adding an admin pane is five edits**, and the two easy ones to miss fail silently in
 different ways: the sidebar item, the `<section data-pane="…">`, the `PANES` array in
 `admin-nav.js` (miss it and `go()` quietly falls back to overview — the nav item does nothing,
-with no error), the pane's own line in the `.admin-panes[data-pane=…]` rule in `style.css`
+with no error), the pane's own line in the `.admin-panes[data-pane=…]` rule in `admin.css`
 (that list is enumerated, not generic, so a missing line leaves the section `display: none`
 however right the attribute is), and an entry in `admin-search.js`'s `SOURCES` so the topbar
 search can see its rows.

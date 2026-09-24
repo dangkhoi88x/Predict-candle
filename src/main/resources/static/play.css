@@ -1,0 +1,992 @@
+/* The game tab: the ticker above the shell, the toolbar and its pickers, the two columns,
+   the chart and its readouts, the guess buttons, the round's end and its countdown, the
+   day-streak chip and the keyboard hints. */
+
+/* Price ticker strip, above the shell rather than inside it — it is the market talking,
+   not part of the app's own chrome. */
+.ticker {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 12px;
+    height: 34px;
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+}
+
+@media (max-width: 900px) {
+    .ticker {
+        border-radius: 0;
+        border-width: 0 0 1px;
+        margin-bottom: 0;
+    }
+}
+
+.ticker.hidden {
+    display: none;
+}
+
+.ticker-track {
+    display: flex;
+    width: max-content;
+    animation: ticker-scroll linear infinite;
+}
+
+/* Let people stop the strip to actually read a price they spotted. */
+.ticker:hover .ticker-track {
+    animation-play-state: paused;
+}
+
+.ticker-group {
+    display: flex;
+}
+
+.ticker-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 14px;
+    border-right: 1px solid var(--border);
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+.ticker-logo {
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+}
+
+.ticker-symbol {
+    font-weight: 700;
+    color: var(--text);
+}
+
+.ticker-price,
+.ticker-change {
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+}
+
+.ticker-price {
+    font-weight: 500;
+    color: var(--muted);
+}
+
+.ticker-change {
+    font-weight: 700;
+}
+
+.ticker-change.up { color: var(--up); }
+.ticker-change.down { color: var(--down); }
+
+@keyframes ticker-scroll {
+    from { transform: translateX(0); }
+    to   { transform: translateX(-50%); }
+}
+
+.view.hidden {
+    display: none !important;
+}
+
+.game-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 16px;
+    /* Wraps so the streak chip cannot take width off the asset picker on a phone. The picker
+       scrolls horizontally when it has to, and it was already doing so at 375px — this just
+       stops a second control making the squeeze worse. Everything fits one row on a desktop,
+       so nothing moves there. */
+    flex-wrap: wrap;
+}
+
+/* The right end of the toolbar: how far through the chart, and the sound key. Grouped so
+   the row stays two things — picker, then status — however many of these are on screen at
+   the time. The streak chip and the counter both come and go. */
+.game-toolbar-end {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.sound-toggle,
+.help-toggle {
+    padding: 7px 9px;
+    line-height: 1;
+}
+
+.scoreboard {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+.stat {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 12px;
+    text-align: center;
+}
+
+.stat-label {
+    display: block;
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.stat-value {
+    display: block;
+    font-size: 20px;
+    font-weight: 700;
+    margin-top: 2px;
+    font-variant-numeric: tabular-nums;
+}
+
+/* ---- the play tab's two columns -----------------------------------------------------
+   The chart on the left, and on the right the four things a player looks at between
+   rounds: how the session is going, whether today's challenge is still unplayed, which
+   badge is nearest, and who is ahead. All four used to be somewhere else — the scoreboard
+   above the chart, the rest on tabs nobody opens mid-session — which is why the answer to
+   "why am I still here" was always one click away from the thing being played.
+
+   The right column is 300px and does not stretch: it holds labelled figures, and a stat
+   card that grows with the window only puts more space between a number and its label. */
+
+.app.app-play {
+    max-width: 1180px;
+}
+
+.play-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 300px;
+    gap: 16px;
+    align-items: start;
+}
+
+.play-main {
+    min-width: 0;
+}
+
+.play-side {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* Below 1100px the column has nowhere to go but under the chart, where it reads as a
+   footer to the round rather than as a panel beside it. */
+@media (max-width: 1100px) {
+    .play-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+.side-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+}
+
+.side-card.hidden {
+    display: none;
+}
+
+/* The one card that is an offer rather than a readout, so it is the one card drawn in the
+   accent — on the darker ground, which is what keeps a bordered card from reading as a
+   button the whole way across. */
+.side-card.is-accent {
+    background: var(--panel-2);
+    border-color: var(--accent);
+    gap: 8px;
+}
+
+.side-eyebrow {
+    font: 600 10.5px var(--mono);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted-2);
+}
+
+.side-eyebrow.is-accent {
+    color: var(--accent);
+}
+
+.side-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 8px;
+}
+
+.side-link {
+    background: none;
+    border: none;
+    padding: 0;
+    font-family: inherit;
+    font-size: 11.5px;
+    color: var(--accent);
+    cursor: pointer;
+}
+
+.side-link:hover {
+    text-decoration: underline;
+}
+
+.side-title {
+    font-size: 15px;
+}
+
+.side-text {
+    margin: 0;
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: var(--muted);
+}
+
+.side-cta {
+    margin-top: 2px;
+    padding: 10px;
+    border: none;
+    border-radius: 10px;
+    background: var(--accent);
+    color: var(--bg);
+    font-family: inherit;
+    font-weight: 700;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.side-cta:hover {
+    filter: brightness(1.12);
+}
+
+.side-foot {
+    margin-top: 6px;
+    font-size: 11.5px;
+    color: var(--muted-2);
+}
+
+/* In the sidebar the scoreboard is a 2x2 of bare figures rather than four bordered tiles:
+   the card is already the border, and tiles inside a card is a frame inside a frame. */
+.play-side .scoreboard {
+    grid-template-columns: 1fr 1fr;
+    margin: 10px 0 0;
+}
+
+.play-side .stat {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    padding: 0;
+    text-align: left;
+}
+
+.play-side .stat-value {
+    font: 700 22px var(--mono);
+    font-variant-numeric: tabular-nums;
+}
+
+.side-dots {
+    display: flex;
+    gap: 5px;
+    margin-top: 12px;
+}
+
+.side-dot {
+    flex: 1;
+    height: 6px;
+    border-radius: 999px;
+    background: var(--overlay-strong);
+}
+
+.side-dot.is-correct { background: var(--up); }
+.side-dot.is-wrong { background: var(--down); }
+
+.side-badges {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 10px;
+}
+
+.side-badge-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 8px;
+}
+
+.side-badge-name {
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.side-badge-count {
+    font: 600 11px var(--mono);
+    font-variant-numeric: tabular-nums;
+    color: var(--muted);
+}
+
+.side-bar {
+    display: block;
+    height: 5px;
+    margin-top: 5px;
+    border-radius: 999px;
+    background: var(--border);
+    overflow: hidden;
+}
+
+.side-bar-fill {
+    display: block;
+    height: 100%;
+    border-radius: 999px;
+    background: var(--accent);
+}
+
+.side-rank {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-top: 8px;
+}
+
+.side-rank-row {
+    display: grid;
+    grid-template-columns: 20px 22px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 6px;
+    border-radius: 8px;
+    font-size: 12.5px;
+}
+
+.side-rank-row.is-me {
+    background: var(--tint-accent-weak);
+    font-weight: 700;
+}
+
+.side-rank-pos {
+    font: 600 11px var(--mono);
+    color: var(--muted-2);
+}
+
+.side-rank-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.side-rank-score {
+    font: 600 12px var(--mono);
+    font-variant-numeric: tabular-nums;
+    color: var(--muted);
+}
+
+.side-rank-row.is-me .side-rank-score {
+    color: var(--text);
+}
+
+.result-banner {
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 12px;
+}
+
+.result-banner.correct {
+    background: rgba(52, 211, 153, 0.12);
+    color: var(--up);
+    border: 1px solid var(--up);
+}
+
+.result-banner.wrong {
+    background: rgba(251, 113, 133, 0.12);
+    color: var(--down);
+    border: 1px solid var(--down);
+}
+
+.result-banner.neutral {
+    background: rgba(125, 125, 130, 0.12);
+    color: var(--text);
+    border: 1px solid var(--border);
+}
+
+/* --- market chart card --- */
+
+.market-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px 16px 8px;
+    margin-bottom: 16px;
+}
+
+.market-head {
+    margin-bottom: 4px;
+}
+
+.market-symbol-row {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+}
+
+.market-symbol {
+    font: 500 12px var(--mono);
+    letter-spacing: 0.03em;
+    color: var(--text);
+}
+
+.market-name {
+    font-size: 12px;
+    color: var(--muted);
+}
+
+.market-price-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+    margin-top: 4px;
+}
+
+.market-price {
+    font: 500 26px/1 var(--mono);
+    color: var(--text);
+}
+
+/* ---- odometer digits ----------------------------------------------------------------
+   Any element carrying .rolling can be driven by updateRollingText() in app.js. The digit
+   boxes size themselves off the container's own font — 1ch is the advance of "0", which
+   tabular-nums makes true of every digit — so the same markup works at 26px monospace in
+   the price and at 20px sans in the scoreboard. */
+.rolling {
+    display: inline-flex;
+    font-variant-numeric: tabular-nums;
+}
+
+.rolling .digit {
+    position: relative;
+    display: inline-block;
+    width: 1ch;
+    height: 1em;
+    overflow: hidden;
+    vertical-align: bottom;
+}
+
+.rolling .digit-strip {
+    position: absolute;
+    inset: 0 0 auto 0;
+    transition: transform var(--duration-roll) var(--ease-out);
+}
+
+.rolling .digit-strip span {
+    display: block;
+    height: 1em;
+    line-height: 1;
+    text-align: center;
+}
+
+/* Carries the plain value for assistive tech, since the digit strips themselves are
+   aria-hidden. Clipped rather than display:none, which would take it out of the a11y tree
+   along with the rest. */
+.rolling-sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    border: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+}
+
+/* Everything that is not a digit — separators, signs, the "%". These are flex items too,
+   so without a height they size to their own line box and end up taller than the 1em digit
+   windows, which drags the whole container's height with them. */
+.rolling .lit {
+    display: inline-block;
+    height: 1em;
+    line-height: 1;
+    /* These are flex items, so a lit holding nothing but a space — "▲ 1.42%", "+2.41%
+       (24h)" — collapses to zero width and the separator vanishes. */
+    white-space: pre;
+}
+
+.market-delta {
+    font: 600 12px var(--mono);
+    padding: 2px 6px;
+    border-radius: 5px;
+    margin-bottom: 2px;
+    font-variant-numeric: tabular-nums;
+    transition: color var(--duration-normal) var(--ease-out),
+                background-color var(--duration-normal) var(--ease-out);
+}
+
+.market-ohlc {
+    height: 16px;
+    margin-top: 6px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    font: 500 10.5px var(--mono);
+    color: var(--muted);
+    opacity: 0;
+    transition: opacity var(--duration-fast) var(--ease-out);
+    font-variant-numeric: tabular-nums;
+}
+
+.market-ohlc.visible { opacity: 1; }
+.market-ohlc b { color: var(--text); font-weight: 600; }
+
+.chart {
+    margin-top: 10px;
+    height: 300px;
+}
+
+.chart svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    touch-action: pan-y;
+}
+
+.chart svg:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+@keyframes candle-rise {
+    from { transform: scaleY(0); opacity: 0; }
+    to   { transform: scaleY(1); opacity: 1; }
+}
+
+@keyframes price-flash {
+    from { opacity: 0.35; }
+    to   { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    /* The ticker's half of the block that closes style.css. It sits here, after the ticker,
+       because it ties with the rule that starts the scroll and has to come later to win. */
+    .ticker-track { animation: none; }
+}
+
+.controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+/* The primary action, and deliberately no longer the loudest thing on screen. At 16px/800
+   across a 52px slab in full --up/--down, the pair pulled the eye off the chart they are an
+   answer to — the chart is the question, and the buttons were outranking it.
+
+   The fill is mixed 16% toward the page's own ground rather than made translucent or given a
+   lighter token: one rule then holds in both themes, and it takes the saturation down without
+   touching the up/down hue the whole site is read by. It costs no contrast against the dark
+   labels — in the light theme it gains some, where #d92643 under #200608 was the tightest
+   pair on the page. */
+.guess-btn {
+    padding: 13px;
+    border-radius: 12px;
+    border: none;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    cursor: pointer;
+    color: #06110f;
+}
+
+.guess-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.guess-btn.long {
+    background: color-mix(in oklab, var(--up) 84%, var(--bg));
+}
+
+.guess-btn.short {
+    background: color-mix(in oklab, var(--down) 84%, var(--bg));
+    color: #200608;
+}
+
+/* Sits in the toolbar row, pushed to the far end so it lands beside the sound toggle and
+   leaves the asset picker the whole left. */
+.guess-progress {
+    color: var(--muted);
+    font: 500 12px var(--mono);
+    letter-spacing: 0.03em;
+    font-variant-numeric: tabular-nums;
+}
+
+/* The end-of-session reveal: which stretch of history the chart actually was. Sits between
+   the chart and the controls so it reads as a caption of what is still on screen. */
+.round-identity {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 4px 12px;
+    margin-bottom: 10px;
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--panel-2);
+    font-size: 13px;
+    animation: identity-in var(--duration-enter) var(--ease-out) both;
+}
+
+.round-identity .ri-label {
+    color: var(--muted-2);
+    font: 500 11px var(--mono);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.round-identity .ri-asset {
+    color: var(--text);
+    font-weight: 600;
+}
+
+.round-identity .ri-range {
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+}
+
+.round-identity .ri-link {
+    margin-left: auto;
+    color: var(--accent);
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.round-identity .ri-link:hover {
+    text-decoration: underline;
+}
+
+@keyframes identity-in {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: none; }
+}
+
+/* Post-session context chart. Deliberately a separate block below the result rather than
+   more candles on the game chart: what happened around the round is a different question
+   from what the player was just asked, and mixing them muddles both. */
+.round-context {
+    margin-bottom: 12px;
+    padding: 14px 16px 12px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--panel);
+    animation: identity-in var(--duration-enter) var(--ease-out) both;
+}
+
+.round-context .rc-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 2px 10px;
+}
+
+.round-context .rc-title {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+}
+
+.round-context .rc-sub {
+    margin: 0;
+    color: var(--muted);
+    font: 400 12px var(--mono);
+    font-variant-numeric: tabular-nums;
+}
+
+.round-context .rc-chart {
+    margin-top: 8px;
+    height: 200px;
+}
+
+.round-context .rc-chart svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+}
+
+.round-context .rc-patterns {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+}
+
+.round-context .rc-patterns-label {
+    margin: 0 0 6px;
+    color: var(--muted-2);
+    font: 500 11px var(--mono);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.round-context .rc-patterns-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.rc-pattern {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 7px;
+    padding: 5px 10px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--panel-2);
+    color: var(--text);
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: border-color var(--duration-fast) var(--ease-out),
+                color var(--duration-fast) var(--ease-out);
+}
+
+.rc-pattern:hover,
+.rc-pattern:focus-visible {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.rc-pattern .rc-pattern-at {
+    color: var(--muted);
+    font: 400 11px var(--mono);
+    font-variant-numeric: tabular-nums;
+}
+
+/* Briefly rings the card the game tab just sent the player to, so it is obvious which of
+   the thirteen cards answered the question they clicked on. */
+.pattern-card-called {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+    transition: outline-color var(--duration-normal) var(--ease-out);
+}
+
+.round-context .rc-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 16px;
+    margin: 10px 0 0;
+    padding: 0;
+    list-style: none;
+    color: var(--muted);
+    font-size: 11.5px;
+}
+
+.round-context .rc-legend li {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.round-context .rc-key {
+    width: 14px;
+    height: 10px;
+    border-radius: 3px;
+    border: 1px solid var(--border);
+}
+
+.rc-key-before { background: transparent; }
+.rc-key-played { background: color-mix(in srgb, var(--muted) 16%, transparent); }
+.rc-key-guess { background: color-mix(in srgb, var(--accent) 22%, transparent); }
+
+/* Countdown for the current guess. The fill is driven from JS, one width per tick, rather
+   than a CSS transition — the reduced-motion block collapses the duration tokens, and a
+   shot clock that finishes instantly is not a shot clock. */
+.guess-timer {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.guess-timer-track {
+    flex: 1;
+    height: 4px;
+    border-radius: 999px;
+    background: var(--overlay-strong);
+    overflow: hidden;
+}
+
+.guess-timer-fill {
+    height: 100%;
+    width: 100%;
+    border-radius: 999px;
+    background: var(--accent);
+}
+
+.guess-timer-value {
+    color: var(--muted);
+    font: 500 12px var(--mono);
+    font-variant-numeric: tabular-nums;
+    min-width: 3ch;
+    text-align: right;
+}
+
+/* Colour only, no pulse: an infinite animation would have to be switched off by hand in the
+   reduced-motion block, and the colour already says everything the pulse would. */
+.guess-timer.urgent .guess-timer-fill { background: var(--down); }
+.guess-timer.urgent .guess-timer-value { color: var(--down); }
+
+.admin-link {
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+}
+
+.next-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    width: 100%;
+    margin-top: 10px;
+    padding: 11px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+/* The one call to action a finished chart offers besides the next chart, so it takes the accent
+   rather than sitting as quietly as "Biểu đồ mới". */
+.next-btn.challenge-btn {
+    color: var(--accent);
+    border-color: color-mix(in oklab, var(--accent) 45%, var(--border));
+    background: var(--tint-accent);
+}
+
+.next-btn:hover {
+    color: var(--text);
+    border-color: var(--muted-2);
+}
+
+.result-banner.summary {
+    font-size: 15px;
+    padding: 14px 16px;
+}
+
+/* The timeframe pill sits beside the pair pill, and is the narrower of the two: three fixed
+   labels against a list of pairs that grows. */
+.tf-pill {
+    flex: 0 0 auto;
+}
+
+/* Day-streak chip in the game toolbar. Pushed to the right so it reads as part of the
+   toolbar's controls rather than as a third item competing with the asset picker. */
+/* Sits in the topbar, so a player reading the blog or working through the archive can still
+   see the run they are protecting. Recessed rather than raised — --panel-2 against the
+   topbar's --panel — because it is a readout, not a control, and the two buttons beside it
+   are. */
+.game-streak {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--panel-2);
+    white-space: nowrap;
+}
+
+.game-streak.hidden {
+    display: none;
+}
+
+/* Warn-coloured rather than inheriting the chip's text: the flame is the only part of this
+   readout that is decoration, and a grey one says nothing. .is-at-risk below recolours the
+   figures beside it, not this — the mark is already the right colour for that state. */
+.game-streak-flame {
+    width: 14px;
+    height: 14px;
+    color: var(--warn);
+}
+
+.game-streak-value {
+    font: 700 13px var(--mono);
+    font-variant-numeric: tabular-nums;
+}
+
+.game-streak-unit {
+    font-size: 12px;
+    color: var(--muted);
+}
+
+
+/* Alive but unplayed today — the only state where playing changes the number instead of
+   maintaining it, so it is the only one drawn differently. Dashed rather than red: a streak
+   in reach is not an error. */
+.game-streak.is-at-risk {
+    border-style: dashed;
+    border-color: var(--warn);
+}
+
+.game-streak.is-at-risk .game-streak-value,
+.game-streak.is-at-risk .game-streak-unit {
+    color: var(--warn);
+}
+
+/* ---- keyboard hints -----------------------------------------------------------------
+   Hidden by default and shown only where there is a keyboard to press. A phone cannot use
+   these, and on the one screen where a chart and two buttons already share a small space, a
+   line that does nothing is a line between the player and the call. The base rule comes first
+   on purpose: written after the query it would win on source order and hide the hint always. */
+.key-hint {
+    display: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .key-hint {
+        display: block;
+        margin: 8px 0 0;
+        text-align: center;
+        font-size: 11px;
+        letter-spacing: 0.04em;
+        color: var(--muted-2);
+    }
+
+    /* Each pair holds together: a line breaking between "chart" and "mới" reads as a typo. */
+    .key-hint span {
+        white-space: nowrap;
+    }
+
+    .key-hint kbd {
+        font-family: inherit;
+        font-size: 11px;
+        padding: 1px 5px;
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        background: var(--panel-2);
+        color: var(--muted);
+    }
+}
